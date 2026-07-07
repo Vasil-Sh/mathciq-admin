@@ -38,6 +38,8 @@ export default function Admin() {
   const [lastResetPassword, setLastResetPassword] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState(-1);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -139,6 +141,12 @@ export default function Admin() {
     return result;
   }, [users, statusFilter, searchQuery, sortDirection]);
 
+  // Reset page when filter/search changes
+  useEffect(() => { setPage(1); }, [statusFilter, searchQuery]);
+
+  const totalPages = Math.ceil(displayedUsers.length / PAGE_SIZE);
+  const pagedUsers = displayedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const getExpiryBadge = (u: UserData) => {
     if (!u.isActive) return <Badge variant="expired"><XCircle className="mr-1.5 h-3.5 w-3.5" />Закінчилась</Badge>;
     const days = u.daysUntilExpiry ?? -999;
@@ -235,9 +243,9 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displayedUsers.length === 0 ? (
+                {pagedUsers.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-16 text-muted">{loading ? <div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Завантаження...</div> : <div><div className="p-6 bg-surface-subtle rounded-card inline-block mb-4"><Users className="h-12 w-12 text-subtle" /></div><p>{searchQuery || statusFilter !== "all" ? "Нічого не знайдено" : "Немає даних"}</p></div>}</TableCell></TableRow>
-                ) : displayedUsers.map(({ user: u, originalIndex }) => (
+                ) : pagedUsers.map(({ user: u, originalIndex }) => (
                   <TableRow key={originalIndex} className={u.isActive && u.daysUntilExpiry !== undefined && u.daysUntilExpiry <= 3 && u.daysUntilExpiry >= 0 ? "!bg-warning-bg/50" : ""}>
                     <TableCell className="text-ink font-medium border-r border-hairline">{u.telegram}</TableCell>
                     <TableCell className="border-r border-hairline">{u.username}{u.isAdmin && <span className="ml-1.5">👑</span>}</TableCell>
@@ -258,6 +266,19 @@ export default function Admin() {
               </TableBody>
             </Table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-3 border-t border-hairline bg-surface-subtle">
+              <p className="text-xs text-muted">Сторінка {page} з {totalPages} · Всього {displayedUsers.length}</p>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-8 px-3 text-xs">← Назад</Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-btn text-xs font-medium transition-colors ${p === page ? "bg-primary text-white" : "text-body hover:bg-surface-subtle"}`}>{p}</button>
+                ))}
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="h-8 px-3 text-xs">Далі →</Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -329,12 +350,20 @@ export default function Admin() {
       <Dialog open={editDialogOpen} onOpenChange={handleCloseEditDialog}>
         <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-hidden" onInteractOutside={(e) => { if (lastResetPassword) e.preventDefault(); }}>
           <div className="px-6 pt-6 pb-4">
-            <DialogTitle className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-9 h-9 rounded-btn bg-surface-hover flex items-center justify-center">
-                {lastResetPassword ? <CheckCircle2 className="h-5 w-5 text-info-text" /> : <Pencil className="h-5 w-5 text-primary" />}
-              </div>
-              {lastResetPassword ? `Новий пароль для "${editingUser?.username}"` : `Редагувати: ${editingUser?.username}`}
-            </DialogTitle>
+            <div className="flex items-center justify-between mb-1.5">
+              <DialogTitle className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-btn bg-surface-hover flex items-center justify-center">
+                  {lastResetPassword ? <CheckCircle2 className="h-5 w-5 text-info-text" /> : <Pencil className="h-5 w-5 text-primary" />}
+                </div>
+                {lastResetPassword ? `Новий пароль для "${editingUser?.username}"` : `Редагувати: ${editingUser?.username}`}
+              </DialogTitle>
+              {!lastResetPassword && (
+                <Button variant="outline" size="sm" onClick={handleResetPassword} disabled={loading} className="text-warning border-warning/30 hover:bg-warning-bg h-8 px-3 text-xs">
+                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                  Скинути пароль
+                </Button>
+              )}
+            </div>
             <DialogDescription className="border-b border-hairline pb-4">
               {lastResetPassword ? 'Збережіть пароль. Після закриття вікна його неможливо буде відновити.' : 'Змініть дані користувача'}
             </DialogDescription>
@@ -380,15 +409,9 @@ export default function Admin() {
               </div>
             </div>
           )}
-          <div className="px-6 py-4 flex flex-row justify-between gap-3">
-            <Button variant="outline" onClick={handleResetPassword} disabled={loading} className="text-warning border-warning/30 hover:bg-warning-bg">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
-              Скинути пароль
-            </Button>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleCloseEditDialog}>Скасувати</Button>
-              <Button onClick={handleSaveEdit} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Зберегти</Button>
-            </div>
+          <div className="px-6 py-4 flex flex-row justify-end gap-3">
+            <Button variant="outline" onClick={handleCloseEditDialog}>Скасувати</Button>
+            <Button onClick={handleSaveEdit} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Зберегти</Button>
           </div>
             </>
           )}

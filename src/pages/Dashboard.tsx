@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   Users, Wallet, TrendingUp, UserPlus, UserX, Shield,
-  Loader2, AlertTriangle, Calendar, MoveUpRight, Filter, CheckCircle,
+  Loader2, AlertTriangle, Calendar, MoveUpRight, Filter, CheckCircle, Crown,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 
@@ -233,7 +233,50 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Bottom: Expiring subscriptions ── */}
+        {/* ── Top users + Expiring subscriptions ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top users */}
+          <div className="card-admin p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-ink">Топ платники</h3>
+                <p className="text-xs text-muted mt-0.5">За загальним доходом</p>
+              </div>
+              {stats.topUsers.length > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-hover rounded-full">
+                  <Crown className="h-3.5 w-3.5 text-warning" strokeWidth={2} />
+                  <span className="text-xs text-muted">топ-{stats.topUsers.length}</span>
+                </div>
+              )}
+            </div>
+            {stats.topUsers.length === 0 ? (
+              <p className="text-sm text-muted py-8 text-center">Немає даних</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.topUsers.map((u, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-surface-subtle border border-hairline">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-btn flex items-center justify-center text-xs font-bold shrink-0 ${
+                        i === 0 ? "bg-warning/15 text-warning" : i === 1 ? "bg-subtle/20 text-subtle" : i === 2 ? "bg-amber-500/10 text-amber-600" : "bg-surface-hover text-muted"
+                      }`}>
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ink truncate">{u.username}</p>
+                        {u.telegram && <p className="text-xs text-subtle truncate">{u.telegram}</p>}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-sm font-semibold text-ink">₴{u.revenue.toLocaleString("uk-UA")}</p>
+                      <p className="text-xs text-subtle">до {u.endDate}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Expiring subscriptions */}
         <div className="card-admin p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -291,6 +334,7 @@ export default function Dashboard() {
               })}
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
