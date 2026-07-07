@@ -74,6 +74,10 @@ class AuthService {
     return api.delete<{ success: boolean }>(`/auth/users/${id}`);
   }
 
+  async resetPassword(id: number) {
+    return api.post<{ username: string; password: string }>(`/auth/users/${id}/reset-password`);
+  }
+
   logout() {
     clearToken();
   }

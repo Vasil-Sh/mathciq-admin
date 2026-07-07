@@ -24,6 +24,9 @@ export default {
         "warning-bg": "#fffbf5",
         danger: "#ef4444",
         "danger-bg": "#fef2f2",
+        info: "#3ba6f1",
+        "info-bg": "#eff8ff",
+        "info-text": "#3ba6f1",
       },
       fontFamily: {
         sans: ["system-ui", "-apple-system", "sans-serif"],

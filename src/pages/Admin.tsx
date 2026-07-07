@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Calendar, CheckCircle, XCircle, Loader2, Bell, AlertTriangle, Crown, Plus, Pencil, Trash2, Save, X, Search, ArrowUpDown, ArrowUp, ArrowDown, Zap, User } from "lucide-react";
+import { Users, Calendar, CheckCircle, CheckCircle2, Copy, XCircle, Loader2, Bell, AlertTriangle, Crown, Plus, Pencil, Trash2, Save, X, Search, ArrowUpDown, ArrowUp, ArrowDown, Zap, User } from "lucide-react";
 import { toast } from "sonner";
 import type { UserData, StatusFilter, SortDirection } from "@/types";
 
@@ -32,8 +32,10 @@ export default function Admin() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({ ...EMPTY_USER });
+  const [lastCreatedPassword, setLastCreatedPassword] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [lastResetPassword, setLastResetPassword] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState(-1);
 
@@ -58,21 +60,44 @@ export default function Admin() {
     setLoading(true);
     try {
       const result = await authService.createUser({ username: newUser.username.trim(), telegram: newUser.telegram.trim(), role: newUser.isAdmin ? "admin" : "user", priceMonth: cleanPrice(newUser.priceMonth.trim()), endDate: newUser.endDate.trim() });
-      toast.success(`Користувача "${result.username}" створено!`, { description: `Пароль: ${result.password}`, duration: 15000 });
-      setNewUser({ ...EMPTY_USER }); setAddDialogOpen(false);
+      setLastCreatedPassword(result.password);
+      toast.success(`Користувача "${result.username}" створено!`);
       await fetchUsers();
     } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
     finally { setLoading(false); }
   };
 
-  const openEditDialog = (u: UserData, i: number) => { setEditingUser({ ...u }); setEditDialogOpen(true); };
+  const handleCloseAddDialog = () => {
+    setAddDialogOpen(false);
+    setLastCreatedPassword("");
+    setNewUser({ ...EMPTY_USER });
+  };
+
+  const openEditDialog = (u: UserData, i: number) => { setEditingUser({ ...u }); setLastResetPassword(""); setEditDialogOpen(true); };
 
   const handleSaveEdit = async () => {
     if (!editingUser?.id) return; setLoading(true);
     try {
       await authService.updateUser(editingUser.id, { telegram: editingUser.telegram, username: editingUser.username, role: editingUser.isAdmin ? "admin" : "user", priceMonth: cleanPrice(editingUser.priceMonth), startDate: editingUser.startDate, endDate: editingUser.endDate });
-      toast.success("Дані оновлено!"); setEditDialogOpen(false); setEditingUser(null);
+      toast.success("Дані оновлено!"); setEditDialogOpen(false); setEditingUser(null); setLastResetPassword("");
       await fetchUsers();
+    } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
+    finally { setLoading(false); }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingUser(null);
+    setLastResetPassword("");
+  };
+
+  const handleResetPassword = async () => {
+    if (!editingUser?.id) return;
+    setLoading(true);
+    try {
+      const result = await authService.resetPassword(editingUser.id);
+      setLastResetPassword(result.password);
+      toast.success(`Пароль для "${result.username}" скинуто!`);
     } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
     finally { setLoading(false); }
   };
@@ -127,7 +152,7 @@ export default function Admin() {
       <div className="max-w-[1200px] mx-auto px-6 lg:px-8 py-8 space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-ink">Користувачі</h2>
-          <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setAddDialogOpen(true); }} className="!bg-success-bg !text-success !border !border-green-200 hover:!bg-green-100 !shadow-none">
+          <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="!bg-success-bg !text-success !border !border-green-200 hover:!bg-green-100 !shadow-none">
             <Plus className="h-4 w-4" />Додати користувача
           </Button>
         </div>
@@ -237,15 +262,46 @@ export default function Admin() {
       </div>
 
       {/* Add Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-xl !p-0 !gap-0 overflow-hidden">
+      <Dialog open={addDialogOpen} onOpenChange={handleCloseAddDialog}>
+        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-hidden" onInteractOutside={(e) => { if (lastCreatedPassword) e.preventDefault(); }}>
           <div className="px-6 pt-6 pb-4">
             <DialogTitle className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-9 h-9 rounded-btn bg-success-bg flex items-center justify-center"><Plus className="h-5 w-5 text-success" /></div>
-              Додати користувача
+              <div className={`w-9 h-9 rounded-btn flex items-center justify-center ${lastCreatedPassword ? 'bg-info-bg' : 'bg-success-bg'}`}>
+                {lastCreatedPassword ? <CheckCircle2 className="h-5 w-5 text-info-text" /> : <Plus className="h-5 w-5 text-success" />}
+              </div>
+              {lastCreatedPassword ? `Користувача "${newUser.username}" створено!` : 'Додати користувача'}
             </DialogTitle>
-            <DialogDescription className="border-b border-hairline pb-4">Заповніть дані нового користувача. Пароль згенерується автоматично.</DialogDescription>
+            <DialogDescription className="border-b border-hairline pb-4">
+              {lastCreatedPassword
+                ? 'Збережіть пароль. Після закриття вікна його неможливо буде відновити.'
+                : 'Заповніть дані нового користувача. Пароль згенерується автоматично.'}
+            </DialogDescription>
           </div>
+
+          {lastCreatedPassword ? (
+            <>
+              <div className="py-8 px-6 bg-canvas border-b border-hairline flex flex-col items-center gap-4">
+                <p className="text-sm text-muted">Пароль для входу:</p>
+                <div className="flex items-center gap-3">
+                  <code className="text-3xl font-bold text-ink tracking-widest bg-surface border border-hairline rounded-xl px-6 py-3 select-all">
+                    {lastCreatedPassword}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11"
+                    onClick={() => { navigator.clipboard.writeText(lastCreatedPassword); toast.success('Пароль скопійовано!'); }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="px-6 py-4 flex flex-row justify-end">
+                <Button onClick={handleCloseAddDialog}>Закрити</Button>
+              </div>
+            </>
+          ) : (
+            <>
           <div className="space-y-5 py-4 px-6 bg-canvas border-b border-hairline">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label>Telegram <span className="text-danger">*</span></Label><Input value={newUser.telegram} onChange={e => setNewUser({ ...newUser, telegram: e.target.value })} placeholder="@username" /></div>
@@ -261,22 +317,53 @@ export default function Admin() {
             </div>
           </div>
           <div className="px-6 py-4 flex flex-row justify-end gap-3">
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Скасувати</Button>
+            <Button variant="outline" onClick={handleCloseAddDialog}>Скасувати</Button>
             <Button onClick={handleAddUser} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}Створити</Button>
           </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-xl !p-0 !gap-0 overflow-hidden">
+      <Dialog open={editDialogOpen} onOpenChange={handleCloseEditDialog}>
+        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-hidden" onInteractOutside={(e) => { if (lastResetPassword) e.preventDefault(); }}>
           <div className="px-6 pt-6 pb-4">
             <DialogTitle className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-9 h-9 rounded-btn bg-surface-hover flex items-center justify-center"><Pencil className="h-5 w-5 text-primary" /></div>
-              Редагувати: {editingUser?.username}
+              <div className="w-9 h-9 rounded-btn bg-surface-hover flex items-center justify-center">
+                {lastResetPassword ? <CheckCircle2 className="h-5 w-5 text-info-text" /> : <Pencil className="h-5 w-5 text-primary" />}
+              </div>
+              {lastResetPassword ? `Новий пароль для "${editingUser?.username}"` : `Редагувати: ${editingUser?.username}`}
             </DialogTitle>
-            <DialogDescription className="border-b border-hairline pb-4">Змініть дані користувача</DialogDescription>
+            <DialogDescription className="border-b border-hairline pb-4">
+              {lastResetPassword ? 'Збережіть пароль. Після закриття вікна його неможливо буде відновити.' : 'Змініть дані користувача'}
+            </DialogDescription>
           </div>
+
+          {lastResetPassword ? (
+            <>
+              <div className="py-8 px-6 bg-canvas border-b border-hairline flex flex-col items-center gap-4">
+                <p className="text-sm text-muted">Новий пароль:</p>
+                <div className="flex items-center gap-3">
+                  <code className="text-3xl font-bold text-ink tracking-widest bg-surface border border-hairline rounded-xl px-6 py-3 select-all">
+                    {lastResetPassword}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11"
+                    onClick={() => { navigator.clipboard.writeText(lastResetPassword); toast.success('Пароль скопійовано!'); }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="px-6 py-4 flex flex-row justify-end">
+                <Button onClick={handleCloseEditDialog}>Закрити</Button>
+              </div>
+            </>
+          ) : (
+            <>
           {editingUser && (
             <div className="space-y-5 py-4 px-6 bg-canvas border-b border-hairline">
               <div className="grid grid-cols-2 gap-4">
@@ -293,10 +380,18 @@ export default function Admin() {
               </div>
             </div>
           )}
-          <div className="px-6 py-4 flex flex-row justify-end gap-3">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Скасувати</Button>
-            <Button onClick={handleSaveEdit} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Зберегти</Button>
+          <div className="px-6 py-4 flex flex-row justify-between gap-3">
+            <Button variant="outline" onClick={handleResetPassword} disabled={loading} className="text-warning border-warning/30 hover:bg-warning-bg">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+              Скинути пароль
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleCloseEditDialog}>Скасувати</Button>
+              <Button onClick={handleSaveEdit} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Зберегти</Button>
+            </div>
           </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
