@@ -6,11 +6,10 @@ function Input({ className, type, ...props }: React.InputHTMLAttributes<HTMLInpu
     <input
       type={type}
       className={cn(
-        "flex h-10 w-full rounded-[6px] border border-graphite bg-void px-3 py-2 text-sm text-ghost",
-        "placeholder:text-steel",
-        "focus:border-lavender focus:ring-1 focus:ring-lavender/30 focus:outline-none",
-        "disabled:cursor-not-allowed disabled:opacity-40",
-        "transition-colors",
+        "flex h-10 w-full rounded-input border border-hairline bg-surface px-3 py-2 text-sm text-ink",
+        "placeholder:text-subtle",
+        "focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none",
+        "disabled:cursor-not-allowed disabled:opacity-40 transition-colors",
         className
       )}
       {...props}
