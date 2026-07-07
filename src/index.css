@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: #333333;
+  }
+
+  body {
+    @apply bg-void text-ghost antialiased;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.03em;
+  }
+
+  /* ── Basedash: white-on-black inversion for primary actions ── */
+  .btn-primary {
+    @apply bg-ghost text-void hover:bg-bone transition-colors;
+  }
+
+  .btn-ghost-action {
+    @apply bg-transparent text-ash hover:text-ghost hover:bg-carbon transition-colors;
+  }
+}
+
+@layer components {
+  /* ── Cards ── */
+  .card-dark {
+    @apply bg-carbon border border-graphite rounded-card;
+  }
+
+  .card-dark-sm {
+    @apply bg-carbon border border-graphite rounded-[12px];
+  }
+
+  /* ── Inputs ── */
+  .input-dark {
+    @apply bg-void border border-graphite rounded-[6px] text-ghost
+           placeholder:text-steel focus:border-lavender focus:ring-1 focus:ring-lavender/30
+           transition-colors;
+  }
+
+  /* ── Tables ── */
+  .table-dark th {
+    @apply bg-carbon text-steel text-xs font-medium uppercase tracking-wider
+           border-b border-graphite;
+  }
+
+  .table-dark td {
+    @apply border-b border-graphite text-ash;
+  }
+
+  .table-dark tr:hover td {
+    @apply bg-carbon/50;
+  }
+
+  /* ── Badges ── */
+  .badge-active {
+    @apply bg-mint/10 text-mint border border-mint/30 rounded-[6px];
+  }
+
+  .badge-expired {
+    @apply bg-danger/10 text-danger border border-danger/30 rounded-[6px];
+  }
+
+  .badge-admin {
+    @apply bg-lavender/10 text-lavender border border-lavender/30 rounded-[6px];
+  }
+
+  .badge-neutral {
+    @apply bg-carbon text-steel border border-graphite rounded-[6px];
+  }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #050607; }
+::-webkit-scrollbar-thumb { background: #333333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #808080; }
