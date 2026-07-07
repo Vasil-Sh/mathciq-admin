@@ -110,57 +110,30 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Bottom: Top Users + Expiring ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card-admin p-6">
-            <h3 className="text-lg font-semibold text-ink mb-4">ТОП-5 за доходом</h3>
-            {stats.topUsers.length === 0 ? (
-              <p className="text-sm text-muted">Немає даних</p>
-            ) : (
-              <div className="space-y-3">
-                {stats.topUsers.map((u, i) => (
-                  <div key={u.username} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-warning text-white" : i === 1 ? "bg-subtle/30 text-muted" : i === 2 ? "bg-amber-100 text-amber-700" : "bg-surface-subtle text-muted"}`}>{i + 1}</span>
-                      <div>
-                        <span className="text-sm font-medium text-ink">{u.username}</span>
-                        {u.telegram && <p className="text-xs text-subtle">{u.telegram}</p>}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-sm font-semibold text-ink">₴{u.revenue}/міс</span>
-                      <p className="text-xs text-subtle">до {u.endDate}</p>
+        {/* ── Bottom: Expiring subscriptions ── */}
+        <div className="card-admin p-6">
+          <h3 className="text-lg font-semibold text-ink mb-4">Підписки, що закінчуються (≤7 днів)</h3>
+          {stats.expiringSubscriptions.length === 0 ? (
+            <p className="text-sm text-muted">Немає підписок, що закінчуються</p>
+          ) : (
+            <div className="space-y-3">
+              {stats.expiringSubscriptions.map((s, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-warning shrink-0" strokeWidth={1.5} />
+                    <div>
+                      <p className="text-sm font-medium text-ink">{s.username}</p>
+                      {s.telegram && <p className="text-xs text-subtle">{s.telegram}</p>}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="card-admin p-6">
-            <h3 className="text-lg font-semibold text-ink mb-4">Закінчуються (≤7 днів)</h3>
-            {stats.expiringSubscriptions.length === 0 ? (
-              <p className="text-sm text-muted">Немає підписок, що закінчуються</p>
-            ) : (
-              <div className="space-y-3">
-                {stats.expiringSubscriptions.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-warning shrink-0" strokeWidth={1.5} />
-                      <div>
-                        <p className="text-sm font-medium text-ink">{s.username}</p>
-                        {s.telegram && <p className="text-xs text-subtle">{s.telegram}</p>}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm text-warning font-medium">{s.endDate}</p>
-                      <p className="text-xs text-subtle">₴{s.priceMonth}/міс</p>
-                    </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm text-warning font-medium">{s.endDate}</p>
+                    <p className="text-xs text-subtle">₴{s.priceMonth}/міс</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

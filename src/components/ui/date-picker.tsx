@@ -3,7 +3,6 @@ import { format, parse, isValid } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import { Button } from "./button";
 
 interface DatePickerProps {
   value: string;
@@ -32,10 +31,14 @@ export function DatePicker({ value, onChange, placeholder }: DatePickerProps) {
 
   return (
     <div className="relative" ref={ref}>
-      <Button type="button" variant="outline" onClick={() => setOpen(!open)} className={cn("w-full justify-start text-left font-normal h-10 rounded-input", !value && "text-subtle")}>
-        <CalendarIcon className="mr-2 h-4 w-4" />
+      <button type="button" onClick={() => setOpen(!open)} className={cn(
+        "w-full flex items-center h-10 rounded-input border border-hairline bg-surface px-3 py-2 text-sm transition-colors",
+        "hover:border-hairline-hover focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none",
+        value ? "text-ink" : "text-subtle"
+      )}>
+        <CalendarIcon className="mr-2 h-4 w-4 text-muted" />
         {value || placeholder || "Оберіть дату"}
-      </Button>
+      </button>
       {open && (
         <div className="absolute z-50 mt-1 rounded-card border border-hairline bg-surface p-3 shadow-lg">
           <DayPicker
