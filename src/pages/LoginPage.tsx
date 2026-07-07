@@ -1,5 +1,5 @@
 import { useLogin } from "@/hooks/useLogin";
-import { Loader2, LogIn, User, Lock, Shield } from "lucide-react";
+import { Loader2, LogIn, User, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const { username, setUsername, password, setPassword, isLoading, error, handleSubmit } = useLogin();
@@ -12,14 +12,6 @@ export default function LoginPage() {
       </svg>
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-card bg-primary/10 border border-primary/20 mb-6">
-            <Shield className="w-8 h-8 text-primary" strokeWidth={1.5} />
-          </div>
-          <h1 className="text-[36px] font-bold text-ink mb-2 tracking-tight">MatchIQ</h1>
-          <p className="text-muted text-sm">Адміністративна панель</p>
-        </div>
-
         <div className="card-admin p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
