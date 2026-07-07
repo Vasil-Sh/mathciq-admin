@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   Users, Wallet, TrendingUp, UserPlus, UserX, Shield,
-  Loader2, AlertTriangle, Calendar, MoveUpRight, Filter,
+  Loader2, AlertTriangle, Calendar, MoveUpRight, Filter, CheckCircle,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 
@@ -108,6 +108,12 @@ export default function Dashboard() {
   let cum = 0;
   const regChartData = filteredReg.map((r) => ({ ...r, label: formatMonthName(r.month), cumulative: (cum += r.count) }));
 
+  // Filtered KPI values
+  const isAll = monthFilter_ === "all";
+  const kpiMrr = isAll ? stats.mrr : (revByMonth[monthFilter_] || 0);
+  const kpiTotalRev = isAll ? stats.totalRevenue : filteredRev.reduce((s, r) => s + r.revenue, 0);
+  const kpiNewMonth = isAll ? stats.newThisMonth : (regByMonth[monthFilter_] || 0);
+
   const currLabel = monthFilter_ === "all"
     ? "Всі"
     : `${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`;
@@ -164,12 +170,12 @@ export default function Dashboard() {
         {/* ── KPI Cards ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[
-            { icon: Wallet,   label: "MRR",        value: `₴${stats.mrr.toLocaleString("uk-UA")}`,                       sub: "щомісячний дохід",    color: "text-success", bg: "!bg-success-bg" },
-            { icon: TrendingUp, label: "Дохід всього", value: `₴${stats.totalRevenue.toLocaleString("uk-UA")}`,             sub: "всі підписки",       color: "text-primary", bg: "!bg-surface-hover" },
-            { icon: Users,     label: "Активні",     value: stats.activeUsers,                                            sub: `з ${stats.totalUsers}`, color: "text-primary", bg: "!bg-surface-hover" },
-            { icon: UserPlus,  label: "Нових за міс", value: stats.newThisMonth,                                          sub: "цей місяць",         color: "text-success", bg: "!bg-success-bg" },
-            { icon: UserX,     label: "Неактивні",    value: stats.inactiveUsers,                                         sub: "прострочені",        color: "text-danger",  bg: "!bg-danger-bg" },
-            { icon: Shield,    label: "Адмінів",      value: stats.adminUsers,                                            sub: "в системі",          color: "text-warning", bg: "!bg-warning-bg" },
+            { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс",  value: `₴${kpiMrr.toLocaleString("uk-UA")}`,                    sub: isAll ? "щомісячний дохід" : "обраний місяць", color: "text-success", bg: "!bg-success-bg" },
+            { icon: TrendingUp, label: "Дохід всього", value: `₴${kpiTotalRev.toLocaleString("uk-UA")}`,                              sub: isAll ? "всі підписки" : `до ${currLabel}`,    color: "text-primary", bg: "!bg-surface-hover" },
+            { icon: Users,     label: "Активні",     value: stats.activeUsers,                                                        sub: `з ${stats.totalUsers}`,                       color: "text-primary", bg: "!bg-surface-hover" },
+            { icon: UserPlus,  label: isAll ? "Нових за міс" : "Нові за міс", value: kpiNewMonth,                                     sub: isAll ? "цей місяць" : currLabel,              color: "text-success", bg: "!bg-success-bg" },
+            { icon: Shield,    label: "Адмінів",      value: stats.adminUsers,                                                        sub: "в системі",                                    color: "text-warning", bg: "!bg-warning-bg" },
+            { icon: UserX,     label: "Неактивні",    value: stats.inactiveUsers,                                                     sub: "прострочені",                                  color: "text-danger",  bg: "!bg-danger-bg" },
           ].map(({ icon: Icon, label, value, sub, color, bg }) => (
             <div key={label} className="card-admin p-5 flex flex-col gap-2">
               <div className={`w-9 h-9 rounded-btn ${bg} flex items-center justify-center`}>
@@ -206,7 +212,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-hover rounded-full">
                 <MoveUpRight className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
                 <span className="text-sm font-bold text-primary">{regTotal}</span>
-                <span className="text-xs text-muted">всього</span>
+                <span className="text-xs text-muted">{isAll ? "всього" : "накопичено"}</span>
               </div>
             </div>
             <p className="text-xs text-muted mb-4">Стовпці — нові за місяць, лінія — накопичувальний підсумок</p>
@@ -229,26 +235,60 @@ export default function Dashboard() {
 
         {/* ── Bottom: Expiring subscriptions ── */}
         <div className="card-admin p-6">
-          <h3 className="text-lg font-semibold text-ink mb-4">Підписки, що закінчуються (≤7 днів)</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-ink">Підписки, що закінчуються</h3>
+              <p className="text-xs text-muted mt-0.5">≤7 днів</p>
+            </div>
+            {stats.expiringSubscriptions.length > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-warning-bg rounded-full">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning" strokeWidth={2} />
+                <span className="text-sm font-bold text-warning">{stats.expiringSubscriptions.length}</span>
+                <span className="text-xs text-muted">до закінчення</span>
+              </div>
+            )}
+          </div>
           {stats.expiringSubscriptions.length === 0 ? (
-            <p className="text-sm text-muted">Немає підписок, що закінчуються</p>
+            <div className="flex items-center gap-3 py-8 justify-center">
+              <CheckCircle className="h-8 w-8 text-success/40" strokeWidth={1.5} />
+              <p className="text-sm text-muted">Немає підписок, що закінчуються найближчим часом</p>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {stats.expiringSubscriptions.map((s, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-warning shrink-0" strokeWidth={1.5} />
-                    <div>
-                      <p className="text-sm font-medium text-ink">{s.username}</p>
-                      {s.telegram && <p className="text-xs text-subtle">{s.telegram}</p>}
+            <div className="space-y-2">
+              {stats.expiringSubscriptions.map((s, i) => {
+                const daysLeft = Math.ceil((new Date(s.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isUrgent = daysLeft <= 3;
+                return (
+                  <div key={i} className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                    isUrgent ? "bg-danger-bg/40 border-danger/20" : "bg-warning-bg/30 border-warning/15"
+                  }`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        isUrgent ? "bg-danger-bg" : "bg-warning-bg"
+                      }`}>
+                        <Calendar className={`h-5 w-5 ${isUrgent ? "text-danger" : "text-warning"}`} strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-ink truncate">{s.username}</p>
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                            isUrgent ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
+                          }`}>
+                            {daysLeft}д
+                          </span>
+                        </div>
+                        {s.telegram && (
+                          <p className="text-xs text-subtle mt-0.5 truncate">{s.telegram}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <p className={`text-sm font-semibold ${isUrgent ? "text-danger" : "text-warning"}`}>{s.endDate}</p>
+                      <p className="text-xs text-subtle mt-0.5">₴{s.priceMonth}/міс</p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm text-warning font-medium">{s.endDate}</p>
-                    <p className="text-xs text-subtle">₴{s.priceMonth}/міс</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
