@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import {
   Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, ComposedChart,
+  ComposedChart, Line,
 } from "recharts";
 import {
-  Users, Wallet, TrendingUp, UserPlus, UserX, Shield,
-  Loader2, AlertTriangle, Calendar, MoveUpRight, Filter, CheckCircle, Crown,
+  Users, Wallet, TrendingUp, UserPlus, UserX, Shield, Clock, Zap,
+  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, Crown,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
+import { getDaysUntilExpiry } from "@/lib/adminUtils";
 
 const UA_MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 
@@ -103,15 +104,23 @@ export default function Dashboard() {
     ? stats.registrationsByMonth
     : stats.registrationsByMonth.filter(r => r.month <= monthFilter_);
 
-  const revChartData = filteredRev.map((r) => ({ ...r, label: formatMonthName(r.month) }));
+  let revCum = 0;
+  const revChartData = filteredRev.map((r) => ({ ...r, label: formatMonthName(r.month), cumulative: (revCum += r.revenue) }));
+  const revTotal = filteredRev.reduce((s, r) => s + r.revenue, 0);
+  const revBest = filteredRev.length > 0 ? [...filteredRev].sort((a, b) => b.revenue - a.revenue)[0] : null;
   const regTotal = filteredReg.reduce((sum, r) => sum + r.count, 0);
+  const regBest = filteredReg.length > 0 ? [...filteredReg].sort((a, b) => b.count - a.count)[0] : null;
+  // Fill all months in range, even those with 0 registrations
+  const regByMonthLookup: Record<string, number> = Object.fromEntries(filteredReg.map(r => [r.month, r.count]));
   let cum = 0;
-  const regChartData = filteredReg.map((r) => ({ ...r, label: formatMonthName(r.month), cumulative: (cum += r.count) }));
+  const regChartData = allMonths.map((m) => {
+    const count = regByMonthLookup[m] || 0;
+    return { month: m, label: formatMonthName(m), count, cumulative: (cum += count) };
+  });
 
   // Filtered KPI values
   const isAll = monthFilter_ === "all";
   const kpiMrr = isAll ? stats.mrr : (revByMonth[monthFilter_] || 0);
-  const kpiTotalRev = isAll ? stats.totalRevenue : filteredRev.reduce((s, r) => s + r.revenue, 0);
   const kpiNewMonth = isAll ? stats.newThisMonth : (regByMonth[monthFilter_] || 0);
 
   const currLabel = monthFilter_ === "all"
@@ -168,10 +177,9 @@ export default function Dashboard() {
         </div>
 
         {/* ── KPI Cards ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {[
             { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс",  value: `₴${kpiMrr.toLocaleString("uk-UA")}`,                    sub: isAll ? "щомісячний дохід" : "обраний місяць", color: "text-success", bg: "!bg-success-bg" },
-            { icon: TrendingUp, label: "Дохід всього", value: `₴${kpiTotalRev.toLocaleString("uk-UA")}`,                              sub: isAll ? "всі підписки" : `до ${currLabel}`,    color: "text-primary", bg: "!bg-surface-hover" },
             { icon: Users,     label: "Активні",     value: stats.activeUsers,                                                        sub: `з ${stats.totalUsers}`,                       color: "text-primary", bg: "!bg-surface-hover" },
             { icon: UserPlus,  label: isAll ? "Нових за міс" : "Нові за міс", value: kpiNewMonth,                                     sub: isAll ? "цей місяць" : currLabel,              color: "text-success", bg: "!bg-success-bg" },
             { icon: Shield,    label: "Адмінів",      value: stats.adminUsers,                                                        sub: "в системі",                                    color: "text-warning", bg: "!bg-warning-bg" },
@@ -191,32 +199,72 @@ export default function Dashboard() {
         {/* ── Charts: Revenue by month + Registrations ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="card-admin p-6">
-            <h3 className="text-lg font-semibold text-ink mb-1">Дохід по місяцях</h3>
-            <p className="text-xs text-muted mb-4">
-              {monthFilter_ === "all" ? "MRR динаміка за останні 12 місяців" : `Дані до ${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`}
-            </p>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={revChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+              <h3 className="text-lg font-semibold text-ink">Дохід по місяцях</h3>
+              <div className="flex items-center gap-2">
+                {revBest && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-success-bg rounded-full">
+                    <TrendingUp className="h-3 w-3 text-success" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-success">₴{revBest.revenue.toLocaleString("uk-UA")}</span>
+                    <span className="text-[10px] text-muted">{formatMonthName(revBest.month)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
+                  <span className="text-xs font-bold text-ink">₴{revTotal.toLocaleString("uk-UA")}</span>
+                  <span className="text-[10px] text-muted">всього</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-xs text-muted">
+                {monthFilter_ === "all" ? "За весь період" : `Дані до ${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`}
+              </p>
+              <span className="text-subtle text-[10px]">·</span>
+              <p className="text-xs text-muted">
+                Стовпці — місяць, лінія — накопичено
+              </p>
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={revChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e8e6e5" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}₴`} />
-                <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid #e8e6e5", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", fontSize: "12px" }} formatter={(value: any) => [`₴${Number(value).toLocaleString("uk-UA")}`, "Дохід"]} />
-                <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2} dot={{ r: 3, fill: "#22c55e" }} />
-              </LineChart>
+                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}₴`} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}₴`} />
+                <Tooltip
+                  contentStyle={{ borderRadius: "12px", border: "1px solid #e8e6e5", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", fontSize: "12px" }}
+                  formatter={(value: any, name: string) => [`₴${Number(value).toLocaleString("uk-UA")}`, name === "cumulative" ? "Накопичено" : "За місяць"]}
+                />
+                <Bar yAxisId="left" dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={40} name="revenue" />
+                <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#0c0a09" strokeWidth={2} dot={{ r: 3, fill: "#0c0a09" }} name="cumulative" />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
           <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-ink">Нові реєстрації</h3>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-hover rounded-full">
-                <MoveUpRight className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
-                <span className="text-sm font-bold text-primary">{regTotal}</span>
-                <span className="text-xs text-muted">{isAll ? "всього" : "накопичено"}</span>
+              <div className="flex items-center gap-2">
+                {regBest && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 rounded-full">
+                    <MoveUpRight className="h-3 w-3 text-primary" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-primary">{regBest.count}</span>
+                    <span className="text-[10px] text-muted">{formatMonthName(regBest.month)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
+                  <span className="text-xs font-bold text-ink">{regTotal}</span>
+                  <span className="text-[10px] text-muted">{isAll ? "всього" : "накопичено"}</span>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-muted mb-4">Стовпці — нові за місяць, лінія — накопичувальний підсумок</p>
-            <ResponsiveContainer width="100%" height={250}>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-xs text-muted">
+                {monthFilter_ === "all" ? "За весь період" : `Дані до ${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`}
+              </p>
+              <span className="text-subtle text-[10px]">·</span>
+              <p className="text-xs text-muted">Стовпці — місяць, лінія — накопичено</p>
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={regChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e8e6e5" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} />
@@ -226,7 +274,7 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: "12px", border: "1px solid #e8e6e5", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", fontSize: "12px" }}
                   formatter={(value: any, name: string) => [value, name === "cumulative" ? "Накопичено" : "Нових за місяць"]}
                 />
-                <Bar yAxisId="left" dataKey="count" fill="#3ba6f1" radius={[4, 4, 0, 0]} maxBarSize={36} name="count" />
+                <Bar yAxisId="left" dataKey="count" fill="#3ba6f1" radius={[4, 4, 0, 0]} maxBarSize={40} name="count" />
                 <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#0c0a09" strokeWidth={2} dot={{ r: 3, fill: "#0c0a09" }} name="cumulative" />
               </ComposedChart>
             </ResponsiveContainer>
@@ -243,36 +291,85 @@ export default function Dashboard() {
                 <p className="text-xs text-muted mt-0.5">За загальним доходом</p>
               </div>
               {stats.topUsers.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-hover rounded-full">
-                  <Crown className="h-3.5 w-3.5 text-warning" strokeWidth={2} />
-                  <span className="text-xs text-muted">топ-{stats.topUsers.length}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
+                    <span className="text-xs font-bold text-ink">₴{stats.topUsers.reduce((s, u) => s + u.revenue, 0).toLocaleString("uk-UA")}</span>
+                    <span className="text-[10px] text-muted">разом</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-warning/10 rounded-full">
+                    <Crown className="h-3 w-3 text-warning" strokeWidth={2} />
+                    <span className="text-xs text-muted">топ-{stats.topUsers.length}</span>
+                  </div>
                 </div>
               )}
             </div>
             {stats.topUsers.length === 0 ? (
               <p className="text-sm text-muted py-8 text-center">Немає даних</p>
             ) : (
-              <div className="space-y-2">
-                {stats.topUsers.map((u, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-surface-subtle border border-hairline">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-btn flex items-center justify-center text-xs font-bold shrink-0 ${
-                        i === 0 ? "bg-warning/15 text-warning" : i === 1 ? "bg-subtle/20 text-subtle" : i === 2 ? "bg-amber-500/10 text-amber-600" : "bg-surface-hover text-muted"
-                      }`}>
-                        {i + 1}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">{u.username}</p>
-                        {u.telegram && <p className="text-xs text-subtle truncate">{u.telegram}</p>}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-semibold text-ink">₴{u.revenue.toLocaleString("uk-UA")}</p>
-                      <p className="text-xs text-subtle">до {u.endDate}</p>
-                    </div>
+              (() => {
+                const topTotal = stats.topUsers.reduce((s, u) => s + u.revenue, 0);
+                return (
+                  <div className="space-y-2">
+                    {stats.topUsers.map((u, i) => {
+                      const pct = topTotal > 0 ? Math.round((u.revenue / topTotal) * 100) : 0;
+                      const days = getDaysUntilExpiry(u.endDate);
+                      const isActive = days >= 0;
+                      return (
+                        <div key={i} className={`p-3 rounded-xl bg-surface-subtle border-2 ${isActive ? "border-success/30" : "border-danger/30"}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-btn flex items-center justify-center text-xs font-bold shrink-0 bg-primary/10 text-primary">
+                                {i + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-ink truncate">{u.username}</p>
+                                {u.telegram && <p className="text-xs text-subtle truncate">{u.telegram}</p>}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0 ml-3 flex items-center gap-2">
+                              <div>
+                                <p className="text-sm font-semibold text-ink">₴{u.revenue.toLocaleString("uk-UA")}</p>
+                                <p className="text-[10px] text-muted">{pct}% від топ-{stats.topUsers.length}</p>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="relative w-full h-1.5 bg-surface-hover rounded-full overflow-hidden mb-2">
+                            <div
+                              className="absolute left-0 top-0 h-full rounded-full transition-all"
+                              style={{ width: `${pct}%`, backgroundColor: isActive ? "#22c55e" : "#ef4444" }}
+                            />
+                          </div>
+                          {/* Bottom row: status, end date */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                isActive ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-success" : "bg-danger"}`} />
+                                {isActive ? "Активна" : "Прострочена"}
+                              </span>
+                              {isActive && days <= 14 && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning-bg text-warning">
+                                  <Clock className="h-2.5 w-2.5" strokeWidth={2} />
+                                  {days} {days === 1 ? "день" : days >= 2 && days <= 4 ? "дні" : "днів"}
+                                </span>
+                              )}
+                              {isActive && days > 14 && (
+                                <span className="text-[10px] text-subtle flex items-center gap-1">
+                                  <Zap className="h-2.5 w-2.5" strokeWidth={1.5} />
+                                  {days} днів
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted">до {u.endDate}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()
             )}
           </div>
 
@@ -284,50 +381,67 @@ export default function Dashboard() {
               <p className="text-xs text-muted mt-0.5">≤7 днів</p>
             </div>
             {stats.expiringSubscriptions.length > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-warning-bg rounded-full">
-                <AlertTriangle className="h-3.5 w-3.5 text-warning" strokeWidth={2} />
-                <span className="text-sm font-bold text-warning">{stats.expiringSubscriptions.length}</span>
-                <span className="text-xs text-muted">до закінчення</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 rounded-full">
+                  <span className="text-xs font-bold text-warning">₴{stats.expiringSubscriptions.reduce((s, u) => s + (u.priceMonth || 0), 0).toLocaleString("uk-UA")}</span>
+                  <span className="text-[10px] text-muted">під ризиком</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-warning-bg rounded-full">
+                  <AlertTriangle className="h-3 w-3 text-warning" strokeWidth={2} />
+                  <span className="text-xs font-bold text-warning">{stats.expiringSubscriptions.length}</span>
+                  <span className="text-[10px] text-muted">{stats.expiringSubscriptions.length === 1 ? "підписка" : stats.expiringSubscriptions.length >= 2 && stats.expiringSubscriptions.length <= 4 ? "підписки" : "підписок"}</span>
+                </div>
               </div>
             )}
           </div>
           {stats.expiringSubscriptions.length === 0 ? (
-            <div className="flex items-center gap-3 py-8 justify-center">
-              <CheckCircle className="h-8 w-8 text-success/40" strokeWidth={1.5} />
-              <p className="text-sm text-muted">Немає підписок, що закінчуються найближчим часом</p>
+            <div className="flex flex-col items-center gap-3 py-10">
+              <div className="w-14 h-14 rounded-2xl bg-success-bg flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-success" strokeWidth={1.5} />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-ink">Все добре!</p>
+                <p className="text-xs text-muted mt-1">Усі підписки активні, найближчі 7 днів — без ризиків</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
-              {stats.expiringSubscriptions.map((s, i) => {
+              {stats.expiringSubscriptions
+                .slice()
+                .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
+                .map((s, i) => {
                 const daysLeft = Math.ceil((new Date(s.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                 const isUrgent = daysLeft <= 3;
+                const pctLeft = Math.max(0, Math.min(100, Math.round((daysLeft / 7) * 100)));
                 return (
-                  <div key={i} className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
-                    isUrgent ? "bg-danger-bg/40 border-danger/20" : "bg-warning-bg/30 border-warning/15"
-                  }`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                        isUrgent ? "bg-danger-bg" : "bg-warning-bg"
-                      }`}>
-                        <Calendar className={`h-5 w-5 ${isUrgent ? "text-danger" : "text-warning"}`} strokeWidth={1.5} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-ink truncate">{s.username}</p>
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                            isUrgent ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
-                          }`}>
-                            {daysLeft}д
-                          </span>
+                  <div key={i} className={`p-3 rounded-xl border-2 ${isUrgent ? "bg-danger-bg/20 border-danger/30" : "bg-warning-bg/20 border-warning/20"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${isUrgent ? "bg-danger-bg text-danger" : "bg-warning-bg text-warning"}`}>
+                          {daysLeft}
                         </div>
-                        {s.telegram && (
-                          <p className="text-xs text-subtle mt-0.5 truncate">{s.telegram}</p>
-                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-ink truncate">{s.username}</p>
+                          {s.telegram && <p className="text-xs text-subtle truncate">{s.telegram}</p>}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className={`text-sm font-semibold ${isUrgent ? "text-danger" : "text-warning"}`}>{s.endDate}</p>
+                        <p className="text-xs text-subtle">₴{Number(s.priceMonth || 0).toLocaleString("uk-UA")}/міс</p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className={`text-sm font-semibold ${isUrgent ? "text-danger" : "text-warning"}`}>{s.endDate}</p>
-                      <p className="text-xs text-subtle mt-0.5">₴{s.priceMonth}/міс</p>
+                    {/* Days-left progress bar */}
+                    <div className="relative w-full h-1.5 bg-surface-hover rounded-full overflow-hidden mb-2">
+                      <div
+                        className={`absolute left-0 top-0 h-full rounded-full transition-all ${isUrgent ? "bg-danger" : "bg-warning"}`}
+                        style={{ width: `${pctLeft}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-medium ${isUrgent ? "text-danger" : "text-warning"}`}>
+                        {daysLeft <= 0 ? "🔴 Прострочена сьогодні" : daysLeft === 1 ? "⚠️ Залишився 1 день!" : `Залишилось ${daysLeft} ${daysLeft >= 2 && daysLeft <= 4 ? "дні" : "днів"}`}
+                      </span>
+                      <span className="text-[10px] text-muted">{pctLeft}% періоду</span>
                     </div>
                   </div>
                 );
