@@ -292,7 +292,7 @@ export default function Dashboard() {
               <p className="text-xs text-muted">Стовпці — місяць, лінія — накопичено</p>
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={regChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <ComposedChart data={regChartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e8e6e5" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} allowDecimals={false} />
