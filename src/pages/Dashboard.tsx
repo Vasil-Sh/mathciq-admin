@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   Users, Wallet, TrendingUp, UserPlus, UserX, Shield, Clock, Zap,
-  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, Crown,
+  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, Crown, RefreshCw,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { getDaysUntilExpiry } from "@/lib/adminUtils";
@@ -23,19 +23,25 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [monthFilter, setMonthFilter] = useState<string>("");
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await fetchAdminStats();
-        setStats(data);
-      } catch (e) {
-        setError((e as Error).message || "Помилка завантаження");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const fetchData = async (showLoading = false) => {
+    if (showLoading) setRefreshing(true);
+    try {
+      const data = await fetchAdminStats();
+      setStats(data);
+      setError("");
+      setLastUpdate(new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }));
+    } catch (e) {
+      if (showLoading) setError((e as Error).message || "Помилка завантаження");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   // Set default filter to current month after stats load
   useEffect(() => {
@@ -104,19 +110,25 @@ export default function Dashboard() {
     ? stats.registrationsByMonth
     : stats.registrationsByMonth.filter(r => r.month <= monthFilter_);
 
-  let revCum = 0;
-  const revChartData = filteredRev.map((r) => ({ ...r, label: formatMonthName(r.month), cumulative: (revCum += r.revenue) }));
-  const revTotal = filteredRev.reduce((s, r) => s + r.revenue, 0);
-  const revBest = filteredRev.length > 0 ? [...filteredRev].sort((a, b) => b.revenue - a.revenue)[0] : null;
-  const regTotal = filteredReg.reduce((sum, r) => sum + r.count, 0);
-  const regBest = filteredReg.length > 0 ? [...filteredReg].sort((a, b) => b.count - a.count)[0] : null;
-  // Fill all months in range, even those with 0 registrations
+  // Build lookup maps for chart — fill all months, even those with 0 values
+  const revByMonthLookup: Record<string, number> = Object.fromEntries(filteredRev.map(r => [r.month, r.revenue]));
   const regByMonthLookup: Record<string, number> = Object.fromEntries(filteredReg.map(r => [r.month, r.count]));
+
+  let revCum = 0;
+  const revChartData = allMonths.map((m) => {
+    const rev = revByMonthLookup[m] || 0;
+    return { month: m, label: formatMonthName(m), revenue: rev, cumulative: (revCum += rev) };
+  });
+  const revTotal = revCum;
+  const revBest = [...revChartData].sort((a, b) => b.revenue - a.revenue)[0];
+
   let cum = 0;
   const regChartData = allMonths.map((m) => {
     const count = regByMonthLookup[m] || 0;
     return { month: m, label: formatMonthName(m), count, cumulative: (cum += count) };
   });
+  const regTotal = cum;
+  const regBest = [...regChartData].sort((a, b) => b.count - a.count)[0];
 
   // Filtered KPI values
   const isAll = monthFilter_ === "all";
@@ -133,8 +145,22 @@ export default function Dashboard() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-ink">Дашборд</h1>
-            <p className="text-sm text-muted mt-1">Огляд ключових показників платформи</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-muted">Огляд ключових показників платформи</p>
+              {lastUpdate && (
+                <span className="text-xs text-subtle">· Оновлено: {lastUpdate}</span>
+              )}
+            </div>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-hairline bg-white text-sm text-body hover:border-primary/60 hover:text-ink transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
+              <span className="text-xs font-medium">Оновити</span>
+            </button>
           <div className="relative" data-filter-dropdown>
             <button
               onClick={() => setFilterOpen(!filterOpen)}
@@ -173,6 +199,7 @@ export default function Dashboard() {
                 })}
               </div>
             )}
+          </div>
           </div>
         </div>
 
