@@ -374,7 +374,7 @@ export default function Dashboard() {
           </div>
 
           {/* Expiring subscriptions */}
-        <div className="card-admin p-6">
+        <div className="card-admin p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-ink">Підписки, що закінчуються</h3>
@@ -395,7 +395,7 @@ export default function Dashboard() {
             )}
           </div>
           {stats.expiringSubscriptions.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-10">
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
               <div className="w-14 h-14 rounded-2xl bg-success-bg flex items-center justify-center">
                 <CheckCircle className="h-8 w-8 text-success" strokeWidth={1.5} />
               </div>
