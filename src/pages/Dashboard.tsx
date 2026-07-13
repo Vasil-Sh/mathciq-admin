@@ -228,7 +228,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-ink">Дохід та нові користувачі</h3>
               <p className="text-xs text-muted mt-0.5">
                 ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів · <span className="text-success">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
-                {bestMonth && <span className="ml-3">· 🏆 <span className="font-medium">{bestMonth.label}</span> — <span className="text-success font-semibold">₴{bestMonth.revenue.toLocaleString("uk-UA")}</span></span>}
+                {bestMonth && <span className="ml-3">· <span className="font-medium">{bestMonth.label}</span> — <span className="text-success font-semibold">₴{bestMonth.revenue.toLocaleString("uk-UA")}</span></span>}
               </p>
             </div>
           </div>
