@@ -117,6 +117,7 @@ export default function Dashboard() {
     return { month: m, label: `${formatMonthName(m)}'${year}`, revenue: rev, cumulative: (revCum += rev) };
   });
   const revTotal = revCum;
+  const bestMonth = [...revChartData].filter(r => r.revenue > 0).sort((a, b) => b.revenue - a.revenue)[0] || null;
 
   let cum = 0;
   const regChartData = allMonths.map((m) => {
@@ -220,13 +221,14 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ── Combined Data Table ── */}
+        {/* ── Revenue & Users Table ── */}
         <div className="card-admin p-6">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
-              <h3 className="text-lg font-semibold text-ink">Дохід та реєстрації по місяцях</h3>
+              <h3 className="text-lg font-semibold text-ink">Дохід та нові користувачі</h3>
               <p className="text-xs text-muted mt-0.5">
                 ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів · <span className="text-success">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
+                {bestMonth && <span className="ml-3">· 🏆 <span className="font-medium">{bestMonth.label}</span> — <span className="text-success font-semibold">₴{bestMonth.revenue.toLocaleString("uk-UA")}</span></span>}
               </p>
             </div>
           </div>
@@ -236,44 +238,60 @@ export default function Dashboard() {
                 <tr className="border-b-2 border-hairline text-muted text-xs uppercase tracking-wider">
                   <th className="text-left py-2.5 pr-4 font-semibold">Місяць</th>
                   <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Дохід</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Нових користувачів</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">ARPU</th>
-                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Накопичено</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline w-16">Δ попер.</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Нові користувачі</th>
+                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Дохід / кор.</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {revChartData.map((r, i) => {
-                  const reg = regByMonthLookup[r.month] || 0;
-                  const arpu = reg > 0 ? Math.round(r.revenue / reg) : 0;
-                  const isCurrentMonth = r.month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-                  return (
-                    <tr key={r.month} className={`transition-colors ${isCurrentMonth ? "bg-primary/5" : "hover:bg-surface-subtle"}`}>
-                      <td className={`py-2.5 pr-4 font-medium text-ink ${isCurrentMonth ? "text-primary" : ""}`}>
-                        {isCurrentMonth && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2 align-middle" />}
-                        {r.label}
-                        {isCurrentMonth && <span className="text-[10px] text-primary ml-1.5 font-normal">поточний</span>}
-                      </td>
-                      <td className="py-2.5 px-4 text-right tabular-nums text-success font-semibold border-l border-hairline">
-                        {r.revenue > 0 ? `₴${r.revenue.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
-                      </td>
-                      <td className="py-2.5 px-4 text-right tabular-nums text-primary font-semibold border-l border-hairline">
-                        {reg > 0 ? reg : <span className="text-subtle font-normal">—</span>}
-                      </td>
-                      <td className="py-2.5 px-4 text-right tabular-nums text-ink border-l border-hairline">
-                        {arpu > 0 ? `₴${arpu.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
-                      </td>
-                      <td className="py-2.5 pl-4 text-right tabular-nums text-ink font-medium border-l border-hairline">₴{r.cumulative.toLocaleString("uk-UA")}</td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  const data = revChartData.map((r, i) => {
+                    const reg = regByMonthLookup[r.month] || 0;
+                    const arpu = reg > 0 ? Math.round(r.revenue / reg) : 0;
+                    const prevRev = i > 0 ? revChartData[i - 1].revenue : 0;
+                    const pctChange = i > 0 && prevRev > 0 ? Math.round(((r.revenue - prevRev) / prevRev) * 100) : null;
+                    return { ...r, reg, arpu, pctChange };
+                  });
+                  const best = data.reduce((max, d) => d.revenue > max.revenue ? d : max, data[0]);
+                  return data.map((d) => {
+                    const isCurrentMonth = d.month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+                    const isBestMonth = d.revenue > 0 && d.revenue === best.revenue;
+                    return (
+                      <tr key={d.month} className={`transition-colors ${isCurrentMonth ? "bg-primary/5" : "hover:bg-surface-subtle"}`}>
+                        <td className={`py-2.5 pr-4 font-medium text-ink ${isCurrentMonth ? "text-primary" : ""}`}>
+                          {isCurrentMonth && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2 align-middle" />}
+                          {d.label}
+                          {isCurrentMonth && <span className="text-[10px] text-primary ml-1.5 font-normal">поточний</span>}
+                          {isBestMonth && !isCurrentMonth && <span className="text-[10px] text-warning ml-1.5">🏆</span>}
+                        </td>
+                        <td className={`py-2.5 px-4 text-right tabular-nums border-l border-hairline ${d.revenue > 0 ? "text-success font-semibold" : "text-subtle font-normal"}`}>
+                          {d.revenue > 0 ? `₴${d.revenue.toLocaleString("uk-UA")}` : "—"}
+                        </td>
+                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
+                          {d.pctChange !== null ? (
+                            <span className={d.pctChange >= 0 ? "text-success" : "text-danger"}>
+                              {d.pctChange >= 0 ? "+" : ""}{d.pctChange}%
+                            </span>
+                          ) : <span className="text-subtle">—</span>}
+                        </td>
+                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
+                          {d.reg > 0 ? <span className="text-primary font-semibold">{d.reg}</span> : <span className="text-subtle font-normal">—</span>}
+                        </td>
+                        <td className="py-2.5 pl-4 text-right tabular-nums border-l border-hairline">
+                          {d.arpu > 0 ? <span className="text-ink font-medium">₴{d.arpu.toLocaleString("uk-UA")}</span> : <span className="text-subtle font-normal">—</span>}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-hairline bg-surface-subtle font-semibold">
+                <tr className="border-t-2 border-hairline bg-surface-subtle font-semibold text-xs">
                   <td className="py-2.5 pr-4 text-ink">Всього</td>
                   <td className="py-2.5 px-4 text-right tabular-nums text-success border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline text-subtle">—</td>
                   <td className="py-2.5 px-4 text-right tabular-nums text-primary border-l border-hairline">{regTotal}</td>
-                  <td className="py-2.5 px-4 text-right tabular-nums text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
-                  <td className="py-2.5 pl-4 text-right tabular-nums text-ink border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-2.5 pl-4 text-right tabular-nums text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
                 </tr>
               </tfoot>
             </table>
