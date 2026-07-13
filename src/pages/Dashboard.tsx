@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ComposedChart, Line,
-} from "recharts";
-import {
-  Users, Wallet, TrendingUp, UserPlus, UserX, Shield,
+  Users, Wallet, UserPlus, UserX, Shield,
   Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, RefreshCw,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
@@ -120,19 +116,14 @@ export default function Dashboard() {
     return { month: m, label: formatMonthName(m), revenue: rev, cumulative: (revCum += rev) };
   });
   const revTotal = revCum;
-  const revBest = [...revChartData].sort((a, b) => b.revenue - a.revenue)[0];
 
   let cum = 0;
-  // Find the last month that has any registration data — cumulative line stops there
-  let lastRegDataIdx = -1;
-  allMonths.forEach((m, i) => { if ((regByMonthLookup[m] || 0) > 0) lastRegDataIdx = i; });
-  const regChartData = allMonths.map((m, i) => {
+  const regChartData = allMonths.map((m) => {
     const count = regByMonthLookup[m] || 0;
     if (count > 0) cum += count;
-    return { month: m, label: formatMonthName(m), count, cumulative: i <= lastRegDataIdx ? cum : null };
+    return { month: m, label: formatMonthName(m), count, cumulative: count > 0 ? cum : null };
   });
   const regTotal = cum;
-  const regBest = [...regChartData].sort((a, b) => b.count - a.count)[0];
 
   // Filtered KPI values
   const isAll = monthFilter_ === "all";
@@ -227,88 +218,66 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ── Charts: Revenue by month + Registrations ── */}
+        {/* ── Data Tables: Revenue + Registrations by month ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue table */}
           <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-              <h3 className="text-lg font-semibold text-ink">Дохід по місяцях</h3>
-              <div className="flex items-center gap-2">
-                {revBest && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-success-bg rounded-full">
-                    <TrendingUp className="h-3 w-3 text-success" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-success">₴{revBest.revenue.toLocaleString("uk-UA")}</span>
-                    <span className="text-[10px] text-muted">{formatMonthName(revBest.month)}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
-                  <span className="text-xs font-bold text-ink">₴{revTotal.toLocaleString("uk-UA")}</span>
-                  <span className="text-[10px] text-muted">всього</span>
-                </div>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div>
+                <h3 className="text-lg font-semibold text-ink">Дохід по місяцях</h3>
+                <p className="text-xs text-muted mt-0.5">₴{revTotal.toLocaleString("uk-UA")} всього</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-muted">
-                {monthFilter_ === "all" ? "За весь період" : `Дані до ${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`}
-              </p>
-              <span className="text-subtle text-[10px]">·</span>
-              <p className="text-xs text-muted">
-                Стовпці — місяць, лінія — накопичено
-              </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-hairline text-muted text-xs uppercase tracking-wider">
+                    <th className="text-left py-2 pr-4 font-medium">Місяць</th>
+                    <th className="text-right py-2 pr-4 font-medium">Дохід</th>
+                    <th className="text-right py-2 font-medium">Накопичено</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {revChartData.filter(r => r.revenue > 0 || r.cumulative > 0).map((r) => (
+                    <tr key={r.month} className="hover:bg-surface-subtle transition-colors">
+                      <td className="py-2.5 pr-4 font-medium text-ink">{r.label}</td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-success font-semibold">₴{r.revenue.toLocaleString("uk-UA")}</td>
+                      <td className="py-2.5 text-right tabular-nums text-ink">₴{r.cumulative.toLocaleString("uk-UA")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={revChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e8e6e5" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}₴`} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}₴`} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "12px", border: "1px solid #e8e6e5", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", fontSize: "12px" }}
-                  formatter={(value: any, name: string) => [`₴${Number(value).toLocaleString("uk-UA")}`, name === "cumulative" ? "Накопичено" : "За місяць"]}
-                />
-                <Bar yAxisId="left" dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={40} name="revenue" />
-                <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#0c0a09" strokeWidth={2} dot={{ r: 3, fill: "#0c0a09" }} name="cumulative" />
-              </ComposedChart>
-            </ResponsiveContainer>
           </div>
 
+          {/* Registrations table */}
           <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-              <h3 className="text-lg font-semibold text-ink">Нові реєстрації</h3>
-              <div className="flex items-center gap-2">
-                {regBest && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 rounded-full">
-                    <MoveUpRight className="h-3 w-3 text-primary" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-primary">{regBest.count}</span>
-                    <span className="text-[10px] text-muted">{formatMonthName(regBest.month)}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
-                  <span className="text-xs font-bold text-ink">{regTotal}</span>
-                  <span className="text-[10px] text-muted">{isAll ? "всього" : "накопичено"}</span>
-                </div>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div>
+                <h3 className="text-lg font-semibold text-ink">Нові реєстрації</h3>
+                <p className="text-xs text-muted mt-0.5">{regTotal} всього</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-muted">
-                {monthFilter_ === "all" ? "За весь період" : `Дані до ${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`}
-              </p>
-              <span className="text-subtle text-[10px]">·</span>
-              <p className="text-xs text-muted">Стовпці — місяць, лінія — накопичено</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-hairline text-muted text-xs uppercase tracking-wider">
+                    <th className="text-left py-2 pr-4 font-medium">Місяць</th>
+                    <th className="text-right py-2 pr-4 font-medium">Нових</th>
+                    <th className="text-right py-2 font-medium">Накопичено</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {regChartData.filter(r => r.count > 0 || (r.cumulative !== null && r.cumulative > 0)).map((r) => (
+                    <tr key={r.month} className="hover:bg-surface-subtle transition-colors">
+                      <td className="py-2.5 pr-4 font-medium text-ink">{r.label}</td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-primary font-semibold">{r.count}</td>
+                      <td className="py-2.5 text-right tabular-nums text-ink">{r.cumulative ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={regChartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e8e6e5" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#78716c" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "12px", border: "1px solid #e8e6e5", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", fontSize: "12px" }}
-                  formatter={(value: any, name: string) => [value, name === "cumulative" ? "Накопичено" : "Нових за місяць"]}
-                />
-                <Bar yAxisId="left" dataKey="count" fill="#3ba6f1" radius={[4, 4, 0, 0]} maxBarSize={40} name="count" />
-                <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#0c0a09" strokeWidth={2} dot={{ r: 3, fill: "#0c0a09" }} name="cumulative" />
-              </ComposedChart>
-            </ResponsiveContainer>
           </div>
         </div>
 
