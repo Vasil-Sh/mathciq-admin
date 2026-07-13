@@ -113,15 +113,17 @@ export default function Dashboard() {
   let revCum = 0;
   const revChartData = allMonths.map((m) => {
     const rev = revByMonthLookup[m] || 0;
-    return { month: m, label: formatMonthName(m), revenue: rev, cumulative: (revCum += rev) };
+    const year = m.split("-")[0]?.slice(2);
+    return { month: m, label: `${formatMonthName(m)}'${year}`, revenue: rev, cumulative: (revCum += rev) };
   });
   const revTotal = revCum;
 
   let cum = 0;
   const regChartData = allMonths.map((m) => {
     const count = regByMonthLookup[m] || 0;
+    const year = m.split("-")[0]?.slice(2);
     if (count > 0) cum += count;
-    return { month: m, label: formatMonthName(m), count, cumulative: count > 0 ? cum : null };
+    return { month: m, label: `${formatMonthName(m)}'${year}`, count, cumulative: count > 0 ? cum : null };
   });
   const regTotal = cum;
 
@@ -233,10 +235,10 @@ export default function Dashboard() {
               <thead>
                 <tr className="border-b-2 border-hairline text-muted text-xs uppercase tracking-wider">
                   <th className="text-left py-2.5 pr-4 font-semibold">Місяць</th>
-                  <th className="text-right py-2.5 pr-4 font-semibold">Дохід</th>
-                  <th className="text-right py-2.5 pr-4 font-semibold">Нових</th>
-                  <th className="text-right py-2.5 pr-4 font-semibold">ARPU</th>
-                  <th className="text-right py-2.5 font-semibold">Накопичено</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Дохід</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Нових користувачів</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">ARPU</th>
+                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Накопичено</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
@@ -251,16 +253,16 @@ export default function Dashboard() {
                         {r.label}
                         {isCurrentMonth && <span className="text-[10px] text-primary ml-1.5 font-normal">поточний</span>}
                       </td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-success font-semibold">
+                      <td className="py-2.5 px-4 text-right tabular-nums text-success font-semibold border-l border-hairline">
                         {r.revenue > 0 ? `₴${r.revenue.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
                       </td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-primary font-semibold">
+                      <td className="py-2.5 px-4 text-right tabular-nums text-primary font-semibold border-l border-hairline">
                         {reg > 0 ? reg : <span className="text-subtle font-normal">—</span>}
                       </td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-ink">
+                      <td className="py-2.5 px-4 text-right tabular-nums text-ink border-l border-hairline">
                         {arpu > 0 ? `₴${arpu.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
                       </td>
-                      <td className="py-2.5 text-right tabular-nums text-ink font-medium">₴{r.cumulative.toLocaleString("uk-UA")}</td>
+                      <td className="py-2.5 pl-4 text-right tabular-nums text-ink font-medium border-l border-hairline">₴{r.cumulative.toLocaleString("uk-UA")}</td>
                     </tr>
                   );
                 })}
@@ -268,10 +270,10 @@ export default function Dashboard() {
               <tfoot>
                 <tr className="border-t-2 border-hairline bg-surface-subtle font-semibold">
                   <td className="py-2.5 pr-4 text-ink">Всього</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums text-success">₴{revTotal.toLocaleString("uk-UA")}</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums text-primary">{regTotal}</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums text-ink">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
-                  <td className="py-2.5 text-right tabular-nums text-ink">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-2.5 px-4 text-right tabular-nums text-success border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-2.5 px-4 text-right tabular-nums text-primary border-l border-hairline">{regTotal}</td>
+                  <td className="py-2.5 px-4 text-right tabular-nums text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
+                  <td className="py-2.5 pl-4 text-right tabular-nums text-ink border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
                 </tr>
               </tfoot>
             </table>
