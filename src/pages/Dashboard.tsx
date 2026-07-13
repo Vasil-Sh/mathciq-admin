@@ -4,8 +4,8 @@ import {
   ComposedChart, Line,
 } from "recharts";
 import {
-  Users, Wallet, TrendingUp, UserPlus, UserX, Shield, Clock, Zap,
-  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, Crown, RefreshCw,
+  Users, Wallet, TrendingUp, UserPlus, UserX, Shield,
+  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, RefreshCw,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { getDaysUntilExpiry } from "@/lib/adminUtils";
@@ -123,9 +123,13 @@ export default function Dashboard() {
   const revBest = [...revChartData].sort((a, b) => b.revenue - a.revenue)[0];
 
   let cum = 0;
-  const regChartData = allMonths.map((m) => {
+  // Find the last month that has any registration data — cumulative line stops there
+  let lastRegDataIdx = -1;
+  allMonths.forEach((m, i) => { if ((regByMonthLookup[m] || 0) > 0) lastRegDataIdx = i; });
+  const regChartData = allMonths.map((m, i) => {
     const count = regByMonthLookup[m] || 0;
-    return { month: m, label: formatMonthName(m), count, cumulative: (cum += count) };
+    if (count > 0) cum += count;
+    return { month: m, label: formatMonthName(m), count, cumulative: i <= lastRegDataIdx ? cum : null };
   });
   const regTotal = cum;
   const regBest = [...regChartData].sort((a, b) => b.count - a.count)[0];
@@ -308,99 +312,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Top users + Expiring subscriptions ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top users */}
-          <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-ink">Топ платники</h3>
-                <p className="text-xs text-muted mt-0.5">За загальним доходом</p>
-              </div>
-              {stats.topUsers.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-surface-hover rounded-full">
-                    <span className="text-xs font-bold text-ink">₴{stats.topUsers.reduce((s, u) => s + u.revenue, 0).toLocaleString("uk-UA")}</span>
-                    <span className="text-[10px] text-muted">разом</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-warning/10 rounded-full">
-                    <Crown className="h-3 w-3 text-warning" strokeWidth={2} />
-                    <span className="text-xs text-muted">топ-{stats.topUsers.length}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            {stats.topUsers.length === 0 ? (
-              <p className="text-sm text-muted py-8 text-center">Немає даних</p>
-            ) : (
-              (() => {
-                const topTotal = stats.topUsers.reduce((s, u) => s + u.revenue, 0);
-                return (
-                  <div className="space-y-2">
-                    {stats.topUsers.map((u, i) => {
-                      const pct = topTotal > 0 ? Math.round((u.revenue / topTotal) * 100) : 0;
-                      const days = getDaysUntilExpiry(u.endDate);
-                      const isActive = days >= 0;
-                      return (
-                        <div key={i} className={`p-3 rounded-xl bg-surface-subtle border-2 ${isActive ? "border-success/30" : "border-danger/30"}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-btn flex items-center justify-center text-xs font-bold shrink-0 bg-primary/10 text-primary">
-                                {i + 1}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-ink truncate">{u.username}</p>
-                                {u.telegram && <p className="text-xs text-subtle truncate">{u.telegram}</p>}
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0 ml-3 flex items-center gap-2">
-                              <div>
-                                <p className="text-sm font-semibold text-ink">₴{u.revenue.toLocaleString("uk-UA")}</p>
-                                <p className="text-[10px] text-muted">{pct}% від топ-{stats.topUsers.length}</p>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Progress bar */}
-                          <div className="relative w-full h-1.5 bg-surface-hover rounded-full overflow-hidden mb-2">
-                            <div
-                              className="absolute left-0 top-0 h-full rounded-full transition-all"
-                              style={{ width: `${pct}%`, backgroundColor: isActive ? "#22c55e" : "#ef4444" }}
-                            />
-                          </div>
-                          {/* Bottom row: status, end date */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                isActive ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-success" : "bg-danger"}`} />
-                                {isActive ? "Активна" : "Прострочена"}
-                              </span>
-                              {isActive && days <= 14 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning-bg text-warning">
-                                  <Clock className="h-2.5 w-2.5" strokeWidth={2} />
-                                  {days} {days === 1 ? "день" : days >= 2 && days <= 4 ? "дні" : "днів"}
-                                </span>
-                              )}
-                              {isActive && days > 14 && (
-                                <span className="text-[10px] text-subtle flex items-center gap-1">
-                                  <Zap className="h-2.5 w-2.5" strokeWidth={1.5} />
-                                  {days} днів
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-muted">до {u.endDate}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()
-            )}
-          </div>
-
-          {/* Expiring subscriptions */}
+        {/* ── Expiring subscriptions ── */}
+        <div className="grid grid-cols-1 gap-6">
         <div className="card-admin p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div>
