@@ -218,66 +218,63 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ── Data Tables: Revenue + Registrations by month ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Revenue table */}
-          <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div>
-                <h3 className="text-lg font-semibold text-ink">Дохід по місяцях</h3>
-                <p className="text-xs text-muted mt-0.5">₴{revTotal.toLocaleString("uk-UA")} всього</p>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline text-muted text-xs uppercase tracking-wider">
-                    <th className="text-left py-2 pr-4 font-medium">Місяць</th>
-                    <th className="text-right py-2 pr-4 font-medium">Дохід</th>
-                    <th className="text-right py-2 font-medium">Накопичено</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  {revChartData.filter(r => r.revenue > 0 || r.cumulative > 0).map((r) => (
-                    <tr key={r.month} className="hover:bg-surface-subtle transition-colors">
-                      <td className="py-2.5 pr-4 font-medium text-ink">{r.label}</td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-success font-semibold">₴{r.revenue.toLocaleString("uk-UA")}</td>
-                      <td className="py-2.5 text-right tabular-nums text-ink">₴{r.cumulative.toLocaleString("uk-UA")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* ── Combined Data Table ── */}
+        <div className="card-admin p-6">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h3 className="text-lg font-semibold text-ink">Дохід та реєстрації по місяцях</h3>
+              <p className="text-xs text-muted mt-0.5">
+                ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів · <span className="text-success">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
+              </p>
             </div>
           </div>
-
-          {/* Registrations table */}
-          <div className="card-admin p-6">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div>
-                <h3 className="text-lg font-semibold text-ink">Нові реєстрації</h3>
-                <p className="text-xs text-muted mt-0.5">{regTotal} всього</p>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline text-muted text-xs uppercase tracking-wider">
-                    <th className="text-left py-2 pr-4 font-medium">Місяць</th>
-                    <th className="text-right py-2 pr-4 font-medium">Нових</th>
-                    <th className="text-right py-2 font-medium">Накопичено</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  {regChartData.filter(r => r.count > 0 || (r.cumulative !== null && r.cumulative > 0)).map((r) => (
-                    <tr key={r.month} className="hover:bg-surface-subtle transition-colors">
-                      <td className="py-2.5 pr-4 font-medium text-ink">{r.label}</td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-primary font-semibold">{r.count}</td>
-                      <td className="py-2.5 text-right tabular-nums text-ink">{r.cumulative ?? "—"}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-hairline text-muted text-xs uppercase tracking-wider">
+                  <th className="text-left py-2.5 pr-4 font-semibold">Місяць</th>
+                  <th className="text-right py-2.5 pr-4 font-semibold">Дохід</th>
+                  <th className="text-right py-2.5 pr-4 font-semibold">Нових</th>
+                  <th className="text-right py-2.5 pr-4 font-semibold">ARPU</th>
+                  <th className="text-right py-2.5 font-semibold">Накопичено</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline">
+                {revChartData.map((r, i) => {
+                  const reg = regByMonthLookup[r.month] || 0;
+                  const arpu = reg > 0 ? Math.round(r.revenue / reg) : 0;
+                  const isCurrentMonth = r.month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+                  return (
+                    <tr key={r.month} className={`transition-colors ${isCurrentMonth ? "bg-primary/5" : "hover:bg-surface-subtle"}`}>
+                      <td className={`py-2.5 pr-4 font-medium text-ink ${isCurrentMonth ? "text-primary" : ""}`}>
+                        {isCurrentMonth && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2 align-middle" />}
+                        {r.label}
+                        {isCurrentMonth && <span className="text-[10px] text-primary ml-1.5 font-normal">поточний</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-success font-semibold">
+                        {r.revenue > 0 ? `₴${r.revenue.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-primary font-semibold">
+                        {reg > 0 ? reg : <span className="text-subtle font-normal">—</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-ink">
+                        {arpu > 0 ? `₴${arpu.toLocaleString("uk-UA")}` : <span className="text-subtle font-normal">—</span>}
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums text-ink font-medium">₴{r.cumulative.toLocaleString("uk-UA")}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-hairline bg-surface-subtle font-semibold">
+                  <td className="py-2.5 pr-4 text-ink">Всього</td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums text-success">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums text-primary">{regTotal}</td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums text-ink">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
+                  <td className="py-2.5 text-right tabular-nums text-ink">₴{revTotal.toLocaleString("uk-UA")}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
 
