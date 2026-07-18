@@ -13,6 +13,12 @@ function formatMonthName(m: string) {
   return UA_MONTHS[parseInt(mo, 10) - 1] ?? mo;
 }
 
+function formatMonthFull(m: string) {
+  const [y, mo] = m.split("-");
+  const month = UA_MONTHS[parseInt(mo, 10) - 1] ?? mo;
+  return `${month}ень ${y}`;
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,8 +119,7 @@ export default function Dashboard() {
   let revCum = 0;
   const revChartData = allMonths.map((m) => {
     const rev = revByMonthLookup[m] || 0;
-    const year = m.split("-")[0]?.slice(2);
-    return { month: m, label: `${formatMonthName(m)}'${year}`, revenue: rev, cumulative: (revCum += rev) };
+    return { month: m, label: formatMonthFull(m), revenue: rev, cumulative: (revCum += rev) };
   });
   const revTotal = revCum;
   const bestMonth = [...revChartData].filter(r => r.revenue > 0).sort((a, b) => b.revenue - a.revenue)[0] || null;
@@ -227,8 +232,8 @@ export default function Dashboard() {
             <div>
               <h3 className="text-lg font-semibold text-ink">Дохід та нові користувачі</h3>
               <p className="text-xs text-muted mt-0.5">
-                ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів · <span className="text-success">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
-                {bestMonth && <span className="ml-3">· <span className="font-medium">{bestMonth.label}</span> — <span className="text-success font-semibold">₴{bestMonth.revenue.toLocaleString("uk-UA")}</span></span>}
+                ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів ·{" "}
+                <span className="text-success font-medium">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
               </p>
             </div>
           </div>
@@ -238,9 +243,9 @@ export default function Dashboard() {
                 <tr className="border-b-2 border-hairline text-muted text-xs uppercase tracking-wider">
                   <th className="text-left py-2.5 pr-4 font-semibold">Місяць</th>
                   <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Дохід</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline w-16">Δ попер.</th>
+                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline w-20">Зміна</th>
                   <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Нові користувачі</th>
-                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Дохід / кор.</th>
+                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Дохід на кор.</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
@@ -253,32 +258,69 @@ export default function Dashboard() {
                     return { ...r, reg, arpu, pctChange };
                   });
                   const best = data.reduce((max, d) => d.revenue > max.revenue ? d : max, data[0]);
+                  const maxRev = best.revenue || 1;
                   return data.map((d) => {
                     const isCurrentMonth = d.month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-                    const isBestMonth = d.revenue > 0 && d.revenue === best.revenue;
+                    const revPct = d.revenue > 0 ? (d.revenue / maxRev) * 100 : 0;
+                    const arpuLevel = d.arpu > 0
+                      ? d.arpu >= 50 ? "high" : d.arpu >= 20 ? "mid" : "low"
+                      : null;
                     return (
-                      <tr key={d.month} className={`transition-colors ${isCurrentMonth ? "bg-primary/5" : "hover:bg-surface-subtle"}`}>
-                        <td className={`py-2.5 pr-4 font-medium text-ink ${isCurrentMonth ? "text-primary" : ""}`}>
-                          {isCurrentMonth && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2 align-middle" />}
-                          {d.label}
-                          {isCurrentMonth && <span className="text-[10px] text-primary ml-1.5 font-normal">поточний</span>}
-                          {isBestMonth && !isCurrentMonth && <span className="text-[10px] text-warning ml-1.5">🏆</span>}
+                      <tr
+                        key={d.month}
+                        className={`transition-colors group hover:bg-surface-subtle ${isCurrentMonth ? "bg-primary/[0.04]" : ""}`}
+                      >
+                        <td className="py-2.5 pr-4">
+                          <div className="flex items-center gap-2">
+                            {isCurrentMonth && (
+                              <span className="inline-block w-2 h-2 rounded-full bg-primary shrink-0" />
+                            )}
+                            {!isCurrentMonth && <span className="w-2 shrink-0" />}
+                            <span className={`font-medium ${isCurrentMonth ? "text-primary" : "text-ink"}`}>
+                              {d.label}
+                            </span>
+                            {isCurrentMonth && (
+                              <span className="text-[10px] text-primary/70 font-normal">— поточний</span>
+                            )}
+                          </div>
                         </td>
-                        <td className={`py-2.5 px-4 text-right tabular-nums border-l border-hairline ${d.revenue > 0 ? "text-success font-semibold" : "text-subtle font-normal"}`}>
-                          {d.revenue > 0 ? `₴${d.revenue.toLocaleString("uk-UA")}` : "—"}
+                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
+                          {d.revenue > 0 ? (
+                            <span className="text-success font-semibold">
+                              ₴{d.revenue.toLocaleString("uk-UA")}
+                            </span>
+                          ) : (
+                            <span className="text-subtle">—</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
                           {d.pctChange !== null ? (
-                            <span className={d.pctChange >= 0 ? "text-success" : "text-danger"}>
-                              {d.pctChange >= 0 ? "+" : ""}{d.pctChange}%
+                            <span className={`font-medium ${d.pctChange > 0 ? "text-success" : d.pctChange < 0 ? "text-danger" : "text-subtle"}`}>
+                              {d.pctChange > 0 ? "+" : ""}{d.pctChange}%
                             </span>
-                          ) : <span className="text-subtle">—</span>}
+                          ) : (
+                            <span className="text-subtle">—</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
-                          {d.reg > 0 ? <span className="text-primary font-semibold">{d.reg}</span> : <span className="text-subtle font-normal">—</span>}
+                          {d.reg > 0 ? (
+                            <span className="text-primary font-semibold">
+                              {d.reg}
+                            </span>
+                          ) : (
+                            <span className="text-subtle">—</span>
+                          )}
                         </td>
                         <td className="py-2.5 pl-4 text-right tabular-nums border-l border-hairline">
-                          {d.arpu > 0 ? <span className="text-ink font-medium">₴{d.arpu.toLocaleString("uk-UA")}</span> : <span className="text-subtle font-normal">—</span>}
+                          {d.arpu > 0 ? (
+                            <span className={`inline-flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full text-xs ${
+                              arpuLevel === "high" ? "bg-success-bg text-success" : arpuLevel === "mid" ? "bg-warning-bg text-warning" : "bg-danger-bg text-danger"
+                            }`}>
+                              ₴{d.arpu.toLocaleString("uk-UA")}
+                            </span>
+                          ) : (
+                            <span className="text-subtle">—</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -286,15 +328,136 @@ export default function Dashboard() {
                 })()}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-hairline bg-surface-subtle font-semibold text-xs">
-                  <td className="py-2.5 pr-4 text-ink">Всього</td>
-                  <td className="py-2.5 px-4 text-right tabular-nums text-success border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
-                  <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline text-subtle">—</td>
-                  <td className="py-2.5 px-4 text-right tabular-nums text-primary border-l border-hairline">{regTotal}</td>
-                  <td className="py-2.5 pl-4 text-right tabular-nums text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
+                <tr className="border-t-2 border-ink/20 bg-surface-hover text-sm">
+                  <td className="py-3 pr-4 font-bold text-ink">Всього</td>
+                  <td className="py-3 px-4 text-right tabular-nums font-bold text-success border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
+                  <td className="py-3 px-4 text-right tabular-nums font-bold border-l border-hairline text-subtle">—</td>
+                  <td className="py-3 px-4 text-right tabular-nums font-bold text-primary border-l border-hairline">{regTotal}</td>
+                  <td className="py-3 pl-4 text-right tabular-nums font-bold text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+
+        {/* ── 4-column grid: Plans, Conversion, Top Users, Recent users ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Plan Distribution */}
+          <div className="card-admin p-5 flex flex-col">
+            <h3 className="text-sm font-semibold text-ink mb-3">Тарифний розподіл</h3>
+            {!stats.planDistribution || stats.planDistribution.length === 0 ? (
+              <p className="text-xs text-muted">Немає даних</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.planDistribution
+                  .sort((a, b) => b.count - a.count)
+                  .map((p) => {
+                    const total = (stats.planDistribution || []).reduce((s, x) => s + x.count, 0);
+                    const pct = total > 0 ? Math.round((p.count / total) * 100) : 0;
+                    return (
+                      <div key={p.price}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-ink">₴{p.price.toLocaleString("uk-UA")}</span>
+                          <span className="text-xs text-muted">{p.count} кор. · {pct}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-surface-hover rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
+          {/* Conversion Rate */}
+          <div className="card-admin p-5 flex flex-col">
+            <h3 className="text-sm font-semibold text-ink mb-3">Конверсія</h3>
+            {(() => {
+              const conv = stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0;
+              const convColor = conv >= 80 ? "text-success" : conv >= 50 ? "text-warning" : "text-danger";
+              const churn = 100 - conv;
+              return (
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="text-center mb-4">
+                    <span className={`text-4xl font-extrabold tracking-tight ${convColor}`}>{conv}%</span>
+                    <p className="text-xs text-muted mt-1">активних з {stats.totalUsers}</p>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Активні</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
+                          <div className="h-full bg-success rounded-full" style={{ width: `${conv}%` }} />
+                        </div>
+                        <span className="text-success font-semibold w-6 text-right">{stats.activeUsers}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Неактивні</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
+                          <div className="h-full bg-danger rounded-full" style={{ width: `${churn}%` }} />
+                        </div>
+                        <span className="text-danger font-semibold w-6 text-right">{stats.inactiveUsers}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Адміни</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
+                          <div className="h-full bg-warning rounded-full" style={{ width: `${stats.totalUsers > 0 ? Math.round((stats.adminUsers / stats.totalUsers) * 100) : 0}%` }} />
+                        </div>
+                        <span className="text-warning font-semibold w-6 text-right">{stats.adminUsers}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Top Revenue Users */}
+          <div className="card-admin p-5 flex flex-col">
+            <h3 className="text-sm font-semibold text-ink mb-3">Топ дохід</h3>
+            {stats.topUsers.length === 0 ? (
+              <p className="text-xs text-muted">Немає даних</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.topUsers.map((u, i) => (
+                  <div key={u.username} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-muted w-4 shrink-0">{i + 1}</span>
+                      <span className="text-sm font-medium text-ink truncate">{u.username}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-success shrink-0 ml-2">₴{u.revenue.toLocaleString("uk-UA")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Registrations */}
+          <div className="card-admin p-5 flex flex-col">
+            <h3 className="text-sm font-semibold text-ink mb-3">Останні реєстрації</h3>
+            {!stats.recentRegistrations || stats.recentRegistrations.length === 0 ? (
+              <p className="text-xs text-muted">Немає даних</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.recentRegistrations.map((u, i) => (
+                  <div key={u.username + i} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-ink truncate">{u.username}</span>
+                        <p className="text-[10px] text-muted">{u.date}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-ink shrink-0 ml-2">₴{u.price?.toLocaleString("uk-UA") ?? "—"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

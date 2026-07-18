@@ -7,6 +7,8 @@ export interface AdminStats {
   registrationsByMonth: { month: string; count: number }[];
   topUsers: { username: string; telegram: string; revenue: number; endDate: string }[];
   expiringSubscriptions: { username: string; telegram: string; endDate: string; priceMonth: number }[];
+  recentRegistrations: { username: string; date: string; price: number }[];
+  planDistribution: { price: number; count: number }[];
 }
 
 export async function fetchAdminStats(): Promise<AdminStats> {
