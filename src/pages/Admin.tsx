@@ -273,7 +273,7 @@ export default function Admin() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-3 border-t border-hairline bg-surface-subtle">
-              <p className="text-xs text-muted">Сторінка {page} з {totalPages} · Всього {displayedUsers.length}</p>
+              <p className="text-xs text-muted">Сторінка {page} з {totalPages}</p>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-8 px-3 text-xs">← Назад</Button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
