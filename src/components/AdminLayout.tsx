@@ -45,7 +45,7 @@ export default function AdminLayout() {
     <div className="app-content">
       <header className="workspace-header">
         <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="mobile-menu" aria-label="Відкрити навігацію"><Menu size={21} /></button><span className="hidden sm:inline text-muted">Робочий простір</span><ChevronRight size={14} className="hidden sm:block text-subtle" /><span className="font-medium">{currentPage}</span></div>
-        <div className="flex items-center gap-3"><span className="header-role"><ShieldCheck size={14} />Адміністратор</span><span className="header-avatar" title={user?.username}>{user?.username?.[0]?.toUpperCase() || "A"}</span></div>
+        <div className="flex items-center gap-3"><span className="header-role">Адміністратор</span><span className="header-avatar" title={user?.username}>{user?.username?.[0]?.toUpperCase() || "A"}</span></div>
       </header>
       <main id="main-content" className="min-w-0"><Outlet /></main>
       <footer className="workspace-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>

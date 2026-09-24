@@ -209,22 +209,19 @@ export default function Dashboard() {
         </div>
 
         {/* ── KPI Cards ── */}
-        <div className="kpi-grid">
+        <div className="dashboard-summary-grid">
           {[
-            { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс",  value: `₴${kpiMrr.toLocaleString("uk-UA")}`,                    sub: isAll ? "щомісячний дохід" : "обраний місяць", color: "text-success", bg: "!bg-success-bg" },
-            { icon: Users,     label: "Активні",     value: stats.activeUsers,                                                        sub: `з ${stats.totalUsers}`,                       color: "text-primary", bg: "!bg-surface-hover" },
-            { icon: UserPlus,  label: isAll ? "Нових за міс" : "Нові за міс", value: kpiNewMonth,                                     sub: isAll ? "цей місяць" : currLabel,              color: "text-success", bg: "!bg-success-bg" },
-            { icon: Shield,    label: "Адмінів",      value: stats.adminUsers,                                                        sub: "в системі",                                    color: "text-warning", bg: "!bg-warning-bg" },
-            { icon: UserX,     label: "Неактивні",    value: stats.inactiveUsers,                                                     sub: "прострочені",                                  color: "text-danger",  bg: "!bg-danger-bg" },
-          ].map(({ icon: Icon, label, value, sub, color, bg }) => (
-            <div key={label} className="card-admin kpi-card">
-              <div className="kpi-top"><p className="kpi-label">{label}</p><div className={`kpi-icon ${bg} ${color}`}>
-                <Icon className="h-4 w-4" strokeWidth={1.7} />
-              </div>
-              </div>
-              <p className="kpi-value">{value}</p>
-              {sub && <p className="kpi-note">{sub}</p>}
-            </div>
+            { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс", value: `₴${kpiMrr.toLocaleString("uk-UA")}`, note: isAll ? "щомісячний дохід" : "обраний місяць", tone: "user-summary--green" },
+            { icon: Users,    label: "Активні",     value: stats.activeUsers,                       note: `з ${stats.totalUsers}`,                    tone: "" },
+            { icon: UserPlus, label: isAll ? "Нових за міс" : "Нові за міс", value: kpiNewMonth,   note: isAll ? "цей місяць" : currLabel,              tone: "user-summary--green" },
+            { icon: Shield,   label: "Адмінів",      value: stats.adminUsers,                       note: "в системі",                                  tone: "user-summary--amber" },
+            { icon: UserX,    label: "Неактивні",    value: stats.inactiveUsers,                    note: "прострочені",                                tone: "user-summary--rose" },
+          ].map(({ icon: Icon, label, value, note, tone }) => (
+            <section key={label} className={`card-admin user-summary ${tone}`}>
+              <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
+              <strong className="user-summary-value">{value}</strong>
+              <p className="user-summary-note"><span />{note}</p>
+            </section>
           ))}
         </div>
 
