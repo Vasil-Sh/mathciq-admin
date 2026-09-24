@@ -122,8 +122,8 @@
   .report-title { display:flex; flex-direction:column; gap:5px; flex:1; min-width:0; }
   .report-title strong { font-size:14px; font-weight:650; }
   .report-title > span { color:#79869b; font-size:11px; line-height:1.5; }
-  .report-count { padding:5px 9px; border-radius:6px; background:#f2f5fa; color:#77859b; font-size:10px; white-space:nowrap; }
-  .report-toggle { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1px solid #e5ebf4; border-radius:8px; color:#647897; font-size:10px; }
+  .report-count { padding:5px 9px; border-radius:6px; background:#eaf0ff; color:#4278f5; font-size:10px; font-weight:600; white-space:nowrap; }
+  .report-toggle { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1px solid #4278f5; border-radius:8px; color:#4278f5; font-size:10px; font-weight:600; background:#ffffff; }
   .report-close-label { display:none; }
   .report-panel[open] .report-open-label { display:none; }
   .report-panel[open] .report-close-label { display:inline; }
@@ -190,7 +190,7 @@
   .panel-footer-link { margin-top:auto; display:flex; align-items:center; justify-content:center; gap:7px; padding:14px; border-top:1px solid #edf1f7; font-size:11px; color:#5b7fca; background:#fafbfe; }
   .panel-footer-link:hover { background:#eef3ff; }
   .expiry-panel { overflow:hidden; }
-  .period-label { display:flex; align-items:center; gap:6px; font-size:10px; color:#71829d; padding:7px 10px; border:1px solid #e5ebf5; border-radius:7px; white-space:nowrap; }
+  .period-label { display:flex; align-items:center; gap:6px; font-size:10px; font-weight:600; color:#b07820; padding:7px 10px; border:1px solid #e5b45f; background:#fff7e8; border-radius:7px; white-space:nowrap; }
   .expiry-clear { display:flex; align-items:center; gap:16px; margin:0 22px 22px; padding:22px; border:1px solid #dceee7; background:#f5fbf8; border-radius:12px; }
   .expiry-check { display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:50%; background:#e4f3ec; color:#369473; flex-shrink:0; }
   .expiry-clear h3 { font-size:13px; font-weight:600; color:#376750; }
