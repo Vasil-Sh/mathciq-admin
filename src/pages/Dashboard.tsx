@@ -1,10 +1,12 @@
+import DashboardDetails from "@/components/DashboardDetails";
 import { useEffect, useState } from "react";
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Users, Wallet, UserPlus, UserX, Shield,
-  Loader2, AlertTriangle, MoveUpRight, Filter, CheckCircle, RefreshCw,
+  Loader2, AlertTriangle, MoveUpRight, Filter, RefreshCw,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
-import { getDaysUntilExpiry } from "@/lib/adminUtils";
+
 
 const UA_MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 
@@ -15,8 +17,7 @@ function formatMonthName(m: string) {
 
 function formatMonthFull(m: string) {
   const [y, mo] = m.split("-");
-  const month = UA_MONTHS[parseInt(mo, 10) - 1] ?? mo;
-  return `${month}ень ${y}`;
+  return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
 }
 
 export default function Dashboard() {
@@ -36,7 +37,7 @@ export default function Dashboard() {
       setError("");
       setLastUpdate(new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }));
     } catch (e) {
-      if (showLoading) setError((e as Error).message || "Помилка завантаження");
+      setError((e as Error).message || "Помилка завантаження");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -99,7 +100,7 @@ export default function Dashboard() {
 
   // Month filter pills
   const monthOptions = [
-    { key: "all", label: "Всі", reg: stats.registrationsByMonth.reduce((s, r) => s + r.count, 0), rev: stats.totalRevenue },
+    { key: "all", label: "Всі", year: "", reg: stats.registrationsByMonth.reduce((s, r) => s + r.count, 0), rev: stats.totalRevenue },
     ...allMonths.map(m => ({ key: m, label: formatMonthName(m), year: m.split("-")[0]?.slice(2), reg: regByMonth[m] || 0, rev: revByMonth[m] || 0 })),
   ];
 
@@ -117,7 +118,7 @@ export default function Dashboard() {
   const regByMonthLookup: Record<string, number> = Object.fromEntries(filteredReg.map(r => [r.month, r.count]));
 
   let revCum = 0;
-  const revChartData = allMonths.map((m) => {
+  const revChartData = allMonths.filter(m => monthFilter_ === "all" || m <= monthFilter_).map((m) => {
     const rev = revByMonthLookup[m] || 0;
     return { month: m, label: formatMonthFull(m), revenue: rev, cumulative: (revCum += rev) };
   });
@@ -143,13 +144,14 @@ export default function Dashboard() {
     : `${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`;
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <div className="max-w-[1200px] mx-auto px-6 lg:px-8 py-8 space-y-8">
+    <div className="dashboard-page">
+      <div className="page-container space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-ink">Дашборд</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-muted">Огляд ключових показників платформи</p>
+            <p className="page-eyebrow">АНАЛІТИКА ПЛАТФОРМИ</p>
+            <h1 className="page-title">Дашборд</h1>
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2">
+              <p className="text-xs text-muted">Ваш бізнес у цифрах. Усе під контролем.</p>
               {lastUpdate && (
                 <span className="text-xs text-subtle">· Оновлено: {lastUpdate}</span>
               )}
@@ -207,7 +209,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── KPI Cards ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="kpi-grid">
           {[
             { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс",  value: `₴${kpiMrr.toLocaleString("uk-UA")}`,                    sub: isAll ? "щомісячний дохід" : "обраний місяць", color: "text-success", bg: "!bg-success-bg" },
             { icon: Users,     label: "Активні",     value: stats.activeUsers,                                                        sub: `з ${stats.totalUsers}`,                       color: "text-primary", bg: "!bg-surface-hover" },
@@ -215,330 +217,37 @@ export default function Dashboard() {
             { icon: Shield,    label: "Адмінів",      value: stats.adminUsers,                                                        sub: "в системі",                                    color: "text-warning", bg: "!bg-warning-bg" },
             { icon: UserX,     label: "Неактивні",    value: stats.inactiveUsers,                                                     sub: "прострочені",                                  color: "text-danger",  bg: "!bg-danger-bg" },
           ].map(({ icon: Icon, label, value, sub, color, bg }) => (
-            <div key={label} className="card-admin p-5 flex flex-col gap-2">
-              <div className={`w-9 h-9 rounded-btn ${bg} flex items-center justify-center`}>
-                <Icon className={`h-[18px] w-[18px] ${color}`} strokeWidth={1.5} />
+            <div key={label} className="card-admin kpi-card">
+              <div className="kpi-top"><p className="kpi-label">{label}</p><div className={`kpi-icon ${bg} ${color}`}>
+                <Icon className="h-4 w-4" strokeWidth={1.7} />
               </div>
-              <p className="text-xs text-muted">{label}</p>
-              <p className="text-xl font-bold text-ink tracking-tight">{value}</p>
-              {sub && <p className="text-xs text-subtle">{sub}</p>}
+              </div>
+              <p className="kpi-value">{value}</p>
+              {sub && <p className="kpi-note">{sub}</p>}
             </div>
           ))}
         </div>
 
-        {/* ── Revenue & Users Table ── */}
-        <div className="card-admin p-6">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div>
-              <h3 className="text-lg font-semibold text-ink">Дохід та нові користувачі</h3>
-              <p className="text-xs text-muted mt-0.5">
-                ₴{revTotal.toLocaleString("uk-UA")} всього · {regTotal} користувачів ·{" "}
-                <span className="text-success font-medium">ARPU ₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</span>
-              </p>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-hairline text-muted text-xs uppercase tracking-wider">
-                  <th className="text-left py-2.5 pr-4 font-semibold">Місяць</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Дохід</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline w-20">Зміна</th>
-                  <th className="text-right py-2.5 px-4 font-semibold border-l border-hairline">Нові користувачі</th>
-                  <th className="text-right py-2.5 pl-4 font-semibold border-l border-hairline">Дохід на кор.</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-hairline">
-                {(() => {
-                  const data = revChartData.map((r, i) => {
-                    const reg = regByMonthLookup[r.month] || 0;
-                    const arpu = reg > 0 ? Math.round(r.revenue / reg) : 0;
-                    const prevRev = i > 0 ? revChartData[i - 1].revenue : 0;
-                    const pctChange = i > 0 && prevRev > 0 ? Math.round(((r.revenue - prevRev) / prevRev) * 100) : null;
-                    return { ...r, reg, arpu, pctChange };
-                  });
-                  const best = data.reduce((max, d) => d.revenue > max.revenue ? d : max, data[0]);
-                  const maxRev = best.revenue || 1;
-                  return data.map((d) => {
-                    const isCurrentMonth = d.month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-                    const revPct = d.revenue > 0 ? (d.revenue / maxRev) * 100 : 0;
-                    const arpuLevel = d.arpu > 0
-                      ? d.arpu >= 50 ? "high" : d.arpu >= 20 ? "mid" : "low"
-                      : null;
-                    return (
-                      <tr
-                        key={d.month}
-                        className={`transition-colors group hover:bg-surface-subtle ${isCurrentMonth ? "bg-primary/[0.04]" : ""}`}
-                      >
-                        <td className="py-2.5 pr-4">
-                          <div className="flex items-center gap-2">
-                            {isCurrentMonth && (
-                              <span className="inline-block w-2 h-2 rounded-full bg-primary shrink-0" />
-                            )}
-                            {!isCurrentMonth && <span className="w-2 shrink-0" />}
-                            <span className={`font-medium ${isCurrentMonth ? "text-primary" : "text-ink"}`}>
-                              {d.label}
-                            </span>
-                            {isCurrentMonth && (
-                              <span className="text-[10px] text-primary/70 font-normal">— поточний</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
-                          {d.revenue > 0 ? (
-                            <span className="text-success font-semibold">
-                              ₴{d.revenue.toLocaleString("uk-UA")}
-                            </span>
-                          ) : (
-                            <span className="text-subtle">—</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
-                          {d.pctChange !== null ? (
-                            <span className={`font-medium ${d.pctChange > 0 ? "text-success" : d.pctChange < 0 ? "text-danger" : "text-subtle"}`}>
-                              {d.pctChange > 0 ? "+" : ""}{d.pctChange}%
-                            </span>
-                          ) : (
-                            <span className="text-subtle">—</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-4 text-right tabular-nums border-l border-hairline">
-                          {d.reg > 0 ? (
-                            <span className="text-primary font-semibold">
-                              {d.reg}
-                            </span>
-                          ) : (
-                            <span className="text-subtle">—</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 pl-4 text-right tabular-nums border-l border-hairline">
-                          {d.arpu > 0 ? (
-                            <span className={`inline-flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full text-xs ${
-                              arpuLevel === "high" ? "bg-success-bg text-success" : arpuLevel === "mid" ? "bg-warning-bg text-warning" : "bg-danger-bg text-danger"
-                            }`}>
-                              ₴{d.arpu.toLocaleString("uk-UA")}
-                            </span>
-                          ) : (
-                            <span className="text-subtle">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-ink/20 bg-surface-hover text-sm">
-                  <td className="py-3 pr-4 font-bold text-ink">Всього</td>
-                  <td className="py-3 px-4 text-right tabular-nums font-bold text-success border-l border-hairline">₴{revTotal.toLocaleString("uk-UA")}</td>
-                  <td className="py-3 px-4 text-right tabular-nums font-bold border-l border-hairline text-subtle">—</td>
-                  <td className="py-3 px-4 text-right tabular-nums font-bold text-primary border-l border-hairline">{regTotal}</td>
-                  <td className="py-3 pl-4 text-right tabular-nums font-bold text-ink border-l border-hairline">₴{regTotal > 0 ? Math.round(revTotal / regTotal).toLocaleString("uk-UA") : "—"}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+        <div className="analytics-grid">
+          <section className="card-admin chart-card" aria-label="Динаміка доходу">
+            <div className="flex items-start justify-between gap-3"><div><h2 className="panel-title">Динаміка доходу</h2><p className="panel-description">{isAll ? "За весь період" : `До ${formatMonthFull(monthFilter_)}`} · помісячно</p></div><span className="flex items-center gap-2 text-[10px] text-muted"><span className="legend-dot bg-primary" />Дохід</span></div>
+            <div className="mt-5 flex items-baseline gap-2"><strong className="text-[28px] font-semibold tracking-tight">₴{revTotal.toLocaleString("uk-UA")}</strong><span className="text-[11px] text-muted">за період</span></div>
+            {revChartData.length ? <div className="chart-frame"><ResponsiveContainer width="100%" height="100%"><AreaChart data={revChartData} margin={{ top: 10, right: 16, bottom: 0, left: 0 }} accessibilityLayer>
+              <defs><linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4278f5" stopOpacity={.22} /><stop offset="100%" stopColor="#4278f5" stopOpacity={.01} /></linearGradient></defs>
+              <CartesianGrid vertical={false} stroke="#eaf0f7" strokeDasharray="4 5" />
+              <XAxis dataKey="month" tickFormatter={m => `${formatMonthName(m)} '${m.slice(2,4)}`} axisLine={false} tickLine={false} tick={{ fill: "#7b8ba4", fontSize: 10 }} tickMargin={12} minTickGap={25} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: "#7b8ba4", fontSize: 10 }} width={48} tickFormatter={v => `₴${v}`} />
+              <Tooltip labelFormatter={label => formatMonthFull(String(label))} formatter={value => [`₴${Number(value).toLocaleString("uk-UA")}`, "Дохід"]} contentStyle={{ borderRadius: 12, border: "1px solid #e8edf5", fontSize: 12, boxShadow: "0 8px 24px #15244a12" }} />
+              <Area type="monotone" dataKey="revenue" stroke="#4278f5" strokeWidth={2.5} fill="url(#revenue-fill)" dot={{ r: 3, fill: "#4278f5", strokeWidth: 2, stroke: "white" }} activeDot={{ r: 5 }} isAnimationActive={false} />
+            </AreaChart></ResponsiveContainer></div> : <div className="chart-empty">Дані про дохід з’являться тут</div>}
+          </section>
+          <section className="card-admin chart-card activity-panel">
+            <header><h2 className="panel-title">Активність користувачів</h2><p className="panel-description">Поточний стан платформи</p></header>
+            <div className="activity-ring" style={{ background: `conic-gradient(#4278f5 ${stats.totalUsers ? Math.min(100, stats.activeUsers / stats.totalUsers * 100) : 0}%, #edf1f8 0)` }}><div className="activity-ring-center"><strong>{stats.totalUsers ? Math.round(stats.activeUsers / stats.totalUsers * 100) : 0}%</strong><span>активних</span></div></div>
+            <div><div className="legend-row"><span><i className="legend-dot bg-primary" />Активні</span><strong>{stats.activeUsers}</strong></div><div className="legend-row"><span><i className="legend-dot bg-slate-300" />Неактивні</span><strong>{stats.inactiveUsers}</strong></div><div className="legend-row border-t border-hairline mt-2 pt-3"><span>Всього користувачів</span><strong>{stats.totalUsers}</strong></div></div>
+          </section>
         </div>
-
-        {/* ── 4-column grid: Plans, Conversion, Top Users, Recent users ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Plan Distribution */}
-          <div className="card-admin p-5 flex flex-col">
-            <h3 className="text-sm font-semibold text-ink mb-3">Тарифний розподіл</h3>
-            {!stats.planDistribution || stats.planDistribution.length === 0 ? (
-              <p className="text-xs text-muted">Немає даних</p>
-            ) : (
-              <div className="space-y-2">
-                {stats.planDistribution
-                  .sort((a, b) => b.count - a.count)
-                  .map((p) => {
-                    const total = (stats.planDistribution || []).reduce((s, x) => s + x.count, 0);
-                    const pct = total > 0 ? Math.round((p.count / total) * 100) : 0;
-                    return (
-                      <div key={p.price}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-ink">₴{p.price.toLocaleString("uk-UA")}</span>
-                          <span className="text-xs text-muted">{p.count} кор. · {pct}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-surface-hover rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-
-          {/* Conversion Rate */}
-          <div className="card-admin p-5 flex flex-col">
-            <h3 className="text-sm font-semibold text-ink mb-3">Конверсія</h3>
-            {(() => {
-              const conv = stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0;
-              const convColor = conv >= 80 ? "text-success" : conv >= 50 ? "text-warning" : "text-danger";
-              const churn = 100 - conv;
-              return (
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-center mb-4">
-                    <span className={`text-4xl font-extrabold tracking-tight ${convColor}`}>{conv}%</span>
-                    <p className="text-xs text-muted mt-1">активних з {stats.totalUsers}</p>
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted">Активні</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
-                          <div className="h-full bg-success rounded-full" style={{ width: `${conv}%` }} />
-                        </div>
-                        <span className="text-success font-semibold w-6 text-right">{stats.activeUsers}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted">Неактивні</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
-                          <div className="h-full bg-danger rounded-full" style={{ width: `${churn}%` }} />
-                        </div>
-                        <span className="text-danger font-semibold w-6 text-right">{stats.inactiveUsers}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted">Адміни</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-surface-hover rounded-full overflow-hidden">
-                          <div className="h-full bg-warning rounded-full" style={{ width: `${stats.totalUsers > 0 ? Math.round((stats.adminUsers / stats.totalUsers) * 100) : 0}%` }} />
-                        </div>
-                        <span className="text-warning font-semibold w-6 text-right">{stats.adminUsers}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Top Revenue Users */}
-          <div className="card-admin p-5 flex flex-col">
-            <h3 className="text-sm font-semibold text-ink mb-3">Топ дохід</h3>
-            {stats.topUsers.length === 0 ? (
-              <p className="text-xs text-muted">Немає даних</p>
-            ) : (
-              <div className="space-y-2">
-                {stats.topUsers.map((u, i) => (
-                  <div key={u.username} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-muted w-4 shrink-0">{i + 1}</span>
-                      <span className="text-sm font-medium text-ink truncate">{u.username}</span>
-                    </div>
-                    <span className="text-sm font-semibold text-success shrink-0 ml-2">₴{u.revenue.toLocaleString("uk-UA")}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Registrations */}
-          <div className="card-admin p-5 flex flex-col">
-            <h3 className="text-sm font-semibold text-ink mb-3">Останні реєстрації</h3>
-            {!stats.recentRegistrations || stats.recentRegistrations.length === 0 ? (
-              <p className="text-xs text-muted">Немає даних</p>
-            ) : (
-              <div className="space-y-2">
-                {stats.recentRegistrations.map((u, i) => (
-                  <div key={u.username + i} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-success shrink-0" />
-                      <div className="min-w-0">
-                        <span className="text-sm font-medium text-ink truncate">{u.username}</span>
-                        <p className="text-[10px] text-muted">{u.date}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold text-ink shrink-0 ml-2">₴{u.price?.toLocaleString("uk-UA") ?? "—"}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Expiring subscriptions ── */}
-        <div className="grid grid-cols-1 gap-6">
-        <div className="card-admin p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-ink">Підписки, що закінчуються</h3>
-              <p className="text-xs text-muted mt-0.5">≤7 днів</p>
-            </div>
-            {stats.expiringSubscriptions.length > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 rounded-full">
-                  <span className="text-xs font-bold text-warning">₴{stats.expiringSubscriptions.reduce((s, u) => s + (u.priceMonth || 0), 0).toLocaleString("uk-UA")}</span>
-                  <span className="text-[10px] text-muted">під ризиком</span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-warning-bg rounded-full">
-                  <AlertTriangle className="h-3 w-3 text-warning" strokeWidth={2} />
-                  <span className="text-xs font-bold text-warning">{stats.expiringSubscriptions.length}</span>
-                  <span className="text-[10px] text-muted">{stats.expiringSubscriptions.length === 1 ? "підписка" : stats.expiringSubscriptions.length >= 2 && stats.expiringSubscriptions.length <= 4 ? "підписки" : "підписок"}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          {stats.expiringSubscriptions.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-success-bg flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-success" strokeWidth={1.5} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-ink">Все добре!</p>
-                <p className="text-xs text-muted mt-1">Усі підписки активні, найближчі 7 днів — без ризиків</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {stats.expiringSubscriptions
-                .slice()
-                .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
-                .map((s, i) => {
-                const daysLeft = Math.ceil((new Date(s.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                const isUrgent = daysLeft <= 3;
-                const pctLeft = Math.max(0, Math.min(100, Math.round((daysLeft / 7) * 100)));
-                return (
-                  <div key={i} className={`p-3 rounded-xl border-2 ${isUrgent ? "bg-danger-bg/20 border-danger/30" : "bg-warning-bg/20 border-warning/20"}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${isUrgent ? "bg-danger-bg text-danger" : "bg-warning-bg text-warning"}`}>
-                          {daysLeft}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-ink truncate">{s.username}</p>
-                          {s.telegram && <p className="text-xs text-subtle truncate">{s.telegram}</p>}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 ml-3">
-                        <p className={`text-sm font-semibold ${isUrgent ? "text-danger" : "text-warning"}`}>{s.endDate}</p>
-                        <p className="text-xs text-subtle">₴{Number(s.priceMonth || 0).toLocaleString("uk-UA")}/міс</p>
-                      </div>
-                    </div>
-                    {/* Days-left progress bar */}
-                    <div className="relative w-full h-1.5 bg-surface-hover rounded-full overflow-hidden mb-2">
-                      <div
-                        className={`absolute left-0 top-0 h-full rounded-full transition-all ${isUrgent ? "bg-danger" : "bg-warning"}`}
-                        style={{ width: `${pctLeft}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[10px] font-medium ${isUrgent ? "text-danger" : "text-warning"}`}>
-                        {daysLeft <= 0 ? "🔴 Прострочена сьогодні" : daysLeft === 1 ? "⚠️ Залишився 1 день!" : `Залишилось ${daysLeft} ${daysLeft >= 2 && daysLeft <= 4 ? "дні" : "днів"}`}
-                      </span>
-                      <span className="text-[10px] text-muted">{pctLeft}% періоду</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        </div>
+        <DashboardDetails stats={stats} months={revChartData} registrations={regByMonthLookup} revenueTotal={revTotal} registrationTotal={regTotal} />
       </div>
     </div>
   );

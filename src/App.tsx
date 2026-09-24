@@ -1,9 +1,10 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LoginPage from "@/pages/LoginPage";
-import Dashboard from "@/pages/Dashboard";
-import Admin from "@/pages/Admin";
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Admin = lazy(() => import("@/pages/Admin"));
 import AdminLayout from "@/components/AdminLayout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -19,8 +20,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/users" element={<Admin />} />
+        <Route path="/dashboard" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження аналітики…</div>}><Dashboard /></Suspense>} />
+        <Route path="/users" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження користувачів…</div>}><Admin /></Suspense>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

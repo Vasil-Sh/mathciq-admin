@@ -156,11 +156,10 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <div className="max-w-[1200px] mx-auto px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-ink">Користувачі</h2>
-          <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="!bg-success-bg !text-success !border !border-green-200 hover:!bg-green-100 !shadow-none">
+    <div className="users-page">
+      <div className="page-container space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-4"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
+          <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
             <Plus className="h-4 w-4" />Додати користувача
           </Button>
         </div>
@@ -182,13 +181,18 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[{ icon: Users, label: "Всього", value: users.length, color: "text-primary" }, { icon: CheckCircle, label: "Активні", value: activeUsers, color: "text-success" }, { icon: Crown, label: "Адміни", value: adminUsers, color: "text-warning" }, { icon: XCircle, label: "Неактивні", value: inactiveUsers, color: "text-danger" }].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="card-admin p-6 flex flex-col gap-3">
-              <Icon className={`h-5 w-5 ${color}`} strokeWidth={1.5} />
-              <div><p className="text-xs text-muted uppercase tracking-wider">{label}</p><p className="text-4xl font-bold text-ink mt-1 tracking-tight">{value}</p></div>
-            </div>
+        <div className="users-summary-grid">
+          {[
+            { icon: Users, label: "Всього користувачів", value: users.length, note: "Усі облікові записи", tone: "user-summary--blue" },
+            { icon: CheckCircle, label: "Активні", value: activeUsers, note: "З активною підпискою", tone: "user-summary--green" },
+            { icon: Crown, label: "Адміністратори", value: adminUsers, note: "Мають права керування", tone: "user-summary--amber" },
+            { icon: XCircle, label: "Неактивні", value: inactiveUsers, note: "Підписка неактивна", tone: "user-summary--rose" },
+          ].map(({ icon: Icon, label, value, note, tone }) => (
+            <section key={label} className={`card-admin user-summary ${tone}`}>
+              <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
+              <strong className="user-summary-value">{value}</strong>
+              <p className="user-summary-note"><span />{note}</p>
+            </section>
           ))}
         </div>
 
@@ -205,12 +209,12 @@ export default function Admin() {
             <div className="mt-5 flex flex-wrap items-center gap-3 rounded-btn bg-surface-subtle border border-hairline p-3">
               <div className="inline-flex rounded-btn bg-surface p-1 border border-hairline shadow-sm">
                 {[{ key: "all" as StatusFilter, label: "Всі", count: users.length }, { key: "active" as StatusFilter, label: "Активні", count: activeUsers }, { key: "expired" as StatusFilter, label: "Прострочені", count: inactiveUsers }].map(tab => (
-                  <button key={tab.key} onClick={() => setStatusFilter(tab.key)} className={`px-4 py-2 rounded-btn text-sm font-medium transition-all ${statusFilter === tab.key ? "bg-primary text-white shadow-primary-glow" : "text-muted hover:text-body hover:bg-surface-subtle"}`}>{tab.label}<span className={`ml-2 text-xs font-semibold ${statusFilter === tab.key ? "text-white/70" : "text-subtle"}`}>{tab.count}</span></button>
+                  <button key={tab.key} onClick={() => setStatusFilter(tab.key)} className={`px-3 py-2 rounded-btn text-xs font-medium transition-all ${statusFilter === tab.key ? "bg-primary text-white shadow-primary-glow" : "text-muted hover:text-body hover:bg-surface-subtle"}`}>{tab.label}<span className={`ml-2 text-xs font-semibold ${statusFilter === tab.key ? "text-white/70" : "text-subtle"}`}>{tab.count}</span></button>
                 ))}
               </div>
               <div className="relative flex-1 min-w-[180px] max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-subtle" />
-                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Пошук..." className="w-full h-10 pl-9 pr-9 rounded-input border border-hairline bg-surface text-ink text-sm placeholder:text-subtle focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors" />
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} aria-label="Пошук користувачів" placeholder="Логін або Telegram..." className="w-full h-10 pl-9 pr-9 rounded-input border border-hairline bg-surface text-ink text-sm placeholder:text-subtle focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors" />
                 {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-ink"><X className="h-4 w-4" /></button>}
               </div>
               <Select value={sortDirection ?? "none"} onValueChange={v => setSortDirection(v === "none" ? null : v as SortDirection)}>
@@ -284,7 +288,7 @@ export default function Admin() {
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={handleCloseAddDialog}>
-        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-hidden" onInteractOutside={(e) => { if (lastCreatedPassword) e.preventDefault(); }}>
+        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-x-hidden overflow-y-auto" onInteractOutside={(e) => { if (lastCreatedPassword) e.preventDefault(); }}>
           <div className="px-6 pt-6 pb-4">
             <DialogTitle className="flex items-center gap-2.5 mb-1.5">
               <div className={`w-9 h-9 rounded-btn flex items-center justify-center ${lastCreatedPassword ? 'bg-info-bg' : 'bg-success-bg'}`}>
@@ -324,15 +328,15 @@ export default function Admin() {
           ) : (
             <>
           <div className="space-y-5 py-4 px-6 bg-canvas border-b border-hairline">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label>Telegram <span className="text-danger">*</span></Label><Input value={newUser.telegram} onChange={e => setNewUser({ ...newUser, telegram: e.target.value })} placeholder="@username" /></div>
               <div className="space-y-1.5"><Label>Username <span className="text-danger">*</span></Label><Input value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} placeholder="login" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label>Ціна / місяць (грн)</Label><Input value={newUser.priceMonth} onChange={e => setNewUser({ ...newUser, priceMonth: e.target.value })} placeholder="100" /></div>
               <div className="space-y-1.5"><Label>Адміністратор</Label><Select value={newUser.isAdmin ? "yes" : "no"} onValueChange={v => setNewUser({ ...newUser, isAdmin: v === "yes" })}><SelectTrigger><SelectValue placeholder="Оберіть" /></SelectTrigger><SelectContent><SelectItem value="yes">Так</SelectItem><SelectItem value="no">Ні</SelectItem></SelectContent></Select></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label>Дата початку</Label><DatePicker value={newUser.startDate} onChange={val => setNewUser({ ...newUser, startDate: val })} placeholder="Оберіть дату" /></div>
               <div className="space-y-1.5"><Label>Дата закінчення</Label><DatePicker value={newUser.endDate} onChange={val => setNewUser({ ...newUser, endDate: val })} placeholder="Оберіть дату" /></div>
             </div>
@@ -348,7 +352,7 @@ export default function Admin() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={handleCloseEditDialog}>
-        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-hidden" onInteractOutside={(e) => { if (lastResetPassword) e.preventDefault(); }}>
+        <DialogContent className="max-w-[700px] !p-0 !gap-0 overflow-x-hidden overflow-y-auto" onInteractOutside={(e) => { if (lastResetPassword) e.preventDefault(); }}>
           <div className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between mb-1.5">
               <DialogTitle className="flex items-center gap-2.5">
@@ -395,15 +399,15 @@ export default function Admin() {
             <>
           {editingUser && (
             <div className="space-y-5 py-4 px-6 bg-canvas border-b border-hairline">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5"><Label>Telegram</Label><Input value={editingUser.telegram} onChange={e => setEditingUser({ ...editingUser, telegram: e.target.value })} /></div>
                 <div className="space-y-1.5"><Label>Username</Label><Input value={editingUser.username} onChange={e => setEditingUser({ ...editingUser, username: e.target.value })} /></div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5"><Label>Ціна / місяць (грн)</Label><Input value={editingUser.priceMonth} onChange={e => setEditingUser({ ...editingUser, priceMonth: e.target.value })} /></div>
                 <div className="space-y-1.5"><Label>Адміністратор</Label><Select value={editingUser.isAdmin ? "yes" : "no"} onValueChange={v => setEditingUser({ ...editingUser, isAdmin: v === "yes" })}><SelectTrigger><SelectValue placeholder="Оберіть" /></SelectTrigger><SelectContent><SelectItem value="yes">Так</SelectItem><SelectItem value="no">Ні</SelectItem></SelectContent></Select></div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5"><Label>Дата початку</Label><DatePicker value={editingUser.startDate} onChange={val => setEditingUser({ ...editingUser, startDate: val })} /></div>
                 <div className="space-y-1.5"><Label>Дата закінчення</Label><DatePicker value={editingUser.endDate} onChange={val => setEditingUser({ ...editingUser, endDate: val })} /></div>
               </div>
@@ -420,7 +424,7 @@ export default function Admin() {
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md !p-0 !gap-0 overflow-hidden">
+        <DialogContent className="max-w-md !p-0 !gap-0 overflow-x-hidden overflow-y-auto">
           <div className="px-6 pt-6 pb-6">
             <DialogTitle className="flex items-center gap-2.5 mb-1.5">
               <div className="w-9 h-9 rounded-btn bg-danger-bg flex items-center justify-center"><Trash2 className="h-5 w-5 text-danger" /></div>
