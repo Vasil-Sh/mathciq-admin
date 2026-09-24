@@ -16,7 +16,8 @@
   .brand { display:flex; align-items:center; gap:11px; color:white; font-size:23px; font-weight:650; letter-spacing:-.8px; }
   .brand-mark { display:flex; align-items:center; justify-content:center; width:39px; height:39px; border-radius:12px; background:#4278f5; color:white; }
   .brand small { display:block; margin-top:3px; color:#8491ac; font-size:8px; letter-spacing:2px; font-weight:600; }
-  .sidebar-section-label { margin:49px 12px 14px; color:#7b89a6; font-size:9px; font-weight:600; letter-spacing:1.6px; }
+  .sidebar-section-label { margin:22px 12px 14px; color:#7b89a6; font-size:9px; font-weight:600; letter-spacing:1.6px; }
+  .sidebar-divider { height:1px; margin:22px -18px 0; background:#ffffff14; }
   .sidebar-link { display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:9px; color:#a5b2cc; font-size:13px; transition:background .15s,color .15s; }
   .sidebar-link:hover { background:#ffffff09; color:white; }
   .sidebar-link.is-active { background:#4278f5; color:white; box-shadow:0 4px 14px #0002; }

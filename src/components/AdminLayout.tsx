@@ -21,6 +21,7 @@ export default function AdminLayout() {
       <span className="brand-mark"><ChartNoAxesCombined size={23} /></span>
       <span>Match<span className="text-blue-400">IQ</span><small>ADMIN WORKSPACE</small></span>
     </Link>
+    <div className="sidebar-divider" />
     <div className="sidebar-section-label">РОБОЧИЙ ПРОСТІР</div>
     <nav aria-label="Основна навігація" className="space-y-1.5">
       {navigation.map(({ label, href, icon: Icon }) => <Link key={href} to={href} onClick={close} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
@@ -28,7 +29,6 @@ export default function AdminLayout() {
       </Link>)}
     </nav>
     <div className="sidebar-bottom">
-      <div className="sidebar-note"><ShieldCheck size={20} className="text-blue-400 shrink-0" /><div><p>Центр керування</p><span>Користувачі, підписки та аналітика в одному місці.</span></div></div>
       <button className="sidebar-exit" onClick={() => { close?.(); setLogoutOpen(true); }}><LogOut size={17} /><span>Вийти з акаунта</span></button>
     </div>
   </>;
