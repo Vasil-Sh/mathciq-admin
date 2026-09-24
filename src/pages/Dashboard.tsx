@@ -9,10 +9,16 @@ import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 
 
 const UA_MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
+const UA_MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function formatMonthName(m: string) {
   const [y, mo] = m.split("-");
   return UA_MONTHS[parseInt(mo, 10) - 1] ?? mo;
+}
+
+function formatMonthFullName(m: string) {
+  const [y, mo] = m.split("-");
+  return UA_MONTHS_FULL[parseInt(mo, 10) - 1] ?? mo;
 }
 
 function formatMonthFull(m: string) {
@@ -140,8 +146,8 @@ export default function Dashboard() {
   const kpiNewMonth = isAll ? stats.newThisMonth : (regByMonth[monthFilter_] || 0);
 
   const currLabel = monthFilter_ === "all"
-    ? "Всі"
-    : `${formatMonthName(monthFilter_)}'${monthFilter_.split("-")[0]?.slice(2)}`;
+    ? "Всі місяці"
+    : `${formatMonthFullName(monthFilter_)} ${monthFilter_.split("-")[0]}`;
 
   return (
     <div className="dashboard-page">
@@ -161,18 +167,18 @@ export default function Dashboard() {
             <button
               onClick={() => fetchData(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-hairline bg-white text-sm text-body hover:border-primary/60 hover:text-ink transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-primary-glow"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
-              <span className="text-xs font-medium">Оновити</span>
+              <span className="text-sm font-medium">Оновити</span>
             </button>
           <div className="relative" data-filter-dropdown>
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-hairline bg-white text-sm text-body hover:border-primary/60 hover:text-ink transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm hover:bg-primary-hover transition-colors shadow-primary-glow"
             >
               <Filter className="h-3.5 w-3.5" strokeWidth={1.5} />
-              <span className="font-medium">{currLabel}</span>
+              <span className="text-sm font-medium">{currLabel}</span>
             </button>
 
             {filterOpen && (
@@ -211,7 +217,7 @@ export default function Dashboard() {
         {/* ── KPI Cards ── */}
         <div className="dashboard-summary-grid">
           {[
-            { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс", value: `₴${kpiMrr.toLocaleString("uk-UA")}`, note: isAll ? "щомісячний дохід" : "обраний місяць", tone: "user-summary--green" },
+            { icon: Wallet,   label: isAll ? "MRR" : "Дохід за міс", value: `₴${kpiMrr.toLocaleString("uk-UA")}`, note: isAll ? "щомісячний дохід" : currLabel, tone: "user-summary--green" },
             { icon: Users,    label: "Активні",     value: stats.activeUsers,                       note: `з ${stats.totalUsers}`,                    tone: "" },
             { icon: UserPlus, label: isAll ? "Нових за міс" : "Нові за міс", value: kpiNewMonth,   note: isAll ? "цей місяць" : currLabel,              tone: "user-summary--green" },
             { icon: Shield,   label: "Адмінів",      value: stats.adminUsers,                       note: "в системі",                                  tone: "user-summary--amber" },
