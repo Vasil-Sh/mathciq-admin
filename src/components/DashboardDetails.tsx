@@ -1,3 +1,4 @@
+import MonthlyReport from "./MonthlyReport";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownRight, ArrowUpRight, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, FileBarChart2, Layers3, Trophy, UserPlus, Clock3, Wallet, TrendingUp, Users } from "lucide-react";
@@ -33,47 +34,13 @@ function displayDate(value: string) {
 }
 
 export default function DashboardDetails({ stats, months, registrations, revenueTotal, registrationTotal }: Props) {
-  const maxRevenue = Math.max(1, ...months.map(m => m.revenue));
-  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const plans = [...(stats.planDistribution || [])].sort((a, b) => b.count - a.count);
   const planTotal = plans.reduce((total, plan) => total + plan.count, 0);
-  const arpu = registrationTotal > 0 ? Math.round(revenueTotal / registrationTotal) : null;
   const recent = stats.recentRegistrations || [];
   const expiring = [...stats.expiringSubscriptions].sort((a, b) => getDaysUntilExpiry(a.endDate) - getDaysUntilExpiry(b.endDate));
 
   return <>
-    <details className="card-admin report-panel">
-      <summary>
-        <span className="detail-panel-icon"><FileBarChart2 size={20} /></span>
-        <span className="report-title"><strong>Помісячний звіт</strong><span>Дохід, реєстрації та динаміка платформи</span></span>
-        <span className="report-count">{months.length} міс.</span>
-        <span className="report-toggle"><ChevronDown size={16} /></span>
-      </summary>
-      <div className="report-scroll" role="region" aria-label="Помісячний звіт — прокрутіть для перегляду всіх колонок" tabIndex={0}>
-        <table className="report-table">
-          <thead><tr><th scope="col"><span className="report-th"><CalendarDays size={13} />Місяць</span></th><th scope="col"><span className="report-th"><Wallet size={13} />Дохід</span></th><th scope="col"><span className="report-th"><TrendingUp size={13} />Зміна</span></th><th scope="col"><span className="report-th"><Users size={13} />Нові користувачі</span></th><th scope="col"><span className="report-th"><Trophy size={13} />Дохід на користувача</span></th></tr></thead>
-          <tbody>
-            {months.map((month, i) => {
-              const previous = i > 0 ? months[i - 1].revenue : 0;
-              const change = previous > 0 ? Math.round((month.revenue - previous) / previous * 100) : null;
-              const count = registrations[month.month] || 0;
-              const current = month.month === currentMonth;
-              return <tr key={month.month} className={current ? "report-current" : undefined}>
-                <th scope="row"><span className="report-month">{month.label}{current && <span className="current-label">Поточний</span>}</span></th>
-                <td><div className="report-revenue"><strong>{money(month.revenue)}</strong></div></td>
-                <td>{change === null ? <span className="text-subtle">—</span> : <span className={`change-badge ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`}>
-                  {change > 0 ? <ArrowUpRight size={12} /> : change < 0 ? <ArrowDownRight size={12} /> : null}{change > 0 ? "+" : ""}{change}%
-                </span>}</td>
-                <td>{count > 0 ? <span className="registration-count">+{count}</span> : <span className="text-subtle">—</span>}</td>
-                <td>{count > 0 ? money(Math.round(month.revenue / count)) : <span className="text-subtle">—</span>}</td>
-              </tr>;
-            })}
-            {!months.length && <tr><td colSpan={5}><Empty>Дані за місяцями ще не з’явилися</Empty></td></tr>}
-          </tbody>
-          <tfoot><tr><th scope="row">Підсумок за період</th><td>{money(revenueTotal)}</td><td>—</td><td>{registrationTotal}</td><td className="report-arpu">{arpu === null ? "—" : money(arpu)}</td></tr></tfoot>
-        </table>
-      </div>
-    </details>
+    <MonthlyReport months={months} registrations={registrations} revenueTotal={revenueTotal} registrationTotal={registrationTotal} />
 
     <div className="detail-panels">
       <section className="card-admin detail-panel">
