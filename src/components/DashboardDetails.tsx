@@ -47,7 +47,7 @@ export default function DashboardDetails({ stats, months, registrations, revenue
         <span className="detail-panel-icon"><FileBarChart2 size={20} /></span>
         <span className="report-title"><strong>Помісячний звіт</strong><span>Дохід, реєстрації та динаміка платформи</span></span>
         <span className="report-count">{months.length} міс.</span>
-        <span className="report-toggle"><span className="report-open-label">Переглянути</span><span className="report-close-label">Згорнути</span><ChevronDown size={16} /></span>
+        <span className="report-toggle"><ChevronDown size={16} /></span>
       </summary>
       <div className="report-scroll" role="region" aria-label="Помісячний звіт — прокрутіть для перегляду всіх колонок" tabIndex={0}>
         <table className="report-table">
