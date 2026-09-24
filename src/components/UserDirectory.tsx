@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Search, X, SlidersHorizontal, RefreshCw, Pencil, Trash2, Zap, ShieldCheck, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseDate, cleanPrice } from "@/lib/adminUtils";
@@ -26,6 +27,35 @@ interface Props {
 }
 
 const dateLabel = (value: string) => parseDate(value)?.toLocaleDateString("uk-UA") || "—";
+
+/** Normalize a Telegram handle (with or without "@") → clean username for avatar URL. */
+function telegramUsername(raw: string): string {
+  const t = (raw || "").trim();
+  if (!t) return "";
+  const withoutAt = t.startsWith("@") ? t.slice(1) : t;
+  return /^[a-zA-Z0-9_]{5,32}$/.test(withoutAt) ? withoutAt : "";
+}
+
+function UserAvatar({ user }: { user: UserData }) {
+  const [failed, setFailed] = useState(false);
+  const username = telegramUsername(user.telegram);
+  const showPhoto = username && !failed;
+
+  if (showPhoto) {
+    return (
+      <span className="directory-avatar is-photo">
+        <img
+          src={`https://t.me/i/userpic/320/${username}.jpg`}
+          alt={user.username}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          onLoad={e => { if (e.currentTarget.naturalWidth <= 1) setFailed(true); }}
+        />
+      </span>
+    );
+  }
+  return <span className="directory-avatar">{user.username.charAt(0).toUpperCase()}</span>;
+}
 
 function SubscriptionStatus({ user }: { user: UserData }) {
   const days = user.daysUntilExpiry;
@@ -57,7 +87,7 @@ export default function UserDirectory(p: Props) {
       <table className="directory-table">
         <thead><tr><th scope="col">Користувач</th><th scope="col">Тариф / міс.</th><th scope="col" aria-sort={p.sort === "asc" ? "ascending" : p.sort === "desc" ? "descending" : "none"}><button type="button" onClick={() => p.onSort(p.sort === null ? "asc" : p.sort === "asc" ? "desc" : null)}>Період підписки<ArrowUpDown size={12} /></button></th><th scope="col">Статус підписки</th><th scope="col">Роль</th><th scope="col" className="directory-actions-heading">Дії</th></tr></thead>
         <tbody>{p.rows.length ? p.rows.map(({ user, originalIndex }) => <tr key={user.id ?? originalIndex}>
-          <td><div className="directory-person"><span className={`directory-avatar ${user.isAdmin ? "is-admin" : ""}`}>{user.isAdmin ? <ShieldCheck size={18} /> : user.username.charAt(0).toUpperCase()}</span><div><strong title={user.username}>{user.username}</strong><span>{user.telegram || "Telegram не вказано"}</span></div></div></td>
+          <td><div className="directory-person"><UserAvatar user={user} /><div><strong title={user.username}>{user.username}</strong><span>{user.telegram || "Telegram не вказано"}</span></div></div></td>
           <td><span className="directory-price">{Number(cleanPrice(user.priceMonth)).toLocaleString("uk-UA")}<small>грн</small></span></td>
           <td><div className="directory-dates"><span><i />{dateLabel(user.startDate)}</span><strong><i />{dateLabel(user.endDate)}</strong></div></td>
           <td><SubscriptionStatus user={user} /></td>
