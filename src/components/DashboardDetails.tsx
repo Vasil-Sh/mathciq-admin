@@ -51,7 +51,7 @@ export default function DashboardDetails({ stats, months, registrations, revenue
       </summary>
       <div className="report-scroll" role="region" aria-label="Помісячний звіт — прокрутіть для перегляду всіх колонок" tabIndex={0}>
         <table className="report-table">
-          <thead><tr><th scope="col"><span className="report-th"><CalendarDays size={13} />Місяць</span></th><th scope="col"><span className="report-th"><Wallet size={13} />Дохід</span></th><th scope="col"><span className="report-th"><TrendingUp size={13} />Зміна</span></th><th scope="col"><span className="report-th"><Users size={13} />Нові користувачі</span></th><th scope="col"><span className="report-th"><Trophy size={13} />Дохід на кор.</span></th></tr></thead>
+          <thead><tr><th scope="col"><span className="report-th"><CalendarDays size={13} />Місяць</span></th><th scope="col"><span className="report-th"><Wallet size={13} />Дохід</span></th><th scope="col"><span className="report-th"><TrendingUp size={13} />Зміна</span></th><th scope="col"><span className="report-th"><Users size={13} />Нові користувачі</span></th><th scope="col"><span className="report-th"><Trophy size={13} />Дохід на користувача</span></th></tr></thead>
           <tbody>
             {months.map((month, i) => {
               const previous = i > 0 ? months[i - 1].revenue : 0;

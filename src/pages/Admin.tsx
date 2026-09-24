@@ -144,8 +144,14 @@ export default function Admin() {
   // Reset page when filter/search changes
   useEffect(() => { setPage(1); }, [statusFilter, searchQuery]);
 
-  const totalPages = Math.ceil(displayedUsers.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(displayedUsers.length / PAGE_SIZE));
   const pagedUsers = displayedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Clamp page when the list shrinks (e.g. after deleting all users on the
+  // last page) — otherwise the page index goes out of range and shows "no data".
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const getExpiryBadge = (u: UserData) => {
     if (!u.isActive) return <Badge variant="expired"><XCircle className="mr-1.5 h-3.5 w-3.5" />Закінчилась</Badge>;
