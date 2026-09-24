@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownRight, ArrowUpRight, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, FileBarChart2, Layers3, Trophy, UserPlus, Clock3 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, FileBarChart2, Layers3, Trophy, UserPlus, Clock3, Wallet, TrendingUp, Users } from "lucide-react";
 import type { AdminStats } from "@/lib/adminStatsApi";
 import { getDaysUntilExpiry, parseDate } from "@/lib/adminUtils";
 
@@ -49,14 +49,9 @@ export default function DashboardDetails({ stats, months, registrations, revenue
         <span className="report-count">{months.length} міс.</span>
         <span className="report-toggle"><span className="report-open-label">Переглянути</span><span className="report-close-label">Згорнути</span><ChevronDown size={16} /></span>
       </summary>
-      <div className="report-overview">
-        <div><span>Дохід за період</span><strong>{money(revenueTotal)}</strong></div>
-        <div><span>Нові користувачі</span><strong>{registrationTotal}<small>реєстрацій</small></strong></div>
-        <div><span>Дохід на користувача · ARPU</span><strong>{arpu === null ? "—" : money(arpu)}</strong></div>
-      </div>
       <div className="report-scroll" role="region" aria-label="Помісячний звіт — прокрутіть для перегляду всіх колонок" tabIndex={0}>
         <table className="report-table">
-          <thead><tr><th scope="col">Місяць</th><th scope="col">Дохід</th><th scope="col">Зміна</th><th scope="col">Нові користувачі</th><th scope="col">Дохід на кор.</th></tr></thead>
+          <thead><tr><th scope="col"><span className="report-th"><CalendarDays size={13} />Місяць</span></th><th scope="col"><span className="report-th"><Wallet size={13} />Дохід</span></th><th scope="col"><span className="report-th"><TrendingUp size={13} />Зміна</span></th><th scope="col"><span className="report-th"><Users size={13} />Нові користувачі</span></th><th scope="col"><span className="report-th"><Trophy size={13} />Дохід на кор.</span></th></tr></thead>
           <tbody>
             {months.map((month, i) => {
               const previous = i > 0 ? months[i - 1].revenue : 0;
@@ -65,7 +60,7 @@ export default function DashboardDetails({ stats, months, registrations, revenue
               const current = month.month === currentMonth;
               return <tr key={month.month} className={current ? "report-current" : undefined}>
                 <th scope="row"><span className="report-month">{month.label}{current && <span className="current-label">Поточний</span>}</span></th>
-                <td><div className="report-revenue"><strong>{money(month.revenue)}</strong><span className="revenue-track"><span style={{ width: `${month.revenue / maxRevenue * 100}%` }} /></span></div></td>
+                <td><div className="report-revenue"><strong>{money(month.revenue)}</strong></div></td>
                 <td>{change === null ? <span className="text-subtle">—</span> : <span className={`change-badge ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`}>
                   {change > 0 ? <ArrowUpRight size={12} /> : change < 0 ? <ArrowDownRight size={12} /> : null}{change > 0 ? "+" : ""}{change}%
                 </span>}</td>
@@ -75,7 +70,7 @@ export default function DashboardDetails({ stats, months, registrations, revenue
             })}
             {!months.length && <tr><td colSpan={5}><Empty>Дані за місяцями ще не з’явилися</Empty></td></tr>}
           </tbody>
-          <tfoot><tr><th scope="row">Підсумок за період</th><td>{money(revenueTotal)}</td><td>—</td><td>{registrationTotal}</td><td>{arpu === null ? "—" : money(arpu)}</td></tr></tfoot>
+          <tfoot><tr><th scope="row">Підсумок за період</th><td>{money(revenueTotal)}</td><td>—</td><td>{registrationTotal}</td><td className="report-arpu">{arpu === null ? "—" : money(arpu)}</td></tr></tfoot>
         </table>
       </div>
     </details>

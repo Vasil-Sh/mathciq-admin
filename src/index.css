@@ -135,17 +135,20 @@
   .report-overview small { color:#8692a7; font-size:10px; font-weight:400; letter-spacing:0; }
   .report-scroll { overflow-x:auto; }
   .report-table { width:100%; min-width:650px; border-collapse:collapse; font-variant-numeric:tabular-nums; }
-  .dashboard-page .report-table thead th { text-align:right; padding:13px 22px; background:#f2f5fa; color:#78879e; font-size:9px; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  .dashboard-page .report-table thead th { text-align:center; padding:13px 22px; background:#e8edf5; color:#0c0a09; font-size:9px; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  .report-th { display:inline-flex; align-items:center; justify-content:center; gap:5px; }
   .dashboard-page .report-table th:first-child { text-align:left; }
-  .dashboard-page .report-table tbody th { text-transform:none; letter-spacing:0; font-size:12px; font-weight:500; padding:15px 24px; }
-  .report-table tbody td { padding:12px 22px; text-align:right; }
+  .dashboard-page .report-table :is(td,th) { border-left:1px solid #edf1f7; }
+  .dashboard-page .report-table :is(td,th):first-child { border-left:none; }
+  .dashboard-page .report-table tbody th { text-transform:none; letter-spacing:0; font-size:12px; font-weight:500; padding:15px 24px; text-align:left; }
+  .report-table tbody td { padding:12px 22px; text-align:center; }
   .report-table tbody tr { border-bottom:1px solid #edf1f6; transition:background .15s; }
   .report-table tbody tr:hover { background:#f8faff; }
-  .report-month { display:flex; align-items:center; gap:10px; white-space:nowrap; }
+  .report-month { display:flex; align-items:center; gap:10px; white-space:nowrap; text-transform:capitalize; }
   .report-month::first-letter { text-transform:uppercase; }
-  .current-label { font-size:8px; color:#4278f5; background:#eaf0ff; border-radius:5px; padding:3px 6px; }
+  .current-label { font-size:8px; color:#15803d; background:#dcfce7; border-radius:5px; padding:3px 6px; }
   .report-current { background:#f7faff; }
-  .report-revenue { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .report-revenue { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .report-revenue strong { font-size:12px; font-weight:600; }
   .revenue-track { display:block; width:75px; height:3px; border-radius:3px; overflow:hidden; background:#eef2f9; }
   .revenue-track > span { display:block; height:100%; border-radius:3px; background:#8faef6; }
@@ -154,9 +157,11 @@
   .change-badge.is-down { color:#c85b6a; background:#fff0f2; }
   .change-badge.is-flat { color:#8390a4; background:#f2f5f9; }
   .registration-count { color:#4278f5; font-weight:600; }
-  .report-table tfoot { background:#f3f6fc; }
-  .report-table tfoot :is(td,th) { text-align:right; padding:17px 22px; font-size:12px; font-weight:650; }
-  .report-table tfoot td:nth-child(2) { color:#4278f5; }
+  .report-table tfoot { background:#e8edf5; border-top:1px solid #d6dde8; }
+  .report-table tfoot :is(td,th) { text-align:center; padding:17px 22px; font-size:12px; font-weight:650; }
+  .report-table tfoot th { text-align:left; }
+  .report-table tfoot td:nth-child(2) { color:#168766; }
+  .report-table tfoot .report-arpu { color:#168766; }
   .plan-content { padding:0 22px 22px; }
   .plan-total { display:flex; flex-direction:column; gap:5px; margin-top:2px; }
   .plan-total strong { font-size:32px; letter-spacing:-1px; font-weight:650; }

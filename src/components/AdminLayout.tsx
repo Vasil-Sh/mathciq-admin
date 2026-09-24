@@ -51,7 +51,7 @@ export default function AdminLayout() {
       <footer className="workspace-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
     </div>
     <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-      <DialogContent className="sm:max-w-md"><DialogHeader><span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-danger-bg text-danger"><LogOut size={21} /></span><DialogTitle>Вийти з облікового запису?</DialogTitle><DialogDescription>Щоб повернутися до робочого простору, потрібно буде увійти знову.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLogoutOpen(false)}>Скасувати</Button><Button variant="destructive" onClick={() => { setLogoutOpen(false); logout(); }}>Вийти</Button></DialogFooter></DialogContent>
+      <DialogContent className="sm:max-w-md"><DialogHeader><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger-bg text-danger shrink-0"><LogOut size={21} /></span><DialogTitle className="text-left">Вийти з облікового запису?</DialogTitle></div><DialogDescription className="text-left">Щоб повернутися до робочого простору, потрібно буде увійти знову.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLogoutOpen(false)}>Скасувати</Button><Button variant="destructive" onClick={() => { setLogoutOpen(false); logout(); }}>Вийти</Button></DialogFooter></DialogContent>
     </Dialog>
   </div>;
 }
