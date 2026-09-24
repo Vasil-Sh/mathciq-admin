@@ -242,10 +242,20 @@
   .directory-table-scroll { overflow:auto; scrollbar-width:thin; scrollbar-color:#dce4f1 transparent; }
   .directory-table { width:100%; min-width:850px; border-collapse:collapse; }
   .users-page .directory-table thead th { padding:12px 18px; text-align:left; font-size:9px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; background:#f7f9fc; border-top:1px solid #edf1f7; border-bottom:1px solid #edf1f7; color:#8a97ac; }
-  .directory-table th button { display:flex; align-items:center; gap:7px; text-transform:inherit; font-size:inherit; letter-spacing:inherit; }
+  .users-page .directory-table thead th + th,
+  .users-page .directory-table td + td { border-left:1px solid #edf1f7; }
+  .users-page .directory-table thead th:nth-child(2),
+  .users-page .directory-table thead th:nth-child(3),
+  .users-page .directory-table thead th:nth-child(4),
+  .users-page .directory-table thead th:nth-child(5) { text-align:center; }
+  .directory-table th button { display:flex; align-items:center; justify-content:center; width:100%; gap:7px; text-transform:inherit; font-size:inherit; letter-spacing:inherit; }
   .directory-table th:first-child { padding-left:24px; }
   .users-page .directory-table td { padding:17px 18px; border-bottom:1px solid #edf1f6; vertical-align:middle; }
   .users-page .directory-table td:first-child { padding-left:24px; }
+  .users-page .directory-table td:nth-child(2),
+  .users-page .directory-table td:nth-child(3),
+  .users-page .directory-table td:nth-child(4),
+  .users-page .directory-table td:nth-child(5) { text-align:center; }
   .directory-table tbody tr:last-child td { border-bottom:0; }
   .directory-table tbody tr:hover { background:#fafcff; }
   .directory-person { display:flex; align-items:center; gap:11px; }
@@ -253,10 +263,10 @@
   .directory-avatar.is-admin { color:#7d77b2; background:#f2f0fa; }
   .directory-person strong { display:block; max-width:180px; overflow:hidden; text-overflow:ellipsis; font-size:12px; font-weight:600; color:#34425a; }
   .directory-person div > span { display:block; color:#8b99b0; font-size:10px; margin-top:5px; }
-  .directory-price { font-size:13px; font-weight:600; color:#394962; font-variant-numeric:tabular-nums; }
+  .directory-price { display:inline-block; font-size:13px; font-weight:600; color:#394962; font-variant-numeric:tabular-nums; }
   .directory-price small { margin-left:4px; font-size:9px; font-weight:400; color:#94a0b2; }
-  .directory-dates { position:relative; display:flex; flex-direction:column; gap:8px; font-size:10px; font-variant-numeric:tabular-nums; }
-  .directory-dates::before { content:""; position:absolute; left:2px; top:7px; height:19px; border-left:1px solid #dbe3f1; }
+  .directory-dates { position:relative; display:inline-flex; flex-direction:column; align-items:flex-start; gap:8px; font-size:10px; font-variant-numeric:tabular-nums; }
+  .directory-dates::before { content:""; position:absolute; left:2px; top:7px; height:21px; border-left:1px solid #dbe3f1; }
   .directory-dates > span, .directory-dates > strong { display:flex; align-items:center; gap:9px; }
   .directory-dates > span { color:#95a1b5; }
   .directory-dates > strong { color:#607390; font-weight:500; }
@@ -267,16 +277,17 @@
   .subscription-pill.is-active { color:#308569; background:#edf8f2; }
   .subscription-pill.is-expired { color:#bd7781; background:#fbf0f2; }
   .subscription-pill.is-ending { color:#ae853c; background:#fcf5e8; }
+  .directory-status { display:inline-flex; flex-direction:column; align-items:center; }
   .directory-status small { display:block; margin-top:5px; color:#96a2b5; font-size:9px; }
   .directory-role { display:inline-flex; align-items:center; gap:4px; color:#8796ad; font-size:10px; }
   .directory-role.is-admin { color:#8880b2; background:#f3f1fa; border-radius:5px; padding:4px 6px; }
-  .directory-actions { display:flex; justify-content:flex-end; gap:5px; }
+  .directory-actions { display:flex; justify-content:center; gap:5px; }
   .directory-actions button { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border:1px solid #e7ecf5; border-radius:7px; color:#7b90b2; background:white; transition:background .15s,color .15s; }
   .directory-actions button:hover { color:#4278f5; background:#edf3ff; border-color:#cfdcf7; }
   .directory-actions .extend-action:hover { color:#278662; background:#eef8f2; border-color:#d6eee0; }
   .directory-actions .delete-action:hover { color:#c86577; background:#fdf1f4; border-color:#f3dce1; }
   .directory-actions button:disabled { opacity:.4; cursor:wait; }
-  .users-page .directory-table .directory-actions-heading { text-align:right; padding-right:24px; }
+  .users-page .directory-table .directory-actions-heading { text-align:center; }
   .directory-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 24px; border-top:1px solid #eaf0f7; font-size:10px; color:#8a98ad; }
   .directory-pagination strong { color:#667c9b; font-weight:500; }
   .directory-pagination nav { display:flex; align-items:center; gap:12px; }
