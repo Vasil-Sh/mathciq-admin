@@ -167,7 +167,7 @@ export default function Dashboard() {
             <button
               onClick={() => fetchData(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-primary-glow"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-btn bg-primary text-white text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-primary-glow"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
               <span className="text-sm font-medium">Оновити</span>
@@ -175,7 +175,7 @@ export default function Dashboard() {
           <div className="relative" data-filter-dropdown>
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm hover:bg-primary-hover transition-colors shadow-primary-glow"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-btn bg-primary text-white text-sm hover:bg-primary-hover transition-colors shadow-primary-glow"
             >
               <Filter className="h-3.5 w-3.5" strokeWidth={1.5} />
               <span className="text-sm font-medium">{currLabel}</span>
