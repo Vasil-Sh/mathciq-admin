@@ -270,19 +270,19 @@
   .directory-dates { position:relative; display:inline-flex; flex-direction:column; align-items:flex-start; gap:8px; font-size:10px; font-variant-numeric:tabular-nums; }
   .directory-dates::before { content:""; position:absolute; left:2px; top:7px; height:21px; border-left:1px solid #dbe3f1; }
   .directory-dates > span, .directory-dates > strong { display:flex; align-items:center; gap:9px; }
-  .directory-dates > span { color:#95a1b5; }
-  .directory-dates > strong { color:#607390; font-weight:500; }
-  .directory-dates i { width:5px; height:5px; border-radius:50%; background:#c2cde0; position:relative; }
-  .directory-dates > strong i { background:#7f9bc8; }
+  .directory-dates > span { color:#1a7f4f; }
+  .directory-dates > strong { color:#c0392b; font-weight:500; }
+  .directory-dates i { width:5px; height:5px; border-radius:50%; background:#2e9e63; position:relative; }
+  .directory-dates > strong i { background:#d64545; }
   .subscription-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border-radius:6px; font-size:10px; font-weight:500; }
   .subscription-pill i { height:5px; width:5px; border-radius:50%; background:currentColor; }
-  .subscription-pill.is-active { color:#308569; background:#edf8f2; }
-  .subscription-pill.is-expired { color:#bd7781; background:#fbf0f2; }
-  .subscription-pill.is-ending { color:#ae853c; background:#fcf5e8; }
+  .subscription-pill.is-active { color:#1a7f4f; background:#d3f1e1; font-weight:700; }
+  .subscription-pill.is-expired { color:#c0392b; background:#fde0e3; font-weight:700; }
+  .subscription-pill.is-ending { color:#a06a1a; background:#fbecc9; font-weight:700; }
   .directory-status { display:inline-flex; flex-direction:column; align-items:center; }
   .directory-status small { display:block; margin-top:5px; color:#96a2b5; font-size:9px; }
   .directory-role { display:inline-flex; align-items:center; gap:4px; color:#8796ad; font-size:10px; }
-  .directory-role.is-admin { color:#8880b2; background:#f3f1fa; border-radius:5px; padding:4px 6px; }
+  .directory-role.is-admin { color:#5a3fd6; background:#e8e3fb; border-radius:5px; padding:4px 6px; font-weight:700; }
   .directory-actions { display:flex; justify-content:center; gap:5px; }
   .directory-actions button { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border:1px solid #e7ecf5; border-radius:7px; color:#7b90b2; background:white; transition:background .15s,color .15s; }
   .directory-actions button:hover { color:#4278f5; background:#edf3ff; border-color:#cfdcf7; }
