@@ -534,7 +534,11 @@ function BetsRow({
         </td>
         <td className="bets-cell-center">
           <div className="bets-winrate">{pct(s.winRate)}</div>
-          <div className="bets-winrate-sub">{s.wins}W / {s.losses}L</div>
+          <div className="bets-winrate-sub">
+            <span className="bets-winrate-w">{s.wins}W</span>
+            <span className="bets-winrate-sep"> / </span>
+            <span className="bets-winrate-l">{s.losses}L</span>
+          </div>
         </td>
         <td className="bets-cell-center">
           <span className={`bets-profit ${s.roi > 0 ? "is-positive" : s.roi < 0 ? "is-negative" : ""}`}>

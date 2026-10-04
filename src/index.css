@@ -446,6 +446,9 @@
   .bets-page .bets-streak-badge { display:inline-flex; align-items:center; gap:2px; margin-left:6px; padding:1px 5px; border-radius:5px; background:#fde0e3; color:#c0392b; font-size:9px; font-weight:700; vertical-align:middle; }
   .bets-page .bets-winrate { font-size:12px; font-weight:600; color:#34425a; }
   .bets-page .bets-winrate-sub { font-size:9px; color:#94a0b2; margin-top:4px; }
+  .bets-page .bets-winrate-w { color:#1a7f4f; font-weight:600; }
+  .bets-page .bets-winrate-sep { color:#c0c8d4; }
+  .bets-page .bets-winrate-l { color:#c0392b; font-weight:600; }
   .bets-page .bets-expanded > td { padding:0; border-bottom:1px solid #4a5565; background:#626973; }
   .bets-page .bets-expanded-inner { padding:18px 24px 22px 58px; }
   .bets-page .bets-mini-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
