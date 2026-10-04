@@ -430,3 +430,61 @@
   .monthly-empty button { font-size:11px; color:#7195d4; margin-top:16px; }
   @media (max-width:767px) { .monthly-heading { padding:19px 17px; gap:10px; } .monthly-heading-text strong { font-size:14px; } .monthly-heading-text > span { font-size:10px; } .monthly-disclosure > span,.monthly-period-count { display:none !important; } .monthly-disclosure { padding:8px; } .monthly-toolbar { padding:0 18px; flex-wrap:wrap; gap:0; } .monthly-tabs { gap:20px; } .monthly-order { margin-bottom:9px; } .monthly-caption { padding:13px 18px; flex-direction:column; align-items:flex-start; gap:5px; line-height:1.6; } .monthly-mobile-hint { display:block; padding:10px 18px; font-size:9px; color:#95a7c0; background:#fafcff; } }
 }
+
+/* ── Bets monitoring screen ── */
+@layer components {
+  .bets-page .bets-row { cursor:pointer; }
+  .bets-page .bets-row > td:first-child { color:#94a2b8; width:34px; }
+  .bets-page .bets-cell-center { text-align:center; }
+  .bets-page .bets-profit { font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bets-page .bets-profit.is-positive { color:#1a7f4f; }
+  .bets-page .bets-profit.is-negative { color:#c0392b; }
+  .bets-page .bets-winrate { font-size:12px; font-weight:600; color:#34425a; }
+  .bets-page .bets-winrate-sub { font-size:9px; color:#94a0b2; margin-top:4px; }
+  .bets-page .bets-expanded > td { padding:0; border-bottom:1px solid #4a5565; background:#626973; }
+  .bets-page .bets-expanded-inner { padding:18px 24px 22px 58px; }
+  .bets-page .bets-mini-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  .bets-page .bets-mini-stat { background:white; border:1px solid #edf1f7; border-radius:11px; padding:13px 15px; }
+  .bets-page .bets-mini-label { display:flex; align-items:center; gap:7px; color:#8a98ad; font-size:10px; }
+  .bets-page .bets-mini-label svg { color:#7295d8; }
+  .bets-page .bets-mini-stat strong { display:block; margin-top:9px; font-size:17px; font-weight:650; letter-spacing:-.3px; color:#34425a; font-variant-numeric:tabular-nums; }
+  .bets-page .bets-loading { display:flex; align-items:center; gap:9px; color:#cbd5e1; font-size:12px; padding:10px 2px; }
+  .bets-page .bets-subtable-scroll { overflow:auto; border:1px solid #edf1f7; border-radius:11px; background:white; }
+  .bets-page .bets-subtable { width:100%; min-width:760px; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums; }
+  .bets-page .bets-subtable thead th { padding:11px 14px; text-align:left; font-size:9px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#8a97ac; background:#f7f9fc; border-bottom:1px solid #edf1f7; white-space:nowrap; }
+  .bets-page .bets-subtable thead th:not(:first-child), .bets-page .bets-subtable td:not(:first-child) { text-align:center; }
+  .bets-page .bets-subtable td { padding:11px 14px; border-bottom:1px solid #f1f4f9; color:#52658a; white-space:nowrap; }
+  .bets-page .bets-subtable td:first-child { color:#8b99b0; }
+  .bets-page .bets-match-cell { text-align:left !important; }
+  .bets-page .bets-match-text { display:inline-block; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+  .bets-page .bets-type-cell { text-align:left !important; white-space:normal; }
+  .bets-page .bets-type-text { display:block; max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bets-page .bets-subtable tbody tr:last-child td { border-bottom:0; }
+  .bets-page .bets-subtable tbody tr:hover { background:#fbfcff; }
+  .bets-page .bets-game { display:inline-block; margin-left:6px; padding:2px 5px; border-radius:4px; background:#f1f5ff; color:#6d8ecb; font-size:8px; font-weight:600; text-transform:uppercase; vertical-align:middle; }
+  .bets-page .bets-express-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:7px; background:#eef3ff; color:#4278f5; font-size:11px; font-weight:600; cursor:pointer; border:1px solid transparent; transition:background .15s, border-color .15s; }
+  .bets-page .bets-express-chip:hover { background:#e2ecff; border-color:#c9dbfb; }
+  .bets-page .bets-express-chip .bets-type-text { max-width:none; color:inherit; }
+  /* Express modal (rendered in a Radix portal, outside .bets-page) */
+  .bets-express-detail { max-height:50dvh; overflow-y:auto; }
+  .bets-express-meta { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .bets-express-odds, .bets-express-stake { display:inline-flex; align-items:center; padding:5px 10px; border-radius:8px; background:#f1f5ff; color:#4278f5; font-size:11px; font-weight:600; }
+  .bets-express-grid { border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+  .bets-express-grid-head, .bets-express-grid-row { display:grid; grid-template-columns:36px 1.2fr 1.2fr 74px; align-items:center; }
+  .bets-express-grid-head { background:#f1f5f9; border-bottom:1px solid #e2e8f0; }
+  .bets-express-grid-head > span { padding:9px 12px; font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#64748b; }
+  .bets-express-grid-head > span + span, .bets-express-grid-row > * { border-left:1px solid #e2e8f0; }
+  .bets-express-grid-head > span:first-child { border-left:none; text-align:center; }
+  .bets-express-grid-row { border-bottom:1px solid #e2e8f0; }
+  .bets-express-grid-row:last-child { border-bottom:none; }
+  .bets-express-grid-row > * { padding:11px 12px; min-width:0; }
+  .bets-express-leg-num { display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#4278f5; }
+  .bets-express-grid-row .bets-express-leg-match { font-size:13px; font-weight:600; color:#182740; line-height:1.4; overflow:hidden; text-overflow:ellipsis; }
+  .bets-express-grid-row .bets-express-leg-pick { font-size:12px; color:#66758e; line-height:1.4; overflow:hidden; text-overflow:ellipsis; }
+  .bets-express-grid-row .bets-express-leg-odds { font-size:12px; font-weight:600; color:#16966c; text-align:center; font-variant-numeric:tabular-nums; }
+  @media (max-width:479px) {
+    .bets-express-grid-head, .bets-express-grid-row { grid-template-columns:30px 1fr 74px; }
+    .bets-express-grid-head > span:nth-child(3), .bets-express-grid-row .bets-express-leg-pick { display:none; }
+  }
+  @media (max-width:767px) { .bets-page .bets-mini-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .bets-page .bets-expanded-inner { padding:16px 16px 18px; } }
+}

@@ -31,3 +31,45 @@ export interface LoginResult {
 
 export type StatusFilter = "all" | "active" | "expired";
 export type SortDirection = "asc" | "desc" | null;
+
+// ── Betting monitoring (admin) ──
+
+export interface AdminUserOverview {
+  id: number;
+  username: string;
+  role: string;
+  telegram: string;
+  priceMonth: number;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  betCount: number;
+  wins: number;
+  losses: number;
+  pending: number;
+  totalStaked: number;
+  totalProfit: number;
+  winRate: number;
+  roi: number;
+  initialBank: number;
+  manualAdjustments: number;
+  currentBank: number;
+}
+
+export interface AdminUserBet {
+  id: string;
+  match: string;
+  team1: string;
+  team2: string;
+  betType: string;
+  odds: number;
+  amount: number;
+  stake: number | null;
+  date: string;
+  result: string;
+  profit: number;
+  game: string;
+  currency: string;
+  strategy: string;
+  createdAt: string;
+}
