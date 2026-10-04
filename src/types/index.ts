@@ -54,6 +54,20 @@ export interface AdminUserOverview {
   initialBank: number;
   manualAdjustments: number;
   currentBank: number;
+  lossStreak: number;
+  games: GameBreakdown[];
+}
+
+export interface GameBreakdown {
+  game: string;
+  bets: number;
+  wins: number;
+  losses: number;
+  pending: number;
+  staked: number;
+  profit: number;
+  winRate: number;
+  roi: number;
 }
 
 export interface AdminUserBet {

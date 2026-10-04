@@ -1,4 +1,5 @@
 import DashboardDetails from "@/components/DashboardDetails";
+import BettingActivity from "@/components/BettingActivity";
 import { useEffect, useState } from "react";
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -251,6 +252,7 @@ export default function Dashboard() {
           </section>
         </div>
         <DashboardDetails stats={stats} months={revChartData} registrations={regByMonthLookup} revenueTotal={revTotal} registrationTotal={regTotal} />
+        <BettingActivity />
       </div>
     </div>
   );

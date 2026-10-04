@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Trophy,
   Layers,
+  Flame,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { parseDate } from "@/lib/adminUtils";
 import { fetchUsersOverview, fetchUserBets } from "@/lib/adminBetsApi";
-import type { AdminUserOverview, AdminUserBet, SortDirection } from "@/types";
+import type { AdminUserOverview, AdminUserBet, GameBreakdown, SortDirection } from "@/types";
 
 const money = (n: number, signed = false) => {
   const sign = signed ? (n > 0 ? "+" : n < 0 ? "−" : "") : "";
@@ -37,6 +38,36 @@ const moneyAbs = (n: number) => `₴${Math.round(n).toLocaleString("uk-UA")}`;
 const pct = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
 
 const dateLabel = (value: string) => parseDate(value)?.toLocaleDateString("uk-UA") || "—";
+
+/** Normalize a Telegram handle (with or without "@") → clean username for avatar URL. */
+function telegramUsername(raw: string): string {
+  const t = (raw || "").trim();
+  if (!t) return "";
+  const withoutAt = t.startsWith("@") ? t.slice(1) : t;
+  return /^[a-zA-Z0-9_]{5,32}$/.test(withoutAt) ? withoutAt : "";
+}
+
+/** User avatar — Telegram photo when available, else a letter fallback. */
+function UserAvatar({ telegram, username, isAdmin }: { telegram: string; username: string; isAdmin: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const tg = telegramUsername(telegram);
+  const showPhoto = !!tg && !failed;
+
+  if (showPhoto) {
+    return (
+      <span className="directory-avatar is-photo">
+        <img
+          src={`https://t.me/i/userpic/320/${tg}.jpg`}
+          alt={username}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          onLoad={(e) => { if (e.currentTarget.naturalWidth <= 1) setFailed(true); }}
+        />
+      </span>
+    );
+  }
+  return <span className={`directory-avatar ${isAdmin ? "is-admin" : ""}`}>{username.charAt(0).toUpperCase()}</span>;
+}
 
 /** Express bets carry a long multi-leg description in `betType` (e.g. "Експрес 5x | 1. … 5. …"). */
 const isExpress = (bet: AdminUserBet) =>
@@ -81,12 +112,12 @@ function parseExpressLegs(text: string): ExpressLeg[] {
     });
 }
 
-type SortKey = "betCount" | "totalStaked" | "totalProfit" | "winRate" | "roi";
+type SortKey = "bets" | "staked" | "profit" | "winRate" | "roi";
 
 const SORT_LABELS: Record<SortKey, string> = {
-  betCount: "Ставок",
-  totalStaked: "Сума ставок",
-  totalProfit: "Профіт",
+  bets: "Ставок",
+  staked: "Сума ставок",
+  profit: "Профіт",
   winRate: "Вінрейт",
   roi: "ROI",
 };
@@ -101,18 +132,47 @@ function ResultBadge({ result }: { result: string }) {
   return <Badge variant={v.variant}>{v.label}</Badge>;
 }
 
+/** Flat stats view of a user, resolved against the selected game filter. */
+function userStatsForGame(u: AdminUserOverview, game: string) {
+  if (game === "all") {
+    return {
+      bets: u.betCount,
+      staked: u.totalStaked,
+      profit: u.totalProfit,
+      winRate: u.winRate,
+      roi: u.roi,
+      wins: u.wins,
+      losses: u.losses,
+    };
+  }
+  const g = u.games?.find((x) => x.game === game);
+  if (!g) {
+    return { bets: 0, staked: 0, profit: 0, winRate: 0, roi: 0, wins: 0, losses: 0 };
+  }
+  return {
+    bets: g.bets,
+    staked: g.staked,
+    profit: g.profit,
+    winRate: g.winRate,
+    roi: g.roi,
+    wins: g.wins,
+    losses: g.losses,
+  };
+}
+
 export default function Bets() {
   const [users, setUsers] = useState<AdminUserOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdate, setLastUpdate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("totalProfit");
+  const [sortKey, setSortKey] = useState<SortKey>("profit");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [betsByUser, setBetsByUser] = useState<Record<number, AdminUserBet[]>>({});
   const [loadingBets, setLoadingBets] = useState<Record<number, boolean>>({});
+  const [gameFilter, setGameFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -190,12 +250,29 @@ export default function Bets() {
         )
       : users;
     const dir = sortDir === "asc" ? 1 : -1;
-    return [...list].sort((a, b) => (a[sortKey] - b[sortKey]) * dir);
-  }, [users, searchQuery, sortKey, sortDir]);
+    return [...list].sort((a, b) => {
+      const sa = userStatsForGame(a, gameFilter);
+      const sb = userStatsForGame(b, gameFilter);
+      const keyMap = {
+        profit: sa.profit - sb.profit,
+        staked: sa.staked - sb.staked,
+        winRate: sa.winRate - sb.winRate,
+        roi: sa.roi - sb.roi,
+        bets: sa.bets - sb.bets,
+      }[sortKey];
+      return keyMap * dir;
+    });
+  }, [users, searchQuery, sortKey, sortDir, gameFilter]);
 
-  const totals = useMemo(
-    () =>
-      users.reduce(
+  const availableGames = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => u.games?.forEach((g) => set.add(g.game)));
+    return Array.from(set).sort();
+  }, [users]);
+
+  const gameTotals = useMemo(() => {
+    if (gameFilter === "all") {
+      return users.reduce(
         (acc, u) => {
           acc.bets += u.betCount;
           acc.staked += u.totalStaked;
@@ -206,14 +283,27 @@ export default function Bets() {
           return acc;
         },
         { bets: 0, staked: 0, profit: 0, wins: 0, losses: 0, pending: 0 },
-      ),
-    [users],
-  );
+      );
+    }
+    return users.reduce(
+      (acc, u) => {
+        const g = u.games?.find((x) => x.game === gameFilter);
+        if (!g) return acc;
+        acc.bets += g.bets;
+        acc.staked += g.staked;
+        acc.profit += g.profit;
+        acc.wins += g.wins;
+        acc.losses += g.losses;
+        acc.pending += g.pending;
+        return acc;
+      },
+      { bets: 0, staked: 0, profit: 0, wins: 0, losses: 0, pending: 0 },
+    );
+  }, [users, gameFilter]);
 
-  const decided = totals.wins + totals.losses;
-  const overallWinRate = decided > 0 ? (totals.wins / decided) * 100 : 0;
-  const overallRoi = totals.staked > 0 ? (totals.profit / totals.staked) * 100 : 0;
-  const activeBettors = users.filter((u) => u.betCount > 0).length;
+  const decided = gameTotals.wins + gameTotals.losses;
+  const overallRoi = gameTotals.staked > 0 ? (gameTotals.profit / gameTotals.staked) * 100 : 0;
+  const activeBettors = users.filter((u) => userStatsForGame(u, gameFilter).bets > 0).length;
 
   return (
     <div className="users-page bets-page">
@@ -252,9 +342,9 @@ export default function Bets() {
             {/* Summary cards */}
             <div className="users-summary-grid">
               {[
-                { icon: ListChecks, label: "Ставок всього", value: totals.bets, note: `${totals.wins} виграш / ${totals.losses} програш${totals.pending ? ` / ${totals.pending} очікує` : ""}`, tone: "" },
-                { icon: Wallet, label: "Сума ставок", value: moneyAbs(totals.staked), note: "обіг по всіх користувачах", tone: "user-summary--amber" },
-                { icon: TrendingUp, label: "Загальний профіт", value: money(totals.profit, true), note: `ROI ${overallRoi.toFixed(1).replace(".", ",")}%`, tone: totals.profit >= 0 ? "user-summary--green" : "user-summary--rose" },
+                { icon: ListChecks, label: "Ставок всього", value: gameTotals.bets, note: `${gameTotals.wins} виграш / ${gameTotals.losses} програш${gameTotals.pending ? ` / ${gameTotals.pending} очікує` : ""}`, tone: "" },
+                { icon: Wallet, label: "Сума ставок", value: moneyAbs(gameTotals.staked), note: "обіг по всіх користувачах", tone: "user-summary--amber" },
+                { icon: TrendingUp, label: "Загальний профіт", value: money(gameTotals.profit, true), note: `ROI ${overallRoi.toFixed(1).replace(".", ",")}%`, tone: gameTotals.profit >= 0 ? "user-summary--green" : "user-summary--rose" },
                 { icon: Users, label: "Грають", value: activeBettors, note: `з ${users.length} користувачів`, tone: "user-summary--blue" },
               ].map(({ icon: Icon, label, value, note, tone }) => (
                 <section key={label} className={`card-admin user-summary ${tone}`}>
@@ -265,6 +355,25 @@ export default function Bets() {
                   <strong className="user-summary-value">{value}</strong>
                   <p className="user-summary-note"><span />{note}</p>
                 </section>
+              ))}
+            </div>
+
+            {/* Game filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted">Гра:</span>
+              {["all", ...availableGames].map((game) => (
+                <button
+                  key={game}
+                  type="button"
+                  onClick={() => setGameFilter(game)}
+                  className={`px-3 py-1.5 rounded-btn border text-xs font-medium transition-colors ${
+                    gameFilter === game
+                      ? "border-primary text-primary bg-surface-subtle"
+                      : "border-hairline text-body hover:border-hairline-hover"
+                  }`}
+                >
+                  {game === "all" ? "Всі" : game}
+                </button>
               ))}
             </div>
 
@@ -328,9 +437,9 @@ export default function Bets() {
                     <tr>
                       <th scope="col" />
                       <th scope="col">Користувач</th>
-                      <th scope="col"><button type="button" onClick={() => handleSort("betCount")}>Ставки{sortKey === "betCount" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
-                      <th scope="col"><button type="button" onClick={() => handleSort("totalStaked")}>Сума ставок{sortKey === "totalStaked" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
-                      <th scope="col"><button type="button" onClick={() => handleSort("totalProfit")}>Профіт{sortKey === "totalProfit" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
+                      <th scope="col"><button type="button" onClick={() => handleSort("bets")}>Ставки{sortKey === "bets" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
+                      <th scope="col"><button type="button" onClick={() => handleSort("staked")}>Сума ставок{sortKey === "staked" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
+                      <th scope="col"><button type="button" onClick={() => handleSort("profit")}>Профіт{sortKey === "profit" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
                       <th scope="col"><button type="button" onClick={() => handleSort("winRate")}>Вінрейт{sortKey === "winRate" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
                       <th scope="col"><button type="button" onClick={() => handleSort("roi")}>ROI{sortKey === "roi" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}</button></th>
                     </tr>
@@ -347,6 +456,7 @@ export default function Bets() {
                             onToggle={() => toggleExpand(u.id)}
                             bets={betsByUser[u.id]}
                             loadingBets={!!loadingBets[u.id]}
+                            gameFilter={gameFilter}
                           />
                         );
                       })
@@ -379,14 +489,18 @@ function BetsRow({
   onToggle,
   bets,
   loadingBets,
+  gameFilter,
 }: {
   user: AdminUserOverview;
   expanded: boolean;
   onToggle: () => void;
   bets?: AdminUserBet[];
   loadingBets: boolean;
+  gameFilter: string;
 }) {
   const [expressBet, setExpressBet] = useState<AdminUserBet | null>(null);
+  const s = userStatsForGame(user, gameFilter);
+  const visibleBets = gameFilter === "all" ? bets : bets?.filter((b) => b.game === gameFilter);
   return (
     <>
       <tr className="bets-row" onClick={onToggle}>
@@ -395,32 +509,36 @@ function BetsRow({
         </td>
         <td>
           <div className="directory-person">
-            <span className={`directory-avatar ${user.role === "admin" ? "is-admin" : ""}`}>
-              {user.username.charAt(0).toUpperCase()}
-            </span>
+            <UserAvatar telegram={user.telegram || ""} username={user.username} isAdmin={user.role === "admin"} />
             <div>
               <strong title={user.username}>
                 {user.username}
                 {user.role === "admin" && <ShieldCheck size={12} className="inline-block ml-1 text-primary align-middle" />}
+                {user.lossStreak >= 3 && (
+                  <span className="bets-streak-badge" title={`${user.lossStreak} програші поспіль`}>
+                    <Flame size={11} />
+                    {user.lossStreak}L
+                  </span>
+                )}
               </strong>
               <span>{user.telegram || "Telegram не вказано"}</span>
             </div>
           </div>
         </td>
-        <td className="bets-cell-center">{user.betCount}</td>
-        <td className="bets-cell-center">{user.totalStaked > 0 ? moneyAbs(user.totalStaked) : "—"}</td>
+        <td className="bets-cell-center">{s.bets}</td>
+        <td className="bets-cell-center">{s.staked > 0 ? moneyAbs(s.staked) : "—"}</td>
         <td className="bets-cell-center">
-          <span className={`bets-profit ${user.totalProfit > 0 ? "is-positive" : user.totalProfit < 0 ? "is-negative" : ""}`}>
-            {money(user.totalProfit, true)}
+          <span className={`bets-profit ${s.profit > 0 ? "is-positive" : s.profit < 0 ? "is-negative" : ""}`}>
+            {money(s.profit, true)}
           </span>
         </td>
         <td className="bets-cell-center">
-          <div className="bets-winrate">{pct(user.winRate)}</div>
-          <div className="bets-winrate-sub">{user.wins}W / {user.losses}L</div>
+          <div className="bets-winrate">{pct(s.winRate)}</div>
+          <div className="bets-winrate-sub">{s.wins}W / {s.losses}L</div>
         </td>
         <td className="bets-cell-center">
-          <span className={`bets-profit ${user.roi > 0 ? "is-positive" : user.roi < 0 ? "is-negative" : ""}`}>
-            {user.roi > 0 ? "+" : ""}{pct(user.roi)}
+          <span className={`bets-profit ${s.roi > 0 ? "is-positive" : s.roi < 0 ? "is-negative" : ""}`}>
+            {s.roi > 0 ? "+" : ""}{pct(s.roi)}
           </span>
         </td>
       </tr>
@@ -435,13 +553,14 @@ function BetsRow({
                 <MiniStat icon={<CircleDollarSign size={14} />} label="Поточний банк" value={moneyAbs(user.currentBank)} />
                 <MiniStat icon={<Target size={14} />} label="ROI" value={pct(user.roi)} />
                 <MiniStat icon={<Gamepad2 size={14} />} label="Очікують" value={String(user.pending)} />
+                <MiniStat icon={<Flame size={14} />} label="Серія програшів" value={String(user.lossStreak)} />
               </div>
               {loadingBets ? (
                 <div className="bets-loading">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   Завантаження ставок…
                 </div>
-              ) : bets && bets.length > 0 ? (
+              ) : visibleBets && visibleBets.length > 0 ? (
                 <div className="bets-subtable-scroll">
                   <table className="bets-subtable">
                     <thead>
@@ -456,7 +575,7 @@ function BetsRow({
                       </tr>
                     </thead>
                     <tbody>
-                      {bets.map((b) => (
+                      {visibleBets.map((b) => (
                         <tr key={b.id}>
                           <td>{dateLabel(b.date)}</td>
                           <td className="bets-match-cell" title={b.match || `${b.team1 || "—"} vs ${b.team2 || "—"}`}>
