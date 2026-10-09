@@ -22,6 +22,15 @@ export function clearToken() {
   localStorage.removeItem("userRole");
 }
 
+/** Current access token (for raw fetch calls such as multipart uploads). */
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+export function getApiBase(): string {
+  return BASE;
+}
+
 async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
   try {

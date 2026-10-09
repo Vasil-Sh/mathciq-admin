@@ -87,3 +87,24 @@ export interface AdminUserBet {
   strategy: string;
   createdAt: string;
 }
+
+// ── Banners (advertising on the matches schedule) ──
+
+export interface Banner {
+  id: string;
+  active: boolean;
+  title: string;
+  description: string;
+  imageUrl: string;
+  href: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BannerInput {
+  active: boolean;
+  title: string;
+  description: string;
+  imageUrl: string;
+  href: string;
+}

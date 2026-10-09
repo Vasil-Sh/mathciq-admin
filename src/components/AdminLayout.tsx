@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, ChevronRight, ShieldCheck, CircleDollarSign } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, ChevronRight, ShieldCheck, CircleDollarSign, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -9,6 +9,7 @@ const navigation = [
   { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard },
   { label: "Користувачі", href: "/users", icon: Users },
   { label: "Ставки", href: "/bets", icon: CircleDollarSign },
+  { label: "Банери", href: "/banners", icon: Megaphone },
 ];
 
 export default function AdminLayout() {
