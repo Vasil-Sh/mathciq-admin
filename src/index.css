@@ -231,8 +231,10 @@
   .directory-tabs button.selected { color:#4278f5; border-color:#4278f5; font-weight:600; }
   .directory-tabs button > span { padding:2px 6px; background:#f1f4f9; color:#8c99ad; border-radius:5px; font-size:9px; }
   .directory-tabs button.selected > span { color:#4278f5; background:#edf3ff; }
-  .directory-filters { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:16px 24px; }
-  .directory-search { display:flex; align-items:center; gap:9px; border:1px solid #e4eaf4; border-radius:9px; padding:0 12px; height:39px; width:min(100%,350px); color:#94a2b8; background:#fbfcfe; }
+  .directory-filters { display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:14px; padding:16px 24px; }
+  .directory-filters > * { flex-shrink:0; }
+  .directory-filters .directory-search { margin-left:auto; }
+  .directory-search { display:flex; align-items:center; gap:9px; border:1px solid #e4eaf4; border-radius:9px; padding:0 12px; height:39px; width:min(100%,300px); color:#94a2b8; background:#fbfcfe; }
   .directory-search:focus-within { border-color:#9bb7f5; box-shadow:0 0 0 3px #4278f510; }
   .directory-search > svg { flex-shrink:0; }
   .directory-search input { width:100%; min-width:0; outline:none; background:transparent; color:#34445e; font-size:11px; }

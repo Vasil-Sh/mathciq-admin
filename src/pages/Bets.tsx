@@ -358,27 +358,25 @@ export default function Bets() {
               ))}
             </div>
 
-            {/* Game filter */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted">Гра:</span>
-              {["all", ...availableGames].map((game) => (
-                <button
-                  key={game}
-                  type="button"
-                  onClick={() => setGameFilter(game)}
-                  className={`px-3 py-1.5 rounded-btn border text-xs font-medium transition-colors ${
-                    gameFilter === game
-                      ? "border-primary text-primary bg-surface-subtle"
-                      : "border-hairline text-body hover:border-hairline-hover"
-                  }`}
-                >
-                  {game === "all" ? "Всі" : game}
-                </button>
-              ))}
-            </div>
-
-            {/* Search + sort */}
+            {/* Filters: game + search + sort in one line */}
             <div className="directory-filters">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted">Гра:</span>
+                {["all", ...availableGames].map((game) => (
+                  <button
+                    key={game}
+                    type="button"
+                    onClick={() => setGameFilter(game)}
+                    className={`px-3 py-1.5 rounded-btn border text-xs font-medium transition-colors ${
+                      gameFilter === game
+                        ? "border-primary bg-primary text-white"
+                        : "border-hairline text-body hover:border-hairline-hover"
+                    }`}
+                  >
+                    {game === "all" ? "Всі" : game}
+                  </button>
+                ))}
+              </div>
               <div className="directory-search">
                 <Search size={16} />
                 <input
@@ -402,7 +400,7 @@ export default function Bets() {
                     onClick={() => handleSort(key)}
                     className={`px-2.5 py-1.5 rounded-btn border transition-colors ${
                       sortKey === key
-                        ? "border-primary text-primary bg-surface-subtle font-medium"
+                        ? "border-primary bg-primary text-white font-medium"
                         : "border-hairline text-body hover:border-hairline-hover"
                     }`}
                   >
