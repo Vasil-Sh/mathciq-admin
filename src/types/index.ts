@@ -93,6 +93,7 @@ export interface AdminUserBet {
 export interface Banner {
   id: string;
   active: boolean;
+  slot: number;
   title: string;
   description: string;
   imageUrl: string;
@@ -103,8 +104,14 @@ export interface Banner {
 
 export interface BannerInput {
   active: boolean;
+  slot?: number;
   title: string;
   description: string;
   imageUrl: string;
   href: string;
+}
+
+export interface BannerSlotState {
+  slot: number;
+  placeholderEnabled: boolean;
 }

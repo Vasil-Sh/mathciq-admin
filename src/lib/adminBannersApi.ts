@@ -1,5 +1,5 @@
 import { api } from "./apiClient";
-import type { Banner, BannerInput } from "@/types";
+import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 export async function fetchBanners(): Promise<Banner[]> {
   const data = await api.get<{ banners: Banner[] }>("/banners");
@@ -19,6 +19,20 @@ export async function updateBanner(
 
 export async function deleteBanner(id: string): Promise<void> {
   await api.delete(`/banners/${id}`);
+}
+
+export async function fetchBannerSlots(): Promise<BannerSlotState[]> {
+  const data = await api.get<{ slots: BannerSlotState[] }>("/banners/slots");
+  return data.slots || [];
+}
+
+export async function updateBannerSlot(
+  slot: number,
+  placeholderEnabled: boolean
+): Promise<BannerSlotState> {
+  return api.put<BannerSlotState>(`/banners/slots/${slot}`, {
+    placeholderEnabled,
+  });
 }
 
 /** Upload a banner image (base64) and return its public URL. */

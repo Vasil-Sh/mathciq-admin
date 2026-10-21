@@ -34,11 +34,14 @@ import {
   updateBanner,
   deleteBanner,
   uploadBannerImage,
+  fetchBannerSlots,
+  updateBannerSlot,
 } from "@/lib/adminBannersApi";
-import type { Banner, BannerInput } from "@/types";
+import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 const EMPTY_FORM: BannerInput = {
   active: false,
+  slot: 1,
   title: "",
   description: "",
   imageUrl: "",
@@ -64,6 +67,7 @@ const BANNER_SPEC_TEXT = `Вимоги до рекламного банера Ma
 
 export default function Banners() {
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [slots, setSlots] = useState<BannerSlotState[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -107,8 +111,12 @@ export default function Banners() {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchBanners();
+      const [data, slotData] = await Promise.all([
+        fetchBanners(),
+        fetchBannerSlots(),
+      ]);
       setBanners(data);
+      setSlots(slotData);
     } catch (e) {
       setError((e as Error).message || "Не вдалося завантажити банери");
     } finally {
@@ -120,9 +128,9 @@ export default function Banners() {
     load();
   }, [load]);
 
-  const openCreate = () => {
+  const openCreate = (slot = 1) => {
     setEditing(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, slot });
     setFormOpen(true);
   };
 
@@ -130,6 +138,7 @@ export default function Banners() {
     setEditing(banner);
     setForm({
       active: banner.active,
+      slot: banner.slot ?? 1,
       title: banner.title,
       description: banner.description || "",
       imageUrl: banner.imageUrl || "",
@@ -189,6 +198,20 @@ export default function Banners() {
     }
   };
 
+  const togglePlaceholder = async (slot: number) => {
+    const current =
+      slots.find((s) => s.slot === slot)?.placeholderEnabled ?? false;
+    try {
+      const updated = await updateBannerSlot(slot, !current);
+      setSlots((prev) => {
+        const rest = prev.filter((s) => s.slot !== slot);
+        return [...rest, updated];
+      });
+    } catch (e) {
+      toast.error((e as Error).message || "Помилка оновлення");
+    }
+  };
+
   return (
     <div className="page-container">
       <p className="page-eyebrow">РОЗКЛАД МАТЧІВ</p>
@@ -200,7 +223,7 @@ export default function Banners() {
             розкладу.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={() => openCreate()}>
           <Plus size={16} /> Додати банер
         </Button>
       </div>
@@ -278,94 +301,160 @@ export default function Banners() {
             <p className="text-sm text-muted mt-1">
               Додайте перший банер, щоб показувати його на екрані «Матчі».
             </p>
-            <Button className="mt-5" onClick={openCreate}>
+            <Button className="mt-5" onClick={() => openCreate()}>
               <Plus size={16} /> Додати банер
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {banners.map((banner) => (
-            <Card key={banner.id} className="overflow-hidden">
-              <div className="h-32 bg-surface-subtle flex items-center justify-center border-b border-hairline relative">
-                {banner.imageUrl ? (
-                  <img
-                    src={banner.imageUrl}
-                    alt={banner.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-                ) : (
-                  <ImageIcon size={36} className="text-subtle" strokeWidth={1.2} />
-                )}
-              </div>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-ink leading-snug line-clamp-1">
-                      {banner.title}
-                    </h3>
-                    {banner.description && (
-                      <p className="text-sm text-muted mt-1.5 line-clamp-2">
-                        {banner.description}
-                      </p>
-                    )}
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {[1, 2].map((slot) => {
+            const banner = banners.find((b) => (b.slot ?? 1) === slot);
+            const slotLabel = slot === 1 ? "Слот 1 · верхній" : "Слот 2 · нижній";
+            const placeholderEnabled =
+              slots.find((s) => s.slot === slot)?.placeholderEnabled ?? false;
+            if (!banner) {
+              return (
+                <Card key={slot} className="flex flex-col overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-hairline bg-surface-subtle px-4 py-2.5">
+                    <span className="text-sm font-semibold text-ink">
+                      {slotLabel}
+                    </span>
+                    <Badge variant="default">Порожній</Badge>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={banner.active}
-                    onClick={() => toggleActive(banner)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                      banner.active ? "bg-primary" : "bg-hairline"
-                    }`}
-                    title={banner.active ? "Вимкнути банер" : "Увімкнути банер"}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        banner.active ? "translate-x-6" : "translate-x-1"
-                      }`}
+                  <CardContent className="flex min-h-[180px] flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                    <Megaphone
+                      size={32}
+                      className="text-subtle"
+                      strokeWidth={1.2}
                     />
-                  </button>
-                </div>
-                {banner.href && (
-                  <a
-                    href={banner.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary mt-3 hover:underline"
-                  >
-                    <ExternalLink size={12} /> Посилання
-                  </a>
-                )}
-                <div className="flex items-center gap-2 mt-5 pt-4 border-t border-hairline">
+                    <p className="text-sm text-muted">
+                      У цьому слоті немає банера.
+                    </p>
+                    <Button size="sm" onClick={() => openCreate(slot)}>
+                      <Plus size={14} /> Додати банер
+                    </Button>
+                  </CardContent>
+                  <div className="flex items-center gap-2 border-t border-hairline px-5 py-4">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={placeholderEnabled}
+                      onClick={() => togglePlaceholder(slot)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        placeholderEnabled ? "bg-primary" : "bg-hairline"
+                      }`}
+                      title={
+                        placeholderEnabled
+                          ? "Вимкнути плейсхолдер"
+                          : "Увімкнути плейсхолдер"
+                      }
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          placeholderEnabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                    <span className="text-sm text-muted">
+                      {placeholderEnabled ? "Плейсхолдер увімкнено" : "Плейсхолдер вимкнено"}
+                    </span>
+                  </div>
+                </Card>
+              );
+            }
+            return (
+              <Card key={slot} className="overflow-hidden">
+                <div className="flex items-center justify-between border-b border-hairline bg-surface-subtle px-4 py-2.5">
+                  <span className="text-sm font-semibold text-ink">
+                    {slotLabel}
+                  </span>
                   <Badge variant={banner.active ? "active" : "default"}>
                     {banner.active ? "Активний" : "Неактивний"}
                   </Badge>
-                  <div className="ml-auto flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(banner)}
-                    >
-                      <Pencil size={14} /> Редагувати
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger hover:text-danger"
-                      onClick={() => setDeleting(banner)}
-                    >
-                      <Trash2 size={14} /> Видалити
-                    </Button>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <div className="h-32 bg-surface-subtle flex items-center justify-center border-b border-hairline relative">
+                  {banner.imageUrl ? (
+                    <img
+                      src={banner.imageUrl}
+                      alt={banner.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
+                      }}
+                    />
+                  ) : (
+                    <ImageIcon
+                      size={36}
+                      className="text-subtle"
+                      strokeWidth={1.2}
+                    />
+                  )}
+                </div>
+                <CardContent className="p-5">
+                  <h3 className="font-semibold text-ink leading-snug line-clamp-1">
+                    {banner.title}
+                  </h3>
+                  {banner.description && (
+                    <p className="text-sm text-muted mt-1.5 line-clamp-2">
+                      {banner.description}
+                    </p>
+                  )}
+                  {banner.href && (
+                    <a
+                      href={banner.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary mt-3 hover:underline"
+                    >
+                      <ExternalLink size={12} /> Посилання
+                    </a>
+                  )}
+                  <div className="mt-4 flex items-center gap-2 border-t border-hairline pt-4">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={banner.active}
+                      onClick={() => toggleActive(banner)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        banner.active ? "bg-primary" : "bg-hairline"
+                      }`}
+                      title={
+                        banner.active ? "Вимкнути банер" : "Увімкнути банер"
+                      }
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          banner.active ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                    <span className="text-sm text-muted">
+                      {banner.active ? "Увімкнено" : "Вимкнено"}
+                    </span>
+                    <div className="ml-auto flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(banner)}
+                      >
+                        <Pencil size={14} /> Редагувати
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-danger hover:text-danger"
+                        onClick={() => setDeleting(banner)}
+                      >
+                        <Trash2 size={14} /> Видалити
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -389,6 +478,43 @@ export default function Banners() {
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Наприклад: Ексклюзивний промокод"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Слот показу</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, slot: 1 })}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    form.slot === 1
+                      ? "border-primary bg-primary/5"
+                      : "border-hairline hover:border-primary/40"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-ink">
+                    Слот 1 — верхній
+                  </span>
+                  <span className="block text-xs text-muted mt-1">
+                    Між «Зараз грають» і «Найближчі матчі»
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, slot: 2 })}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    form.slot === 2
+                      ? "border-primary bg-primary/5"
+                      : "border-hairline hover:border-primary/40"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-ink">
+                    Слот 2 — нижній
+                  </span>
+                  <span className="block text-xs text-muted mt-1">
+                    Перед «Завершені матчі»
+                  </span>
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="banner-desc">Опис</Label>
