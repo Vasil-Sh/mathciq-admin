@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSessionFilter } from "@/hooks/useSessionFilter";
 import {
   Users,
   ListChecks,
@@ -7,7 +8,6 @@ import {
   Target,
   CircleDollarSign,
   ChevronRight,
-  ChevronDown,
   Search,
   X,
   RefreshCw,
@@ -165,14 +165,14 @@ export default function Bets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdate, setLastUpdate] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("profit");
-  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [searchQuery, setSearchQuery] = useSessionFilter<string>("bets.search", "");
+  const [sortKey, setSortKey] = useSessionFilter<SortKey>("bets.sort", "profit", ["bets", "staked", "profit", "winRate", "roi"]);
+  const [sortDir, setSortDir] = useSessionFilter<SortDirection>("bets.direction", "desc", ["asc", "desc"]);
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [betsByUser, setBetsByUser] = useState<Record<number, AdminUserBet[]>>({});
   const [loadingBets, setLoadingBets] = useState<Record<number, boolean>>({});
-  const [gameFilter, setGameFilter] = useState<string>("all");
+  const [gameFilter, setGameFilter] = useSessionFilter<string>("bets.game", "all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -495,9 +495,9 @@ function BetsRow({
   const visibleBets = gameFilter === "all" ? bets : bets?.filter((b) => b.game === gameFilter);
   return (
     <>
-      <tr className="bets-row" onClick={onToggle}>
+      <tr className="bets-row" onClick={onToggle} aria-expanded={expanded}>
         <td>
-          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+          <button type="button" className="bets-expand-button" aria-expanded={expanded} aria-label={`${expanded ? "Згорнути" : "Показати"} ставки ${user.username}`} onClick={(event) => { event.stopPropagation(); onToggle(); }}><ChevronRight size={17} aria-hidden="true" /></button>
         </td>
         <td>
           <div className="directory-person">

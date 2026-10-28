@@ -1,9 +1,9 @@
-import { api } from "./apiClient";
+import { api, getApiBase } from "./apiClient";
 import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 export async function fetchBanners(): Promise<Banner[]> {
   const data = await api.get<{ banners: Banner[] }>("/banners");
-  return data.banners || [];
+  return (data.banners || []).map(b => ({...b,imageUrl: b.imageUrl?.startsWith("/api/") ? new URL(b.imageUrl,new URL(getApiBase(),window.location.origin)).href : b.imageUrl}));
 }
 
 export async function createBanner(input: BannerInput): Promise<Banner> {
@@ -41,5 +41,5 @@ export async function uploadBannerImage(
   mime: string
 ): Promise<string> {
   const res = await api.post<{ url: string }>("/banners/upload", { data, mime });
-  return res.url;
+  return res.url.startsWith("/api/") ? new URL(res.url,new URL(getApiBase(),window.location.origin)).href : res.url;
 }

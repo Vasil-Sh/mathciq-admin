@@ -91,6 +91,9 @@ export interface AdminUserBet {
 // ── Banners (advertising on the matches schedule) ──
 
 export interface Banner {
+  screen?: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
   id: string;
   active: boolean;
   slot: number;
@@ -103,6 +106,9 @@ export interface Banner {
 }
 
 export interface BannerInput {
+  screen?: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
   active: boolean;
   slot?: number;
   title: string;

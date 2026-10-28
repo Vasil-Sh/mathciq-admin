@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import BannerPreview from "@/components/BannerPreview";
 import {
   Megaphone,
   Plus,
@@ -41,6 +42,7 @@ import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 const EMPTY_FORM: BannerInput = {
   active: false,
+  screen: "matches", startsOn: null, endsOn: null,
   slot: 1,
   title: "",
   description: "",
@@ -66,13 +68,20 @@ const BANNER_SPEC_TEXT = `Вимоги до рекламного банера Ma
 • Максимальний розмір файлу: 1,5 МБ.
 
 Важливо:
-• Банер показується на всю ширину стрічки матчів, а висота блоку підлаштовується під зображення.
+• Банер показується на всю ширину обраного екрана, а висота блоку підлаштовується під зображення.
 • Банер відображається повністю, без обрізання та без спотворення пропорцій.
 • Уникайте зайвих білих або порожніх полів зверху і знизу — вони збільшують блок без користі.
 • Тримайте важливий текст і логотип у центрі, з невеликими відступами від країв (≈20 px).
 • Використовуйте великий контрастний текст, оскільки на мобільних пристроях банер зменшується.
 • Віддавайте перевагу світлому або нейтральному фону — він краще вписується у світлий інтерфейс розкладу.`;
 
+function campaignStatus(banner: Banner) {
+ const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ if (!banner.active) return 'Вимкнено';
+ if (banner.endsOn && banner.endsOn < today) return 'Завершено';
+ if (banner.startsOn && banner.startsOn > today) return 'Заплановано';
+ return 'Показується';
+}
 export default function Banners() {
   const [screen, setScreen] = useState<string>("matches");
   const screenLabel = BANNER_SCREENS.find((item) => item.id === screen)?.label;
@@ -140,7 +149,7 @@ export default function Banners() {
 
   const openCreate = (slot = 1) => {
     setEditing(null);
-    setForm({ ...EMPTY_FORM, slot });
+    setForm({ ...EMPTY_FORM, slot, screen });
     setFormOpen(true);
   };
 
@@ -148,6 +157,7 @@ export default function Banners() {
     setEditing(banner);
     setForm({
       active: banner.active,
+      screen: banner.screen || "matches", startsOn: banner.startsOn || null, endsOn: banner.endsOn || null,
       slot: banner.slot ?? 1,
       title: banner.title,
       description: banner.description || "",
@@ -162,6 +172,7 @@ export default function Banners() {
       toast.error("Вкажіть назву банера");
       return;
     }
+    if (form.startsOn && form.endsOn && form.startsOn > form.endsOn) { toast.error("Завершення не може бути раніше початку"); return; }
     setSaving(true);
     try {
       if (editing) {
@@ -231,7 +242,7 @@ export default function Banners() {
             Рекламні розміщення за екранами застосунку.
           </p>
         </div>
-        <Button onClick={() => openCreate()} disabled={screen !== "matches"}>
+        <Button onClick={() => openCreate()}>
           <Plus size={16} /> Додати банер
         </Button>
       </div>
@@ -303,20 +314,12 @@ export default function Banners() {
         </Alert>
       )}
 
-      {screen !== "matches" ? (
-        <Card className="mt-6">
-          <CardContent className="py-16 px-6 text-center">
-            <Megaphone size={36} className="mx-auto mb-4 text-primary" />
-            <h2 className="text-xl font-semibold">Банери на екрані «{screenLabel}»</h2>
-            <p className="text-sm text-muted mt-3 max-w-lg mx-auto">Розміщення на цьому екрані заплановано. Зараз створювати й показувати банери можна в розділі «Матчі».</p>
-          </CardContent>
-        </Card>
-      ) : loading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-24 text-muted">
           <Loader2 className="animate-spin mr-2" size={20} />
           Завантаження банерів…
         </div>
-      ) : banners.length === 0 ? (
+      ) : banners.filter((b) => (b.screen || "matches") === screen).length === 0 ? (
         <Card className="mt-6">
           <CardContent className="py-20 text-center">
             <Megaphone
@@ -326,7 +329,7 @@ export default function Banners() {
             />
             <p className="text-body font-medium">Банерів ще немає</p>
             <p className="text-sm text-muted mt-1">
-              Додайте перший банер, щоб показувати його на екрані «Матчі».
+              Додайте перший банер для екрана «{screenLabel}».
             </p>
             <Button className="mt-5" onClick={() => openCreate()}>
               <Plus size={16} /> Додати банер
@@ -335,8 +338,10 @@ export default function Banners() {
         </Card>
       ) : (
         <div className="admin-banner-grid">
-          {[1, 2].map((slot) => {
-            const banner = banners.find((b) => (b.slot ?? 1) === slot);
+          {[1, 2].flatMap<{slot:number;banner:Banner | undefined}>(slot => {
+            const items = banners.filter(b => (b.screen || "matches") === screen && (b.slot ?? 1) === slot);
+            return items.length ? items.map(banner => ({slot,banner})) : [{slot,banner:undefined}];
+          }).map(({slot,banner}) => {
             const slotLabel = slot === 1 ? "Слот 1 · верхній" : "Слот 2 · нижній";
             const placeholderEnabled =
               slots.find((s) => s.slot === slot)?.placeholderEnabled ?? false;
@@ -367,7 +372,7 @@ export default function Banners() {
                       type="button"
                       role="switch"
                       aria-checked={placeholderEnabled}
-                      onClick={() => togglePlaceholder(slot)}
+                      disabled={screen !== "matches"} onClick={() => togglePlaceholder(slot)}
                       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
                         placeholderEnabled ? "bg-primary" : "bg-hairline"
                       }`}
@@ -384,20 +389,20 @@ export default function Banners() {
                       />
                     </button>
                     <span className="text-sm text-muted">
-                      {placeholderEnabled ? "Плейсхолдер увімкнено" : "Плейсхолдер вимкнено"}
+                      {screen !== "matches" ? "Без плейсхолдера" : placeholderEnabled ? "Плейсхолдер увімкнено" : "Плейсхолдер вимкнено"}
                     </span>
                   </div>
                 </Card>
               );
             }
             return (
-              <Card key={slot} className="admin-banner-slot">
+              <Card key={banner.id} className="admin-banner-slot">
                 <div className="admin-banner-slot-header">
                   <span className="text-sm font-semibold text-ink">
                     {slotLabel}
                   </span>
-                  <Badge variant={banner.active ? "active" : "default"}>
-                    {banner.active ? "Активний" : "Неактивний"}
+                  <Badge variant={campaignStatus(banner) === "Показується" ? "active" : "default"}>
+                    {campaignStatus(banner)}
                   </Badge>
                 </div>
                 <div className="admin-banner-preview">
@@ -423,6 +428,7 @@ export default function Banners() {
                   <h3 className="font-semibold text-ink leading-snug line-clamp-1">
                     {banner.title}
                   </h3>
+                  <p className="text-sm text-muted mt-2">{banner.startsOn || "Без дати початку"} → {banner.endsOn || "Без завершення"}</p>
                   {banner.description && (
                     <p className="text-sm text-muted mt-1.5 line-clamp-2">
                       {banner.description}
@@ -487,16 +493,22 @@ export default function Banners() {
 
       {/* Create / edit dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="banner-editor-dialog">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Редагувати банер" : "Новий банер"}
             </DialogTitle>
             <DialogDescription>
-              Банер зʼявиться на екрані «Матчі», якщо він активний.
+              Оберіть екран, слот і період показу. В одному слоті одночасно показується один банер.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 banner-editor-body">
+            <div className="space-y-1.5"><Label htmlFor="banner-screen">Екран показу</Label><select id="banner-screen" className="w-full border rounded-xl p-3" value={form.screen || 'matches'} onChange={e => setForm({...form, screen:e.target.value})}>{BANNER_SCREENS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label htmlFor="banner-start">Початок показу</Label><Input id="banner-start" type="date" value={form.startsOn || ''} onChange={e => setForm({...form, startsOn:e.target.value || null})} /></div>
+              <div><Label htmlFor="banner-end">Останній день показу</Label><Input id="banner-end" type="date" min={form.startsOn || undefined} value={form.endsOn || ''} onChange={e => setForm({...form, endsOn:e.target.value || null})} /></div>
+            </div>
+            <p className="text-xs text-muted">За часом Києва, включно з останнім днем. Без дат — без обмежень. Після завершення банер автоматично зникає з застосунку.</p>
             <div className="space-y-1.5">
               <Label htmlFor="banner-title">Назва</Label>
               <Input
@@ -522,7 +534,7 @@ export default function Banners() {
                     Слот 1 — верхній
                   </span>
                   <span className="block text-xs text-muted mt-1">
-                    Між «Зараз грають» і «Найближчі матчі»
+                    {form.screen === "matches" ? "Між «Зараз грають» і «Найближчі матчі»" : "Перед основним вмістом екрана"}
                   </span>
                 </button>
                 <button
@@ -538,7 +550,7 @@ export default function Banners() {
                     Слот 2 — нижній
                   </span>
                   <span className="block text-xs text-muted mt-1">
-                    Перед «Завершені матчі»
+                    {form.screen === "matches" ? "Перед «Завершені матчі»" : "Після основного вмісту екрана"}
                   </span>
                 </button>
               </div>
@@ -613,19 +625,7 @@ export default function Banners() {
                 onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                 placeholder="…або вставте URL зображення"
               />
-              {form.imageUrl && (
-                <div className="mt-2 rounded-lg border border-hairline overflow-hidden bg-surface-subtle">
-                  <img
-                    src={form.imageUrl}
-                    alt="Попередній перегляд банера"
-                    className="w-full h-32 object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-                </div>
-              )}
+              {form.imageUrl && <BannerPreview src={form.imageUrl} />}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="banner-href">Посилання</Label>
@@ -643,7 +643,7 @@ export default function Banners() {
                 onChange={(e) => setForm({ ...form, active: e.target.checked })}
                 className="h-4 w-4 rounded border-hairline accent-[#4278f5]"
               />
-              <span className="text-sm text-ink">Показувати банер на екрані «Матчі»</span>
+              <span className="text-sm text-ink">Увімкнути показ у вибраний період</span>
             </label>
           </div>
           <DialogFooter>

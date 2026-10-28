@@ -1,4 +1,5 @@
 import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
+import { useSessionFilter } from "@/hooks/useSessionFilter";
 import UserEditorDialog from "@/components/UserEditorDialog";
 import { useState, useEffect, useMemo } from "react";
 
@@ -23,9 +24,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [error, setError] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [statusFilter, setStatusFilter] = useSessionFilter<StatusFilter>("users.status", "all", ["all", "active", "expired"]);
+  const [searchQuery, setSearchQuery] = useSessionFilter<string>("users.search", "");
+  const [sortDirection, setSortDirection] = useSessionFilter<SortDirection>("users.sort", null, [null, "asc", "desc"]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({ ...EMPTY_USER });
   const [lastCreatedPassword, setLastCreatedPassword] = useState("");
@@ -106,7 +107,7 @@ export default function Admin() {
     const currentEnd = parseDate(u.endDate);
     const base = currentEnd && currentEnd > today ? currentEnd : today;
     const newEnd = new Date(base); newEnd.setDate(newEnd.getDate() + 30);
-    const newEndStr = newEnd.toISOString().split("T")[0];
+    const newEndStr = `${newEnd.getFullYear()}-${String(newEnd.getMonth()+1).padStart(2,"0")}-${String(newEnd.getDate()).padStart(2,"0")}`;
     setLoading(true);
     try { await authService.updateUser(u.id, { endDate: newEndStr }); toast.success(`Підписку продовжено — до ${newEndStr}`); await fetchUsers(); }
     catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
@@ -166,10 +167,11 @@ export default function Admin() {
               <div><h2>Час продовжити підписки</h2><p>{expiringUsers.length} {subsLabel(expiringUsers.length)} протягом 3 днів</p></div>
             </header>
             <ul className="expiry-notice-list">{expiringUsers.map((u, i) => (
-              <li key={u.id || i}>
+              <li key={u.id || i} className="expiry-notice-action-row">
                 <div className="expiry-notice-identity"><UserAvatar user={u} /><div className="expiry-notice-person"><strong>{u.username}</strong><span>{u.telegram || "Користувач MatchIQ"}</span></div></div>
                 <span className="expiry-notice-deadline">{u.daysUntilExpiry === 0 ? "Сьогодні" : `Через ${u.daysUntilExpiry} ${daysLabel(u.daysUntilExpiry ?? 0)}`}</span>
                 <span className="expiry-notice-date">До {parseDate(u.endDate)?.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }) || u.endDate}</span>
+                <Button size="sm" disabled={loading} onClick={() => handleExtend(users.indexOf(u))}><Zap size={15} />+30 днів</Button>
               </li>
             ))}</ul>
           </section>
