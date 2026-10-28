@@ -290,10 +290,10 @@ export default function Banners() {
       <section className="admin-banner-screens" aria-label="Екрани показу банерів">
         <div className="admin-banner-screen-tabs" role="group" aria-label="Оберіть екран">
           {BANNER_SCREENS.map((item) => <button key={item.id} type="button" aria-pressed={screen === item.id} onClick={() => setScreen(item.id)}>
-            <span>{item.label}</span><small>{item.id === "matches" ? "Доступно" : "Заплановано"}</small>
+            <span>{item.label}</span>
           </button>)}
         </div>
-        <p>{screen === "matches" ? "Матчі · два слоти між секціями розкладу." : `${screenLabel} · нове місце показу ще не підключене.`}</p>
+
       </section>
 
       {error && (
