@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, ChevronRight, ShieldCheck, CircleDollarSign, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, CircleDollarSign, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -27,10 +27,10 @@ export default function AdminLayout() {
     <div className="sidebar-section-label">РОБОЧИЙ ПРОСТІР</div>
     <nav aria-label="Основна навігація" className="space-y-1.5">
       {navigation.map(({ label, href, icon: Icon }) => <Link key={href} to={href} onClick={close} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
-        <Icon size={19} /><span>{label}</span>{pathname === href && <ChevronRight size={15} className="ml-auto" />}
+        <Icon size={19} /><span>{label}</span>
       </Link>)}
     </nav>
-    <div className="sidebar-bottom">
+    <div className="sidebar-bottom"><div className="admin-sidebar-profile"><span className="header-avatar">{user?.username?.[0]?.toUpperCase() || "A"}</span><div><strong>{user?.username || "Адміністратор"}</strong><small>Адміністратор MatchIQ</small></div></div>
       <button className="sidebar-exit" onClick={() => { close?.(); setLogoutOpen(true); }}><LogOut size={17} /><span>Вийти з акаунта</span></button>
     </div>
   </>;
@@ -45,9 +45,11 @@ export default function AdminLayout() {
       </DialogContent>
     </Dialog>
     <div className="app-content">
-      <header className="workspace-header">
-        <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="mobile-menu" aria-label="Відкрити навігацію"><Menu size={21} /></button><span className="hidden sm:inline text-muted">Робочий простір</span><ChevronRight size={14} className="hidden sm:block text-subtle" /><span className="font-medium">{currentPage}</span></div>
-        <div className="flex items-center gap-3"><span className="header-role">Адміністратор</span><span className="header-avatar" title={user?.username}>{user?.username?.[0]?.toUpperCase() || "A"}</span></div>
+      <header className="workspace-header workspace-header-large">
+        <div className="workspace-heading">
+          <button type="button" onClick={() => setMobileOpen(true)} className="mobile-menu" aria-label="Відкрити навігацію" aria-expanded={mobileOpen}><Menu size={21} aria-hidden="true" /></button>
+          <div className="workspace-heading-copy"><span>Панель керування</span><strong>{currentPage}</strong></div>
+        </div>
       </header>
       <main id="main-content" className="min-w-0"><Outlet /></main>
       <footer className="workspace-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>

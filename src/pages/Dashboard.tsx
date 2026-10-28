@@ -1,5 +1,4 @@
 import DashboardDetails from "@/components/DashboardDetails";
-import BettingActivity from "@/components/BettingActivity";
 import { useEffect, useState } from "react";
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -153,18 +152,18 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
       <div className="page-container space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="admin-dashboard-hero">
           <div>
             <p className="page-eyebrow">АНАЛІТИКА ПЛАТФОРМИ</p>
-            <h1 className="page-title">Дашборд</h1>
+            <h1 className="page-title">Огляд платформи.</h1>
             <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2">
-              <p className="text-xs text-muted">Ваш бізнес у цифрах. Усе під контролем.</p>
+              <p className="text-xs text-muted">Користувачі, підписки та дохід MatchIQ.</p>
               {lastUpdate && (
                 <span className="text-xs text-subtle">· Оновлено: {lastUpdate}</span>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="admin-dashboard-actions">
             <button
               onClick={() => fetchData(true)}
               disabled={refreshing}
@@ -175,6 +174,8 @@ export default function Dashboard() {
             </button>
           <div className="relative" data-filter-dropdown>
             <button
+              aria-expanded={filterOpen}
+              aria-controls="admin-month-filter"
               onClick={() => setFilterOpen(!filterOpen)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-btn bg-primary text-white text-sm hover:bg-primary-hover transition-colors shadow-primary-glow"
             >
@@ -183,7 +184,7 @@ export default function Dashboard() {
             </button>
 
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-hairline rounded-2xl shadow-lg p-2 w-56 max-h-[340px] overflow-y-auto">
+              <div id="admin-month-filter" className="absolute right-0 top-full mt-2 z-50 bg-white border border-hairline rounded-2xl shadow-lg p-2 w-56 max-h-[340px] overflow-y-auto">
                 {monthOptions.map((mo) => {
                   const isActive = monthFilter_ === mo.key;
                   return (
@@ -252,7 +253,6 @@ export default function Dashboard() {
           </section>
         </div>
         <DashboardDetails stats={stats} months={revChartData} registrations={regByMonthLookup} revenueTotal={revTotal} registrationTotal={regTotal} />
-        <BettingActivity />
       </div>
     </div>
   );

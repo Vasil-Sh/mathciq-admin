@@ -1,9 +1,9 @@
 import MonthlyReport from "./MonthlyReport";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownRight, ArrowUpRight, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, FileBarChart2, Layers3, Trophy, UserPlus, Clock3, Wallet, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Layers3, Trophy, UserPlus } from "lucide-react";
 import type { AdminStats } from "@/lib/adminStatsApi";
-import { getDaysUntilExpiry, parseDate } from "@/lib/adminUtils";
+import { parseDate } from "@/lib/adminUtils";
 
 interface Props {
   stats: AdminStats;
@@ -37,7 +37,6 @@ export default function DashboardDetails({ stats, months, registrations, revenue
   const plans = [...(stats.planDistribution || [])].sort((a, b) => b.count - a.count);
   const planTotal = plans.reduce((total, plan) => total + plan.count, 0);
   const recent = stats.recentRegistrations || [];
-  const expiring = [...stats.expiringSubscriptions].sort((a, b) => getDaysUntilExpiry(a.endDate) - getDaysUntilExpiry(b.endDate));
 
   return <>
     <MonthlyReport months={months} registrations={registrations} revenueTotal={revenueTotal} registrationTotal={registrationTotal} />
@@ -77,23 +76,6 @@ export default function DashboardDetails({ stats, months, registrations, revenue
       </section>
     </div>
 
-    <section className="card-admin expiry-panel">
-      <PanelHeading icon={<CalendarDays size={19} />} title="Підписки, що закінчуються" description="Контроль термінів і своєчасне продовження" action={<span className="period-label"><Clock3 size={13} />Наступні 7 днів</span>} />
-      {!expiring.length ? <div className="expiry-clear">
-        <span className="expiry-check"><CheckCircle2 size={25} /></span>
-        <div><h3>Найближчим часом продовжень немає</h3><p>Жодна підписка не закінчується протягом наступних 7 днів.</p></div>
-        <span className="clear-status"><span />Без нагадувань</span>
-      </div> : <div className="expiry-content">
-        <p className="expiry-summary"><strong>{expiring.length}</strong> підписок потребують уваги <span>· {money(expiring.reduce((sum, person) => sum + Number(person.priceMonth || 0), 0))} / міс.</span></p>
-        <div className="expiry-grid">{expiring.map((person, i) => {
-          const days = getDaysUntilExpiry(person.endDate);
-          return <div key={person.username + i} className={`expiry-item ${days <= 3 ? "is-urgent" : ""}`}>
-            <span className="expiry-days"><strong>{Math.max(0, days)}</strong><span>днів</span></span>
-            <div className="person-name"><strong>{person.username}</strong><span>{person.telegram || displayDate(person.endDate)}</span></div>
-            <div className="expiry-date"><strong>{days < 0 ? "Прострочена" : days === 0 ? "Сьогодні" : displayDate(person.endDate)}</strong><span>{money(Number(person.priceMonth || 0))} / міс.</span></div>
-          </div>;
-        })}</div>
-      </div>}
-    </section>
+
   </>;
 }

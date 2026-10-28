@@ -306,15 +306,15 @@ export default function Bets() {
   const activeBettors = users.filter((u) => userStatsForGame(u, gameFilter).bets > 0).length;
 
   return (
-    <div className="users-page bets-page">
+    <div className="users-page bets-page admin-bets-screen">
       <div className="page-container space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="admin-page-hero">
           <div>
             <p className="page-eyebrow">МОНІТОРИНГ СТАВОК</p>
             <h1 className="page-title">Ставки користувачів</h1>
             <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2">
-              <p className="text-xs text-muted">Що ставлять користувачі та скільки заробляють.</p>
+              <p className="text-xs text-muted">Записи ставок, результати та активність користувачів.</p>
               {lastUpdate && (
                 <span className="text-xs text-subtle">· Оновлено: {lastUpdate}</span>
               )}
@@ -358,20 +358,35 @@ export default function Bets() {
               ))}
             </div>
 
+            {/* Table */}
+            <section className="card-admin user-directory" aria-label="Ставки користувачів" aria-busy={loading}>
+              <div className="directory-heading">
+                <div>
+                  <div className="directory-title">
+                    <h2>Користувачі та їхні ставки</h2>
+                    <span>{filtered.length}</span>
+                  </div>
+                  <p>Натисніть на рядок, щоб переглянути деталі ставок</p>
+                </div>
+                <div className="directory-sync">
+                  <span title={lastUpdate}>Оновлено {lastUpdate || "—"}</span>
+                  <button type="button" onClick={load} disabled={loading} aria-label="Оновити ставки" title="Оновити">
+                    <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+                  </button>
+                </div>
+              </div>
+
             {/* Filters: game + search + sort in one line */}
-            <div className="directory-filters">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-muted">Гра:</span>
+            <div className="admin-bets-directory-toolbar" role="region" aria-label="Фільтри ставок">
+              <div className="directory-tabs" role="group" aria-label="Фільтр за грою">
+                
                 {["all", ...availableGames].map((game) => (
                   <button
                     key={game}
                     type="button"
+                    aria-pressed={gameFilter === game}
                     onClick={() => setGameFilter(game)}
-                    className={`px-3 py-1.5 rounded-btn border text-xs font-medium transition-colors ${
-                      gameFilter === game
-                        ? "border-primary bg-primary text-white"
-                        : "border-hairline text-body hover:border-hairline-hover"
-                    }`}
+                    className={gameFilter === game ? "selected" : ""}
                   >
                     {game === "all" ? "Всі" : game}
                   </button>
@@ -391,18 +406,15 @@ export default function Bets() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted">
+              <div className="admin-bets-sort" role="group" aria-label="Сортування ставок">
                 <span>Сортування:</span>
                 {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
                   <button
                     key={key}
                     type="button"
+                    aria-pressed={sortKey === key}
                     onClick={() => handleSort(key)}
-                    className={`px-2.5 py-1.5 rounded-btn border transition-colors ${
-                      sortKey === key
-                        ? "border-primary bg-primary text-white font-medium"
-                        : "border-hairline text-body hover:border-hairline-hover"
-                    }`}
+                    className={sortKey === key ? "selected" : ""}
                   >
                     {SORT_LABELS[key]}
                     {sortKey === key && (sortDir === "asc" ? " ↑" : " ↓")}
@@ -410,24 +422,6 @@ export default function Bets() {
                 ))}
               </div>
             </div>
-
-            {/* Table */}
-            <section className="card-admin user-directory" aria-label="Ставки користувачів" aria-busy={loading}>
-              <div className="directory-heading">
-                <div>
-                  <div className="directory-title">
-                    <h2>Користувачі та їхні ставки</h2>
-                    <span>{filtered.length}</span>
-                  </div>
-                  <p>Натисніть на рядок, щоб переглянути деталі ставок</p>
-                </div>
-                <div className="directory-sync">
-                  <span title={lastUpdate}>Оновлено {lastUpdate || "—"}</span>
-                  <button type="button" onClick={load} disabled={loading} aria-label="Оновити ставки" title="Оновити">
-                    <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-                  </button>
-                </div>
-              </div>
 
               <div className="directory-table-scroll" tabIndex={0} role="region" aria-label="Таблиця ставок користувачів">
                 <table className="directory-table bets-table">

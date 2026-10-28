@@ -1,4 +1,4 @@
-import UserDirectory from "@/components/UserDirectory";
+import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
 import UserEditorDialog from "@/components/UserEditorDialog";
 import { useState, useEffect, useMemo } from "react";
 
@@ -150,9 +150,9 @@ export default function Admin() {
   }, [page, totalPages]);
 
   return (
-    <div className="users-page">
+    <div className="users-page admin-users-screen">
       <div className="page-container space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
+        <div className="admin-page-hero"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
           <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
             <Plus className="h-4 w-4" />Додати користувача
           </Button>
@@ -160,19 +160,19 @@ export default function Admin() {
         {error && <Alert><AlertTriangle className="h-5 w-5 text-danger" /><AlertDescription>{error}</AlertDescription></Alert>}
 
         {expiringUsers.length > 0 && (
-          <div className="rounded-card border border-amber-200 bg-warning-bg p-5">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" />
-              <div>
-                <strong className="font-medium text-ink">⚠️ {expiringUsers.length} {subsLabel(expiringUsers.length)} протягом 3 днів:</strong>
-                <ul className="mt-2 space-y-1.5">{expiringUsers.map((u, i) => (
-                  <li key={i} className="text-sm text-body">
-                    <span className="font-medium text-ink">{u.telegram}</span> (<span>{u.username}</span>) — <span className="font-medium text-warning">{u.daysUntilExpiry === 0 ? "закінчується сьогодні" : `залишилось ${u.daysUntilExpiry} ${daysLabel(u.daysUntilExpiry ?? 0)}`}</span><span className="text-subtle ml-1">(до {u.endDate})</span>
-                  </li>
-                ))}</ul>
-              </div>
-            </div>
-          </div>
+          <section className="admin-expiry-notice" aria-label="Підписки, що потребують уваги">
+            <header className="expiry-notice-heading">
+              <span className="detail-panel-icon"><Bell size={19} aria-hidden="true" /></span>
+              <div><h2>Час продовжити підписки</h2><p>{expiringUsers.length} {subsLabel(expiringUsers.length)} протягом 3 днів</p></div>
+            </header>
+            <ul className="expiry-notice-list">{expiringUsers.map((u, i) => (
+              <li key={u.id || i}>
+                <div className="expiry-notice-identity"><UserAvatar user={u} /><div className="expiry-notice-person"><strong>{u.username}</strong><span>{u.telegram || "Користувач MatchIQ"}</span></div></div>
+                <span className="expiry-notice-deadline">{u.daysUntilExpiry === 0 ? "Сьогодні" : `Через ${u.daysUntilExpiry} ${daysLabel(u.daysUntilExpiry ?? 0)}`}</span>
+                <span className="expiry-notice-date">До {parseDate(u.endDate)?.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }) || u.endDate}</span>
+              </li>
+            ))}</ul>
+          </section>
         )}
 
         <div className="users-summary-grid">

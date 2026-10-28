@@ -36,7 +36,7 @@ function telegramUsername(raw: string): string {
   return /^[a-zA-Z0-9_]{5,32}$/.test(withoutAt) ? withoutAt : "";
 }
 
-function UserAvatar({ user }: { user: UserData }) {
+export function UserAvatar({ user }: { user: UserData }) {
   const [failed, setFailed] = useState(false);
   const username = telegramUsername(user.telegram);
   const showPhoto = username && !failed;

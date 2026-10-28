@@ -48,6 +48,14 @@ const EMPTY_FORM: BannerInput = {
   href: "",
 };
 
+const BANNER_SCREENS = [
+  { id: "matches", label: "Матчі" },
+  { id: "journal", label: "Журнал ставок" },
+  { id: "analytics", label: "Аналітика" },
+  { id: "strategies", label: "Стратегії" },
+  { id: "risky-teams", label: "Ризиковані команди" },
+] as const;
+
 /** Текст-інструкція з вимогами до банера — для надсилання рекламодавцям. */
 const BANNER_SPEC_TEXT = `Вимоги до рекламного банера MatchIQ
 
@@ -66,6 +74,8 @@ const BANNER_SPEC_TEXT = `Вимоги до рекламного банера Ma
 • Віддавайте перевагу світлому або нейтральному фону — він краще вписується у світлий інтерфейс розкладу.`;
 
 export default function Banners() {
+  const [screen, setScreen] = useState<string>("matches");
+  const screenLabel = BANNER_SCREENS.find((item) => item.id === screen)?.label;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [slots, setSlots] = useState<BannerSlotState[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,23 +223,23 @@ export default function Banners() {
   };
 
   return (
-    <div className="page-container">
-      <p className="page-eyebrow">РОЗКЛАД МАТЧІВ</p>
-      <div className="flex items-start justify-between gap-6 flex-wrap">
+    <div className="page-container admin-banners-screen">
+      <div className="admin-page-hero">
         <div>
-          <h1 className="page-title">Банери</h1>
+          <p className="page-eyebrow">КОНТЕНТ ЗАСТОСУНКУ</p><h1 className="page-title">Банери</h1>
           <p className="page-subtitle">
-            Рекламні банери, які показуються на екрані «Матчі» між секціями
-            розкладу.
+            Рекламні розміщення за екранами застосунку.
           </p>
         </div>
-        <Button onClick={() => openCreate()}>
+        <Button onClick={() => openCreate()} disabled={screen !== "matches"}>
           <Plus size={16} /> Додати банер
         </Button>
       </div>
 
+
+
       {/* Інструкція з вимогами до розмірів банера */}
-      <Card className="mt-6 border-primary/20">
+      <Card className="mt-6 admin-banner-spec">
         <CardContent className="p-5">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <button
@@ -277,6 +287,15 @@ export default function Banners() {
         </CardContent>
       </Card>
 
+      <section className="admin-banner-screens" aria-label="Екрани показу банерів">
+        <div className="admin-banner-screen-tabs" role="group" aria-label="Оберіть екран">
+          {BANNER_SCREENS.map((item) => <button key={item.id} type="button" aria-pressed={screen === item.id} onClick={() => setScreen(item.id)}>
+            <span>{item.label}</span><small>{item.id === "matches" ? "Доступно" : "Заплановано"}</small>
+          </button>)}
+        </div>
+        <p>{screen === "matches" ? "Матчі · два слоти між секціями розкладу." : `${screenLabel} · нове місце показу ще не підключене.`}</p>
+      </section>
+
       {error && (
         <Alert className="mt-6 border-red-200 bg-danger-bg">
           <AlertTriangle size={16} className="text-danger shrink-0" />
@@ -284,7 +303,15 @@ export default function Banners() {
         </Alert>
       )}
 
-      {loading ? (
+      {screen !== "matches" ? (
+        <Card className="mt-6">
+          <CardContent className="py-16 px-6 text-center">
+            <Megaphone size={36} className="mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-semibold">Банери на екрані «{screenLabel}»</h2>
+            <p className="text-sm text-muted mt-3 max-w-lg mx-auto">Розміщення на цьому екрані заплановано. Зараз створювати й показувати банери можна в розділі «Матчі».</p>
+          </CardContent>
+        </Card>
+      ) : loading ? (
         <div className="flex items-center justify-center py-24 text-muted">
           <Loader2 className="animate-spin mr-2" size={20} />
           Завантаження банерів…
@@ -307,7 +334,7 @@ export default function Banners() {
           </CardContent>
         </Card>
       ) : (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="admin-banner-grid">
           {[1, 2].map((slot) => {
             const banner = banners.find((b) => (b.slot ?? 1) === slot);
             const slotLabel = slot === 1 ? "Слот 1 · верхній" : "Слот 2 · нижній";
@@ -315,8 +342,8 @@ export default function Banners() {
               slots.find((s) => s.slot === slot)?.placeholderEnabled ?? false;
             if (!banner) {
               return (
-                <Card key={slot} className="flex flex-col overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-hairline bg-surface-subtle px-4 py-2.5">
+                <Card key={slot} className="admin-banner-slot admin-banner-slot-empty">
+                  <div className="admin-banner-slot-header">
                     <span className="text-sm font-semibold text-ink">
                       {slotLabel}
                     </span>
@@ -364,8 +391,8 @@ export default function Banners() {
               );
             }
             return (
-              <Card key={slot} className="overflow-hidden">
-                <div className="flex items-center justify-between border-b border-hairline bg-surface-subtle px-4 py-2.5">
+              <Card key={slot} className="admin-banner-slot">
+                <div className="admin-banner-slot-header">
                   <span className="text-sm font-semibold text-ink">
                     {slotLabel}
                   </span>
@@ -373,12 +400,12 @@ export default function Banners() {
                     {banner.active ? "Активний" : "Неактивний"}
                   </Badge>
                 </div>
-                <div className="h-32 bg-surface-subtle flex items-center justify-center border-b border-hairline relative">
+                <div className="admin-banner-preview">
                   {banner.imageUrl ? (
                     <img
                       src={banner.imageUrl}
                       alt={banner.title}
-                      className="w-full h-full object-cover"
+                      className="admin-banner-image"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display =
                           "none";
