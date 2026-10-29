@@ -58,6 +58,7 @@ class AuthService {
     telegram: string;
     role: string;
     priceMonth: string;
+    startDate: string;
     endDate: string;
   }) {
     return api.post<{ username: string; password: string }>(

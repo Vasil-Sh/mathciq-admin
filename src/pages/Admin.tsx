@@ -65,7 +65,7 @@ export default function Admin() {
     if (users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase().trim())) { toast.error("Користувач з таким username вже існує"); return; }
     setLoading(true);
     try {
-      const result = await authService.createUser({ username: newUser.username.trim(), telegram: newUser.telegram.trim(), role: newUser.isAdmin ? "admin" : "user", priceMonth: cleanPrice(newUser.priceMonth.trim()), endDate: newUser.endDate.trim() });
+      const result = await authService.createUser({ username: newUser.username.trim(), telegram: newUser.telegram.trim(), role: newUser.isAdmin ? "admin" : "user", priceMonth: cleanPrice(newUser.priceMonth.trim()), startDate: newUser.startDate.trim(), endDate: newUser.endDate.trim() });
       setLastCreatedPassword(result.password);
       toast.success(`Користувача "${result.username}" створено!`);
       await fetchUsers();
@@ -210,7 +210,7 @@ export default function Admin() {
           search={searchQuery} onSearch={setSearchQuery} status={statusFilter} onStatus={setStatusFilter}
           sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
           totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
-          onOpen={setProfileUser} onEdit={openEditDialog} onExtend={handleExtend} onDelete={confirmDelete}
+          onOpen={setProfileUser} onExtend={handleExtend} onDelete={confirmDelete}
         />
       </div>
 

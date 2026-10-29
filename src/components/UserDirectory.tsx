@@ -23,7 +23,6 @@ interface Props {
   onPage: (value: number) => void;
   onRefresh: () => void;
   onOpen: (user: UserData) => void;
-  onEdit: (user: UserData, index: number) => void;
   onExtend: (index: number) => void;
   onDelete: (index: number) => void;
 }
@@ -95,7 +94,7 @@ export default function UserDirectory(p: Props) {
           <td><div className="directory-dates"><span><i />{dateLabel(user.startDate)}</span><strong><i />{dateLabel(user.endDate)}</strong></div></td>
           <td><SubscriptionStatus user={user} /></td>
           <td><span className={`directory-role ${user.isAdmin ? "is-admin" : ""}`}>{user.isAdmin && <ShieldCheck size={12} />}{user.isAdmin ? "Адмін" : "Користувач"}</span></td>
-          <td><div className="directory-actions"><button type="button" disabled={p.busy} onClick={() => p.onEdit(user, originalIndex)} aria-label={`Редагувати ${user.username}`} title="Редагувати користувача"><Pencil size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onExtend(originalIndex)} aria-label={`Продовжити підписку ${user.username} на 30 днів`} title="Продовжити на 30 днів" className="extend-action"><Zap size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onDelete(originalIndex)} aria-label={`Видалити ${user.username}`} title="Видалити користувача" className="delete-action"><Trash2 size={15} /></button></div></td>
+          <td><div className="directory-actions"><button type="button" disabled={p.busy} onClick={() => p.onOpen(user)} aria-label={`Відкрити картку ${user.username}`} title="Відкрити картку користувача"><Pencil size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onExtend(originalIndex)} aria-label={`Продовжити підписку ${user.username} на 30 днів`} title="Продовжити на 30 днів" className="extend-action"><Zap size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onDelete(originalIndex)} aria-label={`Видалити ${user.username}`} title="Видалити користувача" className="delete-action"><Trash2 size={15} /></button></div></td>
         </tr>) : <tr><td colSpan={6}><div className="directory-empty"><Users size={29} /><h3>{p.busy ? "Завантаження користувачів…" : "Користувачів не знайдено"}</h3><p>{p.search || p.status !== "all" ? "Спробуйте інший запит або змініть фільтр." : "Додайте першого користувача, щоб розпочати."}</p>{(p.search || p.status !== "all") && <button onClick={() => { p.onSearch(""); p.onStatus("all"); }}>Скинути фільтри</button>}</div></td></tr>}</tbody>
       </table>
     </div>
