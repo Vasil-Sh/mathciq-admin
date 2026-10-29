@@ -42,9 +42,10 @@ Deploy the accompanying mathciq backend changes and apply backend/src/db/migrati
 
 
 ## Manual payments
-- Open a user card from the username, then Payments → Add payment.
+- Open a user card from the username or the pencil action, then Payments → Add payment (Додати оплату).
 - UAH amounts, payment date, inclusive subscription period and optional note. Payment dates cannot be in the future.
-- Extending subscription is opt-in and only moves the end date forward. The payment, access change and audit entry commit atomically.
+- Extending the subscription is enabled by default when Add payment opens. The amount is prefilled from the user tariff; the suggested period starts the day after a current subscription ends, or today if it has expired, and covers 30 inclusive days. All payment fields can be edited before saving.
+- Uncheck the subscription extension option to record only the payment without changing access dates. Extension only moves the end date forward and never shortens an existing subscription. The payment, access change and audit entry commit atomically.
 - Request UUID prevents a repeated submission from recording the same payment twice.
 - Cancellation requires a reason, preserves the original record and removes it from dashboard totals. It neither refunds money nor rolls back access dates.
 - Dashboard totals use recorded payments in the selected month/current year, separately from tariff estimates. No bank verification or payment-provider integration is implied.

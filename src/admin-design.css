@@ -900,3 +900,5 @@ button, input, select, textarea { font-family:inherit; }
 .user-profile-dialog .payment-record-actions .adm-ui-button.profile-action-cancel { background:#c84652; border-color:#c84652; color:#fff; }
 .user-profile-dialog .payment-record-actions .adm-ui-button.profile-action-cancel:hover:not(:disabled) { background:#ad3440; border-color:#ad3440; color:#fff; }
 
+
+.animated-number { font-variant-numeric:tabular-nums; }

@@ -1,3 +1,4 @@
+import AnimatedNumber from "@/components/AnimatedNumber";
 import { Link } from "react-router-dom";
 import DashboardDetails from "@/components/DashboardDetails";
 import { useEffect, useState } from "react";
@@ -234,14 +235,14 @@ export default function Dashboard() {
         <div className="dashboard-section-label"><h2>Головні показники</h2><span>Оплати — за обраний період. Підписки та користувачі — поточний стан.</span></div>
         <div className="dashboard-summary-grid">
           {[
-            { icon: Wallet, label: "Отримані оплати", value: `₴${paymentAmount.toLocaleString("uk-UA")}`, note: `${currLabel} · ${paymentCount} оплат`, tone: "", to: "/users" },
-            { icon: TrendingUp, label: "Вартість підписок / міс.", value: `₴${kpiMrr.toLocaleString("uk-UA")}`, note: "розрахунок · активні сьогодні", tone: "", to: "/users?role=user&status=active" },
+            { icon: Wallet, label: "Отримані оплати", value: paymentAmount, note: `${currLabel} · ${paymentCount} оплат`, tone: "", to: "/users" },
+            { icon: TrendingUp, label: "Вартість підписок / міс.", value: kpiMrr, note: "розрахунок · активні сьогодні", tone: "", to: "/users?role=user&status=active" },
             { icon: Users, label: "Активні користувачі", value: stats.activeUsers, note: `з ${stats.totalUsers} · без адміністраторів`, tone: "user-summary--green", to: "/users?role=user&status=active" },
             { icon: UserPlus, label: "Нові цього місяця", value: kpiNewMonth, note: "нові облікові записи", tone: "", to: "/users?role=user&status=all&new=month" },
           ].map(({ icon: Icon, label, value, note, tone, to }) => (
             <Link key={label} to={to} className={`card-admin user-summary dashboard-kpi-link ${tone}`}>
               <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
-              <strong className="user-summary-value">{value}</strong>
+              <strong className="user-summary-value"><AnimatedNumber value={value} format={label === "Отримані оплати" || label === "Вартість підписок / міс." ? n=>`₴${Math.round(n).toLocaleString("uk-UA")}` : undefined}/></strong>
               <p className="user-summary-note"><span />{note}</p>
             </Link>
           ))}

@@ -1,3 +1,4 @@
+import AnimatedNumber from "@/components/AnimatedNumber";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserProfileCard from "@/components/UserProfileCard";
 import { useSearchParams } from "react-router-dom";
@@ -197,7 +198,7 @@ export default function Admin() {
           ].map(({ icon: Icon, label, value, note, tone }) => (
             <section key={label} className={`card-admin user-summary ${tone}`}>
               <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
-              <strong className="user-summary-value">{value}</strong>
+              <strong className="user-summary-value"><AnimatedNumber value={value}/></strong>
               <p className="user-summary-note"><span />{note}</p>
             </section>
           ))}

@@ -1,3 +1,4 @@
+import AnimatedNumber from "@/components/AnimatedNumber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
 import {
@@ -343,8 +344,8 @@ export default function Bets() {
             <div className="users-summary-grid">
               {[
                 { icon: ListChecks, label: "Ставок всього", value: gameTotals.bets, note: `${gameTotals.wins} виграш / ${gameTotals.losses} програш${gameTotals.pending ? ` / ${gameTotals.pending} очікує` : ""}`, tone: "" },
-                { icon: Wallet, label: "Сума ставок", value: moneyAbs(gameTotals.staked), note: "обіг по всіх користувачах", tone: "user-summary--amber" },
-                { icon: TrendingUp, label: "Загальний профіт", value: money(gameTotals.profit, true), note: `ROI ${overallRoi.toFixed(1).replace(".", ",")}%`, tone: gameTotals.profit >= 0 ? "user-summary--green" : "user-summary--rose" },
+                { icon: Wallet, label: "Сума ставок", value: gameTotals.staked, note: "обіг по всіх користувачах", tone: "user-summary--amber" },
+                { icon: TrendingUp, label: "Загальний профіт", value: gameTotals.profit, note: `ROI ${overallRoi.toFixed(1).replace(".", ",")}%`, tone: gameTotals.profit >= 0 ? "user-summary--green" : "user-summary--rose" },
                 { icon: Users, label: "Грають", value: activeBettors, note: `з ${users.length} користувачів`, tone: "user-summary--blue" },
               ].map(({ icon: Icon, label, value, note, tone }) => (
                 <section key={label} className={`card-admin user-summary ${tone}`}>
@@ -352,7 +353,7 @@ export default function Bets() {
                     <span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span>
                     <h2>{label}</h2>
                   </div>
-                  <strong className="user-summary-value">{value}</strong>
+                  <strong className="user-summary-value"><AnimatedNumber value={value} format={label === "Сума ставок" ? moneyAbs : label === "Загальний профіт" ? n=>money(n,true) : undefined}/></strong>
                   <p className="user-summary-note"><span />{note}</p>
                 </section>
               ))}
