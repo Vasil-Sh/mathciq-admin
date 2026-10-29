@@ -1,10 +1,12 @@
+import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { History, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldCheck, Wallet, UserPlus, Pencil, Trash2, KeyRound, CalendarDays, Filter, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 type Entry = {
   id: string;
   actor_name: string;
+  actor_telegram?: string | null;
   action: string;
   target: string;
   target_username?: string | null;
@@ -13,7 +15,12 @@ type Entry = {
   created_at: string;
 };
 const fields: Record<string, string> = {
+  note: "Нотатка",
+  paymentId:"Оплата №", amount:"Сума", currency:"Валюта", paidOn:"Дата оплати", periodStart:"Період з", periodEnd:"Період до", extendSubscription:"Продовження доступу", cancelReason:"Причина скасування",
   username: "Логін",
+  telegram: "Telegram",
+  description: "Опис",
+  href: "Посилання",
   endDate: "Підписка до",
   startDate: "Підписка з",
   priceMonth: "Тариф",
@@ -33,18 +40,37 @@ const screenNames: Record<string, string> = {
   strategies: "Стратегії",
   "risky-teams": "Ризиковані команди",
 };
+function visibleDetails(entry: Entry) { return Object.entries(entry.details).filter(([key])=>key !== 'targetUsername' && !key.startsWith('_')); }
+function formatValue(key:string,value:unknown): string {
+ if(value === null || value === undefined || value === '') return 'Не вказано';
+ if(typeof value === 'boolean') return value ? 'Так' : 'Ні';
+ if(key==='screen') return screenNames[String(value)] || String(value);
+ if(key==='role') return value==='admin' ? 'Адміністратор' : 'Користувач';
+ if(['startDate','endDate','startsOn','endsOn'].includes(key) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value).split('-').reverse().join('.');
+ return String(value);
+}
+function Changes({entry}:{entry:Entry}) {
+ const changes=entry.details._changes as Record<string,{before:unknown;after:unknown}> | undefined;
+ if(changes) return Object.keys(changes).length ? <>{Object.entries(changes).map(([key,value])=><div key={key} className="audit-change"><span className="text-muted">{fields[key] || key}: </span><span className="audit-before">{formatValue(key,value.before)}</span><span aria-label="змінено на"> → </span><strong className="audit-after">{formatValue(key,value.after)}</strong></div>)}</> : <span className="text-muted">{entry.target.endsWith('/reset-password') ? 'Пароль замінено' : 'Без зміни значень'}</span>;
+ return <>{visibleDetails(entry).length > 0 && <small className="audit-legacy-note">Попередні значення не збережені</small>}{visibleDetails(entry).map(([key,value])=><div className="audit-change" key={key}><span className="text-muted">{fields[key] || key}: </span>{formatValue(key,value)}</div>)}{!visibleDetails(entry).length && '—'}</>;
+}
 function action(entry: Entry) {
+  if(entry.target.endsWith("/payments")) return "Додавання оплати";
+  if(entry.target.startsWith("/admin/payments/") && entry.target.endsWith("/cancel")) return "Скасування оплати";
+  if(entry.target.endsWith("/note")) return "Оновлення нотатки";
   if (entry.target.endsWith("/reset-password")) return "Скидання пароля";
   if (entry.target === "/auth/register") return "Створення користувача";
   if (entry.target.includes("/banners/slots/"))
     return "Налаштування плейсхолдера";
   if (entry.target.startsWith("/auth/users/") && entry.action === "PUT" &&
-      Object.keys(entry.details).filter(key => key !== "targetUsername").length === 1 && "endDate" in entry.details)
+      visibleDetails(entry).length === 1 && "endDate" in entry.details)
     return "Зміна терміну підписки";
   const subject = entry.target.includes("/banners") ? "банера" : "користувача";
   return `${entry.action === "POST" ? "Створення" : entry.action === "DELETE" ? "Видалення" : "Оновлення"} ${subject}`;
 }
 function targetLabel(entry: Entry) {
+  if(entry.target.includes("/payments")) return entry.target_username || "Запис оплати";
+  if(entry.target.endsWith("/note")) return entry.target_username || "Внутрішня нотатка";
   const userId = entry.target.match(/^\/auth\/users\/(\d+)/)?.[1];
   if (userId) return entry.target_username || (typeof entry.details.targetUsername === "string" ? entry.details.targetUsername : null) || (typeof entry.details.username === "string" ? entry.details.username : "Акаунт видалено · username не збережено");
   if (entry.target === "/auth/register") return typeof entry.details.username === "string"
@@ -56,7 +82,24 @@ function targetLabel(entry: Entry) {
     ? `Банер «${entry.details.title}»` : bannerId ? `Банер №${bannerId}` : "Новий банер";
   return "Налаштування застосунку";
 }
+function ActorAvatar({entry}: {entry:Entry}) {
+ const handle = (entry.actor_telegram || "").trim().replace(/^@/, "");
+ const [failedHandle,setFailedHandle] = useState<string | null>(null);
+ const showPhoto = /^[a-zA-Z0-9_]{5,32}$/.test(handle) && failedHandle !== handle;
+ return <span className="audit-row-icon audit-actor-avatar" aria-hidden="true">{showPhoto ? <img src={`https://t.me/i/userpic/320/${handle}.jpg`} alt="" loading="lazy" onError={()=>setFailedHandle(handle)} onLoad={e=>{if(e.currentTarget.naturalWidth <= 1)setFailedHandle(handle)}}/> : <ShieldCheck size={19}/>}</span>;
+}
+function ActionIcon({entry}: {entry:Entry}) {
+ const Icon = entry.target.includes('/payments') ? Wallet : entry.target.endsWith('/reset-password') ? KeyRound : entry.action === 'DELETE' ? Trash2 : entry.action === 'POST' ? UserPlus : 'endDate' in entry.details ? CalendarDays : Pencil;
+ return <span className="audit-row-icon" aria-hidden="true"><Icon size={19}/></span>;
+}
 export default function AuditLog() {
+  const [urlParams] = useSearchParams();
+  const userId=urlParams.get('userId') || '';
+  const history=urlParams.get('history') || '';
+  const [searchDraft,setSearchDraft]=useState(''), [search,setSearch]=useState('');
+  const [from,setFrom]=useState(''), [to,setTo]=useState('');
+  const [category,setCategory] = useState("all");
+  const [status,setStatus] = useState("all");
   const [page, setPage] = useState(1),
     [revision, setRevision] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]),
@@ -68,7 +111,7 @@ export default function AuditLog() {
     setLoading(true);
     setError("");
     api
-      .get<{ entries: Entry[]; hasMore: boolean }>(`/admin/audit?page=${page}`)
+      .get<{ entries: Entry[]; hasMore: boolean }>(`/admin/audit?page=${page}&category=${category}&status=${status}&q=${encodeURIComponent(search)}&from=${from}&to=${to}&userId=${encodeURIComponent(userId)}&history=${encodeURIComponent(history)}`)
       .then((data) => {
         if (live) {
           setEntries(data.entries);
@@ -84,7 +127,7 @@ export default function AuditLog() {
     return () => {
       live = false;
     };
-  }, [page, revision]);
+  }, [page, revision, category, status, search, from, to, userId, history]);
   return (
     <div className="page-container audit-page">
       <div className="admin-page-hero">
@@ -104,14 +147,21 @@ export default function AuditLog() {
           Оновити
         </Button>
       </div>
+      {userId && <div className="audit-history-context"><span>Історія користувача {urlParams.get('username') || ''} · записи з моменту підключення журналу</span><Link to="/audit">Увесь журнал</Link></div>}
       <section className="card-admin audit-log">
-        <div className="audit-intro">
-          <History size={20} />
-          <p>
-            Записи зберігаються з моменту підключення журналу. Паролі та токени
-            не записуються. Час — Київ.
-          </p>
+        <div className="audit-filters">
+          <div className="audit-filter-tabs" role="group" aria-label="Тип записів">
+            {[['all','Усі дії'],['users','Користувачі'],['banners','Банери']].map(([value,label]) => <button key={value} type="button" aria-pressed={category===value} onClick={()=>{setCategory(value);setPage(1)}}>{label}</button>)}
+          </div>
+          <label className="audit-result-filter"><Filter size={17} aria-hidden="true"/><span className="sr-only">Результат дії</span><select value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}><option value="all">Усі результати</option><option value="success">Виконано</option><option value="failed">Помилки</option><option value="pending">Не підтверджено</option></select></label>
         </div>
+        <form className="audit-search-filters" onSubmit={e=>{e.preventDefault();setSearch(searchDraft.trim());setPage(1)}}>
+          <label>Username автора або користувача<input value={searchDraft} onChange={e=>setSearchDraft(e.target.value)} placeholder="Пошук за username" maxLength={100}/></label>
+          <label>Від<input type="date" value={from} max={to || undefined} onChange={e=>{setFrom(e.target.value);setPage(1)}}/></label>
+          <label>До включно<input type="date" value={to} min={from || undefined} onChange={e=>{setTo(e.target.value);setPage(1)}}/></label>
+          <Button type="submit" variant="outline">Знайти</Button>
+          {(search || from || to) && <Button type="button" variant="outline" onClick={()=>{setSearch('');setSearchDraft('');setFrom('');setTo('');setPage(1)}}>Скинути</Button>}
+        </form>
         {loading ? (
           <p className="p-8" role="status">
             Завантаження історії…
@@ -125,15 +175,14 @@ export default function AuditLog() {
           </div>
         ) : entries.length === 0 ? (
           <p className="p-8 text-muted">
-            На цій сторінці ще немає дій. Зміни користувачів і банерів
-            з’являтимуться тут автоматично.
+            За вибраними фільтрами записів немає.
           </p>
         ) : (
           <div className="audit-table-wrap">
             <table className="audit-table">
               <thead>
                 <tr>
-                  <th scope="col">Коли</th>
+                  <th scope="col">Коли <span className="audit-timezone">Київ</span></th>
                   <th scope="col">Хто</th>
                   <th scope="col">Дія</th>
                   <th scope="col">Зміни</th>
@@ -145,40 +194,18 @@ export default function AuditLog() {
                   <tr key={entry.id}>
                     <td>
                       <time dateTime={entry.created_at}>
-                        {new Date(entry.created_at).toLocaleString("uk-UA", {
-                          timeZone: "Europe/Kyiv",
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
+                        <span>{new Date(entry.created_at).toLocaleDateString("uk-UA", {timeZone:"Europe/Kyiv",dateStyle:"short"})}</span>
+                        <span className="audit-time">{new Date(entry.created_at).toLocaleTimeString("uk-UA", {timeZone:"Europe/Kyiv",hour:"2-digit",minute:"2-digit"})}</span>
                       </time>
                     </td>
                     <td>
-                      <strong>{entry.actor_name}</strong>
+                      <div className="audit-cell-content"><ActorAvatar entry={entry}/><strong>{entry.actor_name}</strong></div>
                     </td>
                     <td>
-                      <strong>{action(entry)}</strong>
-                      <small>{targetLabel(entry)}</small>
+                      <div className="audit-cell-content"><ActionIcon entry={entry}/><div><strong>{action(entry)}</strong><small>{targetLabel(entry)}</small></div></div>
                     </td>
                     <td>
-                      {Object.entries(entry.details).filter(([key]) => key !== "targetUsername").length
-                        ? Object.entries(entry.details).filter(([key]) => key !== "targetUsername").map(([key, value]) => (
-                            <div key={key} className="audit-change">
-                              <span className="text-muted">
-                                {fields[key] || key}:{" "}
-                              </span>
-                              {value === null
-                                ? "Без обмеження"
-                                : typeof value === "boolean"
-                                  ? value
-                                    ? "Так"
-                                    : "Ні"
-                                  : key === "screen"
-                                    ? screenNames[String(value)] ||
-                                      String(value)
-                                    : String(value)}
-                            </div>
-                          ))
-                        : "—"}
+                      <Changes entry={entry}/>
                     </td>
                     <td>
                       <span

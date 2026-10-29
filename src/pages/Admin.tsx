@@ -1,3 +1,6 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import UserProfileCard from "@/components/UserProfileCard";
+import { useSearchParams } from "react-router-dom";
 import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
 import UserEditorDialog from "@/components/UserEditorDialog";
@@ -20,6 +23,10 @@ function daysLabel(n: number) { if (n === 1) return "день"; if (n >= 2 && n 
 function subsLabel(n: number) { if (n === 1) return "підписка закінчується"; if (n >= 2 && n <= 4) return "підписки закінчуються"; return "підписок закінчуються"; }
 
 export default function Admin() {
+  const [urlParams,setUrlParams] = useSearchParams();
+  const roleFilter = ["user","admin"].includes(urlParams.get("role") || "") ? urlParams.get("role")! : "all";
+  const newOnly = urlParams.get("new") === "month";
+  const [profileUser,setProfileUser]=useState<UserData|null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -46,7 +53,7 @@ export default function Admin() {
       const allUsers = await authService.fetchUsers();
       setUsers(allUsers.map(u => {
         const endDate = u.endDate || "";
-        return { id: u.id, telegram: u.telegram || "", username: u.username || "", priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
+        return { id: u.id, createdAt: u.createdAt, telegram: u.telegram || "", username: u.username || "", priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
       }).filter(u => u.username));
       setLastUpdate(new Date().toLocaleString("uk-UA"));
     } catch { setError("Помилка завантаження даних"); }
@@ -123,23 +130,27 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  const activeUsers = users.filter(u => u.isActive).length;
-  const inactiveUsers = users.filter(u => !u.isActive).length;
+  useEffect(()=>{const status=urlParams.get("status"); if(status === "all" || status === "active" || status === "expired") {setStatusFilter(status);setSearchQuery("");}},[urlParams]);
+  const scopedUsers = users.filter(u=>roleFilter === "all" || (roleFilter === "admin" ? u.isAdmin : !u.isAdmin));
+  const activeUsers = scopedUsers.filter(u => u.isActive).length;
+  const inactiveUsers = scopedUsers.filter(u => !u.isActive).length;
   const adminUsers = users.filter(u => u.isAdmin).length;
   const expiringUsers = users.filter(u => u.isActive && u.daysUntilExpiry !== undefined && u.daysUntilExpiry <= 3 && u.daysUntilExpiry >= 0);
 
   const displayedUsers = useMemo(() => {
     let result = users.map((u, i) => ({ user: u, originalIndex: i }));
+    if(roleFilter !== "all") result=result.filter(({user:u})=>roleFilter === "admin" ? u.isAdmin : !u.isAdmin);
+    if(newOnly) { const month=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit'}).format(new Date()); result=result.filter(({user:u})=>u.createdAt?.slice(0,7) === month); }
     if (statusFilter === "active") result = result.filter(({ user: u }) => u.isActive);
     else if (statusFilter === "expired") result = result.filter(({ user: u }) => !u.isActive);
     const q = searchQuery.trim().toLowerCase();
     if (q) result = result.filter(({ user: u }) => u.telegram.toLowerCase().includes(q) || u.username.toLowerCase().includes(q));
     if (sortDirection) result = [...result].sort((a, b) => { const da = parseDate(a.user.endDate); const db = parseDate(b.user.endDate); const ta = da ? da.getTime() : 0; const tb = db ? db.getTime() : 0; return sortDirection === "asc" ? ta - tb : tb - ta; });
     return result;
-  }, [users, statusFilter, searchQuery, sortDirection]);
+  }, [users, statusFilter, searchQuery, sortDirection, roleFilter, newOnly]);
 
   // Reset page when filter/search changes
-  useEffect(() => { setPage(1); }, [statusFilter, searchQuery]);
+  useEffect(() => { setPage(1); }, [statusFilter, searchQuery, roleFilter, newOnly]);
 
   const totalPages = Math.max(1, Math.ceil(displayedUsers.length / PAGE_SIZE));
   const pagedUsers = displayedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -193,19 +204,21 @@ export default function Admin() {
         </div>
 
         <UserDirectory
-          rows={pagedUsers} counts={{ all: users.length, active: activeUsers, expired: inactiveUsers }}
+          headerControls={<div className="users-scope-controls"><div className="directory-role-filter"><span id="users-role-label">Облікові записи</span><Select value={roleFilter} onValueChange={value=>{const next=new URLSearchParams(urlParams);next.set('role',value);setUrlParams(next);setPage(1)}}><SelectTrigger className="directory-sort" aria-labelledby="users-role-label"><Users size={14} /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Усі ролі</SelectItem><SelectItem value="user">Користувачі</SelectItem><SelectItem value="admin">Адміністратори</SelectItem></SelectContent></Select></div>{newOnly && <button onClick={()=>{const next=new URLSearchParams(urlParams);next.delete('new');setUrlParams(next)}}>Нові цього місяця ×</button>}</div>}
+          rows={pagedUsers} counts={{ all: scopedUsers.length, active: activeUsers, expired: inactiveUsers }}
           filteredCount={displayedUsers.length} updated={lastUpdate} busy={loading}
           search={searchQuery} onSearch={setSearchQuery} status={statusFilter} onStatus={setStatusFilter}
           sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
           totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
-          onEdit={openEditDialog} onExtend={handleExtend} onDelete={confirmDelete}
+          onOpen={setProfileUser} onEdit={openEditDialog} onExtend={handleExtend} onDelete={confirmDelete}
         />
       </div>
 
+      {profileUser && <UserProfileCard key={profileUser.id} user={profileUser} onUserChanged={fetchUsers} onClose={()=>setProfileUser(null)} onEdit={()=>{openEditDialog(profileUser,users.findIndex(u=>u.id===profileUser.id));setProfileUser(null)}}/>}
       <UserEditorDialog mode="add" open={addDialogOpen} onClose={handleCloseAddDialog}
         value={newUser} onChange={updates => setNewUser(current => ({ ...current, ...updates }))}
         onSave={handleAddUser} busy={loading} password={lastCreatedPassword} />
-      {editingUser && <UserEditorDialog mode="edit" open={editDialogOpen} onClose={handleCloseEditDialog}
+      {editingUser && <UserEditorDialog mode="edit" userId={editingUser.id} open={editDialogOpen} onClose={handleCloseEditDialog}
         value={editingUser} onChange={updates => setEditingUser(current => current ? { ...current, ...updates } : current)}
         onSave={handleSaveEdit} busy={loading} password={lastResetPassword} onResetPassword={handleResetPassword} />}
 

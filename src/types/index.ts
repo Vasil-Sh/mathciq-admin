@@ -12,6 +12,7 @@ export interface AdminUser {
 }
 
 export interface UserData {
+  createdAt?: string;
   id?: number;
   telegram: string;
   username: string;

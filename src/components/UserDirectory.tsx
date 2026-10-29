@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Search, X, SlidersHorizontal, RefreshCw, Pencil, Trash2, Zap, ShieldCheck, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseDate, cleanPrice } from "@/lib/adminUtils";
 import type { UserData, StatusFilter, SortDirection } from "@/types";
 
 interface Props {
+  headerControls?: ReactNode;
   rows: { user: UserData; originalIndex: number }[];
   counts: { all: number; active: number; expired: number };
   filteredCount: number;
@@ -21,6 +22,7 @@ interface Props {
   totalPages: number;
   onPage: (value: number) => void;
   onRefresh: () => void;
+  onOpen: (user: UserData) => void;
   onEdit: (user: UserData, index: number) => void;
   onExtend: (index: number) => void;
   onDelete: (index: number) => void;
@@ -72,7 +74,7 @@ export default function UserDirectory(p: Props) {
   return <section className="card-admin user-directory" aria-label="Список користувачів" aria-busy={p.busy}>
     <header className="directory-heading">
       <div><div className="directory-title"><h2>Список користувачів</h2><span>{p.counts.all}</span></div><p>Керуйте обліковими записами та підписками</p></div>
-      <div className="directory-sync"><span title={p.updated}>Оновлено {p.updated ? p.updated.split(', ')[1] || p.updated : "—"}</span><button type="button" onClick={p.onRefresh} disabled={p.busy} aria-label="Оновити список користувачів" title="Оновити список"><RefreshCw size={15} className={p.busy ? "animate-spin" : ""} /></button></div>
+      <div className="directory-heading-controls">{p.headerControls}<div className="directory-sync"><span title={p.updated}>Оновлено {p.updated ? p.updated.split(', ')[1] || p.updated : "—"}</span><button type="button" onClick={p.onRefresh} disabled={p.busy} aria-label="Оновити список користувачів" title="Оновити список"><RefreshCw size={15} className={p.busy ? "animate-spin" : ""} /></button></div></div>
     </header>
     <div className="directory-toolbar">
       <div className="directory-tabs" role="group" aria-label="Фільтр за статусом">
@@ -85,9 +87,10 @@ export default function UserDirectory(p: Props) {
     </div>
     <div className="directory-table-scroll" tabIndex={0} role="region" aria-label="Таблиця користувачів, доступне горизонтальне прокручування">
       <table className="directory-table">
+        <colgroup><col /><col className="directory-col-price" /><col className="directory-col-period" /><col className="directory-col-status" /><col className="directory-col-role" /><col className="directory-col-actions" /></colgroup>
         <thead><tr><th scope="col">Користувач</th><th scope="col">Тариф / міс.</th><th scope="col" aria-sort={p.sort === "asc" ? "ascending" : p.sort === "desc" ? "descending" : "none"}><button type="button" onClick={() => p.onSort(p.sort === null ? "asc" : p.sort === "asc" ? "desc" : null)}>Період підписки<ArrowUpDown size={12} /></button></th><th scope="col">Статус підписки</th><th scope="col">Роль</th><th scope="col" className="directory-actions-heading">Дії</th></tr></thead>
         <tbody>{p.rows.length ? p.rows.map(({ user, originalIndex }) => <tr key={user.id ?? originalIndex}>
-          <td><div className="directory-person"><UserAvatar user={user} /><div><strong title={user.username}>{user.username}</strong><span>{user.telegram || "Telegram не вказано"}</span></div></div></td>
+          <td><div className="directory-person"><UserAvatar user={user} /><div><button type="button" className="user-profile-open" title={user.username} onClick={()=>p.onOpen(user)}>{user.username}</button><span title={user.telegram || "Telegram не вказано"}>{user.telegram || "Telegram не вказано"}</span></div></div></td>
           <td><span className="directory-price">{Number(cleanPrice(user.priceMonth)).toLocaleString("uk-UA")}<small>грн</small></span></td>
           <td><div className="directory-dates"><span><i />{dateLabel(user.startDate)}</span><strong><i />{dateLabel(user.endDate)}</strong></div></td>
           <td><SubscriptionStatus user={user} /></td>

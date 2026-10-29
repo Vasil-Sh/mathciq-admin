@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { CalendarDays, CheckCircle2, Copy, KeyRound, Loader2, Plus, Save, ShieldCheck, UserRound, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import type { UserData } from "@/types";
 type EditorValue = Pick<UserData, "username" | "telegram" | "priceMonth" | "startDate" | "endDate" | "isAdmin">;
 interface Props {
   mode: "add" | "edit";
+  userId?: number;
   open: boolean;
   onClose: () => void;
   value: EditorValue;
@@ -55,6 +57,7 @@ export default function UserEditorDialog(p: Props) {
             <div className="editor-field"><label htmlFor={`${prefix}-end`}>Дата закінчення</label><Input id={`${prefix}-end`} type="date" value={dateInput(p.value.endDate)} onChange={e => setDate("endDate", e.target.value)} /></div>
           </div></section>
           <section className="editor-section editor-access"><div><div className="editor-section-title"><ShieldCheck size={15} /><h3>Роль і доступ</h3></div><p>{p.value.isAdmin ? "Керування користувачами та доступ до аналітики." : "Звичайний обліковий запис платформи."}</p></div><Select value={p.value.isAdmin ? "admin" : "user"} onValueChange={value => p.onChange({ isAdmin: value === "admin" })} disabled={p.busy}><SelectTrigger aria-label="Роль користувача"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">Користувач</SelectItem><SelectItem value="admin">Адміністратор</SelectItem></SelectContent></Select></section>
+          {!adding && p.userId && <Link className="subscription-history-link" to={`/audit?userId=${p.userId}&history=subscription&username=${encodeURIComponent(p.value.username)}`}>Історія підписки: продовження, тарифи та адміністратори →</Link>}
           {!adding && p.onResetPassword && <section className="editor-security"><span><KeyRound size={16} /><span><strong>Пароль облікового запису</strong><small>Скидання замінить поточний пароль новим.</small></span></span><Button type="button" variant="outline" size="sm" onClick={p.onResetPassword} disabled={p.busy}>Скинути пароль</Button></section>}
           {adding && <div className="editor-info"><KeyRound size={16} /><p>Пароль згенерується автоматично й з’явиться після створення користувача.</p></div>}
         </fieldset>
