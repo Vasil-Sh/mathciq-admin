@@ -1,3 +1,4 @@
+import {telegramUsername} from "@/lib/telegram";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Wallet, UserPlus, Pencil, Trash2, KeyRound, CalendarDays, Filter, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
@@ -83,7 +84,7 @@ function targetLabel(entry: Entry) {
   return "Налаштування застосунку";
 }
 function ActorAvatar({entry}: {entry:Entry}) {
- const handle = (entry.actor_telegram || "").trim().replace(/^@/, "");
+ const handle = telegramUsername(entry.actor_telegram);
  const [failedHandle,setFailedHandle] = useState<string | null>(null);
  const showPhoto = /^[a-zA-Z0-9_]{5,32}$/.test(handle) && failedHandle !== handle;
  return <span className="audit-row-icon audit-actor-avatar" aria-hidden="true">{showPhoto ? <img src={`https://t.me/i/userpic/320/${handle}.jpg`} alt="" loading="lazy" onError={()=>setFailedHandle(handle)} onLoad={e=>{if(e.currentTarget.naturalWidth <= 1)setFailedHandle(handle)}}/> : <ShieldCheck size={19}/>}</span>;
@@ -139,7 +140,7 @@ export default function AuditLog() {
           </p>
         </div>
         <Button
-          variant="outline"
+          variant="default"
           disabled={loading}
           onClick={() => setRevision((v) => v + 1)}
         >
@@ -159,7 +160,7 @@ export default function AuditLog() {
           <label>Username автора або користувача<input value={searchDraft} onChange={e=>setSearchDraft(e.target.value)} placeholder="Пошук за username" maxLength={100}/></label>
           <label>Від<input type="date" value={from} max={to || undefined} onChange={e=>{setFrom(e.target.value);setPage(1)}}/></label>
           <label>До включно<input type="date" value={to} min={from || undefined} onChange={e=>{setTo(e.target.value);setPage(1)}}/></label>
-          <Button type="submit" variant="outline">Знайти</Button>
+          <Button type="submit" variant="default">Знайти</Button>
           {(search || from || to) && <Button type="button" variant="outline" onClick={()=>{setSearch('');setSearchDraft('');setFrom('');setTo('');setPage(1)}}>Скинути</Button>}
         </form>
         {loading ? (
@@ -182,7 +183,7 @@ export default function AuditLog() {
             <table className="audit-table">
               <thead>
                 <tr>
-                  <th scope="col">Коли <span className="audit-timezone">Київ</span></th>
+                  <th scope="col">Коли</th>
                   <th scope="col">Хто</th>
                   <th scope="col">Дія</th>
                   <th scope="col">Зміни</th>

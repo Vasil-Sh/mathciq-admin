@@ -157,9 +157,13 @@ export default function Dashboard() {
     ? "Поточний рік"
     : `${formatMonthFullName(monthFilter_)} ${monthFilter_.split("-")[0]}`;
 
-  const chartYear = isAll ? new Date().getFullYear() : Number(monthFilter_.slice(0,4));
+  const kyivParts = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'numeric'}).formatToParts(new Date());
+  const currentYear = Number(kyivParts.find(part=>part.type==='year')!.value);
+  const currentMonth = Number(kyivParts.find(part=>part.type==='month')!.value);
+  const chartYear = isAll ? currentYear : Number(monthFilter_.slice(0,4));
+  const visibleMonths = chartYear < currentYear ? 12 : chartYear === currentYear ? currentMonth : 0;
   const paymentsLookup = Object.fromEntries((stats.paymentsByMonth || []).map(row=>[row.month,row.amount]));
-  const timeline = Array.from({length:12},(_,index)=>{
+  const timeline = Array.from({length:visibleMonths},(_,index)=>{
     const month = `${chartYear}-${String(index+1).padStart(2,"0")}`;
     return {month, revenue:chartMode === "payments" ? paymentsLookup[month] || 0 : revByMonth[month] || 0};
   });
@@ -242,7 +246,7 @@ export default function Dashboard() {
           ].map(({ icon: Icon, label, value, note, tone, to }) => (
             <Link key={label} to={to} className={`card-admin user-summary dashboard-kpi-link ${tone}`}>
               <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
-              <strong className="user-summary-value"><AnimatedNumber value={value} format={label === "Отримані оплати" || label === "Вартість підписок / міс." ? n=>`₴${Math.round(n).toLocaleString("uk-UA")}` : undefined}/></strong>
+              <strong className="user-summary-value"><AnimatedNumber value={value} format={label === "Отримані оплати" || label === "Вартість підписок / міс." ? n=>`₴${n.toLocaleString("uk-UA",{minimumFractionDigits:2,maximumFractionDigits:2})}` : undefined}/></strong>
               <p className="user-summary-note"><span />{note}</p>
             </Link>
           ))}

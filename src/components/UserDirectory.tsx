@@ -1,3 +1,4 @@
+import {telegramUsername} from "@/lib/telegram";
 import { useState, type ReactNode } from "react";
 import { Search, X, SlidersHorizontal, RefreshCw, Pencil, Trash2, Zap, ShieldCheck, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,12 +31,7 @@ interface Props {
 const dateLabel = (value: string) => parseDate(value)?.toLocaleDateString("uk-UA") || "—";
 
 /** Normalize a Telegram handle (with or without "@") → clean username for avatar URL. */
-function telegramUsername(raw: string): string {
-  const t = (raw || "").trim();
-  if (!t) return "";
-  const withoutAt = t.startsWith("@") ? t.slice(1) : t;
-  return /^[a-zA-Z0-9_]{5,32}$/.test(withoutAt) ? withoutAt : "";
-}
+
 
 export function UserAvatar({ user }: { user: UserData }) {
   const [failed, setFailed] = useState(false);

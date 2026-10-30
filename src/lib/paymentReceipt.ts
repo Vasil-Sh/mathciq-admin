@@ -1,6 +1,4 @@
-import {createElement} from 'react';
-import {renderToStaticMarkup} from 'react-dom/server';
-import {ChartNoAxesCombined} from 'lucide-react';
+import {telegramUsername} from "@/lib/telegram";
 type ReceiptPayment = {
   id:string; amount:string; paidOn:string; periodStart:string; periodEnd:string;
   createdBy:string; status:string; username?:string;
@@ -17,7 +15,8 @@ export async function createPaymentReceipt(payment:ReceiptPayment,user:{username
   const width=440,pad=30,available=width-2*pad;
   const brandColor='#4278f5';
   const logo=new Image();
-  const logoSvg=renderToStaticMarkup(createElement(ChartNoAxesCombined,{size:40,color:brandColor,strokeWidth:2,xmlns:'http://www.w3.org/2000/svg'}));
+  // Lucide ChartNoAxesCombined (ISC), same mark as the admin sidebar.
+  const logoSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${brandColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v5M16 14v7M20 10v11"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18v3M8 14v7"/></svg>`;
   await new Promise<void>((resolve,reject)=>{logo.onload=()=>resolve();logo.onerror=()=>reject(new Error('Не вдалося завантажити логотип.'));logo.src=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(logoSvg)}`;});
   let y=100;
   const commands:(()=>void)[]=[];
@@ -45,16 +44,26 @@ export async function createPaymentReceipt(payment:ReceiptPayment,user:{username
   text(`Чек № MIQ-${payment.id}`,18,true,'center');
   text(date(payment.paidOn),15,false,'center');
   rule();
-  text('КОРИСТУВАЧ',12);text(payment.username||user.username,18,true);
-  if(user.telegram){y+=12;text('Telegram',12);text(user.telegram.trim().replace(/^@/,''),18,true);}
-  y+=12;text('ОПЛАЧЕНИЙ ПЕРІОД',12);
-  text(`${date(payment.periodStart)} — ${date(payment.periodEnd)}`,17);
+  text('Користувач',18,true);text(payment.username||user.username,16);
+  if(user.telegram){y+=12;text('Telegram',18,true);text(telegramUsername(user.telegram)||user.telegram,16);}
+  y+=12;text('Оплачений період',18,true);
+  text(`${date(payment.periodStart)} — ${date(payment.periodEnd)}`,16);
   rule();
   text('Доступ до MatchIQ',18,true);
   text(`1 × ${money}`,16);
-  text(money,18,false,'right');
   rule();
-  text('СУМА',18,true);text(money,28,true,'right');
+  y+=16; // Extra clearance above the larger total amount.
+  const totalBaseline=y;
+  ctx.font='700 18px Arial, sans-serif';
+  const amountSpace=available-ctx.measureText('СУМА').width-24;
+  let amountSize=28;
+  ctx.font=`700 ${amountSize}px Arial, sans-serif`;
+  while(ctx.measureText(money).width>amountSpace && amountSize>12){amountSize--;ctx.font=`700 ${amountSize}px Arial, sans-serif`;}
+  commands.push(()=>{
+    ctx.fillStyle='#202020';ctx.font='700 18px Arial, sans-serif';ctx.textAlign='left';ctx.fillText('СУМА',pad,totalBaseline);
+    ctx.font=`700 ${amountSize}px Arial, sans-serif`;ctx.textAlign='right';ctx.fillText(money,width-pad,totalBaseline);
+  });
+  y+=Math.max(18,amountSize)*1.45;
   text('Статус: оплату записано',15);
   rule();
   text('Підтримка з питань оплати',14,false,'center');

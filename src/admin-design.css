@@ -902,3 +902,19 @@ button, input, select, textarea { font-family:inherit; }
 
 
 .animated-number { font-variant-numeric:tabular-nums; }
+
+.admin-profile-avatar { overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.admin-profile-avatar img { width:100%; height:100%; object-fit:cover; }
+
+.editor-dates-row { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.editor-grid > .user-profile-description { grid-column:1 / -1; }
+.editor-dates-row .editor-field { min-width:0; text-align:left; }
+.audit-table > thead > tr > th:nth-child(2),.audit-table > thead > tr > th:nth-child(3),.audit-table > thead > tr > th:nth-child(4) { text-align:center; }
+.admin-users-screen .user-directory .directory-actions button { background:#4278f5; border-color:#4278f5; color:#fff; }
+.admin-users-screen .user-directory .directory-actions button.extend-action { background:#19845b; border-color:#19845b; }
+.admin-users-screen .user-directory .directory-actions button.delete-action { background:#c84652; border-color:#c84652; }
+.admin-users-screen .user-directory .directory-actions button:hover:not(:disabled) { filter:brightness(.9); color:#fff; }
+.admin-users-screen .user-directory .directory-actions button:not(.extend-action):not(.delete-action):hover { background:#4278f5; }
+.admin-users-screen .user-directory .directory-actions button.extend-action:hover { background:#19845b; }
+.admin-users-screen .user-directory .directory-actions button.delete-action:hover { background:#c84652; }
+@media(max-width:420px){ .editor-dates-row {grid-template-columns:minmax(0,1fr);} }

@@ -1,3 +1,4 @@
+import AdminAvatar from "@/components/AdminAvatar";
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +32,7 @@ export default function AdminLayout() {
         <Icon size={19} /><span>{label}</span>
       </Link>)}
     </nav>
-    <div className="sidebar-bottom"><div className="admin-sidebar-profile"><span className="header-avatar">{user?.username?.[0]?.toUpperCase() || "A"}</span><div><strong>{user?.username || "Адміністратор"}</strong><small>Адміністратор MatchIQ</small></div></div>
+    <div className="sidebar-bottom"><div className="admin-sidebar-profile"><AdminAvatar username={user?.username}/><div><strong>{user?.username || "Адміністратор"}</strong><small>Адміністратор MatchIQ</small></div></div>
       <button className="sidebar-exit" onClick={() => { close?.(); setLogoutOpen(true); }}><LogOut size={17} /><span>Вийти з акаунта</span></button>
     </div>
   </>;

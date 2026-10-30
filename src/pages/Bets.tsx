@@ -1,3 +1,4 @@
+import {telegramUsername} from "@/lib/telegram";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
@@ -41,12 +42,7 @@ const pct = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
 const dateLabel = (value: string) => parseDate(value)?.toLocaleDateString("uk-UA") || "—";
 
 /** Normalize a Telegram handle (with or without "@") → clean username for avatar URL. */
-function telegramUsername(raw: string): string {
-  const t = (raw || "").trim();
-  if (!t) return "";
-  const withoutAt = t.startsWith("@") ? t.slice(1) : t;
-  return /^[a-zA-Z0-9_]{5,32}$/.test(withoutAt) ? withoutAt : "";
-}
+
 
 /** User avatar — Telegram photo when available, else a letter fallback. */
 function UserAvatar({ telegram, username, isAdmin }: { telegram: string; username: string; isAdmin: boolean }) {
