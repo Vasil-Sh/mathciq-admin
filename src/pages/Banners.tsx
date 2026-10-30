@@ -10,9 +10,6 @@ import {
   ExternalLink,
   Image as ImageIcon,
   UploadCloud,
-  Copy,
-  Ruler,
-  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,7 +35,6 @@ import {
   fetchBannerSlots,
   updateBannerSlot,
 } from "@/lib/adminBannersApi";
-import { fetchSettings } from "@/lib/adminSettingsApi";
 import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 const EMPTY_FORM: BannerInput = {
@@ -59,23 +55,6 @@ const BANNER_SCREENS = [
   { id: "risky-teams", label: "Ризиковані команди" },
 ] as const;
 
-/** Текст-інструкція з вимогами до банера — резервний варіант, якщо налаштування не задані. */
-const DEFAULT_BANNER_SPEC_TEXT = `Вимоги до рекламного банера MatchIQ
-
-• Формат: горизонтальний банер (широкий), співвідношення ≈ 11:1.
-• Рекомендований розмір: 1600×140 px (або будь-яке ширше з тим самим співвідношенням).
-• Мінімальна ширина: 1200 px.
-• Формат файлу: PNG, JPG або WebP.
-• Максимальний розмір файлу: 1,5 МБ.
-
-Важливо:
-• Банер показується на всю ширину обраного екрана, а висота блоку підлаштовується під зображення.
-• Банер відображається повністю, без обрізання та без спотворення пропорцій.
-• Уникайте зайвих білих або порожніх полів зверху і знизу — вони збільшують блок без користі.
-• Тримайте важливий текст і логотип у центрі, з невеликими відступами від країв (≈20 px).
-• Використовуйте великий контрастний текст, оскільки на мобільних пристроях банер зменшується.
-• Віддавайте перевагу світлому або нейтральному фону — він краще вписується у світлий інтерфейс розкладу.`;
-
 function campaignStatus(banner: Banner) {
  const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  if (!banner.active) return 'Вимкнено';
@@ -88,7 +67,6 @@ export default function Banners() {
   const screenLabel = BANNER_SCREENS.find((item) => item.id === screen)?.label;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [slots, setSlots] = useState<BannerSlotState[]>([]);
-  const [specText, setSpecText] = useState<string>(DEFAULT_BANNER_SPEC_TEXT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -98,7 +76,6 @@ export default function Banners() {
   const [deleting, setDeleting] = useState<Banner | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [specOpen, setSpecOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
@@ -132,14 +109,12 @@ export default function Banners() {
     setLoading(true);
     setError("");
     try {
-      const [data, slotData, settings] = await Promise.all([
+      const [data, slotData] = await Promise.all([
         fetchBanners(),
         fetchBannerSlots(),
-        fetchSettings(),
       ]);
       setBanners(data);
       setSlots(slotData);
-      if (settings.bannerSpecText?.trim()) setSpecText(settings.bannerSpecText);
     } catch (e) {
       setError((e as Error).message || "Не вдалося завантажити банери");
     } finally {
@@ -250,57 +225,6 @@ export default function Banners() {
           <Plus size={16} /> Додати банер
         </Button>
       </div>
-
-
-
-      {/* Інструкція з вимогами до розмірів банера */}
-      <Card className="mt-6 admin-banner-spec">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <button
-              type="button"
-              className="flex items-center gap-3 text-left flex-1 min-w-0"
-              onClick={() => setSpecOpen((o) => !o)}
-              aria-expanded={specOpen}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Ruler size={20} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-base font-semibold text-ink">
-                  Вимоги до банера
-                </span>
-                <span className="block text-sm text-muted mt-0.5">
-                  Скопіюйте цей текст і надішліть рекламодавцю.
-                </span>
-              </span>
-              <ChevronDown
-                size={18}
-                className={`ml-auto text-muted transition-transform shrink-0 ${specOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-            {specOpen && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard?.writeText(specText).then(
-                    () => toast.success("Інструкцію скопійовано"),
-                    () => toast.error("Не вдалося скопіювати"),
-                  );
-                }}
-              >
-                <Copy size={14} /> Скопіювати
-              </Button>
-            )}
-          </div>
-          {specOpen && (
-            <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-surface-subtle border border-hairline p-4 text-[13px] leading-relaxed text-body font-sans">
-              {specText}
-            </pre>
-          )}
-        </CardContent>
-      </Card>
 
       <section className="admin-banner-screens" aria-label="Екрани показу банерів">
         <div className="admin-banner-screen-tabs" role="group" aria-label="Оберіть екран">

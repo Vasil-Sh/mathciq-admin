@@ -7,19 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { fetchSettings, updateSettings } from "@/lib/adminSettingsApi";
-import type { AppSettings } from "@/types";
-
-const EMPTY: AppSettings = { defaultMonthlyPrice: 0, subscriptionDays: 30, bannerSpecText: "" };
 
 export default function Settings() {
-  const [form, setForm] = useState<AppSettings>(EMPTY);
+  const [priceText, setPriceText] = useState("");
+  const [daysText, setDaysText] = useState("30");
+  const [specText, setSpecText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     fetchSettings()
-      .then(setForm)
+      .then((s) => {
+        setPriceText(s.defaultMonthlyPrice ? String(s.defaultMonthlyPrice) : "");
+        setDaysText(String(s.subscriptionDays ?? 30));
+        setSpecText(s.bannerSpecText ?? "");
+      })
       .catch((e) => setError((e as Error).message || "Не вдалося завантажити налаштування"))
       .finally(() => setLoading(false));
   }, []);
@@ -28,12 +31,16 @@ export default function Settings() {
     setSaving(true);
     setError("");
     try {
+      const price = parseFloat(priceText.replace(",", "."));
+      const days = parseInt(daysText, 10);
       const updated = await updateSettings({
-        defaultMonthlyPrice: Number(form.defaultMonthlyPrice) || 0,
-        subscriptionDays: Number(form.subscriptionDays) || 30,
-        bannerSpecText: form.bannerSpecText,
+        defaultMonthlyPrice: Number.isFinite(price) && price >= 0 ? price : 0,
+        subscriptionDays: Number.isInteger(days) && days >= 1 ? days : 30,
+        bannerSpecText: specText,
       });
-      setForm(updated);
+      setPriceText(updated.defaultMonthlyPrice ? String(updated.defaultMonthlyPrice) : "");
+      setDaysText(String(updated.subscriptionDays));
+      setSpecText(updated.bannerSpecText);
       toast.success("Налаштування збережено");
     } catch (e) {
       setError((e as Error).message || "Не вдалося зберегти");
@@ -91,8 +98,8 @@ export default function Settings() {
               <Input
                 id="settings-price"
                 inputMode="decimal"
-                value={form.defaultMonthlyPrice ? String(form.defaultMonthlyPrice) : ""}
-                onChange={(e) => setForm({ ...form, defaultMonthlyPrice: Number(e.target.value) || 0 })}
+                value={priceText}
+                onChange={(e) => setPriceText(e.target.value)}
                 placeholder="0"
               />
             </div>
@@ -101,8 +108,8 @@ export default function Settings() {
               <Input
                 id="settings-days"
                 inputMode="numeric"
-                value={String(form.subscriptionDays)}
-                onChange={(e) => setForm({ ...form, subscriptionDays: Number(e.target.value) || 30 })}
+                value={daysText}
+                onChange={(e) => setDaysText(e.target.value)}
                 placeholder="30"
               />
             </div>
@@ -124,8 +131,8 @@ export default function Settings() {
               <Label htmlFor="settings-spec">Вимоги до банера</Label>
               <textarea
                 id="settings-spec"
-                value={form.bannerSpecText}
-                onChange={(e) => setForm({ ...form, bannerSpecText: e.target.value })}
+                value={specText}
+                onChange={(e) => setSpecText(e.target.value)}
                 rows={10}
                 className="w-full rounded-lg border border-hairline bg-white p-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
                 placeholder="Вимоги до рекламного банера MatchIQ…"

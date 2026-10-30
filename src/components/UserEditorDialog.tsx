@@ -45,7 +45,7 @@ export default function UserEditorDialog(p: Props) {
         <div className="editor-password-result"><span className="editor-section-label">ПАРОЛЬ ДЛЯ ВХОДУ</span><div><code>{p.password}</code><button type="button" onClick={copyPassword} aria-label="Скопіювати пароль"><Copy size={18} /></button></div><p>Збережіть пароль перед закриттям вікна. Переглянути його повторно буде неможливо.</p></div>
         <footer className="editor-footer"><span><ShieldCheck size={14} />Доступ налаштовано</span><Button onClick={p.onClose}>Готово</Button></footer>
       </> : <form onSubmit={event => { event.preventDefault(); p.onSave(); }}>
-        <fieldset disabled={p.busy} className="editor-body">
+        <div className="editor-body">
           <section className="editor-section"><div className="editor-section-title"><UserRound size={15} /><h3>Основна інформація</h3></div><div className="editor-grid">
             <div className="editor-field"><label htmlFor={`${prefix}-username`}>Логін <span>*</span></label><Input id={`${prefix}-username`} value={p.value.username} onChange={e => p.onChange({ username: e.target.value })} placeholder="Наприклад, match_user" required autoComplete="off" /><small>Використовується для входу в MatchIQ</small></div>
             <div className="editor-field"><label htmlFor={`${prefix}-telegram`}>Telegram {adding && <span>*</span>}</label><Input id={`${prefix}-telegram`} value={p.value.telegram} onChange={e => p.onChange({ telegram: e.target.value })} placeholder="@username або https://t.me/username" required={adding} autoComplete="off" /><small>Контакт для зв’язку з користувачем</small></div>
@@ -59,9 +59,9 @@ export default function UserEditorDialog(p: Props) {
           </div></section>
           <section className="editor-section editor-access"><div><div className="editor-section-title"><ShieldCheck size={15} /><h3>Роль і доступ</h3></div><p>{p.value.isAdmin ? "Керування користувачами та доступ до аналітики." : "Звичайний обліковий запис платформи."}</p></div><Select value={p.value.isAdmin ? "admin" : "user"} onValueChange={value => p.onChange({ isAdmin: value === "admin" })} disabled={p.busy}><SelectTrigger aria-label="Роль користувача"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">Користувач</SelectItem><SelectItem value="admin">Адміністратор</SelectItem></SelectContent></Select></section>
           {!adding && p.userId && <Link className="subscription-history-link" to={`/audit?userId=${p.userId}&history=subscription&username=${encodeURIComponent(p.value.username)}`}>Історія підписки: продовження, тарифи та адміністратори →</Link>}
-          {!adding && p.onResetPassword && <section className="editor-security"><span><KeyRound size={16} /><span><strong>Пароль облікового запису</strong><small>Скидання замінить поточний пароль новим.</small></span></span><Button type="button" variant="outline" size="sm" onClick={p.onResetPassword} disabled={p.busy}>Скинути пароль</Button></section>}
+          {!adding && p.onResetPassword && <section className="editor-security"><span><KeyRound size={16} /><span><strong>Пароль облікового запису</strong><small>Скидання замінить поточний пароль новим.</small></span></span><Button type="button" variant="destructive" size="sm" onClick={p.onResetPassword} disabled={p.busy}>Скинути пароль</Button></section>}
           {adding && <div className="editor-info"><KeyRound size={16} /><p>Пароль згенерується автоматично й з’явиться після створення користувача.</p></div>}
-        </fieldset>
+        </div>
         <footer className="editor-footer"><span>* Обов’язкові поля</span><div><Button type="button" variant="outline" onClick={p.onClose} disabled={p.busy}>Скасувати</Button><Button type="submit" disabled={p.busy}>{p.busy ? <Loader2 size={15} className="animate-spin" /> : adding ? <Plus size={15} /> : <Save size={15} />}{p.busy ? "Збереження…" : adding ? "Створити користувача" : "Зберегти зміни"}</Button></div></footer>
       </form>}
     </DialogContent>
