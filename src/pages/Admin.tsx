@@ -9,10 +9,12 @@ import { useState, useEffect, useMemo } from "react";
 
 import { authService } from "@/lib/authService";
 import { cleanPrice, parseDate, getDaysUntilExpiry, isSubscriptionActive } from "@/lib/adminUtils";
+import { fetchSettings } from "@/lib/adminSettingsApi";
+import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Calendar, CheckCircle, CheckCircle2, Copy, XCircle, Loader2, Bell, AlertTriangle, Crown, Plus, Pencil, Trash2, Save, X, Search, ArrowUpDown, ArrowUp, ArrowDown, Zap, User } from "lucide-react";
+import { Users, Calendar, CheckCircle, CheckCircle2, Copy, XCircle, Loader2, Bell, AlertTriangle, Crown, Plus, Pencil, Trash2, Save, X, Search, ArrowUpDown, ArrowUp, ArrowDown, Zap, User, Download } from "lucide-react";
 import { toast } from "sonner";
 import type { UserData, StatusFilter, SortDirection } from "@/types";
 
@@ -37,6 +39,7 @@ export default function Admin() {
   const [sortDirection, setSortDirection] = useSessionFilter<SortDirection>("users.sort", null, [null, "asc", "desc"]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({ ...EMPTY_USER });
+  const [defaultPrice, setDefaultPrice] = useState("");
   const [lastCreatedPassword, setLastCreatedPassword] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
@@ -47,6 +50,14 @@ export default function Admin() {
   const PAGE_SIZE = 10;
 
   useEffect(() => { fetchUsers(); }, []);
+
+  useEffect(() => {
+    fetchSettings()
+      .then((s) => {
+        if (s.defaultMonthlyPrice > 0) setDefaultPrice(String(s.defaultMonthlyPrice));
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true); setError("");
@@ -153,6 +164,23 @@ export default function Admin() {
   // Reset page when filter/search changes
   useEffect(() => { setPage(1); }, [statusFilter, searchQuery, roleFilter, newOnly]);
 
+  const exportUsersCsv = () => {
+    const rows = displayedUsers.map(({ user: u }) => [
+      u.username,
+      u.telegram,
+      u.isAdmin ? "Адміністратор" : "Користувач",
+      u.priceMonth || "",
+      u.startDate || "",
+      u.endDate || "",
+      u.isActive ? "Активний" : "Неактивний",
+    ]);
+    downloadCsv(
+      "users.csv",
+      ["Username", "Telegram", "Роль", "Тариф", "Підписка з", "Підписка до", "Статус"],
+      rows,
+    );
+  };
+
   const totalPages = Math.max(1, Math.ceil(displayedUsers.length / PAGE_SIZE));
   const pagedUsers = displayedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -166,8 +194,11 @@ export default function Admin() {
     <div className="users-page admin-users-screen">
       <div className="page-container space-y-6">
         <div className="admin-page-hero"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
-          <Button onClick={() => { setNewUser({ ...EMPTY_USER, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
+          <Button onClick={() => { setNewUser({ ...EMPTY_USER, priceMonth: defaultPrice, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
             <Plus className="h-4 w-4" />Додати користувача
+          </Button>
+          <Button variant="outline" onClick={exportUsersCsv}>
+            <Download className="h-4 w-4" />Експорт CSV
           </Button>
         </div>
         {error && <Alert><AlertTriangle className="h-5 w-5 text-danger" /><AlertDescription>{error}</AlertDescription></Alert>}

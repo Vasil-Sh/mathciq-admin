@@ -2,7 +2,7 @@ import AdminAvatar from "@/components/AdminAvatar";
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, CircleDollarSign, Megaphone, History } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, CircleDollarSign, Megaphone, History, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -12,6 +12,7 @@ const navigation = [
   { label: "Ставки", href: "/bets", icon: CircleDollarSign },
   { label: "Банери", href: "/banners", icon: Megaphone },
   { label: "Журнал дій", href: "/audit", icon: History },
+  { label: "Налаштування", href: "/settings", icon: Settings2 },
 ];
 
 export default function AdminLayout() {

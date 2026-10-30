@@ -20,6 +20,7 @@ import {
   Trophy,
   Layers,
   Flame,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { parseDate } from "@/lib/adminUtils";
+import { downloadCsv } from "@/lib/csv";
 import { fetchUsersOverview, fetchUserBets } from "@/lib/adminBetsApi";
 import type { AdminUserOverview, AdminUserBet, GameBreakdown, SortDirection } from "@/types";
 
@@ -237,6 +239,30 @@ export default function Bets() {
     }
   };
 
+  const exportCsv = () => {
+    const rows = filtered.map((u) => {
+      const s = userStatsForGame(u, gameFilter);
+      return [
+        u.username,
+        u.telegram || "",
+        s.bets,
+        s.wins,
+        s.losses,
+        u.pending,
+        s.staked,
+        s.profit,
+        s.winRate,
+        s.roi,
+        u.lossStreak,
+      ];
+    });
+    downloadCsv(
+      "bets.csv",
+      ["Username", "Telegram", "Ставок", "Виграші", "Програші", "Очікують", "Обіг", "Профіт", "Winrate %", "ROI %", "Серія програшів"],
+      rows,
+    );
+  };
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const list = q
@@ -317,10 +343,15 @@ export default function Bets() {
               )}
             </div>
           </div>
-          <Button onClick={load} disabled={loading} variant="default">
-            <RefreshCw className={loading ? "animate-spin" : ""} strokeWidth={1.5} />
-            Оновити
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={exportCsv} variant="outline">
+              <Download className="h-4 w-4" />Експорт CSV
+            </Button>
+            <Button onClick={load} disabled={loading} variant="default">
+              <RefreshCw className={loading ? "animate-spin" : ""} strokeWidth={1.5} />
+              Оновити
+            </Button>
+          </div>
         </div>
 
         {error && (

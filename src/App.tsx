@@ -8,6 +8,7 @@ const Admin = lazy(() => import("@/pages/Admin"));
 const Bets = lazy(() => import("@/pages/Bets"));
 const AuditLog = lazy(() => import("@/pages/AuditLog"));
 const Banners = lazy(() => import("@/pages/Banners"));
+const Settings = lazy(() => import("@/pages/Settings"));
 import AdminLayout from "@/components/AdminLayout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ function AppRoutes() {
         <Route path="/bets" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження ставок…</div>}><Bets /></Suspense>} />
         <Route path="/banners" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження банерів…</div>}><Banners /></Suspense>} />
         <Route path="/audit" element={<Suspense fallback={<div role="status">Завантаження журналу…</div>}><AuditLog /></Suspense>} />
+        <Route path="/settings" element={<Suspense fallback={<div role="status">Завантаження налаштувань…</div>}><Settings /></Suspense>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

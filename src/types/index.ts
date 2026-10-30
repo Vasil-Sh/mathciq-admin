@@ -122,3 +122,11 @@ export interface BannerSlotState {
   slot: number;
   placeholderEnabled: boolean;
 }
+
+// ── App settings (admin-managed) ──
+
+export interface AppSettings {
+  defaultMonthlyPrice: number;
+  subscriptionDays: number;
+  bannerSpecText: string;
+}

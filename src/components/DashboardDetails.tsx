@@ -1,7 +1,7 @@
 import MonthlyReport from "./MonthlyReport";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Layers3, Trophy, UserPlus } from "lucide-react";
+import { ArrowRight, ChevronDown, Layers3, Trophy, UserPlus } from "lucide-react";
 import type { AdminStats } from "@/lib/adminStatsApi";
 import { parseDate } from "@/lib/adminUtils";
 
@@ -58,9 +58,14 @@ export default function DashboardDetails({ stats, months, registrations, revenue
     </div>
     <div className="dashboard-extra">
     <MonthlyReport previousRevenue={Object.fromEntries(stats.revenueByMonth.map(row=>[row.month,row.revenue]))} months={months} registrations={registrations} revenueTotal={revenueTotal} registrationTotal={registrationTotal} />
-    <details className="card-admin dashboard-plan-disclosure"><summary>Тарифний розподіл <span>Показати деталі</span></summary>
+    <details className="card-admin monthly-report">
+      <summary className="monthly-heading">
+        <span className="monthly-heading-icon"><Layers3 size={20} /></span>
+        <span className="monthly-heading-text"><strong>Тарифний розподіл</strong><span>Поточні тарифи всіх користувачів</span></span>
+        <span className="monthly-period-count">{plans.length} тарифів</span>
+        <span className="monthly-disclosure"><ChevronDown size={15} /></span>
+      </summary>
       <section className="detail-panel">
-        <PanelHeading icon={<Layers3 size={19} />} title="Тарифний розподіл" description="Поточні тарифи всіх користувачів" />
         {plans.length ? <div className="plan-content">
           <div className="plan-total"><strong>{planTotal}</strong><span>користувачів на тарифах</span></div>
           <div className="plan-stack" aria-hidden="true">{plans.map((plan, i) => <span key={plan.price} style={{ width: `${planTotal ? plan.count / planTotal * 100 : 0}%`, background: planColors[i % planColors.length] }} />)}</div>

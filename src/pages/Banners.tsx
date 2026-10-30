@@ -38,6 +38,7 @@ import {
   fetchBannerSlots,
   updateBannerSlot,
 } from "@/lib/adminBannersApi";
+import { fetchSettings } from "@/lib/adminSettingsApi";
 import type { Banner, BannerInput, BannerSlotState } from "@/types";
 
 const EMPTY_FORM: BannerInput = {
@@ -58,8 +59,8 @@ const BANNER_SCREENS = [
   { id: "risky-teams", label: "Ризиковані команди" },
 ] as const;
 
-/** Текст-інструкція з вимогами до банера — для надсилання рекламодавцям. */
-const BANNER_SPEC_TEXT = `Вимоги до рекламного банера MatchIQ
+/** Текст-інструкція з вимогами до банера — резервний варіант, якщо налаштування не задані. */
+const DEFAULT_BANNER_SPEC_TEXT = `Вимоги до рекламного банера MatchIQ
 
 • Формат: горизонтальний банер (широкий), співвідношення ≈ 11:1.
 • Рекомендований розмір: 1600×140 px (або будь-яке ширше з тим самим співвідношенням).
@@ -87,6 +88,7 @@ export default function Banners() {
   const screenLabel = BANNER_SCREENS.find((item) => item.id === screen)?.label;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [slots, setSlots] = useState<BannerSlotState[]>([]);
+  const [specText, setSpecText] = useState<string>(DEFAULT_BANNER_SPEC_TEXT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -130,12 +132,14 @@ export default function Banners() {
     setLoading(true);
     setError("");
     try {
-      const [data, slotData] = await Promise.all([
+      const [data, slotData, settings] = await Promise.all([
         fetchBanners(),
         fetchBannerSlots(),
+        fetchSettings(),
       ]);
       setBanners(data);
       setSlots(slotData);
+      if (settings.bannerSpecText?.trim()) setSpecText(settings.bannerSpecText);
     } catch (e) {
       setError((e as Error).message || "Не вдалося завантажити банери");
     } finally {
@@ -280,7 +284,7 @@ export default function Banners() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  navigator.clipboard?.writeText(BANNER_SPEC_TEXT).then(
+                  navigator.clipboard?.writeText(specText).then(
                     () => toast.success("Інструкцію скопійовано"),
                     () => toast.error("Не вдалося скопіювати"),
                   );
@@ -292,7 +296,7 @@ export default function Banners() {
           </div>
           {specOpen && (
             <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-surface-subtle border border-hairline p-4 text-[13px] leading-relaxed text-body font-sans">
-              {BANNER_SPEC_TEXT}
+              {specText}
             </pre>
           )}
         </CardContent>

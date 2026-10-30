@@ -3,6 +3,7 @@ import {createPaymentReceipt,savePaymentReceipt} from '@/lib/paymentReceipt';
 import {useEffect,useRef,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {api} from '@/lib/apiClient';
+import {fetchSettings} from '@/lib/adminSettingsApi';
 import {toast} from 'sonner';
 type Payment={username?:string;id:string;amount:string;paidOn:string;periodStart:string;periodEnd:string;note:string;createdBy:string;status:string;cancelReason:string|null;cancelledBy:string|null;extendSubscription:boolean};
 type Summary={total:string;count:number;latest:Payment|null};
@@ -15,13 +16,15 @@ export default function UserPayments({userId,username,telegram,endDate,priceMont
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [form,setForm]=useState<Form|null>(null),[cancelId,setCancelId]=useState<string|null>(null),[reason,setReason]=useState('');
  const [summary,setSummary]=useState<Summary|null>(null);
+ const [subscriptionDays,setSubscriptionDays]=useState(30);
  const [preview,setPreview]=useState<{image:string;id:string}|null>(null);
  const [receiptBusy,setReceiptBusy]=useState<string|null>(null);
+ useEffect(()=>{fetchSettings().then(s=>setSubscriptionDays(s.subscriptionDays||30)).catch(()=>{})},[]);
  async function receipt(payment:Payment){setReceiptBusy(payment.id);try{const image=await createPaymentReceipt(payment,{username,telegram});setPreview({image,id:payment.id})}catch(e){toast.error((e as Error).message)}finally{setReceiptBusy(null)}}
  const lock=useRef(false);
  useEffect(()=>{onStateChange({dirty:!!form||!!cancelId,busy})},[form,cancelId,busy,onStateChange]);
  useEffect(()=>{let live=true;setLoading(true);setError('');api.get<{payments:Payment[];hasMore:boolean;summary:Summary}>(`/admin/users/${userId}/payments?page=${page}`).then(r=>{if(live){setPayments(r.payments);setHasMore(r.hasMore);setSummary(r.summary)}}).catch(e=>{if(live)setError(e.message)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[userId,page,revision]);
- function open(extendSubscription=false){const start=endDate && endDate>=today()?addDays(endDate,1):today();setForm({requestId:crypto.randomUUID(),amount:Number(priceMonth)>0?String(Number(priceMonth)):'',paidOn:today(),periodStart:start,periodEnd:addDays(start,29),note:'',extendSubscription});setCancelId(null)}
+ function open(extendSubscription=false){const start=endDate && endDate>=today()?addDays(endDate,1):today();setForm({requestId:crypto.randomUUID(),amount:Number(priceMonth)>0?String(Number(priceMonth)):'',paidOn:today(),periodStart:start,periodEnd:addDays(start,subscriptionDays-1),note:'',extendSubscription});setCancelId(null)}
  async function save(){if(!form||lock.current)return;lock.current=true;setBusy(true);try{await api.post(`/admin/users/${userId}/payments`,form);setForm(null);setPage(1);setRevision(v=>v+1);toast.success(form.extendSubscription?'Оплату записано, підписку продовжено':'Оплату записано');onChanged()}catch(e){toast.error((e as Error).message)}finally{lock.current=false;setBusy(false)}}
  async function cancel(){if(!cancelId||!reason.trim()||lock.current)return;lock.current=true;setBusy(true);try{await api.post(`/admin/payments/${cancelId}/cancel`,{reason});setCancelId(null);setReason('');setRevision(v=>v+1);toast.success('Запис оплати скасовано');onChanged()}catch(e){toast.error((e as Error).message)}finally{lock.current=false;setBusy(false)}}
  return <section className="user-payments"><div className="user-profile-section-title"><h3>Оплати</h3><Button size="sm" disabled={busy||!!form||!!cancelId} onClick={()=>open(true)}>Додати оплату</Button></div><p className="user-profile-description">Ручний облік у гривнях. Запис не перевіряє банківську транзакцію.</p>

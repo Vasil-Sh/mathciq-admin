@@ -1,8 +1,9 @@
 import {telegramUsername} from "@/lib/telegram";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ShieldCheck, Wallet, UserPlus, Pencil, Trash2, KeyRound, CalendarDays, Filter, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
-import { api } from "@/lib/apiClient";
+import { ShieldCheck, Wallet, UserPlus, Pencil, Trash2, KeyRound, CalendarDays, Filter, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { api, getAuthToken, getApiBase } from "@/lib/apiClient";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 type Entry = {
   id: string;
@@ -147,6 +148,51 @@ export default function AuditLog() {
           <RefreshCw size={16} />
           Оновити
         </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const res = await fetch(
+                  `${getApiBase()}/admin/audit/export?category=${category}&status=${status}&q=${encodeURIComponent(search)}&from=${from}&to=${to}&userId=${encodeURIComponent(userId)}`,
+                  { headers: { Authorization: `Bearer ${getAuthToken()}` } },
+                );
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "audit-log.csv";
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              } catch (e) {
+                toast.error((e as Error).message || "Не вдалося експортувати");
+              }
+            }}
+          >
+            <Download size={16} />
+            Експорт CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const days = window.prompt("Видалити записи журналу старші ніж (днів):", "180");
+              if (!days) return;
+              const n = Number(days);
+              if (!Number.isInteger(n) || n < 1) return;
+              api
+                .delete<{ removed?: number }>(`/admin/audit/cleanup?days=${n}`)
+                .then((r) => {
+                  toast.success(`Видалено ${r.removed ?? 0} записів`);
+                  setRevision((v) => v + 1);
+                })
+                .catch((e) => toast.error((e as Error).message || "Не вдалося очистити"));
+            }}
+          >
+            <Trash2 size={16} />
+            Очистити
+          </Button>
+        </div>
       </div>
       {userId && <div className="audit-history-context"><span>Історія користувача {urlParams.get('username') || ''} · записи з моменту підключення журналу</span><Link to="/audit">Увесь журнал</Link></div>}
       <section className="card-admin audit-log">
