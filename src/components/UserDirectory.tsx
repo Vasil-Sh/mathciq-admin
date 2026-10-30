@@ -1,6 +1,6 @@
 import {telegramUsername} from "@/lib/telegram";
 import { useState, type ReactNode } from "react";
-import { Search, X, SlidersHorizontal, RefreshCw, Pencil, Trash2, Zap, ShieldCheck, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Search, X, SlidersHorizontal, RefreshCw, Pencil, Trash2, Zap, ShieldCheck, User as UserIcon, Users, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseDate, cleanPrice } from "@/lib/adminUtils";
 import type { UserData, StatusFilter, SortDirection } from "@/types";
@@ -89,7 +89,7 @@ export default function UserDirectory(p: Props) {
           <td><span className="directory-price">{Number(cleanPrice(user.priceMonth)).toLocaleString("uk-UA")}<small>грн</small></span></td>
           <td><div className="directory-dates"><span><i />{dateLabel(user.startDate)}</span><strong><i />{dateLabel(user.endDate)}</strong></div></td>
           <td><SubscriptionStatus user={user} /></td>
-          <td><span className={`directory-role ${user.isAdmin ? "is-admin" : ""}`}>{user.isAdmin && <ShieldCheck size={12} />}{user.isAdmin ? "Адмін" : "Користувач"}</span></td>
+          <td><span className={`directory-role ${user.isAdmin ? "is-admin" : ""}`}>{user.isAdmin ? <ShieldCheck size={12} /> : <UserIcon size={12} />}{user.isAdmin ? "Адмін" : "Користувач"}</span></td>
           <td><div className="directory-actions"><button type="button" disabled={p.busy} onClick={() => p.onOpen(user)} aria-label={`Відкрити картку ${user.username}`} title="Відкрити картку користувача"><Pencil size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onExtend(originalIndex)} aria-label={`Продовжити підписку ${user.username} на 30 днів`} title="Продовжити на 30 днів" className="extend-action"><Zap size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onDelete(originalIndex)} aria-label={`Видалити ${user.username}`} title="Видалити користувача" className="delete-action"><Trash2 size={15} /></button></div></td>
         </tr>) : <tr><td colSpan={6}><div className="directory-empty"><Users size={29} /><h3>{p.busy ? "Завантаження користувачів…" : "Користувачів не знайдено"}</h3><p>{p.search || p.status !== "all" ? "Спробуйте інший запит або змініть фільтр." : "Додайте першого користувача, щоб розпочати."}</p>{(p.search || p.status !== "all") && <button onClick={() => { p.onSearch(""); p.onStatus("all"); }}>Скинути фільтри</button>}</div></td></tr>}</tbody>
       </table>

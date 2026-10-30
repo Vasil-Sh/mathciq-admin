@@ -60,9 +60,9 @@ export default function Settings() {
 
   return (
     <div className="page-container">
-      <p className="page-eyebrow">ПАНЕЛЬ КЕРУВАННЯ</p>
-      <div className="flex items-start justify-between gap-6 flex-wrap">
+      <div className="admin-page-hero">
         <div>
+          <p className="page-eyebrow">ПАНЕЛЬ КЕРУВАННЯ</p>
           <h1 className="page-title">Налаштування</h1>
           <p className="page-subtitle">
             Тарифи, тривалість підписок і текст для рекламодавців.

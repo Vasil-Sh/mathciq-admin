@@ -72,8 +72,8 @@
 .admin-users-screen .subscription-pill { font-size:12px; padding:6px 10px; }
 .admin-users-screen .directory-status small { font-size:12px; color:#697383; }
 .admin-users-screen .directory-role { font-size:12px; }
-.admin-users-screen .directory-actions button { width:40px; height:40px; }
-.admin-users-screen .directory-actions button svg { width:17px; height:17px; }
+.admin-users-screen .directory-actions button { width:26px; height:26px; }
+.admin-users-screen .directory-actions button svg { width:11px; height:11px; }
 .admin-bets-screen .admin-bets-filter-panel { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,380px); gap:20px; padding:24px; background:#fff; border:1px solid #e3e6ec; border-radius:22px; }
 .admin-bets-filter-panel > div:first-child { align-content:center; }
 .admin-bets-filter-panel > div:last-child { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; padding-top:18px; border-top:1px solid #edf0f4; }
@@ -811,14 +811,15 @@ button, input, select, textarea { font-family:inherit; }
 .admin-users-screen .directory-col-period { width:160px; }
 .admin-users-screen .directory-col-status { width:190px; }
 .admin-users-screen .directory-col-role { width:125px; }
+.admin-users-screen .user-directory .directory-table tbody td:nth-child(5) { text-align:center; }
 .admin-users-screen .directory-col-actions { width:174px; }
 .admin-users-screen .user-directory .directory-person { min-width:0; }
 .admin-users-screen .user-directory .directory-person > div { min-width:0; }
 .admin-users-screen .user-directory .directory-avatar { flex-shrink:0; }
 .admin-users-screen .user-directory .user-profile-open,
 .admin-users-screen .user-directory .directory-person div > span { max-width:100%; overflow-wrap:anywhere; }
-.admin-users-screen .user-directory .directory-actions { width:134px; margin-inline:auto; gap:7px; }
-.admin-users-screen .user-directory .directory-actions button { flex:0 0 40px; width:40px; height:40px; }
+.admin-users-screen .user-directory .directory-actions { width:92px; margin-inline:auto; gap:7px; }
+.admin-users-screen .user-directory .directory-actions button { flex:0 0 26px; width:26px; height:26px; }
 
 /* Consistent column separators in administrative data tables. */
 .admin-users-screen .directory-table > :is(thead,tbody) > tr > :is(th,td) + :is(th,td),
@@ -910,11 +911,11 @@ button, input, select, textarea { font-family:inherit; }
 .editor-grid > .user-profile-description { grid-column:1 / -1; }
 .editor-dates-row .editor-field { min-width:0; text-align:left; }
 .audit-table > thead > tr > th:nth-child(2),.audit-table > thead > tr > th:nth-child(3),.audit-table > thead > tr > th:nth-child(4) { text-align:center; }
-.admin-users-screen .user-directory .directory-actions button { background:#4278f5; border-color:#4278f5; color:#fff; }
-.admin-users-screen .user-directory .directory-actions button.extend-action { background:#19845b; border-color:#19845b; }
-.admin-users-screen .user-directory .directory-actions button.delete-action { background:#c84652; border-color:#c84652; }
-.admin-users-screen .user-directory .directory-actions button:hover:not(:disabled) { filter:brightness(.9); color:#fff; }
-.admin-users-screen .user-directory .directory-actions button:not(.extend-action):not(.delete-action):hover { background:#4278f5; }
-.admin-users-screen .user-directory .directory-actions button.extend-action:hover { background:#19845b; }
-.admin-users-screen .user-directory .directory-actions button.delete-action:hover { background:#c84652; }
+.admin-users-screen .user-directory .directory-actions button { color:#7d94bd; background:linear-gradient(135deg, rgba(239,245,255,.95), rgba(228,237,252,.5)); border:1.5px solid #aebcd6; box-shadow:0 3px 10px rgba(31,45,80,.08), inset 0 1px 0 rgba(255,255,255,.95); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+.admin-users-screen .user-directory .directory-actions button.extend-action { color:#7fae97; background:linear-gradient(135deg, rgba(239,249,244,.95), rgba(229,242,235,.5)); border-color:#a3c4b3; }
+.admin-users-screen .user-directory .directory-actions button.delete-action { color:#8f6d78; background:linear-gradient(135deg, rgba(252,243,246,.95), rgba(248,235,239,.5)); border-color:#d0a7b2; }
+.admin-users-screen .user-directory .directory-actions button:hover:not(:disabled) { filter:none; color:#6d83ad; border-color:#8fa4c9; box-shadow:0 5px 16px rgba(66,120,245,.14), inset 0 1px 0 rgba(255,255,255,.95); }
+.admin-users-screen .user-directory .directory-actions button:not(.extend-action):not(.delete-action):hover { background:linear-gradient(135deg, rgba(233,242,255,.98), rgba(219,232,252,.6)); }
+.admin-users-screen .user-directory .directory-actions button.extend-action:hover { color:#6d9c87; background:linear-gradient(135deg, rgba(233,247,239,.98), rgba(219,238,227,.6)); }
+.admin-users-screen .user-directory .directory-actions button.delete-action:hover { color:#b58391; background:linear-gradient(135deg, rgba(250,237,241,.98), rgba(244,227,233,.6)); }
 @media(max-width:420px){ .editor-dates-row {grid-template-columns:minmax(0,1fr);} }
