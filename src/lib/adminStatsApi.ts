@@ -3,11 +3,9 @@ import { api } from "./apiClient";
 export interface AdminStats {
   paymentsByMonth: {month:string;amount:number;count:number}[];
   totalUsers: number; activeUsers: number; adminUsers: number; inactiveUsers: number;
-  newThisMonth: number; mrr: number; totalRevenue: number;
+  newThisMonth: number; mrr: number;
   revenueByMonth: { month: string; revenue: number; paidUsers: number }[];
   registrationsByMonth: { month: string; count: number }[];
-  topUsers: { username: string; telegram: string; revenue: number; endDate: string }[];
-  expiringSubscriptions: { username: string; telegram: string; endDate: string; priceMonth: number }[];
   recentRegistrations: { username: string; date: string; price: number }[];
   planDistribution: { price: number; count: number }[];
 }
