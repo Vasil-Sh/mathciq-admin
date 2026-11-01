@@ -922,3 +922,39 @@ button, input, select, textarea { font-family:inherit; }
 
 /* Owner role badge */
 .directory-role.is-owner { color:#8a5a00; background:#fff1d1; }
+
+/* ── Soft cards: grey workspace, borderless white cards, gentle shadow ──
+   Cards are separated from the page by the background contrast and a soft
+   shadow instead of a border. Tiles inside a card use a light grey fill. */
+:root {
+  --canvas-grey: #f0f1f3;
+  --card-radius: 24px;
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 5%), 0 8px 24px rgb(16 24 40 / 7%);
+  --card-shadow-hover: 0 2px 4px rgb(16 24 40 / 6%), 0 12px 32px rgb(16 24 40 / 11%);
+  --tile-grey: #f5f6f8;
+}
+body, .app-shell { background: var(--canvas-grey); }
+.workspace-header { border-bottom-color: #e2e4e8; }
+
+.app-shell :is(.card-admin, .adm-ui-card, .admin-expiry-notice, .admin-bets-filter-panel, .admin-banner-spec, .admin-banner-slot) {
+  border-color: transparent;
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+@media (hover: hover) {
+  .app-shell a.card-admin:hover { box-shadow: var(--card-shadow-hover); }
+}
+/* Empty-state placeholders keep a visible dashed outline. */
+.admin-banners-screen > .adm-ui-card.mt-6:not(.admin-banner-spec) { border-color: #d5d9e0; box-shadow: none; }
+
+/* Highlighted (blue) KPI cards: same soft depth, no glow. */
+.app-shell .dashboard-summary-grid .user-summary:first-child,
+.app-shell .admin-users-screen .users-summary-grid > .user-summary:first-child { box-shadow: var(--card-shadow); }
+
+/* Tiles inside cards: flat grey, like the bars in the reference. */
+.app-shell :is(.bets-mini-stat, .betting-activity-stat) {
+  background: var(--tile-grey);
+  border-color: transparent;
+  box-shadow: none;
+}
+@media (max-width: 479px) { :root { --card-radius: 20px; } }
