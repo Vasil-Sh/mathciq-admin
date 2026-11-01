@@ -27,6 +27,10 @@ const fields: Record<string, string> = {
   startDate: "Підписка з",
   priceMonth: "Тариф",
   role: "Роль",
+  isOwner: "Власник",
+  defaultMonthlyPrice: "Тариф за замовчуванням",
+  subscriptionDays: "Тривалість підписки, днів",
+  bannerSpecText: "Текст для рекламодавців",
   title: "Назва",
   active: "Увімкнено",
   screen: "Екран",
@@ -61,6 +65,7 @@ function action(entry: Entry) {
   if(entry.target.startsWith("/admin/payments/") && entry.target.endsWith("/cancel")) return "Скасування оплати";
   if(entry.target.endsWith("/note")) return "Оновлення нотатки";
   if (entry.target.endsWith("/reset-password")) return "Скидання пароля";
+  if (entry.target === "/admin/settings") return "Зміна налаштувань";
   if (entry.target === "/auth/register") return "Створення користувача";
   if (entry.target.includes("/banners/slots/"))
     return "Налаштування плейсхолдера";

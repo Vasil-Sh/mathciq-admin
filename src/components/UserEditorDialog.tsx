@@ -33,6 +33,9 @@ function dateInput(value: string) {
 
 export default function UserEditorDialog(p: Props) {
   const adding = p.mode === "add";
+  // The subscription must not end before it starts (the backend checks this too).
+  const startIso = dateInput(p.value.startDate), endIso = dateInput(p.value.endDate);
+  const datesInvalid = !!startIso && !!endIso && endIso < startIso;
   const prefix = `user-${p.mode}`;
   const setDate = (field: "startDate" | "endDate", value: string) => {
     const date = parseDate(value);
@@ -59,14 +62,14 @@ export default function UserEditorDialog(p: Props) {
             <div className="editor-field editor-price-field"><label htmlFor={`${prefix}-price`}>Вартість на місяць</label><div className="editor-price-input"><Input id={`${prefix}-price`} inputMode="decimal" value={p.value.priceMonth} onChange={e => p.onChange({ priceMonth: e.target.value })} placeholder="0" /><span>грн / міс.</span></div></div>
             
             <div className="editor-dates-row"><div className="editor-field"><label htmlFor={`${prefix}-start`}>{adding ? "Дата створення" : "Дата початку"}</label><Input id={`${prefix}-start`} type="date" value={dateInput(p.value.startDate)} onChange={e => setDate("startDate", e.target.value)} disabled={adding} />{adding && <small>Встановлюється автоматично</small>}</div>
-            <div className="editor-field"><label htmlFor={`${prefix}-end`}>Дата закінчення</label><Input id={`${prefix}-end`} type="date" value={dateInput(p.value.endDate)} onChange={e => setDate("endDate", e.target.value)} /></div></div>
+            <div className="editor-field"><label htmlFor={`${prefix}-end`}>Дата закінчення</label><Input id={`${prefix}-end`} type="date" min={startIso || undefined} value={endIso} onChange={e => setDate("endDate", e.target.value)} aria-invalid={datesInvalid} aria-describedby={datesInvalid ? `${prefix}-dates-error` : undefined} />{datesInvalid && <small id={`${prefix}-dates-error`} role="alert" className="text-danger">Дата закінчення не може бути раніше дати початку</small>}</div></div>
           </div></section>
           <section className="editor-section editor-access"><div><div className="editor-section-title"><ShieldCheck size={15} /><h3>Роль і доступ</h3></div><p>{p.roleLock ? p.roleLock : p.value.isOwner ? "Усе, що може адміністратор, а також видалення адміністраторів і призначення власників." : p.value.isAdmin ? "Керування користувачами та доступ до аналітики." : "Звичайний обліковий запис платформи."}</p></div><Select value={p.value.isOwner ? "owner" : p.value.isAdmin ? "admin" : "user"} onValueChange={value => p.onChange({ isAdmin: value !== "user", isOwner: value === "owner" })} disabled={p.busy || !!p.roleLock}><SelectTrigger aria-label="Роль користувача"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">Користувач</SelectItem><SelectItem value="admin">Адміністратор</SelectItem>{(p.canAppointOwner || p.value.isOwner) && <SelectItem value="owner">Власник</SelectItem>}</SelectContent></Select></section>
           {!adding && p.userId && <Link className="subscription-history-link" to={`/audit?userId=${p.userId}&history=subscription&username=${encodeURIComponent(p.value.username)}`}>Історія підписки: продовження, тарифи та адміністратори →</Link>}
           {!adding && p.onResetPassword && <section className="editor-security"><span><KeyRound size={16} /><span><strong>Пароль облікового запису</strong><small>Скидання замінить поточний пароль новим.</small></span></span><Button type="button" variant="destructive" size="sm" onClick={p.onResetPassword} disabled={p.busy}>Скинути пароль</Button></section>}
           {adding && <div className="editor-info"><KeyRound size={16} /><p>Пароль згенерується автоматично й з’явиться після створення користувача.</p></div>}
         </div>
-        <footer className="editor-footer"><span>* Обов’язкові поля</span><div><Button type="button" variant="outline" onClick={p.onClose} disabled={p.busy}>Скасувати</Button><Button type="submit" disabled={p.busy}>{p.busy ? <Loader2 size={15} className="animate-spin" /> : adding ? <Plus size={15} /> : <Save size={15} />}{p.busy ? "Збереження…" : adding ? "Створити користувача" : "Зберегти зміни"}</Button></div></footer>
+        <footer className="editor-footer"><span>* Обов’язкові поля</span><div><Button type="button" variant="outline" onClick={p.onClose} disabled={p.busy}>Скасувати</Button><Button type="submit" disabled={p.busy || datesInvalid}>{p.busy ? <Loader2 size={15} className="animate-spin" /> : adding ? <Plus size={15} /> : <Save size={15} />}{p.busy ? "Збереження…" : adding ? "Створити користувача" : "Зберегти зміни"}</Button></div></footer>
       </form>}
     </DialogContent>
   </Dialog>;
