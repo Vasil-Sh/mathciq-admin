@@ -1,6 +1,6 @@
 // ── Auth Service — admin-only login & user management ──
 
-import { api, setTokens, clearToken } from "./apiClient";
+import { api, setTokens, clearToken, getAuthToken, getApiBase } from "./apiClient";
 import type { LoginResult, AdminUser } from "@/types";
 
 class AuthService {
@@ -78,7 +78,19 @@ class AuthService {
     return api.post<{ username: string; password: string }>(`/auth/users/${id}/reset-password`);
   }
 
+  /** Revokes the session on the server (incl. the refresh token), then clears it locally. */
   logout() {
+    const refreshToken = localStorage.getItem("refreshToken");
+    const accessToken = getAuthToken();
+    // Plain fetch, not api.post: an expired access token must not trigger the
+    // refresh/"session expired" flow during a normal logout. Fire-and-forget —
+    // local logout never waits for the network.
+    fetch(`${getApiBase()}/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      keepalive: true,
+    }).catch(() => {});
     clearToken();
   }
 }
