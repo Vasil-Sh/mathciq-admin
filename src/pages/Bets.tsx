@@ -65,7 +65,7 @@ function UserAvatar({ telegram, username, isAdmin }: { telegram: string; usernam
       </span>
     );
   }
-  return <span className={`directory-avatar ${isAdmin ? "is-admin" : ""}`}>{username.charAt(0).toUpperCase()}</span>;
+  return <span className={`directory-avatar ${isAdmin ? "is-admin" : ""}`}>{String(username).charAt(0).toUpperCase()}</span>;
 }
 
 /** Express bets carry a long multi-leg description in `betType` (e.g. "Експрес 5x | 1. … 5. …"). */

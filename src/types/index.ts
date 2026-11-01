@@ -4,6 +4,7 @@ export interface AdminUser {
   id: number;
   username: string;
   role: string;
+  isOwner?: boolean;
   telegram: string;
   priceMonth: string;
   startDate: string;
@@ -21,6 +22,7 @@ export interface UserData {
   endDate: string;
   isActive: boolean;
   isAdmin: boolean;
+  isOwner?: boolean;
   daysUntilExpiry?: number;
 }
 
@@ -28,6 +30,7 @@ export interface LoginResult {
   success: boolean;
   error?: string;
   isAdmin?: boolean;
+  isOwner?: boolean;
 }
 
 export type StatusFilter = "all" | "active" | "expired";

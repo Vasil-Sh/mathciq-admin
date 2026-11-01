@@ -20,6 +20,7 @@ export function clearToken() {
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("username");
   localStorage.removeItem("userRole");
+  localStorage.removeItem("isOwner");
 }
 
 /** Current access token (for raw fetch calls such as multipart uploads). */

@@ -2,7 +2,8 @@ import AnimatedNumber from "@/components/AnimatedNumber";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserProfileCard from "@/components/UserProfileCard";
 import { useSearchParams } from "react-router-dom";
-import UserDirectory, { UserAvatar, isSelf } from "@/components/UserDirectory";
+import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
+import { canResetPassword, deleteBlockReason, roleLockReason } from "@/lib/permissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
 import UserEditorDialog from "@/components/UserEditorDialog";
@@ -69,7 +70,7 @@ export default function Admin() {
       const allUsers = await authService.fetchUsers();
       setUsers(allUsers.map(u => {
         const endDate = u.endDate || "";
-        return { id: u.id, createdAt: u.createdAt, telegram: String(u.telegram ?? ""), username: String(u.username ?? ""), priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
+        return { id: u.id, createdAt: u.createdAt, telegram: String(u.telegram ?? ""), username: String(u.username ?? ""), priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", isOwner: !!u.isOwner, daysUntilExpiry: getDaysUntilExpiry(endDate) };
       }).filter(u => u.username));
       setLastUpdate(new Date().toLocaleString("uk-UA"));
     } catch (err: unknown) { setError(`Не вдалося завантажити користувачів: ${(err as Error).message || "помилка з'єднання"}`); }
@@ -100,7 +101,7 @@ export default function Admin() {
   const handleSaveEdit = async () => {
     if (!editingUser?.id) return; setLoading(true);
     try {
-      await authService.updateUser(editingUser.id, { telegram: editingUser.telegram, username: editingUser.username, role: editingUser.isAdmin ? "admin" : "user", priceMonth: cleanPrice(editingUser.priceMonth), startDate: editingUser.startDate, endDate: editingUser.endDate });
+      await authService.updateUser(editingUser.id, { telegram: editingUser.telegram, username: editingUser.username, role: editingUser.isAdmin ? "admin" : "user", ...(currentAdmin?.isOwner ? { isOwner: !!editingUser.isOwner } : {}), priceMonth: cleanPrice(editingUser.priceMonth), startDate: editingUser.startDate, endDate: editingUser.endDate });
       toast.success("Дані оновлено!"); setEditDialogOpen(false); setEditingUser(null); setLastResetPassword("");
       await fetchUsers();
     } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
@@ -137,7 +138,7 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  const confirmDelete = (i: number) => { if (users[i] && isSelf(users[i], currentAdmin?.username)) { toast.error("Власний обліковий запис не можна видалити"); return; } setDeletingIndex(i); setDeleteDialogOpen(true); };
+  const confirmDelete = (i: number) => { const blocked = users[i] && deleteBlockReason(currentAdmin, users[i]); if (blocked) { toast.error(blocked); return; } setDeletingIndex(i); setDeleteDialogOpen(true); };
 
   const handleDelete = async () => {
     const u = users[deletingIndex]; if (!u?.id) return; setLoading(true);
@@ -247,7 +248,7 @@ export default function Admin() {
           sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
           totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
           onOpen={setProfileUser} onExtend={handleExtend} onDelete={confirmDelete}
-          extendDays={extendDays} currentUsername={currentAdmin?.username}
+          extendDays={extendDays} actor={currentAdmin}
         />
       </div>
 
@@ -255,9 +256,9 @@ export default function Admin() {
       <UserEditorDialog mode="add" open={addDialogOpen} onClose={handleCloseAddDialog}
         value={newUser} onChange={updates => setNewUser(current => ({ ...current, ...updates }))}
         onSave={handleAddUser} busy={loading} password={lastCreatedPassword} />
-      {editingUser && <UserEditorDialog mode="edit" userId={editingUser.id} isSelf={isSelf(editingUser, currentAdmin?.username)} open={editDialogOpen} onClose={handleCloseEditDialog}
+      {editingUser && <UserEditorDialog mode="edit" userId={editingUser.id} roleLock={roleLockReason(currentAdmin, editingUser)} canAppointOwner={!!currentAdmin?.isOwner} open={editDialogOpen} onClose={handleCloseEditDialog}
         value={editingUser} onChange={updates => setEditingUser(current => current ? { ...current, ...updates } : current)}
-        onSave={handleSaveEdit} busy={loading} password={lastResetPassword} onResetPassword={handleResetPassword} />}
+        onSave={handleSaveEdit} busy={loading} password={lastResetPassword} onResetPassword={canResetPassword(currentAdmin, editingUser) ? handleResetPassword : undefined} />}
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

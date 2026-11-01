@@ -919,3 +919,6 @@ button, input, select, textarea { font-family:inherit; }
 .admin-users-screen .user-directory .directory-actions button.extend-action:hover { color:#6d9c87; background:linear-gradient(135deg, rgba(233,247,239,.98), rgba(219,238,227,.6)); }
 .admin-users-screen .user-directory .directory-actions button.delete-action:hover { color:#b58391; background:linear-gradient(135deg, rgba(250,237,241,.98), rgba(244,227,233,.6)); }
 @media(max-width:420px){ .editor-dates-row {grid-template-columns:minmax(0,1fr);} }
+
+/* Owner role badge */
+.directory-role.is-owner { color:#8a5a00; background:#fff1d1; }

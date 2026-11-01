@@ -12,6 +12,7 @@ class AuthService {
         token?: string;
         refreshToken?: string;
         error?: string;
+        user?: { isOwner?: boolean };
       }>("/auth/login", { username, password });
 
       if (!data.success) {
@@ -33,9 +34,10 @@ class AuthService {
         setTokens(data.token, data.refreshToken || "");
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", username);
+        localStorage.setItem("isOwner", data.user?.isOwner ? "1" : "0");
       }
 
-      return { success: true, isAdmin: true };
+      return { success: true, isAdmin: true, isOwner: !!data.user?.isOwner };
     } catch (err: unknown) {
       const error = err as Error;
       return {

@@ -16,6 +16,8 @@ import type { LoginResult } from "@/types";
 interface AuthUser {
   username: string;
   role: "admin";
+  /** Owner: may also delete/demote admins and appoint owners. */
+  isOwner: boolean;
 }
 
 interface AuthContextType {
@@ -36,7 +38,7 @@ function getStoredUser(): AuthUser | null {
   const token = localStorage.getItem("authToken");
   // Only allow admin role
   if (username && role === "admin" && token) {
-    return { username, role: "admin" };
+    return { username, role: "admin", isOwner: localStorage.getItem("isOwner") === "1" };
   }
   return null;
 }
@@ -70,9 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setUser({ username: data.username, role: "admin" });
+        setUser({ username: data.username, role: "admin", isOwner: !!data.isOwner });
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", data.username);
+        localStorage.setItem("isOwner", data.isOwner ? "1" : "0");
       } catch {
         clearToken();
         setUser(null);
@@ -111,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const result = await authService.login(username, password);
         if (result.success) {
-          setUser({ username, role: "admin" });
+          setUser({ username, role: "admin", isOwner: !!result.isOwner });
         }
         return result;
       } finally {

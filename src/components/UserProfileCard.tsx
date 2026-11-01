@@ -7,6 +7,7 @@ import {UserAvatar} from '@/components/UserDirectory';
 import {api} from '@/lib/apiClient';
 import {toast} from 'sonner';
 import type {UserData} from '@/types';
+import { roleLabel } from "@/lib/permissions";
 type Note={content:string;version:number;updatedBy:string|null;updatedAt:string|null};
 type Data={user:{username:string;telegram:string;role:string;startDate:string;endDate:string;priceMonth:string;createdAt:string};note:Note;stats:{currency:string;bets:number;wins:number;losses:number;pending:number;staked:string;profit:string}[]};
 type Event={id:string;actor_name:string;created_at:string;action:string;target:string;status:string;details:Record<string,unknown>};
@@ -29,7 +30,7 @@ export default function UserProfileCard({user,onClose,onEdit,onUserChanged}:{use
  async function paymentChanged(){onUserChanged();const fresh=await api.get<Data>(`/admin/users/${user.id}/card`).catch(()=>null);if(fresh)setData(current=>current?{...current,user:fresh.user}:fresh);const history=await api.get<{entries:Event[]}>(`/admin/audit?userId=${user.id}`).catch(()=>null);if(history)setEvents(history.entries.slice(0,10))}
  function close(){if(locked)return;if(dirty)setConfirmClose(true);else onClose()}
  return <Dialog open onOpenChange={open=>{if(!open)close()}}><DialogContent className="user-profile-dialog" onInteractOutside={e=>{if(dirty||locked){e.preventDefault();close()}}} onEscapeKeyDown={e=>{if(dirty||locked){e.preventDefault();close()}}}>
- <DialogHeader><div className="user-profile-identity"><UserAvatar user={user}/><div><DialogTitle>{data?.user.username || user.username}</DialogTitle><DialogDescription>{data?.user.telegram || user.telegram || 'Telegram не вказано'} · {user.isAdmin?'Адміністратор':'Користувач'}</DialogDescription></div></div></DialogHeader>
+ <DialogHeader><div className="user-profile-identity"><UserAvatar user={user}/><div><DialogTitle>{data?.user.username || user.username}</DialogTitle><DialogDescription>{data?.user.telegram || user.telegram || 'Telegram не вказано'} · {roleLabel(user)}</DialogDescription></div></div></DialogHeader>
  <div className="user-profile-body">{loading?<p role="status">Завантаження картки…</p>:error?<div role="alert"><p>{error}</p><Button onClick={()=>setRevision(v=>v+1)}>Повторити</Button></div>:data && <>
  <section><div className="user-profile-section-title"><h3>Профіль і підписка</h3><Button size="sm" variant="outline" className="profile-action-secondary" disabled={dirty||locked} onClick={onEdit}>Редагувати</Button></div><dl className="user-profile-facts"><div><dt>Тариф / місяць</dt><dd>₴{Number(data.user.priceMonth).toLocaleString('uk-UA')}</dd></div><div><dt>Створено</dt><dd>{date(data.user.createdAt)}</dd></div><div><dt>Початок підписки</dt><dd>{date(data.user.startDate)}</dd></div><div><dt>Завершення</dt><dd>{date(data.user.endDate)}</dd></div></dl>{noteDirty&&<p className="text-sm text-muted">Збережіть нотатку перед редагуванням профілю.</p>}</section>
  <UserPayments username={data.user.username} telegram={data.user.telegram} userId={user.id!} endDate={data.user.endDate} priceMonth={data.user.priceMonth} onChanged={()=>{void paymentChanged()}} onStateChange={setPaymentState}/>

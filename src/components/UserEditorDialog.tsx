@@ -8,7 +8,7 @@ import { formatDate, parseDate } from "@/lib/adminUtils";
 import { toast } from "sonner";
 import type { UserData } from "@/types";
 
-type EditorValue = Pick<UserData, "username" | "telegram" | "priceMonth" | "startDate" | "endDate" | "isAdmin">;
+type EditorValue = Pick<UserData, "username" | "telegram" | "priceMonth" | "startDate" | "endDate" | "isAdmin" | "isOwner">;
 interface Props {
   mode: "add" | "edit";
   userId?: number;
@@ -20,8 +20,10 @@ interface Props {
   busy: boolean;
   password: string;
   onResetPassword?: () => void;
-  /** Editing your own account: the admin role cannot be removed here. */
-  isSelf?: boolean;
+  /** Why the role cannot be changed here (own account, or an admin edited by a non-owner). */
+  roleLock?: string | null;
+  /** Signed-in admin is an owner: the «Власник» option is offered. */
+  canAppointOwner?: boolean;
 }
 
 function dateInput(value: string) {
@@ -59,7 +61,7 @@ export default function UserEditorDialog(p: Props) {
             <div className="editor-dates-row"><div className="editor-field"><label htmlFor={`${prefix}-start`}>{adding ? "Дата створення" : "Дата початку"}</label><Input id={`${prefix}-start`} type="date" value={dateInput(p.value.startDate)} onChange={e => setDate("startDate", e.target.value)} disabled={adding} />{adding && <small>Встановлюється автоматично</small>}</div>
             <div className="editor-field"><label htmlFor={`${prefix}-end`}>Дата закінчення</label><Input id={`${prefix}-end`} type="date" value={dateInput(p.value.endDate)} onChange={e => setDate("endDate", e.target.value)} /></div></div>
           </div></section>
-          <section className="editor-section editor-access"><div><div className="editor-section-title"><ShieldCheck size={15} /><h3>Роль і доступ</h3></div><p>{p.isSelf ? "Це ваш обліковий запис — власну роль адміністратора змінити не можна." : p.value.isAdmin ? "Керування користувачами та доступ до аналітики." : "Звичайний обліковий запис платформи."}</p></div><Select value={p.value.isAdmin ? "admin" : "user"} onValueChange={value => p.onChange({ isAdmin: value === "admin" })} disabled={p.busy || p.isSelf}><SelectTrigger aria-label="Роль користувача"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">Користувач</SelectItem><SelectItem value="admin">Адміністратор</SelectItem></SelectContent></Select></section>
+          <section className="editor-section editor-access"><div><div className="editor-section-title"><ShieldCheck size={15} /><h3>Роль і доступ</h3></div><p>{p.roleLock ? p.roleLock : p.value.isOwner ? "Усе, що може адміністратор, а також видалення адміністраторів і призначення власників." : p.value.isAdmin ? "Керування користувачами та доступ до аналітики." : "Звичайний обліковий запис платформи."}</p></div><Select value={p.value.isOwner ? "owner" : p.value.isAdmin ? "admin" : "user"} onValueChange={value => p.onChange({ isAdmin: value !== "user", isOwner: value === "owner" })} disabled={p.busy || !!p.roleLock}><SelectTrigger aria-label="Роль користувача"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">Користувач</SelectItem><SelectItem value="admin">Адміністратор</SelectItem>{(p.canAppointOwner || p.value.isOwner) && <SelectItem value="owner">Власник</SelectItem>}</SelectContent></Select></section>
           {!adding && p.userId && <Link className="subscription-history-link" to={`/audit?userId=${p.userId}&history=subscription&username=${encodeURIComponent(p.value.username)}`}>Історія підписки: продовження, тарифи та адміністратори →</Link>}
           {!adding && p.onResetPassword && <section className="editor-security"><span><KeyRound size={16} /><span><strong>Пароль облікового запису</strong><small>Скидання замінить поточний пароль новим.</small></span></span><Button type="button" variant="destructive" size="sm" onClick={p.onResetPassword} disabled={p.busy}>Скинути пароль</Button></section>}
           {adding && <div className="editor-info"><KeyRound size={16} /><p>Пароль згенерується автоматично й з’явиться після створення користувача.</p></div>}
