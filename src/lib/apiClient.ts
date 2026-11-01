@@ -70,11 +70,8 @@ function endSession() {
   window.dispatchEvent(new CustomEvent("auth:logout", { detail: { reason: "expired" } }));
 }
 
-async function request<T>(
-  method: string,
-  path: string,
-  body?: unknown
-): Promise<T> {
+/** Sends a request with auth, refreshing the token once on 401. Throws on non-2xx. */
+async function send(method: string, path: string, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -114,10 +111,17 @@ async function request<T>(
     error.data = err;
     throw error;
   }
+  return res;
+}
 
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown
+): Promise<T> {
+  const res = await send(method, path, body);
   // 204 No Content
   if (res.status === 204) return undefined as T;
-
   return res.json();
 }
 
@@ -128,4 +132,6 @@ export const api = {
   put: <T>(path: string, body?: unknown) =>
     request<T>("PUT", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
+  /** GET a file (e.g. CSV export) with the same auth + token refresh as JSON calls. */
+  download: async (path: string): Promise<Blob> => (await send("GET", path)).blob(),
 };

@@ -2,7 +2,7 @@ import {telegramUsername} from "@/lib/telegram";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Wallet, UserPlus, Pencil, Trash2, KeyRound, CalendarDays, Filter, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { api, getAuthToken, getApiBase } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 type Entry = {
@@ -153,12 +153,10 @@ export default function AuditLog() {
             variant="outline"
             onClick={async () => {
               try {
-                const res = await fetch(
-                  `${getApiBase()}/admin/audit/export?category=${category}&status=${status}&q=${encodeURIComponent(search)}&from=${from}&to=${to}&userId=${encodeURIComponent(userId)}`,
-                  { headers: { Authorization: `Bearer ${getAuthToken()}` } },
+                // Via apiClient so an expired access token is refreshed first.
+                const blob = await api.download(
+                  `/admin/audit/export?category=${category}&status=${status}&q=${encodeURIComponent(search)}&from=${from}&to=${to}&userId=${encodeURIComponent(userId)}`,
                 );
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
