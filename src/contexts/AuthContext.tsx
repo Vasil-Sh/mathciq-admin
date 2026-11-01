@@ -10,6 +10,7 @@ import {
 } from "react";
 import { authService } from "@/lib/authService";
 import { clearToken } from "@/lib/apiClient";
+import { toast } from "sonner";
 import type { LoginResult } from "@/types";
 
 interface AuthUser {
@@ -88,7 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     };
-    const handleLogout = () => setUser(null);
+    const handleLogout = (e: Event) => {
+      setUser(null);
+      if ((e as CustomEvent<{ reason?: string }>).detail?.reason === "expired") {
+        // Fixed id: several requests failing together show a single toast.
+        toast.error("Сесія завершилась. Увійдіть знову.", { id: "session-expired" });
+      }
+    };
 
     window.addEventListener("storage", handleStorage);
     window.addEventListener("auth:logout", handleLogout);

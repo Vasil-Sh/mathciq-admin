@@ -31,8 +31,21 @@ export function getApiBase(): string {
   return BASE;
 }
 
-async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshToken) return false;
+// One refresh at a time: parallel requests that hit 401 together share the
+// same in-flight refresh instead of each sending their own.
+let refreshInFlight: Promise<boolean> | null = null;
+
+function refreshAccessToken(): Promise<boolean> {
+  if (!refreshToken) return Promise.resolve(false);
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+async function doRefresh(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/auth/refresh`, {
       method: "POST",
@@ -42,13 +55,19 @@ async function refreshAccessToken(): Promise<boolean> {
     if (!res.ok) return false;
     const data = await res.json();
     if (data.token) {
-      setTokens(data.token, data.refreshToken || refreshToken);
+      setTokens(data.token, data.refreshToken || refreshToken || "");
       return true;
     }
   } catch {
     // ignore
   }
   return false;
+}
+
+/** Session is gone for good: drop tokens and let AuthContext send the user to /login. */
+function endSession() {
+  clearToken();
+  window.dispatchEvent(new CustomEvent("auth:logout", { detail: { reason: "expired" } }));
 }
 
 async function request<T>(
@@ -60,6 +79,9 @@ async function request<T>(
     "Content-Type": "application/json",
   };
   if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  // Only a request made with a session can "lose" it — a wrong password on
+  // /auth/login also returns 401 and must not trigger a logout.
+  const hadSession = !!authToken;
 
   let res = await fetch(`${BASE}${path}`, {
     method,
@@ -68,7 +90,7 @@ async function request<T>(
   });
 
   // Auto-refresh on 401
-  if (res.status === 401 && refreshToken) {
+  if (res.status === 401 && hadSession) {
     const ok = await refreshAccessToken();
     if (ok) {
       headers["Authorization"] = `Bearer ${authToken}`;
@@ -78,6 +100,7 @@ async function request<T>(
         body: body ? JSON.stringify(body) : undefined,
       });
     }
+    if (res.status === 401) endSession();
   }
 
   if (!res.ok) {
