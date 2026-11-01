@@ -14,12 +14,12 @@ const UA_MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "
 const UA_MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function formatMonthName(m: string) {
-  const [y, mo] = m.split("-");
+  const [, mo] = m.split("-");
   return UA_MONTHS[parseInt(mo, 10) - 1] ?? mo;
 }
 
 function formatMonthFullName(m: string) {
-  const [y, mo] = m.split("-");
+  const [, mo] = m.split("-");
   return UA_MONTHS_FULL[parseInt(mo, 10) - 1] ?? mo;
 }
 
