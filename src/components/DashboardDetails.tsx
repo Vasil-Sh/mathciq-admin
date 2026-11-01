@@ -49,7 +49,7 @@ export default function DashboardDetails({ stats, months, registrations, revenue
       <section className="card-admin detail-panel">
         <PanelHeading icon={<UserPlus size={19} />} title="Останні реєстрації" description="Нові користувачі платформи" action={<Link to="/users" className="panel-link" aria-label="Переглянути користувачів"><ArrowRight size={17} /></Link>} />
         {recent.length ? <ul className="people-list recent-list">{recent.map((person, i) => <li key={person.username + i}>
-          <span className="person-avatar recent-avatar" aria-hidden="true">{person.username.slice(0, 1).toUpperCase()}</span>
+          <span className="person-avatar recent-avatar" aria-hidden="true">{String(person.username).slice(0, 1).toUpperCase()}</span>
           <div className="person-name"><strong title={person.username}>{person.username}</strong><span>{displayDate(person.date)}</span></div>
           <span className="person-plan">{person.price == null ? "—" : money(person.price)}<small>/ міс.</small></span>
         </li>)}</ul> : <Empty>Нові реєстрації відображатимуться тут</Empty>}

@@ -26,7 +26,14 @@ interface Props {
   onOpen: (user: UserData) => void;
   onExtend: (index: number) => void;
   onDelete: (index: number) => void;
+  /** Days added by the quick-extend button (from Settings). */
+  extendDays: number;
+  /** Signed-in admin — they cannot delete their own account. */
+  currentUsername?: string;
 }
+
+export const isSelf = (user: Pick<UserData, "username">, currentUsername?: string) =>
+  !!currentUsername && String(user.username).toLowerCase() === currentUsername.toLowerCase();
 
 const dateLabel = (value: string) => parseDate(value)?.toLocaleDateString("uk-UA") || "—";
 
@@ -90,7 +97,7 @@ export default function UserDirectory(p: Props) {
           <td><div className="directory-dates"><span><i />{dateLabel(user.startDate)}</span><strong><i />{dateLabel(user.endDate)}</strong></div></td>
           <td><SubscriptionStatus user={user} /></td>
           <td><span className={`directory-role ${user.isAdmin ? "is-admin" : ""}`}>{user.isAdmin ? <ShieldCheck size={12} /> : <UserIcon size={12} />}{user.isAdmin ? "Адмін" : "Користувач"}</span></td>
-          <td><div className="directory-actions"><button type="button" disabled={p.busy} onClick={() => p.onOpen(user)} aria-label={`Відкрити картку ${user.username}`} title="Відкрити картку користувача"><Pencil size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onExtend(originalIndex)} aria-label={`Продовжити підписку ${user.username} на 30 днів`} title="Продовжити на 30 днів" className="extend-action"><Zap size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onDelete(originalIndex)} aria-label={`Видалити ${user.username}`} title="Видалити користувача" className="delete-action"><Trash2 size={15} /></button></div></td>
+          <td><div className="directory-actions"><button type="button" disabled={p.busy} onClick={() => p.onOpen(user)} aria-label={`Відкрити картку ${user.username}`} title="Відкрити картку користувача"><Pencil size={15} /></button><button type="button" disabled={p.busy} onClick={() => p.onExtend(originalIndex)} aria-label={`Продовжити підписку ${user.username} на ${p.extendDays} дн.`} title={`Продовжити на ${p.extendDays} дн.`} className="extend-action"><Zap size={15} /></button>{isSelf(user, p.currentUsername) ? <button type="button" disabled aria-label="Власний обліковий запис не можна видалити" title="Власний обліковий запис не можна видалити" className="delete-action"><Trash2 size={15} /></button> : <button type="button" disabled={p.busy} onClick={() => p.onDelete(originalIndex)} aria-label={`Видалити ${user.username}`} title="Видалити користувача" className="delete-action"><Trash2 size={15} /></button>}</div></td>
         </tr>) : <tr><td colSpan={6}><div className="directory-empty"><Users size={29} /><h3>{p.busy ? "Завантаження користувачів…" : "Користувачів не знайдено"}</h3><p>{p.search || p.status !== "all" ? "Спробуйте інший запит або змініть фільтр." : "Додайте першого користувача, щоб розпочати."}</p>{(p.search || p.status !== "all") && <button onClick={() => { p.onSearch(""); p.onStatus("all"); }}>Скинути фільтри</button>}</div></td></tr>}</tbody>
       </table>
     </div>

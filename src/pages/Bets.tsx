@@ -271,8 +271,8 @@ export default function Bets() {
     const list = q
       ? users.filter(
           (u) =>
-            u.username.toLowerCase().includes(q) ||
-            (u.telegram || "").toLowerCase().includes(q),
+            String(u.username ?? "").toLowerCase().includes(q) ||
+            String(u.telegram ?? "").toLowerCase().includes(q),
         )
       : users;
     const dir = sortDir === "asc" ? 1 : -1;

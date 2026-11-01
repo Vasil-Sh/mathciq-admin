@@ -1,5 +1,5 @@
 export function telegramUsername(raw:string|null|undefined):string {
- let value=(raw||'').trim();
+ let value=String(raw??'').trim(); // API may send digit-only handles as numbers
  if(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me)\//i.test(value)) {
    try {const url=new URL(/^https?:/i.test(value)?value:`https://${value}`);value=url.pathname.replace(/^\//,'').replace(/\/$/,'');} catch {return '';}
  }

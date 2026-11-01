@@ -2,7 +2,8 @@ import AnimatedNumber from "@/components/AnimatedNumber";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserProfileCard from "@/components/UserProfileCard";
 import { useSearchParams } from "react-router-dom";
-import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
+import UserDirectory, { UserAvatar, isSelf } from "@/components/UserDirectory";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
 import UserEditorDialog from "@/components/UserEditorDialog";
 import { useState, useEffect, useMemo } from "react";
@@ -40,6 +41,8 @@ export default function Admin() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({ ...EMPTY_USER });
   const [defaultPrice, setDefaultPrice] = useState("");
+  const [extendDays, setExtendDays] = useState(30);
+  const { user: currentAdmin } = useAuth();
   const [lastCreatedPassword, setLastCreatedPassword] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
@@ -55,6 +58,7 @@ export default function Admin() {
     fetchSettings()
       .then((s) => {
         if (s.defaultMonthlyPrice > 0) setDefaultPrice(String(s.defaultMonthlyPrice));
+        if (Number.isInteger(s.subscriptionDays) && s.subscriptionDays > 0) setExtendDays(s.subscriptionDays);
       })
       .catch(() => {});
   }, []);
@@ -65,7 +69,7 @@ export default function Admin() {
       const allUsers = await authService.fetchUsers();
       setUsers(allUsers.map(u => {
         const endDate = u.endDate || "";
-        return { id: u.id, createdAt: u.createdAt, telegram: u.telegram || "", username: u.username || "", priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
+        return { id: u.id, createdAt: u.createdAt, telegram: String(u.telegram ?? ""), username: String(u.username ?? ""), priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
       }).filter(u => u.username));
       setLastUpdate(new Date().toLocaleString("uk-UA"));
     } catch (err: unknown) { setError(`Не вдалося завантажити користувачів: ${(err as Error).message || "помилка з'єднання"}`); }
@@ -125,7 +129,7 @@ export default function Admin() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const currentEnd = parseDate(u.endDate);
     const base = currentEnd && currentEnd > today ? currentEnd : today;
-    const newEnd = new Date(base); newEnd.setDate(newEnd.getDate() + 30);
+    const newEnd = new Date(base); newEnd.setDate(newEnd.getDate() + extendDays);
     const newEndStr = `${newEnd.getFullYear()}-${String(newEnd.getMonth()+1).padStart(2,"0")}-${String(newEnd.getDate()).padStart(2,"0")}`;
     setLoading(true);
     try { await authService.updateUser(u.id, { endDate: newEndStr }); toast.success(`Підписку продовжено — до ${newEndStr}`); await fetchUsers(); }
@@ -133,7 +137,7 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  const confirmDelete = (i: number) => { setDeletingIndex(i); setDeleteDialogOpen(true); };
+  const confirmDelete = (i: number) => { if (users[i] && isSelf(users[i], currentAdmin?.username)) { toast.error("Власний обліковий запис не можна видалити"); return; } setDeletingIndex(i); setDeleteDialogOpen(true); };
 
   const handleDelete = async () => {
     const u = users[deletingIndex]; if (!u?.id) return; setLoading(true);
@@ -214,7 +218,7 @@ export default function Admin() {
                 <div className="expiry-notice-identity"><UserAvatar user={u} /><div className="expiry-notice-person"><strong>{u.username}</strong><span>{u.telegram || "Користувач MatchIQ"}</span></div></div>
                 <span className="expiry-notice-deadline">{u.daysUntilExpiry === 0 ? "Сьогодні" : `Через ${u.daysUntilExpiry} ${daysLabel(u.daysUntilExpiry ?? 0)}`}</span>
                 <span className="expiry-notice-date">До {parseDate(u.endDate)?.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }) || u.endDate}</span>
-                <Button size="sm" disabled={loading} onClick={() => handleExtend(users.indexOf(u))}><Zap size={15} />+30 днів</Button>
+                <Button size="sm" disabled={loading} onClick={() => handleExtend(users.indexOf(u))}><Zap size={15} />+{extendDays} дн.</Button>
               </li>
             ))}</ul>
           </section>
@@ -243,6 +247,7 @@ export default function Admin() {
           sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
           totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
           onOpen={setProfileUser} onExtend={handleExtend} onDelete={confirmDelete}
+          extendDays={extendDays} currentUsername={currentAdmin?.username}
         />
       </div>
 
@@ -250,7 +255,7 @@ export default function Admin() {
       <UserEditorDialog mode="add" open={addDialogOpen} onClose={handleCloseAddDialog}
         value={newUser} onChange={updates => setNewUser(current => ({ ...current, ...updates }))}
         onSave={handleAddUser} busy={loading} password={lastCreatedPassword} />
-      {editingUser && <UserEditorDialog mode="edit" userId={editingUser.id} open={editDialogOpen} onClose={handleCloseEditDialog}
+      {editingUser && <UserEditorDialog mode="edit" userId={editingUser.id} isSelf={isSelf(editingUser, currentAdmin?.username)} open={editDialogOpen} onClose={handleCloseEditDialog}
         value={editingUser} onChange={updates => setEditingUser(current => current ? { ...current, ...updates } : current)}
         onSave={handleSaveEdit} busy={loading} password={lastResetPassword} onResetPassword={handleResetPassword} />}
 
