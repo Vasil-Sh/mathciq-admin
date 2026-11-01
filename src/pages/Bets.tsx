@@ -173,8 +173,10 @@ export default function Bets() {
   const [loadingBets, setLoadingBets] = useState<Record<number, boolean>>({});
   const [gameFilter, setGameFilter] = useSessionFilter<string>("bets.game", "all");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // `silent` = background refresh: keep the table on screen (no spinner swap,
+  // no scroll jump) and only replace the data when it arrives.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       const data = await fetchUsersOverview();
@@ -200,7 +202,8 @@ export default function Bets() {
   // Auto-refresh every 30s so new bets (incl. pending) appear without a manual reload.
   useEffect(() => {
     const id = window.setInterval(() => {
-      load();
+      if (document.hidden) return; // no polling in a background tab
+      load(true);
       const current = expandedIdRef.current;
       if (current != null) {
         fetchUserBets(current)
@@ -347,7 +350,7 @@ export default function Bets() {
             <Button onClick={exportCsv} variant="outline">
               <Download className="h-4 w-4" />Експорт CSV
             </Button>
-            <Button onClick={load} disabled={loading} variant="default">
+            <Button onClick={() => load()} disabled={loading} variant="default">
               <RefreshCw className={loading ? "animate-spin" : ""} strokeWidth={1.5} />
               Оновити
             </Button>
@@ -398,7 +401,7 @@ export default function Bets() {
                 </div>
                 <div className="directory-sync">
                   <span title={lastUpdate}>Оновлено {lastUpdate || "—"}</span>
-                  <button type="button" onClick={load} disabled={loading} aria-label="Оновити ставки" title="Оновити">
+                  <button type="button" onClick={() => load()} disabled={loading} aria-label="Оновити ставки" title="Оновити">
                     <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
                   </button>
                 </div>
