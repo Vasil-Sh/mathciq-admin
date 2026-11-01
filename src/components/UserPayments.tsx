@@ -12,7 +12,7 @@ type Form={requestId:string;amount:string;paidOn:string;periodStart:string;perio
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 function addDays(value:string,days:number){const d=new Date(value+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function date(value:string){return value.split('-').reverse().join('.')}
-export default function UserPayments({userId,username,telegram,endDate,priceMonth,onChanged,onStateChange}:{username:string;telegram:string;userId:number;endDate:string;priceMonth:string;onChanged:()=>void;onStateChange:(state:{dirty:boolean;busy:boolean})=>void}) {
+export default function UserPayments({userId,username,telegram,endDate,priceMonth,onChanged,onStateChange,autoOpen=false}:{username:string;telegram:string;userId:number;endDate:string;priceMonth:string;onChanged:()=>void;onStateChange:(state:{dirty:boolean;busy:boolean})=>void;/** Open the «add payment + extend» form right away (quick-extend button). */autoOpen?:boolean}) {
  const [payments,setPayments]=useState<Payment[]>([]),[page,setPage]=useState(1),[hasMore,setHasMore]=useState(false),[revision,setRevision]=useState(0);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [form,setForm]=useState<Form|null>(null),[cancelId,setCancelId]=useState<string|null>(null),[reason,setReason]=useState('');
@@ -20,7 +20,12 @@ export default function UserPayments({userId,username,telegram,endDate,priceMont
  const [subscriptionDays,setSubscriptionDays]=useState(30);
  const [preview,setPreview]=useState<{image:string;id:string}|null>(null);
  const [receiptBusy,setReceiptBusy]=useState<string|null>(null);
- useEffect(()=>{fetchSettings().then(s=>setSubscriptionDays(s.subscriptionDays||30)).catch(()=>{})},[]);
+ const [settingsReady,setSettingsReady]=useState(false);
+ useEffect(()=>{fetchSettings().then(s=>setSubscriptionDays(s.subscriptionDays||30)).catch(()=>{}).finally(()=>setSettingsReady(true))},[]);
+ const autoOpened=useRef(false),formRef=useRef<HTMLFormElement>(null);
+ // Quick extend: open the prefilled form once the subscription length is known.
+ useEffect(()=>{if(autoOpen&&settingsReady&&!autoOpened.current){autoOpened.current=true;open(true)}},[autoOpen,settingsReady]);
+ useEffect(()=>{if(form&&autoOpened.current)formRef.current?.scrollIntoView({block:'nearest'})},[form]);
  async function receipt(payment:Payment){setReceiptBusy(payment.id);try{const image=await createPaymentReceipt(payment,{username,telegram});setPreview({image,id:payment.id})}catch(e){toast.error((e as Error).message)}finally{setReceiptBusy(null)}}
  const lock=useRef(false);
  useEffect(()=>{onStateChange({dirty:!!form||!!cancelId,busy})},[form,cancelId,busy,onStateChange]);
@@ -30,7 +35,7 @@ export default function UserPayments({userId,username,telegram,endDate,priceMont
  async function cancel(){if(!cancelId||!reason.trim()||lock.current)return;lock.current=true;setBusy(true);try{await api.post(`/admin/payments/${cancelId}/cancel`,{reason});setCancelId(null);setReason('');setRevision(v=>v+1);toast.success('Запис оплати скасовано');onChanged()}catch(e){toast.error((e as Error).message)}finally{lock.current=false;setBusy(false)}}
  return <section className="user-payments"><div className="user-profile-section-title"><h3>Оплати</h3><Button size="sm" disabled={busy||!!form||!!cancelId} onClick={()=>open(true)}>Додати оплату</Button></div><p className="user-profile-description">Ручний облік у гривнях. Запис не перевіряє банківську транзакцію.</p>
  {!loading&&!error&&summary&&<dl className="payment-summary"><div><dt>Загалом сплачено</dt><dd>₴{Number(summary.total).toLocaleString('uk-UA',{minimumFractionDigits:2})}</dd><small>За весь час · без скасованих</small></div><div><dt>Остання оплата</dt><dd>{summary.latest?`₴${Number(summary.latest.amount).toLocaleString('uk-UA')} · ${date(summary.latest.paidOn)}`:'Ще немає'}</dd></div><div><dt>Період останньої оплати</dt><dd>{summary.latest?`${date(summary.latest.periodStart)} — ${date(summary.latest.periodEnd)}`:'—'}</dd></div></dl>}
- {form && <form className="payment-form" onSubmit={e=>{e.preventDefault();void save()}}><fieldset disabled={busy}><div className="payment-fields">
+ {form && <form ref={formRef} className="payment-form" onSubmit={e=>{e.preventDefault();void save()}}><fieldset disabled={busy}><div className="payment-fields">
  <label>Сума, грн<input required inputMode="decimal" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} placeholder="250,00" pattern="[0-9]{1,9}([.,][0-9]{1,2})?"/></label>
  <label>Дата оплати<input required type="date" max={today()} value={form.paidOn} onChange={e=>setForm({...form,paidOn:e.target.value})}/></label>
  <label>Період підписки: від<input required type="date" max={form.periodEnd} value={form.periodStart} onChange={e=>setForm({...form,periodStart:e.target.value})}/></label>

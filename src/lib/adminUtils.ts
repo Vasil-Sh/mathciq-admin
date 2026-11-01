@@ -32,6 +32,21 @@ export function parseDate(val: string): Date | null {
   return isNaN(fallback.getTime()) ? null : fallback;
 }
 
+/** Today's date in Kyiv as YYYY-MM-DD (independent of the browser's time zone). */
+export function kyivTodayISO(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+
+/** YYYY-MM-DD + n calendar days → YYYY-MM-DD. */
+export function addDaysISO(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** YYYY-MM-DD → DD/MM/YYYY (the editor's format). */
+export const isoToDMY = (iso: string) => iso.split("-").reverse().join("/");
+
 /** Format a Date to DD/MM/YYYY */
 export function formatDate(date: Date): string {
   const d = String(date.getDate()).padStart(2, "0");

@@ -10,7 +10,7 @@ import UserEditorDialog from "@/components/UserEditorDialog";
 import { useState, useEffect, useMemo } from "react";
 
 import { authService } from "@/lib/authService";
-import { cleanPrice, parseDate, getDaysUntilExpiry, isSubscriptionActive } from "@/lib/adminUtils";
+import { cleanPrice, parseDate, getDaysUntilExpiry, isSubscriptionActive, kyivTodayISO, addDaysISO, isoToDMY } from "@/lib/adminUtils";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,6 @@ import type { UserData, StatusFilter, SortDirection } from "@/types";
 
 const EMPTY_USER: Omit<UserData, "isActive" | "daysUntilExpiry"> = { telegram: "", username: "", priceMonth: "", startDate: "", endDate: "", isAdmin: false };
 
-function todayFormatted() { const d = new Date(); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; }
-function monthLaterFormatted() { const d = new Date(); d.setMonth(d.getMonth() + 1); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; }
 function daysLabel(n: number) { if (n === 1) return "день"; if (n >= 2 && n <= 4) return "дні"; return "днів"; }
 function subsLabel(n: number) { if (n === 1) return "підписка закінчується"; if (n >= 2 && n <= 4) return "підписки закінчуються"; return "підписок закінчуються"; }
 
@@ -125,18 +123,13 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  const handleExtend = async (i: number) => {
-    const u = users[i]; if (!u?.id) return;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const currentEnd = parseDate(u.endDate);
-    const base = currentEnd && currentEnd > today ? currentEnd : today;
-    const newEnd = new Date(base); newEnd.setDate(newEnd.getDate() + extendDays);
-    const newEndStr = `${newEnd.getFullYear()}-${String(newEnd.getMonth()+1).padStart(2,"0")}-${String(newEnd.getDate()).padStart(2,"0")}`;
-    setLoading(true);
-    try { await authService.updateUser(u.id, { endDate: newEndStr }); toast.success(`Підписку продовжено — до ${newEndStr}`); await fetchUsers(); }
-    catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
-    finally { setLoading(false); }
-  };
+  // Quick extend opens the user's card with the «add payment + extend» form
+  // prefilled (tariff amount, next period of `subscriptionDays`). The payment
+  // is recorded together with the extension so dashboard totals stay correct;
+  // the admin can untick it to extend without a payment.
+  const [profileWithPayment, setProfileWithPayment] = useState(false);
+  const openProfile = (u: UserData, withPayment = false) => { setProfileWithPayment(withPayment); setProfileUser(u); };
+  const handleExtend = (i: number) => { const u = users[i]; if (u?.id) openProfile(u, true); };
 
   const confirmDelete = (i: number) => { const blocked = users[i] && deleteBlockReason(currentAdmin, users[i]); if (blocked) { toast.error(blocked); return; } setDeletingIndex(i); setDeleteDialogOpen(true); };
 
@@ -152,6 +145,9 @@ export default function Admin() {
   const activeUsers = scopedUsers.filter(u => u.isActive).length;
   const inactiveUsers = scopedUsers.filter(u => !u.isActive).length;
   const adminUsers = users.filter(u => u.isAdmin).length;
+  // Summary cards count customers only (no admins) — same as the dashboard.
+  const customers = users.filter(u => !u.isAdmin);
+  const activeCustomers = customers.filter(u => u.isActive).length;
   const expiringUsers = users.filter(u => u.isActive && u.daysUntilExpiry !== undefined && u.daysUntilExpiry <= 3 && u.daysUntilExpiry >= 0);
 
   const displayedUsers = useMemo(() => {
@@ -199,7 +195,7 @@ export default function Admin() {
     <div className="users-page admin-users-screen">
       <div className="page-container space-y-6">
         <div className="admin-page-hero"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
-          <Button onClick={() => { setNewUser({ ...EMPTY_USER, priceMonth: defaultPrice, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
+          <Button onClick={() => { setNewUser({ ...EMPTY_USER, priceMonth: defaultPrice, startDate: isoToDMY(kyivTodayISO()), endDate: isoToDMY(addDaysISO(kyivTodayISO(), extendDays - 1)) }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
             <Plus className="h-4 w-4" />Додати користувача
           </Button>
           <Button variant="outline" onClick={exportUsersCsv}>
@@ -227,10 +223,10 @@ export default function Admin() {
 
         <div className="users-summary-grid">
           {[
-            { icon: Users, label: "Всього користувачів", value: users.length, note: "Усі облікові записи", tone: "user-summary--blue" },
-            { icon: CheckCircle, label: "Активні", value: activeUsers, note: "З активною підпискою", tone: "user-summary--green" },
+            { icon: Users, label: "Всього користувачів", value: customers.length, note: "Без адміністраторів", tone: "user-summary--blue" },
+            { icon: CheckCircle, label: "Активні", value: activeCustomers, note: "З активною підпискою · без адміністраторів", tone: "user-summary--green" },
             { icon: Crown, label: "Адміністратори", value: adminUsers, note: "Мають права керування", tone: "user-summary--amber" },
-            { icon: XCircle, label: "Неактивні", value: inactiveUsers, note: "Підписка неактивна", tone: "user-summary--rose" },
+            { icon: XCircle, label: "Неактивні", value: customers.length - activeCustomers, note: "Підписка неактивна · без адміністраторів", tone: "user-summary--rose" },
           ].map(({ icon: Icon, label, value, note, tone }) => (
             <section key={label} className={`card-admin user-summary ${tone}`}>
               <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
@@ -247,12 +243,12 @@ export default function Admin() {
           search={searchQuery} onSearch={setSearchQuery} status={statusFilter} onStatus={setStatusFilter}
           sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
           totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
-          onOpen={setProfileUser} onExtend={handleExtend} onDelete={confirmDelete}
+          onOpen={u => openProfile(u)} onExtend={handleExtend} onDelete={confirmDelete}
           extendDays={extendDays} actor={currentAdmin}
         />
       </div>
 
-      {profileUser && <UserProfileCard key={profileUser.id} user={profileUser} onUserChanged={fetchUsers} onClose={()=>setProfileUser(null)} onEdit={()=>{openEditDialog(profileUser,users.findIndex(u=>u.id===profileUser.id));setProfileUser(null)}}/>}
+      {profileUser && <UserProfileCard key={profileUser.id} user={profileUser} startWithPayment={profileWithPayment} onUserChanged={fetchUsers} onClose={()=>setProfileUser(null)} onEdit={()=>{openEditDialog(profileUser,users.findIndex(u=>u.id===profileUser.id));setProfileUser(null)}}/>}
       <UserEditorDialog mode="add" open={addDialogOpen} onClose={handleCloseAddDialog}
         value={newUser} onChange={updates => setNewUser(current => ({ ...current, ...updates }))}
         onSave={handleAddUser} busy={loading} password={lastCreatedPassword} />
