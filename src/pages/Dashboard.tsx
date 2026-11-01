@@ -1,11 +1,11 @@
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { Link } from "react-router-dom";
 import DashboardDetails from "@/components/DashboardDetails";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Users, Wallet, UserPlus, UserX, Shield,
-  Loader2, AlertTriangle, MoveUpRight, Filter, RefreshCw, TrendingUp,
+  Loader2, AlertTriangle, MoveUpRight, Filter, RefreshCw, TrendingUp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 
@@ -28,7 +28,14 @@ function formatMonthFull(m: string) {
   return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
 }
 
+const FIRST_YEAR = 2020;
+const kyivYear = () => Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric" }).format(new Date()));
+
 export default function Dashboard() {
+  const currentKyivYear = kyivYear();
+  // Report year for the monthly series; previous years are viewable (not only in January).
+  const [year, setYear] = useState(currentKyivYear);
+  const requestId = useRef(0);
   const [chartMode, setChartMode] = useState<"payments" | "estimate">("payments");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,8 +47,10 @@ export default function Dashboard() {
 
   const fetchData = async (showLoading = false) => {
     if (showLoading) setRefreshing(true);
+    const id = ++requestId.current; // ignore late answers after switching year
     try {
-      const data = await fetchAdminStats();
+      const data = await fetchAdminStats(year);
+      if (id !== requestId.current) return;
       setStats(data);
       setError("");
       setLastUpdate(new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }));
@@ -53,11 +62,17 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    if (!firstLoad.current) setMonthFilter(""); // re-pick default month for the new year
+    fetchData(!firstLoad.current);
+    firstLoad.current = false;
+  }, [year]);
 
   // Set default filter to current month after stats load
   useEffect(() => {
-    if (!stats || monthFilter) return;
+    // Wait for the stats of the selected year before picking the default month.
+    if (!stats || monthFilter || (stats.year ?? year) !== year) return;
     const now = new Date();
     const curr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const all = [...new Set([
@@ -66,7 +81,7 @@ export default function Dashboard() {
       ...(stats.paymentsByMonth || []).map(r => r.month),
     ])];
     setMonthFilter(all.includes(curr) ? curr : "all");
-  }, [stats, monthFilter]);
+  }, [stats, monthFilter, year]);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -153,14 +168,15 @@ export default function Dashboard() {
   const selectedPayments = (stats.paymentsByMonth || []).filter(row=>isAll || row.month===monthFilter_);
   const paymentAmount=selectedPayments.reduce((sum,row)=>sum+row.amount,0);
   const paymentCount=selectedPayments.reduce((sum,row)=>sum+row.count,0);
+  const yearLabel = year === currentKyivYear ? "Поточний рік" : `${year} рік`;
   const currLabel = monthFilter_ === "all"
-    ? "Поточний рік"
+    ? yearLabel
     : `${formatMonthFullName(monthFilter_)} ${monthFilter_.split("-")[0]}`;
 
   const kyivParts = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'numeric'}).formatToParts(new Date());
   const currentYear = Number(kyivParts.find(part=>part.type==='year')!.value);
   const currentMonth = Number(kyivParts.find(part=>part.type==='month')!.value);
-  const chartYear = isAll ? currentYear : Number(monthFilter_.slice(0,4));
+  const chartYear = isAll ? year : Number(monthFilter_.slice(0,4));
   const visibleMonths = chartYear < currentYear ? 12 : chartYear === currentYear ? currentMonth : 0;
   const paymentsLookup = Object.fromEntries((stats.paymentsByMonth || []).map(row=>[row.month,row.amount]));
   const timeline = Array.from({length:visibleMonths},(_,index)=>{
@@ -204,6 +220,11 @@ export default function Dashboard() {
 
             {filterOpen && (
               <div id="admin-month-filter" className="absolute right-0 top-full mt-2 z-50 bg-white border border-hairline rounded-2xl shadow-lg p-2 w-56 max-h-[340px] overflow-y-auto">
+                <div className="flex items-center justify-between px-1 pb-2 mb-1 border-b border-hairline" role="group" aria-label="Рік звіту">
+                  <button type="button" className="p-2 rounded-lg hover:bg-surface-subtle disabled:opacity-30" onClick={() => setYear(y => y - 1)} disabled={refreshing || year <= FIRST_YEAR} aria-label="Попередній рік"><ChevronLeft className="h-4 w-4" /></button>
+                  <span className="text-sm font-semibold">{year}</span>
+                  <button type="button" className="p-2 rounded-lg hover:bg-surface-subtle disabled:opacity-30" onClick={() => setYear(y => y + 1)} disabled={refreshing || year >= currentKyivYear} aria-label="Наступний рік"><ChevronRight className="h-4 w-4" /></button>
+                </div>
                 {monthOptions.map((mo) => {
                   const isActive = monthFilter_ === mo.key;
                   return (
@@ -217,7 +238,7 @@ export default function Dashboard() {
                       }`}
                     >
                       <span className="font-medium">
-                        {mo.key === "all" ? "Поточний рік" : `${mo.label}'${mo.year}`}
+                        {mo.key === "all" ? yearLabel : `${mo.label}'${mo.year}`}
                       </span>
                       <span className="flex items-center gap-2 text-xs opacity-70 ml-2 shrink-0">
                         <span className="flex items-center gap-0.5">
