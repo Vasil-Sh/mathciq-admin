@@ -45,12 +45,9 @@ class AuthService {
     }
   }
 
+  /** Throws on failure — an empty array would look like "no users". */
   async fetchUsers(): Promise<AdminUser[]> {
-    try {
-      return await api.get<AdminUser[]>("/auth/users");
-    } catch {
-      return [];
-    }
+    return api.get<AdminUser[]>("/auth/users");
   }
 
   async createUser(user: {

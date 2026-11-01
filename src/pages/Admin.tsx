@@ -68,7 +68,7 @@ export default function Admin() {
         return { id: u.id, createdAt: u.createdAt, telegram: u.telegram || "", username: u.username || "", priceMonth: cleanPrice(String(u.priceMonth || "")), startDate: u.startDate || "", endDate, isActive: isSubscriptionActive(endDate) && (!u.startDate || (parseDate(u.startDate)?.getTime() ?? 0) <= Date.now()), isAdmin: u.role === "admin", daysUntilExpiry: getDaysUntilExpiry(endDate) };
       }).filter(u => u.username));
       setLastUpdate(new Date().toLocaleString("uk-UA"));
-    } catch { setError("Помилка завантаження даних"); }
+    } catch (err: unknown) { setError(`Не вдалося завантажити користувачів: ${(err as Error).message || "помилка з'єднання"}`); }
     finally { setLoading(false); }
   };
 
