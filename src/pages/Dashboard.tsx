@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, BadgeCheck, Ban, Check, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
 import { daysLabel, expiringUsers, extendedEndDate, money, shortDate } from "@/lib/subscriptions";
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
-import type { AdminUser } from "@/types";
+import RetentionCard from "@/components/dashboard/RetentionCard";
+import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
+import { fetchUsersOverview } from "@/lib/adminBetsApi";
+import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, initials, PARSER_NAMES, PLAN_COLORS, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
+import type { AdminUser, AdminUserOverview } from "@/types";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -15,7 +19,6 @@ const MONTHS_LOC = ["січні", "лютому", "березні", "квітн�
 const MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
 const EXTEND_DAYS = 30;
 const REFRESH_MS = 60_000;
-const PLAN_COLORS = ["#5b8cff", "#a3c0ff", "#7fdcaa", "#f0a03c"];
 
 const monthIdx = (m: string) => Number(m.slice(5, 7)) - 1;
 const monthKey = (y: number, i: number) => `${y}-${String(i + 1).padStart(2, "0")}`;
@@ -58,10 +61,17 @@ export default function Dashboard() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [extending, setExtending] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [overview, setOverview] = useState<AdminUserOverview[] | null>(null);
+  const [parsers, setParsers] = useState<ParserState[] | null>(null);
+  const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    const [s, u] = await Promise.allSettled([fetchAdminStats(), authService.fetchUsers()]);
+    const [s, u, o, p, t] = await Promise.allSettled([fetchAdminStats(), authService.fetchUsers(), fetchUsersOverview(), fetchParsers(), fetchOpenTickets()]);
+    // Optional sources: on failure keep the last good value (null on first load hides the block).
+    if (o.status === "fulfilled") setOverview(o.value);
+    if (p.status === "fulfilled") setParsers(p.value);
+    if (t.status === "fulfilled") setTickets(t.value);
     if (s.status === "fulfilled") { setStats(s.value); setError(""); setUpdatedAt(hhmm()); }
     else setError((s.reason as Error)?.message || "Сервер не відповідає");
     if (u.status === "fulfilled") { setUsers(u.value); setUsersError(false); } else setUsersError(true);
@@ -102,11 +112,20 @@ export default function Dashboard() {
       const delta = current || prev === null || prev === 0 ? null : Math.round(((cur - prev) / prev) * 1000) / 10;
       return { m, name: MONTHS_FULL[monthIdx(m)], paid: cur, est: est[m] || 0, users: reg[m] || 0, delta, current };
     }).reverse();
-    const plans = [...(stats.planDistribution || [])].filter((p) => p.count > 0).sort((a, b) => b.price - a.price);
+    // Active users by plan from /admin/users; fallback — all users by plan from /admin/stats.
+    const plans = overview ? activePlans(overview) : (stats.planDistribution || []).filter((p) => p.count > 0).map((p) => ({ plan: p.plan, label: p.label, count: p.count }));
     const planTotal = plans.reduce((s, p) => s + p.count, 0);
+    const sel = <T extends { month: string }>(rows?: T[]) => (rows || []).filter((r) => selected.includes(r.month));
+    const prevSel = <T extends { month: string }>(rows?: T[]) => (period === "year" ? [] : (rows || []).filter((r) => r.month === prevKey(period)));
+    const cancelled = sel(stats.cancellations?.byMonth).reduce((s, r) => s + r.count, 0);
+    const refunds = sel(stats.refunds?.byMonth);
+    const refundCount = refunds.reduce((s, r) => s + r.count, 0);
+    const refundAmount = refunds.reduce((s, r) => s + r.amount, 0);
+    const prevCancelled = prevSel(stats.cancellations?.byMonth).reduce((s, r) => s + r.count, 0) + prevSel(stats.refunds?.byMonth).reduce((s, r) => s + r.count, 0);
+    const ai = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + r.costUsd, 0);
     const prevReg = reg[prevKey(now.key)] || 0;
-    return { series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
-  }, [stats, mode, period, now.key, now.month, now.year]);
+    return { series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
+  }, [stats, overview, mode, period, now.key, now.month, now.year]);
 
   const firstChip = Math.max(0, now.month - 3);
   const periodChips = [{ key: "year", label: "Поточний рік" }, ...Array.from({ length: now.month - firstChip }, (_, i) => ({ key: monthKey(now.year, firstChip + i), label: MONTHS_FULL[firstChip + i] }))];
@@ -205,11 +224,37 @@ export default function Dashboard() {
 
   const regularUsers = stats.totalUsers - stats.adminUsers;
   const isEmpty = regularUsers <= 0;
-  const paidPlans = (stats.planDistribution || []).filter((p) => p.price > 0).reduce((s, p) => s + p.count, 0);
-  const trialPlans = (stats.planDistribution || []).filter((p) => p.price === 0).reduce((s, p) => s + p.count, 0);
-  const planCount = paidPlans + trialPlans;
-  const conversion = planCount > 0 ? Math.round((paidPlans / planCount) * 100) : 0;
-  const hasSecondaryAlerts = (stats.openSupportTickets ?? 0) > 0 || (stats.parserFailures24h ?? 0) > 0 || (stats.selfLimitations ?? 0) > 0 || (stats.unverifiedAge ?? 0) > 0;
+  const byId = new Map((overview || []).map((u) => [u.id, u]));
+  const byName = new Map((overview || []).map((u) => [u.username, u]));
+  const periodShort = period === "year" ? `${now.year} рік` : MONTHS_FULL[monthIdx(period)];
+  const usd = (n: number) => `$${n.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const conv = stats.conversion;
+  const convTotal = conv ? conv.trial + conv.paid : 0;
+  const convPct = convTotal ? Math.round((conv.paid / convTotal) * 100) : 0;
+  const aiToday = stats.aiUsage?.today;
+
+  type Alert = { key: string; dot: "red" | "blue" | "amber"; title: string; sub: string; to: string; cta: string };
+  const alerts: Alert[] = [];
+  if (parsers) {
+    parsers.filter((p) => p.open || p.failures24h > 0).forEach((p) => {
+      const name = PARSER_NAMES[p.name] || p.name;
+      alerts.push({ key: `parser-${p.name}`, dot: "red", title: p.open ? `${name} не відповідає` : `${name}: ${p.failures24h} ${plural(p.failures24h, "збій", "збої", "збоїв")} за 24 год`, sub: p.lastFailure ? `остання помилка ${ago(p.lastFailure)}` : "парсер вимкнено після помилок", to: "/matches", cta: "Парсери" });
+    });
+  } else if (stats.parserFailures24h > 0) {
+    alerts.push({ key: "parsers", dot: "red", title: `Збої парсерів · ${stats.parserFailures24h}`, sub: "за останні 24 години", to: "/matches", cta: "Парсери" });
+  }
+  const openTickets = tickets ? tickets.length : stats.openSupportTickets || 0;
+  if (openTickets > 0) {
+    const oldest = tickets && [...tickets].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+    alerts.push({ key: "support", dot: "red", title: `${openTickets} ${plural(openTickets, "відкрите звернення", "відкриті звернення", "відкритих звернень")}`, sub: oldest ? `найстаріше — ${ago(oldest.createdAt)}${oldest.username ? ` · @${oldest.username}` : ""}` : "очікують відповіді", to: "/support", cta: "Підтримка" });
+  }
+  if (stats.selfLimitations > 0) alerts.push({ key: "self", dot: "blue", title: `Активні самообмеження · ${stats.selfLimitations}`, sub: "застосовано автоматично", to: "/users", cta: "Переглянути" });
+  if (stats.unverifiedAge > 0) alerts.push({ key: "age", dot: "amber", title: `Вік не підтверджено · ${stats.unverifiedAge}`, sub: "дата народження не вказана", to: "/users", cta: "Відкрити" });
+  const attentionCount = alerts.length + expiring.length;
+  const recentPaid = (stats.recentPayments || []).filter((p) => p.status === "recorded").slice(0, 3);
+  const churned = overview ? churnedUsers(overview) : null;
+  const risk = overview ? churnRisk(overview) : null;
+  const retTotal = (stats.retention?.retained || 0) + (stats.retention?.churned || 0);
   const prevMonthIdx = monthIdx(prevKey(now.key));
   const kpis = [
     { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/users", hero: !isEmpty },
@@ -247,21 +292,25 @@ export default function Dashboard() {
 
       {!isEmpty && (
         <section className="v3-kpis v3-kpis-second">
-          <div className="v3-kpi">
-            <span className="v3-kpi-l"><span className="v3-kpi-ico"><BadgeCheck size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Пробний → платний</span><span className="v3-only-mobile">Конверсія</span></span>
-            <strong className="v3-kpi-v">{conversion}%</strong>
-            <span className="v3-kpi-n">{paidPlans} платних · {trialPlans} пробних</span>
-          </div>
-          <div className="v3-kpi">
-            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Ban size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Скасовані оплати</span><span className="v3-only-mobile">Скасування</span></span>
-            <strong className="v3-kpi-v">{stats.cancellations?.total ?? 0}</strong>
-            <span className="v3-kpi-n">за весь час</span>
-          </div>
-          <div className="v3-kpi">
-            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Витрати AI</span><span className="v3-only-mobile">AI</span></span>
-            <strong className="v3-kpi-v">${(stats.aiUsage?.costUsd ?? 0).toFixed(2)}</strong>
-            <span className="v3-kpi-n">{(stats.aiUsage?.calls ?? 0)} викликів · {(stats.aiUsage?.tokens ?? 0).toLocaleString("uk-UA")} токенів</span>
-          </div>
+          {conv && <Link to="/users" className="v3-kpi">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span>
+            <strong className="v3-kpi-v">{convPct}<small className="v3-kpi-unit">%</small></strong>
+            <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span style={{ width: `${convPct}%` }} /></span>
+            <span className="v3-kpi-n"><span className="v3-hide-mobile">{conv.paid} з {convTotal} на платному тарифі · </span>зараз на пробному {conv.trial}</span>
+          </Link>}
+          <Link to="/payments" className="v3-kpi">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><MinusCircle size={16} aria-hidden="true" /></span>Скасування</span>
+            <strong className={`v3-kpi-v${view.cancels ? " is-red" : ""}`}>{view.cancels}</strong>
+            <span className="v3-kpi-n">
+              <span className="v3-hide-mobile">{periodShort} · {view.refundCount ? `${view.refundCount} з поверненням ${money(view.refundAmount)}` : "без повернень"}{period !== "year" && ` · у ${MONTHS_LOC[monthIdx(prevKey(period))]} ${view.prevCancelled}`}</span>
+              <span className="v3-only-mobile">{view.refundAmount ? `повернено ${money(view.refundAmount)}` : "без повернень"}</span>
+            </span>
+          </Link>
+          {stats.aiUsage && <Link to="/settings" className="v3-kpi v3-kpi-wide-sm">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile">&nbsp;· {periodShort.toLowerCase()}</span></span>
+            <strong className="v3-kpi-v">{usd(view.ai)}</strong>
+            <span className="v3-kpi-n"><span className="v3-hide-mobile">{periodShort} · </span>сьогодні {aiToday?.calls ?? 0} {plural(aiToday?.calls ?? 0, "аналіз", "аналізи", "аналізів")} (≈ {usd(aiToday?.costUsd ?? 0)})</span>
+          </Link>}
         </section>
       )}
 
@@ -317,51 +366,60 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          {view.planTotal > 0 && (
-            <div className="v3-plans">
-              <div className="v3-plans-head"><h3>Активні за тарифами</h3><span>{view.planTotal} активні</span></div>
-              <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p, i) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[i % PLAN_COLORS.length] }} />)}</div>
-              <ul className="v3-plan-legend">
-                {view.plans.map((p, i) => <li key={p.plan}><span className="v3-dot" style={{ background: p.plan === "trial" ? "#3a4253" : PLAN_COLORS[i % PLAN_COLORS.length] }} /><span>{p.label || "Без оплати"}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
-              </ul>
+          {(view.planTotal > 0 || recentPaid.length > 0) && (
+            <div className="v3-chart-foot">
+              {view.planTotal > 0 && (
+                <div className="v3-plans">
+                  <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
+                  <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[p.plan] || "#7fdcaa" }} />)}</div>
+                  <ul className="v3-plan-legend">
+                    {view.plans.map((p) => <li key={p.plan}><span className="v3-dot" style={{ background: PLAN_COLORS[p.plan] || "#7fdcaa" }} /><span>{p.label}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
+                  </ul>
+                </div>
+              )}
+              {recentPaid.length > 0 && (
+                <div className="v3-paylist v3-hide-mobile">
+                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати →</Link></div>
+                  <ul>
+                    {recentPaid.map((p) => (
+                      <li key={p.id}>
+                        <span className="v3-av v3-av-sm" aria-hidden="true">{initials(p.username)}</span>
+                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
+                        <span className="v3-pay-amt">+{money(p.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
-
-          {stats.recentPayments?.length > 0 && (
-            <div className="v3-paylist">
-              <div className="v3-plans-head"><h3>Останні оплати</h3></div>
-              <ul>
-                {stats.recentPayments.map((p) => (
-                  <li key={p.id}>
-                    <span className="v3-pay-who"><strong>@{p.username}</strong><small>{shortDate(p.paidOn)}</small></span>
-                    <span className="v3-pay-amt">{money(p.amount)}</span>
-                    {p.status === "cancelled" && <span className="v3-tag v3-tag-red">Скасовано</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="v3-retention">
-            <div className="v3-plans-head"><h3>Утримання</h3></div>
-            <div className="v3-ret-grid">
-              <div><strong>{stats.retention?.retained ?? 0}</strong><span>продовжили підписку</span></div>
-              <div><strong>{stats.retention?.churned ?? 0}</strong><span>не продовжили</span></div>
-            </div>
-          </div>
         </div>
 
-        {!isEmpty && (!expiring.length && !usersError && !hasSecondaryAlerts ? calmCard : <aside className="v3-wcard v3-attention">
-          <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{!!expiring.length && <span className="v3-tag v3-tag-red">{expiring.length}</span>}</div>
-          {usersError ? <p className="v3-note-dark">Не вдалося завантажити користувачів. <button type="button" className="v3-link-btn" onClick={() => load(true)}>Повторити</button></p>
+        {!isEmpty && (!attentionCount && !usersError ? calmCard : <aside className="v3-wcard v3-attention">
+          <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{attentionCount > 0 && <span className="v3-tag v3-tag-red">{attentionCount}</span>}</div>
+          <p className="v3-note-dark v3-hide-mobile">Збої, звернення, вік і підписки</p>
+          {alerts.length > 0 && (
+            <ul className="v3-alerts">
+              {alerts.map((al) => (
+                <li key={al.key}>
+                  <Link to={al.to} className="v3-alert-row">
+                    <span className={`v3-alert-dot is-${al.dot}`} aria-hidden="true" />
+                    <span className="v3-exp-who"><strong>{al.title}</strong><small>{al.sub}</small></span>
+                    <span className="v3-alert-cta"><span className="v3-hide-mobile">{al.cta} </span>→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {usersError ? <p className="v3-note-dark v3-attn-sub">Не вдалося завантажити користувачів. <button type="button" className="v3-link-btn" onClick={() => load(true)}>Повторити</button></p>
             : expiring.length ? <>
-              <p className="v3-note-dark">Підписки, що закінчуються за 7 днів</p>
+              <p className="v3-note-dark v3-attn-sub">Підписки, що закінчуються за 7 днів</p>
               <ul className="v3-exp-list">
                 {expiring.map(({ user, days }, i) => (
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
-                      <span className="v3-av" aria-hidden="true">{user.username.slice(0, 2).toUpperCase()}</span>
-                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{Number(user.priceMonth) ? `${user.priceMonth} ₴` : "Без оплати"} · до {shortDate(user.endDate)}</small></span>
+                      <span className="v3-av" aria-hidden="true">{initials(user.username)}</span>
+                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(user.endDate)}</small></span>
                       <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>
                     </Link>
                   </li>
@@ -370,19 +428,15 @@ export default function Dashboard() {
               {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі →</Link>}
               <button type="button" className="v3-btn v3-btn-dark v3-btn-block" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setConfirmOpen(true)}>Продовжити всім на +{EXTEND_DAYS} днів…</button>
             </> : null}
-          {hasSecondaryAlerts && (
-            <div className="v3-attn-more">
-              <p className="v3-note-dark">Інші сповіщення</p>
-              <ul className="v3-alert-list">
-                {(stats.openSupportTickets ?? 0) > 0 && <li><span className="v3-tag v3-tag-amber">Звернення</span><span>{stats.openSupportTickets} відкритих</span></li>}
-                {(stats.parserFailures24h ?? 0) > 0 && <li><span className="v3-tag v3-tag-red">Парсери</span><span>{stats.parserFailures24h} збоїв за 24 год</span></li>}
-                {(stats.selfLimitations ?? 0) > 0 && <li><span className="v3-tag v3-tag-gray">Самообмеження</span><span>{stats.selfLimitations} активних</span></li>}
-                {(stats.unverifiedAge ?? 0) > 0 && <li><span className="v3-tag v3-tag-amber">Вік</span><span>{stats.unverifiedAge} без підтвердження</span></li>}
-              </ul>
-            </div>
-          )}
         </aside>)}
       </section>
+
+      {!isEmpty && (retTotal > 0 || (risk && overview)) && (
+        <section className="v3-dash-pair">
+          {retTotal > 0 && <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} list={churned} />}
+          {risk && <ChurnRiskCard rows={risk} />}
+        </section>
+      )}
 
       {!isEmpty && <section className="v3-wcard">
         <div className="v3-card-head">

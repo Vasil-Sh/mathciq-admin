@@ -62,7 +62,11 @@ export interface AdminUserOverview {
   currentBank: number;
   lossStreak: number;
   plan: string;
+  planLabel?: string;
+  trialEndDate?: string;
+  ageConfirmed?: boolean;
   lastBetDate: string;
+  lastBetAt?: string;
   extensions: number;
   lastPaymentDate: string;
   games: GameBreakdown[];
