@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, Check, RefreshCw, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, BadgeCheck, Ban, Check, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
@@ -205,6 +205,11 @@ export default function Dashboard() {
 
   const regularUsers = stats.totalUsers - stats.adminUsers;
   const isEmpty = regularUsers <= 0;
+  const paidPlans = (stats.planDistribution || []).filter((p) => p.price > 0).reduce((s, p) => s + p.count, 0);
+  const trialPlans = (stats.planDistribution || []).filter((p) => p.price === 0).reduce((s, p) => s + p.count, 0);
+  const planCount = paidPlans + trialPlans;
+  const conversion = planCount > 0 ? Math.round((paidPlans / planCount) * 100) : 0;
+  const hasSecondaryAlerts = (stats.openSupportTickets ?? 0) > 0 || (stats.parserFailures24h ?? 0) > 0 || (stats.selfLimitations ?? 0) > 0 || (stats.unverifiedAge ?? 0) > 0;
   const prevMonthIdx = monthIdx(prevKey(now.key));
   const kpis = [
     { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/users", hero: !isEmpty },
@@ -239,6 +244,26 @@ export default function Dashboard() {
           </Link>
         ))}
       </section>
+
+      {!isEmpty && (
+        <section className="v3-kpis v3-kpis-second">
+          <div className="v3-kpi">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><BadgeCheck size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Пробний → платний</span><span className="v3-only-mobile">Конверсія</span></span>
+            <strong className="v3-kpi-v">{conversion}%</strong>
+            <span className="v3-kpi-n">{paidPlans} платних · {trialPlans} пробних</span>
+          </div>
+          <div className="v3-kpi">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Ban size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Скасовані оплати</span><span className="v3-only-mobile">Скасування</span></span>
+            <strong className="v3-kpi-v">{stats.cancellations?.total ?? 0}</strong>
+            <span className="v3-kpi-n">за весь час</span>
+          </div>
+          <div className="v3-kpi">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">Витрати AI</span><span className="v3-only-mobile">AI</span></span>
+            <strong className="v3-kpi-v">${(stats.aiUsage?.costUsd ?? 0).toFixed(2)}</strong>
+            <span className="v3-kpi-n">{(stats.aiUsage?.calls ?? 0)} викликів · {(stats.aiUsage?.tokens ?? 0).toLocaleString("uk-UA")} токенів</span>
+          </div>
+        </section>
+      )}
 
       {isEmpty && <section className="v3-dash-main">
         <section className="v3-wcard v3-onboard">
@@ -295,15 +320,38 @@ export default function Dashboard() {
           {view.planTotal > 0 && (
             <div className="v3-plans">
               <div className="v3-plans-head"><h3>Активні за тарифами</h3><span>{view.planTotal} активні</span></div>
-              <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p, i) => <span key={p.price} style={{ flex: p.count, background: p.price === 0 ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[i % PLAN_COLORS.length] }} />)}</div>
+              <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p, i) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[i % PLAN_COLORS.length] }} />)}</div>
               <ul className="v3-plan-legend">
-                {view.plans.map((p, i) => <li key={p.price}><span className="v3-dot" style={{ background: p.price === 0 ? "#3a4253" : PLAN_COLORS[i % PLAN_COLORS.length] }} /><span>{p.price ? `${p.price} ₴ / 30 днів` : "Без оплати"}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
+                {view.plans.map((p, i) => <li key={p.plan}><span className="v3-dot" style={{ background: p.plan === "trial" ? "#3a4253" : PLAN_COLORS[i % PLAN_COLORS.length] }} /><span>{p.label || "Без оплати"}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
               </ul>
             </div>
           )}
+
+          {stats.recentPayments?.length > 0 && (
+            <div className="v3-paylist">
+              <div className="v3-plans-head"><h3>Останні оплати</h3></div>
+              <ul>
+                {stats.recentPayments.map((p) => (
+                  <li key={p.id}>
+                    <span className="v3-pay-who"><strong>@{p.username}</strong><small>{shortDate(p.paidOn)}</small></span>
+                    <span className="v3-pay-amt">{money(p.amount)}</span>
+                    {p.status === "cancelled" && <span className="v3-tag v3-tag-red">Скасовано</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="v3-retention">
+            <div className="v3-plans-head"><h3>Утримання</h3></div>
+            <div className="v3-ret-grid">
+              <div><strong>{stats.retention?.retained ?? 0}</strong><span>продовжили підписку</span></div>
+              <div><strong>{stats.retention?.churned ?? 0}</strong><span>не продовжили</span></div>
+            </div>
+          </div>
         </div>
 
-        {!isEmpty && (!expiring.length && !usersError ? calmCard : <aside className="v3-wcard v3-attention">
+        {!isEmpty && (!expiring.length && !usersError && !hasSecondaryAlerts ? calmCard : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{!!expiring.length && <span className="v3-tag v3-tag-red">{expiring.length}</span>}</div>
           {usersError ? <p className="v3-note-dark">Не вдалося завантажити користувачів. <button type="button" className="v3-link-btn" onClick={() => load(true)}>Повторити</button></p>
             : expiring.length ? <>
@@ -322,6 +370,17 @@ export default function Dashboard() {
               {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі →</Link>}
               <button type="button" className="v3-btn v3-btn-dark v3-btn-block" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setConfirmOpen(true)}>Продовжити всім на +{EXTEND_DAYS} днів…</button>
             </> : null}
+          {hasSecondaryAlerts && (
+            <div className="v3-attn-more">
+              <p className="v3-note-dark">Інші сповіщення</p>
+              <ul className="v3-alert-list">
+                {(stats.openSupportTickets ?? 0) > 0 && <li><span className="v3-tag v3-tag-amber">Звернення</span><span>{stats.openSupportTickets} відкритих</span></li>}
+                {(stats.parserFailures24h ?? 0) > 0 && <li><span className="v3-tag v3-tag-red">Парсери</span><span>{stats.parserFailures24h} збоїв за 24 год</span></li>}
+                {(stats.selfLimitations ?? 0) > 0 && <li><span className="v3-tag v3-tag-gray">Самообмеження</span><span>{stats.selfLimitations} активних</span></li>}
+                {(stats.unverifiedAge ?? 0) > 0 && <li><span className="v3-tag v3-tag-amber">Вік</span><span>{stats.unverifiedAge} без підтвердження</span></li>}
+              </ul>
+            </div>
+          )}
         </aside>)}
       </section>
 

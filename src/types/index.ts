@@ -61,6 +61,10 @@ export interface AdminUserOverview {
   manualAdjustments: number;
   currentBank: number;
   lossStreak: number;
+  plan: string;
+  lastBetDate: string;
+  extensions: number;
+  lastPaymentDate: string;
   games: GameBreakdown[];
 }
 
