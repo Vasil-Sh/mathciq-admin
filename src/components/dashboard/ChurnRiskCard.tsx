@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
+import { relDay } from "@/lib/dashboardInsights";
 import { idleText, initials, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
 
 type Tab = "all" | "idle" | "streak";
@@ -49,13 +50,14 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
       ) : (
         <>
           <div className="v3-risk-table v3-hide-mobile" role="table" aria-label="Ризик відтоку">
-            <div className="v3-risk-row v3-risk-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Сигнал</span><span role="columnheader">Підписка</span><span role="columnheader"><span className="sr-only">Дія</span></span></div>
+            <div className="v3-risk-row v3-risk-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Сигнал</span><span role="columnheader" className="v3-only-wide">Остання ставка</span><span role="columnheader">Підписка</span><span role="columnheader"><span className="sr-only">Дія</span></span></div>
             {shown.map((r) => {
               const tg = telegramLink(r.user.telegram);
               return (
                 <div key={r.user.id} className="v3-risk-row" role="row">
                   <span role="cell" className="v3-risk-who"><span className="v3-av" aria-hidden="true">{initials(r.user.username)}</span><Link to={`/users?q=${encodeURIComponent(r.user.username)}`}><strong>@{r.user.username}</strong></Link></span>
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
+                  <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
                   <span role="cell">{tg ? <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill">Написати</a> : null}</span>
                 </div>

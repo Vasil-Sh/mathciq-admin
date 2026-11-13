@@ -34,14 +34,15 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
       <div className="v3-card-head">
         <div>
           <h2 id="ret-title" className="v3-h2">Утримання</h2>
-          <p className="v3-note v3-hide-mobile">Хто продовжив підписку після її закінчення · {t.label}</p>
+          <p className="v3-note v3-hide-mobile"><span className="v3-hide-wide">Хто продовжив підписку після її закінчення</span><span className="v3-only-wide">Хто продовжив підписку</span> · {t.label}</p>
         </div>
-        <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile">Деталі →</Link>
+        <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile v3-hide-wide">Деталі →</Link>
         <span className="v3-note v3-only-mobile">{t.label}</span>
       </div>
 
+      <strong className="v3-ret-big v3-only-wide">{t.rate}%</strong>
       <div className="v3-ret-tiles v3-hide-mobile">
-        <div><span>Утримання</span><strong className="is-blue">{t.rate}%</strong></div>
+        <div className="v3-hide-wide"><span>Утримання</span><strong className="is-blue">{t.rate}%</strong></div>
         <div><span>Продовжили</span><strong>{t.renewed}<small> з {t.total}</small></strong></div>
         <div><span>Відтік</span><strong className={t.lost ? "is-red" : undefined}>{t.lost}</strong></div>
       </div>
@@ -58,8 +59,8 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
       </div>
 
       {showBars && (
-        <div className="v3-hide-mobile">
-          <div className="v3-ret-bars-head"><span>Утримання за 6 місяців</span>{avg !== null && <span>середнє {avg}%</span>}</div>
+        <div className="v3-hide-mobile v3-ret-chart">
+          <div className="v3-ret-bars-head v3-hide-wide"><span>Утримання за 6 місяців</span>{avg !== null && <span>середнє {avg}%</span>}</div>
           <div className="v3-ret-bars" role="img" aria-label={`Утримання за місяцями: ${months.map((m) => `${MONTHS[mIdx(m.month)]} ${m.rate === null ? "немає даних" : `${m.rate}%`}`).join(", ")}`}>
             {months.map((m) => {
               const on = m.month === focus?.month;
@@ -75,9 +76,9 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
         </div>
       )}
 
-      {list && shown.length > 0 && (
-        <div>
-          <h3 className="v3-ret-sub v3-hide-mobile">Не продовжили</h3>
+      {((list && shown.length > 0) || avg !== null) && (
+        <div className="v3-ret-side">
+          {list && shown.length > 0 && <div className="v3-ret-side-head v3-hide-mobile"><h3 className="v3-ret-sub">Не продовжили</h3><Link to="/users?status=expired" className="v3-ret-more v3-only-wide">Усі →</Link></div>}
           <ul className="v3-ret-list">
             {shown.map(({ user, ended, tenure }) => {
               const tg = telegramLink(user.telegram);
@@ -86,13 +87,14 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
                   <span className="v3-av v3-av-dark" aria-hidden="true">{initials(user.username)}</span>
                   <span className="v3-ret-who">
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link>
-                    <small><span className="v3-hide-mobile">закінчилась {ended}{tenure && ` · ${tenure}`}</span><span className="v3-only-mobile">не продовжив · {ended}</span></small>
+                    <small><span className="v3-hide-mobile v3-hide-wide">закінчилась {ended}{tenure && ` · ${tenure}`}</span><span className="v3-only-wide">{ended}{tenure && ` · ${tenure.replace(/^з нами (.+)$/, "$1 з нами")}`}</span><span className="v3-only-mobile">не продовжив · {ended}</span></small>
                   </span>
                   {tg && <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill v3-btn-pill-dark">Написати</a>}
                 </li>
               );
             })}
           </ul>
+          {avg !== null && <p className="v3-note v3-ret-avg v3-only-wide">Середнє утримання за 6 місяців — {avg}%.</p>}
         </div>
       )}
     </section>

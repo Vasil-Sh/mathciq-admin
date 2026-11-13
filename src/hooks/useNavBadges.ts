@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/apiClient";
 import { authService } from "@/lib/authService";
 import { expiringUsers } from "@/lib/subscriptions";
+import { fetchOpenTickets, fetchParsers, PARSER_NAMES } from "@/lib/dashboardInsights";
 
 /**
  * Counters shown in the top navigation.
@@ -9,8 +10,10 @@ import { expiringUsers } from "@/lib/subscriptions";
  * - auditUnseen: audit entries by *other* admins since this admin last opened
  *   the audit log. Computed client-side from the first audit page; the marker
  *   lives in localStorage, so it is per browser. Opening /audit resets it.
- * - supportOpen / matchesError: no backend yet — stay undefined, so the badge
- *   is simply not rendered (we never show made-up numbers).
+ * - supportOpen: open support tickets (/admin/support-tickets?status=open).
+ * - matchesError: a parser circuit is open (/admin/parsers); matchesErrorText
+ *   is the tooltip, e.g. "HLTV не відповідає".
+ * A failed request leaves the badge as it was (never made-up numbers).
  */
 export interface NavBadges {
   auditUnseen?: number;
@@ -18,6 +21,7 @@ export interface NavBadges {
   auditMore?: boolean;
   supportOpen?: number;
   matchesError?: boolean;
+  matchesErrorText?: string;
   /** subscriptions ending within 7 days — shown on «Користувачі» in the mobile menu */
   usersExpiring?: number;
 }
@@ -41,16 +45,26 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
   const [badges, setBadges] = useState<NavBadges>({});
 
   useEffect(() => {
+    let cancelled = false;
+    const loadOps = async () => {
+      const [t, p] = await Promise.allSettled([fetchOpenTickets(), fetchParsers()]);
+      if (cancelled) return;
+      if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value.length }));
+      if (p.status === "fulfilled") {
+        const down = p.value.filter((x) => x.open);
+        setBadges((b) => ({ ...b, matchesError: down.length > 0, matchesErrorText: down.map((x) => `${PARSER_NAMES[x.name] || x.name} не відповідає`).join(", ") }));
+      }
+    };
     if (onAuditPage) {
       markAuditSeen();
+      loadOps();
       setBadges((b) => ({ ...b, auditUnseen: 0, auditMore: false }));
       authService.fetchUsers().then((users) => setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }))).catch(() => {});
-      return;
+      return () => { cancelled = true; };
     }
     // First visit on this browser: start counting from now, not from the beginning of time.
     if (seenAt() === null) markAuditSeen();
 
-    let cancelled = false;
     const load = async () => {
       try {
         const res = await api.get<{ entries: AuditEntry[]; hasMore: boolean }>(
@@ -74,6 +88,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
         const users = await authService.fetchUsers();
         if (!cancelled) setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }));
       } catch { /* same as above */ }
+      await loadOps();
     };
     load();
     const id = window.setInterval(load, POLL_MS);

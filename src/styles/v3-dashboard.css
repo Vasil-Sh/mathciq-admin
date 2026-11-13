@@ -337,3 +337,41 @@
   .v3-kpi-ai .v3-kpi-n { grid-column: 2; grid-row: 1 / span 2; margin: 0; text-align: right; }
 }
 .v3-kpi-l-tail { margin-left: -4px; }
+
+/* ── Wide (≥1600px) — per the «Wide» artboard ── */
+.v3-only-wide { display: none !important; }
+.v3-dash-top { display: flex; flex-direction: column; gap: 18px; }
+@media (max-width: 767px) { .v3-dash-top { gap: 10px; } }
+.v3-chart-tools { display: flex; align-items: center; gap: 24px; }
+.v3-ret-side-head { display: flex; justify-content: space-between; align-items: center; }
+.v3-ret-avg { margin: 14px 0 0; line-height: 1.6; }
+@media (min-width: 1600px) {
+  .v3-only-wide { display: revert !important; }
+  .v3-hide-wide { display: none !important; }
+  .v3-dash .v3-hero-row > div:first-child { display: flex; align-items: flex-end; gap: 32px; }
+  .v3-dash .v3-title { font-size: 84px; letter-spacing: -.045em; line-height: .95; }
+  .v3-dash .v3-subtitle { margin: 0 0 8px; max-width: 380px; }
+
+  .v3-dash-top { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 18px; align-items: stretch; }
+  .v3-dash-top > .v3-kpis { grid-column: 1; gap: 18px; }
+  .v3-dash-top > .v3-kpis-second { margin-top: 0; }
+  .v3-dash-top > .v3-dash-main:not(.v3-dash-onboard) { display: contents; }
+  .v3-dash-top .v3-chart-card { grid-column: 1; }
+  .v3-dash-top .v3-attention, .v3-dash-top > .v3-dash-main > .v3-calm-card { grid-column: 2; grid-row: 1 / span 3; }
+  .v3-dash-top > .v3-dash-onboard { grid-column: 1 / -1; }
+  .v3-dash-top.is-empty { grid-template-columns: minmax(0, 1fr); }
+  .v3-chart-tools .v3-chart-total { display: flex !important; margin-top: 0; }
+  .v3-chart-tools .v3-chart-total strong { font-size: 30px; }
+  .v3-chart-foot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+
+  .v3-dash-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 18px; }
+  .v3-ret-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: dense; column-gap: 24px; row-gap: 16px; align-content: start; }
+  .v3-ret-card > .v3-card-head, .v3-ret-card > .v3-ret-big, .v3-ret-card > .v3-ret-tiles, .v3-ret-card > .v3-ret-chart { grid-column: 1; }
+  .v3-ret-card > .v3-ret-side { grid-column: 2; grid-row: 1 / span 4; }
+  .v3-ret-big { display: block; font-size: 64px; font-weight: 300; letter-spacing: -.04em; line-height: 1; color: #a3c0ff; }
+  .v3-ret-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v3-ret-tiles strong { font-size: 26px; margin-top: 6px; }
+  .v3-ret-bars { height: 80px; gap: 6px; }
+  .v3-ret-months { gap: 6px; font-size: 10px; }
+  .v3-risk-row { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, .9fr) minmax(0, .9fr) auto; }
+}

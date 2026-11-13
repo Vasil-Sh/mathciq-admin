@@ -300,6 +300,7 @@ export default function Dashboard() {
       {!online && <div className="v3-stale v3-offline" role="status"><WifiOff size={18} aria-hidden="true" /><span><b>Немає інтернету.</b> Показуємо дані з останнього оновлення{updatedAt ? ` о ${updatedAt}` : ""}. Продовження й зміни запрацюють після відновлення зв’язку, автооновлення призупинено.</span><button type="button" onClick={() => load(true)}>Перевірити ще раз</button></div>}
       {online && error && <div className="v3-stale" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span><b>Не вдалося оновити статистику.</b> Показуємо дані станом на {updatedAt}. Нові оплати з’являться після відновлення.</span><button type="button" onClick={() => load(true)}>Спробувати ще раз</button></div>}
 
+      <div className={`v3-dash-top${isEmpty ? " is-empty" : ""}`}>
       <section className="v3-kpis">
         {kpis.map(({ icon: Icon, label, short, value, note, delta, deltaNote, to, hero }) => (
           <Link key={label} to={to} className={`v3-kpi${hero ? " is-hero" : ""}`}>
@@ -337,7 +338,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      {isEmpty && <section className="v3-dash-main">
+      {isEmpty && <section className="v3-dash-main v3-dash-onboard">
         <section className="v3-wcard v3-onboard">
           <div>
             <span className="v3-tag">Перші кроки</span>
@@ -360,12 +361,15 @@ export default function Dashboard() {
               <h2 className="v3-h2">{mode === "pay" ? "Оплати" : "Вартість підписок"} за місяцями</h2>
               <p className="v3-note">{mode === "pay" ? "Ручний облік, без скасованих оплат" : "Оцінка за поточними тарифами, не платежі"} · {view.year}</p>
             </div>
+            <div className="v3-chart-tools">
+            <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
               <button type="button" className={mode === "est" ? "is-on" : ""} aria-pressed={mode === "est"} onClick={() => setMode("est")}><span className="v3-hide-mobile">Вартість підписок</span><span className="v3-only-mobile">Підписки</span></button>
             </div>
+            </div>
           </div>
-          <div className="v3-chart-total"><strong>{money(view.total)}</strong><span>за рік</span></div>
+          <div className="v3-chart-total v3-hide-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>
           <div className="v3-bars-wrap">
             <div className="v3-bars" role="img" aria-label={`Графік: ${view.series.filter((s) => !s.future).map((s) => `${MONTHS[monthIdx(s.m)]} ${money(s.v)}`).join(", ")}`}>
               {view.series.map((s, i) => {
@@ -389,7 +393,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          {(view.planTotal > 0 || recentPaid.length > 0) && (
+          {!isEmpty && (view.planTotal > 0 || recentPaid.length > 0) && (
             <div className="v3-chart-foot">
               {view.planTotal > 0 && (
                 <div className="v3-plans">
@@ -453,6 +457,7 @@ export default function Dashboard() {
             </> : null}
         </aside>)}
       </section>
+      </div>
 
       {!isEmpty && (retTotal > 0 || (risk && overview)) && (
         <section className="v3-dash-pair">

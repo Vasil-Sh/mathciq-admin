@@ -57,7 +57,7 @@ export default function AdminLayout() {
 
   const badgeFor = (key?: NavKey) => {
     if (key === "support" && badges.supportOpen) return <span className="v3-count" aria-label={`${badges.supportOpen} відкритих звернень`}>{badges.supportOpen}</span>;
-    if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label="Помилка парсера">!</span>;
+    if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label={badges.matchesErrorText || "Помилка парсера"} title={badges.matchesErrorText || "Помилка парсера"}>!</span>;
     return null;
   };
   const auditCount = badges.auditUnseen ? (badges.auditMore ? `${badges.auditUnseen}+` : String(badges.auditUnseen)) : "";
