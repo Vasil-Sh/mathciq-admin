@@ -378,7 +378,7 @@
 
 /* Empty chart: dashed grid, no bars (design «Дашборд, порожній стан») */
 .v3-bars-wrap.is-empty .v3-bars { background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .07) 0 1px, transparent 1px 25%) top / 100% calc(100% - 22px) no-repeat; }
-.v3-bars-wrap.is-empty .v3-bar, .v3-bars-wrap.is-empty .v3-bar-val { visibility: hidden; }
+.v3-bars-wrap.is-empty .v3-bar, .v3-bars-wrap.is-empty .v3-bar-slot, .v3-bars-wrap.is-empty .v3-bar-val { visibility: hidden; }
 .v3-bars-wrap.is-empty .v3-chart-empty { background: transparent; }
 .v3-chart-empty-ico { flex-shrink: 0; min-height: 52px; max-width: none !important; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: rgba(90, 140, 255, .14); color: #a3c0ff; }
 .v3-dimv { color: #8c95a6; }
@@ -392,3 +392,84 @@
   .v3-steps li { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .v3-steps li > a { grid-column: auto; justify-self: end; min-height: 36px; width: 36px; padding: 0; border: 0; background: transparent; color: var(--v3-ink-muted); }
 }
+
+/* ── Mobile period picker ── */
+.v3-period-wrap { flex: 1; min-width: 0; }
+.v3-period-menu { position: relative; width: 100%; }
+.v3-period-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: #161b24; color: var(--v3-text); font: 500 13px Inter, sans-serif; cursor: pointer; }
+.v3-period-btn svg { transition: transform .2s ease; flex-shrink: 0; }
+.v3-period-btn svg.is-flipped { transform: rotate(180deg); }
+.v3-period-list { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 8px); margin: 0; padding: 6px; list-style: none; border-radius: 20px; background: #fff; box-shadow: 0 20px 50px rgba(0, 0, 0, .45); max-height: 60vh; overflow: auto; animation: v3-pop-in .16s ease-out; transform-origin: top center; }
+.v3-period-list button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: transparent; color: var(--v3-ink); font: 500 14px Inter, sans-serif; text-align: left; cursor: pointer; }
+.v3-period-list button:hover { background: #f1f4fa; }
+.v3-period-list button.is-on { background: #eef3ff; color: #2450c4; font-weight: 600; }
+@media (max-width: 767px) {
+  .v3-dash .v3-chips { width: 100%; flex-wrap: nowrap; }
+  .v3-dash .v3-refresh { width: 44px; min-height: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 50%; background: #161b24; flex-shrink: 0; }
+}
+
+/* ── Clickable month bars + details popover ── */
+.v3-bar-col { position: relative; }
+button.v3-bar { display: block; padding: 0; border: 0; cursor: pointer; font: inherit; }
+button.v3-bar:hover { filter: brightness(1.35); }
+button.v3-bar:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+.v3-bar-col.is-open button.v3-bar { box-shadow: 0 0 0 2px #7aa2ff; }
+.v3-bar-slot { position: relative; width: 100%; min-height: 4px; transition: height .6s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--i, 0) * 35ms); }
+.v3-bar-slot > button.v3-bar { width: 100%; height: 100%; }
+.v3-bar-pop { position: absolute; z-index: 30; top: 0; width: 260px; padding: 14px; border-radius: 18px; background: #fff; color: var(--v3-ink); box-shadow: 0 20px 50px rgba(0, 0, 0, .5); text-align: left; animation: v3-pop-in .16s ease-out; }
+.v3-bar-pop.is-right-of { left: calc(100% + 10px); transform-origin: top left; }
+.v3-bar-pop.is-left-of { right: calc(100% + 10px); transform-origin: top right; }
+.v3-bar-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.v3-bar-pop-head strong { font-size: 15px; font-weight: 600; }
+.v3-bar-pop dl { margin: 10px 0 12px; }
+.v3-bar-pop dl > div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid #edf0f3; font-size: 13px; }
+.v3-bar-pop dt { color: var(--v3-ink-muted); }
+.v3-bar-pop dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.v3-bar-pop dd small { color: var(--v3-ink-muted); font-weight: 400; }
+.v3-up-l { color: #1f7a3d; }
+.v3-down-l { color: #b3321c; }
+@media (max-width: 767px) {
+  .v3-bar-pop, .v3-bar-pop.is-right-of, .v3-bar-pop.is-left-of { position: fixed; top: auto; left: 16px; right: 16px; bottom: 16px; width: auto; animation: v3-sheet-up .2s ease-out; }
+}
+
+/* ── Motion ── */
+@keyframes v3-pop-in { from { opacity: 0; transform: translateY(4px) scale(.97); } to { opacity: 1; } }
+@keyframes v3-sheet-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes v3-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.v3-bar { transition: filter .15s, box-shadow .15s; }
+.v3-ret-bar, .v3-ret-mini i, .v3-kpi-bar > span, .v3-plan-bar > span { transition: height .6s cubic-bezier(.2, .8, .2, 1), width .6s cubic-bezier(.2, .8, .2, 1), flex-grow .6s ease; }
+.v3-dash > *, .v3-dash-top > *, .v3-dash-top > .v3-dash-main > *, .v3-dash-pair > * { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-dash-top > .v3-dash-main { animation: none; }
+.v3-dash-top > :nth-child(2), .v3-dash-pair > :nth-child(2) { animation-delay: .06s; }
+.v3-dash-top .v3-chart-card { animation-delay: .12s; }
+.v3-dash-top .v3-attention, .v3-dash-top .v3-calm-card { animation-delay: .16s; }
+.v3-dash > :nth-child(n+4) { animation-delay: .2s; }
+.v3-kpis > .v3-kpi { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-kpis > .v3-kpi:nth-child(2) { animation-delay: .04s; }
+.v3-kpis > .v3-kpi:nth-child(3) { animation-delay: .08s; }
+.v3-kpis > .v3-kpi:nth-child(4) { animation-delay: .12s; }
+a.v3-kpi { transition: border-color .15s, translate .18s; }
+a.v3-kpi:hover { translate: 0 -2px; }
+.v3-seg button, .v3-chip, .v3-btn, .v3-btn-pill, .v3-alert-row, .v3-exp-row, .v3-risk-row, .v3-head-link, .v3-ret-more { transition: background-color .18s, color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+.v3-alert-row, .v3-exp-row { transition: background-color .18s, translate .18s; }
+.v3-alert-row:hover, .v3-exp-row:hover { translate: 2px 0; }
+.v3-risk-table, .v3-risk-cards { animation: v3-rise .3s ease-out both; }
+.v3-tag { transition: background-color .2s, color .2s; }
+@media (prefers-reduced-motion: reduce) {
+  .v3-bar, .v3-bar-slot, .v3-ret-bar, .v3-ret-mini i, .v3-kpi-bar > span, .v3-plan-bar > span { transition: none !important; }
+  .v3-dash *, .v3-bar-pop, .v3-period-list { animation: none !important; }
+  a.v3-kpi:hover, .v3-alert-row:hover, .v3-exp-row:hover { translate: none; }
+}
+@keyframes v3-grow-y { from { transform: scaleY(0); } to { transform: none; } }
+.v3-ret-bar, .v3-ret-mini i { transform-origin: bottom; animation: v3-grow-y .6s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-ret-col:nth-child(2) .v3-ret-bar, .v3-ret-mini i:nth-child(2) { animation-delay: .04s; }
+.v3-ret-col:nth-child(3) .v3-ret-bar, .v3-ret-mini i:nth-child(3) { animation-delay: .08s; }
+.v3-ret-col:nth-child(4) .v3-ret-bar, .v3-ret-mini i:nth-child(4) { animation-delay: .12s; }
+.v3-ret-col:nth-child(5) .v3-ret-bar, .v3-ret-mini i:nth-child(5) { animation-delay: .16s; }
+.v3-ret-col:nth-child(6) .v3-ret-bar, .v3-ret-mini i:nth-child(6) { animation-delay: .2s; }
+@keyframes v3-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+.v3-plan-bar, .v3-kpi-bar > span { transform-origin: left; animation: v3-grow-x .7s cubic-bezier(.2, .8, .2, 1) .15s both; }
+
+/* Popovers and menus stay above the cards below them */
+.v3-dash .v3-hero-row { position: relative; z-index: 20; }
+.v3-dash .v3-chart-card { position: relative; z-index: 5; }

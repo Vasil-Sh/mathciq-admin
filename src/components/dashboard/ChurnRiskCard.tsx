@@ -49,7 +49,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
         <p className="v3-risk-empty">{rows.length === 0 ? "Зараз ризикових платних користувачів немає." : "У цій категорії нікого немає."}</p>
       ) : (
         <>
-          <div className="v3-risk-table v3-hide-mobile" role="table" aria-label="Ризик відтоку">
+          <div key={`t-${tab}`} className="v3-risk-table v3-hide-mobile" role="table" aria-label="Ризик відтоку">
             <div className="v3-risk-row v3-risk-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Сигнал</span><span role="columnheader" className="v3-only-wide">Остання ставка</span><span role="columnheader">Підписка</span><span role="columnheader"><span className="sr-only">Дія</span></span></div>
             {shown.map((r) => {
               const tg = telegramLink(r.user.telegram);
@@ -65,7 +65,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
             })}
           </div>
 
-          <ul className="v3-risk-cards v3-only-mobile">
+          <ul key={`c-${tab}`} className="v3-risk-cards v3-only-mobile">
             {(expanded ? list : list.slice(0, MOBILE_LIMIT)).map((r) => {
               const tg = telegramLink(r.user.telegram);
               return (

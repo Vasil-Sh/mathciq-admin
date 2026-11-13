@@ -9,6 +9,7 @@ import { daysLabel, expiringUsers, extendedEndDate, money, shortDate } from "@/l
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import RetentionCard from "@/components/dashboard/RetentionCard";
 import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
+import PeriodMenu from "@/components/dashboard/PeriodMenu";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, initials, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
@@ -62,6 +63,9 @@ export default function Dashboard() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [extending, setExtending] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [barOpen, setBarOpen] = useState<string | null>(null);
+  // Bars grow from zero once data is in (and again when the chart mode changes).
+  const [grown, setGrown] = useState(false);
   const [overview, setOverview] = useState<AdminUserOverview[] | null>(null);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
   const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
@@ -89,6 +93,21 @@ export default function Dashboard() {
   }, [online, load]);
 
   const expiring = useMemo(() => expiringUsers(users, 7), [users]);
+  useEffect(() => {
+    if (!barOpen) return;
+    const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest?.(".v3-bar-col, .v3-bar-pop")) setBarOpen(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setBarOpen(null); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [barOpen]);
+  useEffect(() => { setBarOpen(null); }, [mode]);
+  useEffect(() => {
+    if (!stats) return;
+    setGrown(false);
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setGrown(true)));
+    return () => cancelAnimationFrame(id);
+  }, [stats ? 1 : 0, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const view = useMemo(() => {
     if (!stats) return null;
@@ -128,11 +147,16 @@ export default function Dashboard() {
     const ai = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + r.costUsd, 0);
     const aiCalls = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + (r.calls || 0), 0);
     const prevReg = reg[prevKey(now.key)] || 0;
-    return { series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
+    return { pay, est, reg, series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
   }, [stats, overview, mode, period, now.key, now.month, now.year]);
 
   const firstChip = Math.max(0, now.month - 3);
-  const periodChips = [{ key: "year", label: "Поточний рік" }, ...Array.from({ length: now.month - firstChip }, (_, i) => ({ key: monthKey(now.year, firstChip + i), label: MONTHS_FULL[firstChip + i] }))];
+  const recentChips = Array.from({ length: now.month - firstChip }, (_, i) => ({ key: monthKey(now.year, firstChip + i), label: MONTHS_FULL[firstChip + i] }));
+  // A month picked on the chart that is older than the last three also gets a chip.
+  const extraChip = period !== "year" && !recentChips.some((c) => c.key === period) ? [{ key: period, label: MONTHS_FULL[monthIdx(period)] }] : [];
+  const periodChips = [{ key: "year", label: "Поточний рік" }, ...extraChip, ...recentChips];
+  // Mobile list: the whole year so far, newest first.
+  const periodOptions = [{ key: "year", label: "Поточний рік" }, ...Array.from({ length: now.month }, (_, i) => ({ key: monthKey(now.year, now.month - 1 - i), label: `${MONTHS_FULL[now.month - 1 - i]} ${now.year}` }))];
   const periodLabel = period === "year" ? `${now.year} рік` : `${MONTHS_FULL[monthIdx(period)]} ${period.slice(0, 4)}`;
 
   async function extendSelected(ids: number[]) {
@@ -185,12 +209,8 @@ export default function Dashboard() {
       </div>
       <div className="v3-chips" role="group" aria-label="Період">
         {periodChips.map((c) => <button key={c.key} type="button" className={`v3-chip v3-hide-mobile${period === c.key ? " is-on" : ""}`} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
-        <label className="v3-period-select v3-only-mobile"><span>Період</span>
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            {periodChips.map((c) => <option key={c.key} value={c.key}>{c.key === "year" ? "Поточний рік" : `${c.label} ${now.year}`}</option>)}
-          </select>
-        </label>
-        <button type="button" className="v3-chip" onClick={() => load(true)} disabled={refreshing || !online}><RefreshCw size={14} className={refreshing ? "animate-spin" : ""} aria-hidden="true" />Оновити</button>
+        <div className="v3-only-mobile v3-period-wrap"><PeriodMenu value={period} options={periodOptions} onChange={setPeriod} /></div>
+        <button type="button" className="v3-chip v3-refresh" onClick={() => load(true)} disabled={refreshing || !online} aria-label="Оновити дані"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span></button>
       </div>
     </section>
   );
@@ -285,6 +305,31 @@ export default function Dashboard() {
   const report = activeOnly ? view.report.filter((r) => r.paid || r.users) : view.report;
   const totals = view.report.reduce((t, r) => ({ paid: t.paid + r.paid, users: t.users + r.users }), { paid: 0, users: 0 });
   const chartEmpty = view.total === 0;
+  function monthPopover(m: string, i: number) {
+    const name = MONTHS_FULL[monthIdx(m)];
+    const p = view!.pay[m];
+    const prev = view!.pay[prevKey(m)]?.amount || 0;
+    const delta = prev && m !== now.key ? Math.round((((p?.amount || 0) - prev) / prev) * 1000) / 10 : null;
+    const cancels = (stats!.cancellations?.byMonth || []).find((r) => r.month === m)?.count || 0;
+    const refund = (stats!.refunds?.byMonth || []).find((r) => r.month === m);
+    const ai = (stats!.aiUsage?.byMonth || []).find((r) => r.month === m);
+    const rateUah = stats!.aiUsage?.usdToUah || 0;
+    const side = i < 6 ? " is-right-of" : " is-left-of";
+    return (
+      <div className={`v3-bar-pop${side}`} role="dialog" aria-label={`${name} ${m.slice(0, 4)}`}>
+        <div className="v3-bar-pop-head"><strong>{name} {m.slice(0, 4)}</strong>{m === now.key && <span className="v3-tag">Поточний</span>}</div>
+        <dl>
+          <div><dt>Отримані оплати</dt><dd>{money(p?.amount || 0)} <small>· {p?.count || 0} {payWord(p?.count || 0)}</small></dd></div>
+          <div><dt>Вартість підписок</dt><dd>{money(view!.est[m] || 0)}</dd></div>
+          <div><dt>Нові користувачі</dt><dd>{view!.reg[m] || 0}</dd></div>
+          <div><dt>Скасування</dt><dd>{cancels + (refund?.count || 0)}{refund?.amount ? <small> · повернено {money(refund.amount)}</small> : null}</dd></div>
+          {ai && <div><dt>Витрата AI</dt><dd>{rateUah ? `≈ ${money(ai.costUsd * rateUah)}` : `$${ai.costUsd.toFixed(2)}`}{ai.calls ? <small> · {ai.calls} {plural(ai.calls, "аналіз", "аналізи", "аналізів")}</small> : null}</dd></div>}
+          {delta !== null && <div><dt>До {MONTHS_GEN[monthIdx(prevKey(m))]}</dt><dd className={delta >= 0 ? "v3-up-l" : "v3-down-l"}>{pct(delta)}</dd></div>}
+        </dl>
+        {period !== m && <button type="button" className="v3-btn v3-btn-blue v3-btn-sm v3-btn-block" onClick={() => { setPeriod(m); setBarOpen(null); }}>Показати {name.toLowerCase()} на дашборді</button>}
+      </div>
+    );
+  }
   const calmCard = (
     <aside className="v3-dcard v3-calm-card" aria-label="Потребує уваги">
       <span className="v3-calm-ico"><Check size={26} strokeWidth={1.8} aria-hidden="true" /></span>
@@ -382,10 +427,20 @@ export default function Dashboard() {
               {view.series.map((s, i) => {
                 const on = period === s.m || (period === "year" && s.m === now.key);
                 const hideMobile = i < now.month - 6 || s.future;
+                const open = barOpen === s.m;
+                const h = s.future ? "6%" : `${Math.max(4, Math.round((s.v / view.max) * 86))}%`;
+                const name = MONTHS_FULL[monthIdx(s.m)];
                 return (
-                  <div key={s.m} className={`v3-bar-col${hideMobile ? " v3-hide-mobile" : ""}`}>
+                  <div key={s.m} className={`v3-bar-col${hideMobile ? " v3-hide-mobile" : ""}${open ? " is-open" : ""}`} style={{ "--i": i } as React.CSSProperties}>
                     <span className={`v3-bar-val${on ? " is-on" : ""}`}>{s.future ? "" : s.v ? shortK(s.v) : "—"}</span>
-                    <div className={`v3-bar${on ? " is-on" : ""}${s.future ? " is-future" : ""}`} style={{ height: s.future ? "6%" : `${Math.max(4, Math.round((s.v / view.max) * 86))}%` }} />
+                    {s.future ? (
+                      <div className="v3-bar is-future" style={{ height: h }} />
+                    ) : (
+                      <div className="v3-bar-slot" style={{ height: grown ? h : "0%" }}>
+                        <button type="button" className={`v3-bar${on ? " is-on" : ""}`} aria-expanded={open} aria-label={`${name}: ${money(s.v)} — деталі`} onClick={() => setBarOpen(open ? null : s.m)} />
+                        {open && monthPopover(s.m, i)}
+                      </div>
+                    )}
                     <span className="v3-bar-m">{MONTHS[monthIdx(s.m)]}</span>
                   </div>
                 );
