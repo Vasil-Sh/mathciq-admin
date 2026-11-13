@@ -13,7 +13,7 @@ export function useLogin() {
       setError("");
 
       if (!username.trim() || !password.trim()) {
-        setError("Введіть логін та пароль");
+        setError("Введіть логін і пароль");
         return;
       }
 
