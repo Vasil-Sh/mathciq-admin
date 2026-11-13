@@ -1,64 +1,146 @@
-import AdminAvatar from "@/components/AdminAvatar";
-import { useState } from "react";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import {
+  BarChart3, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
+  LogOut, Megaphone, Menu, MessageCircle, Settings2, Swords, Users, X,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, LogOut, ChartNoAxesCombined, Menu, CircleDollarSign, Megaphone, History, Settings2 } from "lucide-react";
+import { useNavBadges } from "@/hooks/useNavBadges";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const navigation = [
+type NavKey = "support" | "matches";
+const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
   { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard },
   { label: "Користувачі", href: "/users", icon: Users },
+  { label: "Оплати", href: "/payments", icon: CreditCard },
   { label: "Ставки", href: "/bets", icon: CircleDollarSign },
-  { label: "Банери", href: "/banners", icon: Megaphone },
-  { label: "Журнал дій", href: "/audit", icon: History },
+  { label: "Реклама", href: "/banners", icon: Megaphone },
+  { label: "Матчі", href: "/matches", icon: Swords, badge: "matches" },
+  { label: "Підтримка", href: "/support", icon: MessageCircle, badge: "support" },
   { label: "Налаштування", href: "/settings", icon: Settings2 },
 ];
+
+function Logo({ onClick }: { onClick?: () => void }) {
+  return (
+    <Link to="/dashboard" className="v3-logo" onClick={onClick} aria-label="MatchIQ Admin — дашборд">
+      <span className="v3-logo-mark"><BarChart3 size={18} strokeWidth={2.4} aria-hidden="true" /></span>
+      <span className="v3-logo-name">MatchIQ</span>
+      <span className="v3-logo-badge">Admin</span>
+    </Link>
+  );
+}
 
 export default function AdminLayout() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const currentPage = navigation.find(item => item.href === pathname)?.label || "Огляд";
-  const sidebar = (close?: () => void) => <>
-    <Link to="/dashboard" className="brand" onClick={close} aria-label="MatchIQ — дашборд">
-      <span className="brand-mark"><ChartNoAxesCombined size={23} /></span>
-      <span>Match<span className="text-blue-400">IQ</span><small>ADMIN WORKSPACE</small></span>
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const onAudit = pathname.startsWith("/audit");
+  const badges = useNavBadges(user?.username, onAudit);
+  const roleName = user?.isOwner ? "Овнер" : "Адмін";
+  const initial = (user?.username || "A").replace(/^@/, "").charAt(0).toUpperCase();
+
+  useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!accountOpen) return;
+    const close = (e: MouseEvent) => { if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAccountOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [accountOpen]);
+
+  const badgeFor = (key?: NavKey) => {
+    if (key === "support" && badges.supportOpen) return <span className="v3-count" aria-label={`${badges.supportOpen} відкритих звернень`}>{badges.supportOpen}</span>;
+    if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label="Помилка парсера">!</span>;
+    return null;
+  };
+  const auditCount = badges.auditUnseen ? (badges.auditMore ? `${badges.auditUnseen}+` : String(badges.auditUnseen)) : "";
+
+  const auditButton = (
+    <Link to="/audit" className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
+      <History size={19} aria-hidden="true" />
+      {auditCount && !onAudit && <span className="v3-count v3-count-float">{auditCount}</span>}
     </Link>
-    <div className="sidebar-divider" />
-    <div className="sidebar-section-label">РОБОЧИЙ ПРОСТІР</div>
-    <nav aria-label="Основна навігація" className="space-y-1.5">
-      {navigation.map(({ label, href, icon: Icon }) => <Link key={href} to={href} onClick={close} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
-        <Icon size={19} /><span>{label}</span>
-      </Link>)}
-    </nav>
-    <div className="sidebar-bottom"><div className="admin-sidebar-profile"><AdminAvatar username={user?.username}/><div><strong>{user?.username || "Адміністратор"}</strong><small>Адміністратор MatchIQ</small></div></div>
-      <button className="sidebar-exit" onClick={() => { close?.(); setLogoutOpen(true); }}><LogOut size={17} /><span>Вийти з акаунта</span></button>
-    </div>
-  </>;
-  return <div className="app-shell">
-    <a href="#main-content" className="skip-link">Перейти до вмісту</a>
-    <aside className="desktop-sidebar">{sidebar()}</aside>
-    <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
-      <DialogContent className="mobile-sidebar-dialog">
-        <DialogTitle className="sr-only">Навігація</DialogTitle>
-        <DialogDescription className="sr-only">Розділи панелі адміністратора</DialogDescription>
-        {sidebar(() => setMobileOpen(false))}
-      </DialogContent>
-    </Dialog>
-    <div className="app-content">
-      <header className="workspace-header workspace-header-large">
-        <div className="workspace-heading">
-          <button type="button" onClick={() => setMobileOpen(true)} className="mobile-menu" aria-label="Відкрити навігацію" aria-expanded={mobileOpen}><Menu size={21} aria-hidden="true" /></button>
-          <div className="workspace-heading-copy"><span>Панель керування</span><strong>{currentPage}</strong></div>
+  );
+
+  return (
+    <div className="v3-shell">
+      <a href="#main-content" className="skip-link">Перейти до вмісту</a>
+      <header className="v3-header">
+        <Logo />
+        <nav aria-label="Основна навігація" className="v3-nav">
+          {navigation.map(({ label, href, badge }) => (
+            <NavLink key={href} to={href} className={({ isActive }) => `v3-navlink${isActive ? " is-active" : ""}`}>
+              {label}{badgeFor(badge)}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="v3-header-end">
+          {auditButton}
+          <div className="v3-account" ref={accountRef}>
+            <button type="button" className="v3-account-btn" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((o) => !o)}>
+              <span className="v3-avatar" aria-hidden="true">{initial}</span>
+              <span className="v3-account-copy"><strong>@{(user?.username || "admin").replace(/^@/, "")}</strong><small>{roleName}</small></span>
+              <ChevronDown size={16} aria-hidden="true" />
+            </button>
+            {accountOpen && (
+              <div className="v3-account-menu" role="menu">
+                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Пароль і сесії</Link>
+                <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти з акаунта</button>
+              </div>
+            )}
+          </div>
+          <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><Menu size={21} aria-hidden="true" /></button>
         </div>
       </header>
-      <main id="main-content" className="min-w-0"><Outlet /></main>
-      <footer className="workspace-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
+
+      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+        <DialogContent className="v3-mobile-menu">
+          <DialogTitle className="sr-only">Меню</DialogTitle>
+          <DialogDescription className="sr-only">Розділи панелі адміністратора</DialogDescription>
+          <div className="v3-mobile-top">
+            <Logo onClick={() => setMobileOpen(false)} />
+            <button type="button" className="v3-icon-btn" onClick={() => setMobileOpen(false)} aria-label="Закрити меню"><X size={20} aria-hidden="true" /></button>
+          </div>
+          <nav aria-label="Основна навігація" className="v3-mobile-nav">
+            {navigation.map(({ label, href, icon: Icon, badge }) => (
+              <NavLink key={href} to={href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
+                <Icon size={20} aria-hidden="true" />{label}{badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
+              </NavLink>
+            ))}
+            <NavLink to="/audit" className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
+              <History size={20} aria-hidden="true" />Журнал дій{auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
+            </NavLink>
+          </nav>
+          <div className="v3-mobile-account">
+            <div className="v3-mobile-account-who">
+              <span className="v3-avatar v3-avatar-lg" aria-hidden="true">{initial}</span>
+              <div><strong>@{(user?.username || "admin").replace(/^@/, "")}</strong><small>{roleName} · MatchIQ</small></div>
+            </div>
+            <div className="v3-mobile-account-actions">
+              <Link to="/settings#account" className="v3-btn v3-btn-ghost-dark" onClick={() => setMobileOpen(false)}><KeyRound size={16} aria-hidden="true" />Пароль і сесії</Link>
+              <button type="button" className="v3-btn v3-btn-danger-outline" onClick={() => { setMobileOpen(false); setLogoutOpen(true); }}><LogOut size={16} aria-hidden="true" />Вийти з акаунта</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <main id="main-content" className="v3-main"><Outlet /></main>
+      <footer className="v3-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
+
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger-bg text-danger shrink-0"><LogOut size={21} /></span><DialogTitle className="text-left">Вийти з облікового запису?</DialogTitle></div>
+            <DialogDescription className="text-left">Щоб повернутися до робочого простору, потрібно буде увійти знову.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter><Button variant="outline" onClick={() => setLogoutOpen(false)}>Скасувати</Button><Button variant="destructive" onClick={() => { setLogoutOpen(false); logout(); }}>Вийти</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-    <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-      <DialogContent className="sm:max-w-md"><DialogHeader><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger-bg text-danger shrink-0"><LogOut size={21} /></span><DialogTitle className="text-left">Вийти з облікового запису?</DialogTitle></div><DialogDescription className="text-left">Щоб повернутися до робочого простору, потрібно буде увійти знову.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setLogoutOpen(false)}>Скасувати</Button><Button variant="destructive" onClick={() => { setLogoutOpen(false); logout(); }}>Вийти</Button></DialogFooter></DialogContent>
-    </Dialog>
-  </div>;
+  );
 }

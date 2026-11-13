@@ -14,14 +14,14 @@ export const isSelf = (target: Pick<Target, "username">, actor?: Pick<Actor, "us
 /** Why this account cannot be deleted, or null if it can. */
 export function deleteBlockReason(actor: Actor | null, target: Target): string | null {
   if (isSelf(target, actor)) return "Власний обліковий запис не можна видалити";
-  if (target.isAdmin && !actor?.isOwner) return "Видаляти адміністраторів може лише власник";
+  if (target.isAdmin && !actor?.isOwner) return "Видаляти адміністраторів може лише овнер";
   return null;
 }
 
 /** Why the role select is locked, or null if the role can be changed. */
 export function roleLockReason(actor: Actor | null, target: Target): string | null {
   if (isSelf(target, actor)) return "Це ваш обліковий запис — власну роль змінити не можна.";
-  if (target.isAdmin && !actor?.isOwner) return "Змінювати роль адміністратора може лише власник.";
+  if (target.isAdmin && !actor?.isOwner) return "Змінювати роль адміністратора може лише овнер.";
   return null;
 }
 
@@ -30,4 +30,4 @@ export function canResetPassword(actor: Actor | null, target: Target): boolean {
 }
 
 export const roleLabel = (t: Pick<Target, "isAdmin" | "isOwner">) =>
-  t.isOwner ? "Власник" : t.isAdmin ? "Адміністратор" : "Користувач";
+  t.isOwner ? "Овнер" : t.isAdmin ? "Адміністратор" : "Користувач";
