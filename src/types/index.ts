@@ -5,6 +5,10 @@ export interface AdminUser {
   username: string;
   role: string;
   isOwner?: boolean;
+  plan?: string;
+  trialEndDate?: string;
+  ageConfirmed?: boolean;
+  birthDate?: string;
   telegram: string;
   priceMonth: string;
   startDate: string;
@@ -75,6 +79,19 @@ export interface AdminUserOverview {
   extensions: number;
   lastPaymentDate: string;
   games: GameBreakdown[];
+  isOwner?: boolean;
+  birthDate?: string;
+  paidTotal?: number;
+  paidCount?: number;
+  lastPaymentAmount?: number;
+  cancelledAt?: string;
+  refundedAmount?: number;
+  selfLimitedUntil?: string;
+  aiToday?: number;
+  proUntil?: string;
+  proBasePlan?: string;
+  subscriptionCancelledAt?: string;
+  subscriptionCancelMode?: string;
 }
 
 export interface GameBreakdown {
@@ -150,6 +167,10 @@ export interface AppSettings {
   aiUsdUah?: number;
   basicPrice?: number;
   proPrice?: number;
+  trialEnabled?: boolean;
+  trialDays?: number;
+  trialPlan?: string;
+  aiDailyLimit?: number;
   churnInactiveDays?: number;
   churnLossStreak?: number;
 }

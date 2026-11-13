@@ -88,9 +88,9 @@ function endSession() {
 
 /** Sends a request with auth, refreshing the token once on 401. Throws on non-2xx. */
 async function send(method: string, path: string, body?: unknown): Promise<Response> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+  const payload = body ? (isForm ? (body as FormData) : JSON.stringify(body)) : undefined;
   if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   // Only a request made with a session can "lose" it — a wrong password on
   // /auth/login also returns 401 and must not trigger a logout.
@@ -99,7 +99,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
   let res = await fetch(`${BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: payload,
   });
 
   // Auto-refresh on 401
@@ -111,7 +111,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
       res = await fetch(`${BASE}${path}`, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: payload,
       });
     }
     if (res.status === 401) endSession();

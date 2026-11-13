@@ -73,8 +73,10 @@ class AuthService {
     priceMonth: string;
     startDate: string;
     endDate: string;
+    plan?: string;
+    trialEndDate?: string;
   }) {
-    return api.post<{ username: string; password: string }>(
+    return api.post<{ userId?: number; username: string; password: string }>(
       "/auth/register",
       user
     );

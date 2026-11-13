@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Download } from "lucide-react";
+import { Check, Copy, Download, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/lib/apiClient";
@@ -116,27 +116,48 @@ export function CancelPaymentDialog({ payment, onOpenChange, onDone }: { payment
   );
 }
 
-/** «Чек» — the same image the user receives. */
+/** «Чек» — the same image the user receives; can be sent to the user's Telegram. */
 export function ReceiptDialog({ data, username, onOpenChange }: { data: { image: string; payment: Payment } | null; username: string; onOpenChange: (o: boolean) => void }) {
+  const [sending, setSending] = useState(false);
   async function copy() {
     if (!data) return;
     try {
       const blob = await (await fetch(data.image)).blob();
       await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-      toast.success("Зображення скопійовано", { description: "Вставте в чат" });
+      toast.info("Зображення скопійовано", { description: "Вставте в чат" });
     } catch { toast.error("Не вдалося скопіювати", { description: "Збережіть PNG і надішліть вручну" }); }
   }
+  async function send() {
+    if (!data || sending) return;
+    setSending(true);
+    try {
+      const blob = await (await fetch(data.image)).blob();
+      const form = new FormData();
+      form.append("photo", new File([blob], `MIQ-${data.payment.id}.png`, { type: "image/png" }));
+      await api.post(`/admin/payments/${data.payment.id}/receipt/send`, form);
+      toast.success(`Чек надіслано @${username}`, { description: "Telegram · бот MatchIQ" });
+    } catch (e) {
+      const img = data.image, id = data.payment.id;
+      toast.error("Не вдалося надіслати", { description: (e as Error).message, action: { label: "PNG", onClick: () => savePaymentReceipt(img, id) } });
+    } finally { setSending(false); }
+  }
+  const p = data?.payment;
+  const created = p ? `записав @${p.createdBy}` : "";
   return (
     <Dialog open={!!data} onOpenChange={onOpenChange}>
       <DialogContent className="v3-modal sm:max-w-[480px]">
-        <DialogTitle className="v3-modal-title">Чек оплати №{data?.payment.id}</DialogTitle>
-        <DialogDescription className="v3-modal-sub">@{username} · {data?.payment.amount} ₴ · записав @{data?.payment.createdBy}. Таке зображення бачить користувач.</DialogDescription>
+        <DialogTitle className="v3-modal-title">Чек оплати №{p?.id}</DialogTitle>
+        <DialogDescription className="v3-modal-sub">@{username} · {p ? `${Number(p.amount).toLocaleString("uk-UA")} ₴` : ""} · {created}</DialogDescription>
         <div className="v3-receipt">{data && <img src={data.image} alt={`Чек оплати № MIQ-${data.payment.id}`} />}</div>
-        <div className="v3-modal-foot">
-          <span />
+        <div className="v3-receipt-tools">
+          <button type="button" className="v3-btn v3-btn-ghost" onClick={() => data && savePaymentReceipt(data.image, data.payment.id)}><Download size={15} aria-hidden="true" /><span className="v3-hide-mobile">Завантажити PNG</span><span className="v3-only-mobile">Зберегти PNG</span></button>
+          <button type="button" className="v3-btn v3-btn-ghost v3-hide-mobile" onClick={copy}><Copy size={15} aria-hidden="true" />Копіювати</button>
+          <button type="button" className="v3-btn v3-btn-blue v3-only-mobile" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : "У Telegram"}</button>
+        </div>
+        <div className="v3-modal-foot v3-hide-mobile">
+          <span className="v3-hint">Таке зображення бачить користувач</span>
           <div className="v3-modal-actions">
-            <button type="button" className="v3-btn v3-btn-ghost" onClick={copy}><Copy size={15} aria-hidden="true" />Копіювати</button>
-            <button type="button" className="v3-btn v3-btn-primary" onClick={() => data && savePaymentReceipt(data.image, data.payment.id)}><Download size={15} aria-hidden="true" />Завантажити PNG</button>
+            <button type="button" className="v3-btn v3-btn-blue" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : "Надіслати в Telegram"}</button>
           </div>
         </div>
       </DialogContent>
