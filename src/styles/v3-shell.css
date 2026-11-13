@@ -235,7 +235,7 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-mobile-menu[data-state="open"] { animation: v3-slide-in .22s cubic-bezier(.2, .8, .2, 1); }
 @keyframes v3-modal-in { from { opacity: 0; scale: .97; } to { opacity: 1; scale: 1; } }
 .v3-modal[data-state="open"] { animation: v3-modal-in .18s ease-out; }
-.v3-main > * { animation: v3-page-in .3s ease-out both; }
+.v3-main > * { animation: v3-page-in .3s ease-out backwards; }
 .v3-navlink, .v3-mobile-link, .v3-menu-item, .v3-audit, .v3-account-btn { transition: background-color .18s, color .18s, border-color .18s, box-shadow .18s; }
 .v3-count { animation: v3-fade-in .25s ease-out; }
 @media (prefers-reduced-motion: reduce) {

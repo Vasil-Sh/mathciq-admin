@@ -96,7 +96,7 @@ export default function Dashboard() {
   const expiring = useMemo(() => expiringUsers(users, 7), [users]);
   useEffect(() => {
     if (!barOpen) return;
-    const close = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest?.(".v3-bar-col, .v3-bar-pop")) setBarOpen(null); };
+    const close = (e: MouseEvent) => { const t = e.target as HTMLElement; if (!t.closest?.(".v3-bar-pop") && (t.classList?.contains("v3-bar-backdrop") || !t.closest?.(".v3-bar-col"))) setBarOpen(null); };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setBarOpen(null); };
     document.addEventListener("mousedown", close);
     document.addEventListener("keydown", esc);
@@ -439,6 +439,7 @@ export default function Dashboard() {
                     ) : (
                       <div className="v3-bar-slot" style={{ height: grown ? h : "0%" }}>
                         <button type="button" className={`v3-bar${on ? " is-on" : ""}`} aria-expanded={open} aria-label={`${name}: ${money(s.v)} — деталі`} onClick={() => setBarOpen(open ? null : s.m)} />
+                        {open && <div className="v3-bar-backdrop v3-only-mobile" aria-hidden="true" onClick={() => setBarOpen(null)} />}
                         {open && monthPopover(s.m, i)}
                       </div>
                     )}

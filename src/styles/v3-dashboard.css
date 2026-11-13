@@ -439,13 +439,13 @@ button.v3-bar:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
 @keyframes v3-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .v3-bar { transition: filter .15s, box-shadow .15s; }
 .v3-ret-bar, .v3-ret-mini i, .v3-kpi-bar > span, .v3-plan-bar > span { transition: height .6s cubic-bezier(.2, .8, .2, 1), width .6s cubic-bezier(.2, .8, .2, 1), flex-grow .6s ease; }
-.v3-dash > *, .v3-dash-top > *, .v3-dash-top > .v3-dash-main > *, .v3-dash-pair > * { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-dash > *, .v3-dash-top > *, .v3-dash-top > .v3-dash-main > *, .v3-dash-pair > * { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) backwards; }
 .v3-dash-top > .v3-dash-main { animation: none; }
 .v3-dash-top > :nth-child(2), .v3-dash-pair > :nth-child(2) { animation-delay: .06s; }
 .v3-dash-top .v3-chart-card { animation-delay: .12s; }
 .v3-dash-top .v3-attention, .v3-dash-top .v3-calm-card { animation-delay: .16s; }
 .v3-dash > :nth-child(n+4) { animation-delay: .2s; }
-.v3-kpis > .v3-kpi { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-kpis > .v3-kpi { animation: v3-rise .45s cubic-bezier(.2, .8, .2, 1) backwards; }
 .v3-kpis > .v3-kpi:nth-child(2) { animation-delay: .04s; }
 .v3-kpis > .v3-kpi:nth-child(3) { animation-delay: .08s; }
 .v3-kpis > .v3-kpi:nth-child(4) { animation-delay: .12s; }
@@ -454,7 +454,7 @@ a.v3-kpi:hover { translate: 0 -2px; }
 .v3-seg button, .v3-chip, .v3-btn, .v3-btn-pill, .v3-alert-row, .v3-exp-row, .v3-risk-row, .v3-head-link, .v3-ret-more { transition: background-color .18s, color .18s, border-color .18s, box-shadow .18s, transform .18s; }
 .v3-alert-row, .v3-exp-row { transition: background-color .18s, translate .18s; }
 .v3-alert-row:hover, .v3-exp-row:hover { translate: 2px 0; }
-.v3-risk-table, .v3-risk-cards { animation: v3-rise .3s ease-out both; }
+.v3-risk-table, .v3-risk-cards { animation: v3-rise .3s ease-out backwards; }
 .v3-tag { transition: background-color .2s, color .2s; }
 @media (prefers-reduced-motion: reduce) {
   .v3-bar, .v3-bar-slot, .v3-ret-bar, .v3-ret-mini i, .v3-kpi-bar > span, .v3-plan-bar > span { transition: none !important; }
@@ -462,15 +462,19 @@ a.v3-kpi:hover { translate: 0 -2px; }
   a.v3-kpi:hover, .v3-alert-row:hover, .v3-exp-row:hover { translate: none; }
 }
 @keyframes v3-grow-y { from { transform: scaleY(0); } to { transform: none; } }
-.v3-ret-bar, .v3-ret-mini i { transform-origin: bottom; animation: v3-grow-y .6s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-ret-bar, .v3-ret-mini i { transform-origin: bottom; animation: v3-grow-y .6s cubic-bezier(.2, .8, .2, 1) backwards; }
 .v3-ret-col:nth-child(2) .v3-ret-bar, .v3-ret-mini i:nth-child(2) { animation-delay: .04s; }
 .v3-ret-col:nth-child(3) .v3-ret-bar, .v3-ret-mini i:nth-child(3) { animation-delay: .08s; }
 .v3-ret-col:nth-child(4) .v3-ret-bar, .v3-ret-mini i:nth-child(4) { animation-delay: .12s; }
 .v3-ret-col:nth-child(5) .v3-ret-bar, .v3-ret-mini i:nth-child(5) { animation-delay: .16s; }
 .v3-ret-col:nth-child(6) .v3-ret-bar, .v3-ret-mini i:nth-child(6) { animation-delay: .2s; }
 @keyframes v3-grow-x { from { transform: scaleX(0); } to { transform: none; } }
-.v3-plan-bar, .v3-kpi-bar > span { transform-origin: left; animation: v3-grow-x .7s cubic-bezier(.2, .8, .2, 1) .15s both; }
+.v3-plan-bar, .v3-kpi-bar > span { transform-origin: left; animation: v3-grow-x .7s cubic-bezier(.2, .8, .2, 1) .15s backwards; }
 
 /* Popovers and menus stay above the cards below them */
 .v3-dash .v3-hero-row { position: relative; z-index: 20; }
 .v3-dash .v3-chart-card { position: relative; z-index: 5; }
+/* Mobile month sheet: dim the page behind it (design «Дашборд · взаємодії», 04) */
+.v3-bar-backdrop { position: fixed; inset: 0; z-index: 29; background: rgba(5, 7, 11, .35); animation: v3-fade-in .2s ease-out; }
+@keyframes v3-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 767px) { div.v3-bar-backdrop.v3-only-mobile { display: block; } }
