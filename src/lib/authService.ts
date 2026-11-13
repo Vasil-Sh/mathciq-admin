@@ -41,7 +41,18 @@ class AuthService {
 
       return { success: true, isAdmin: true, isOwner: !!data.user?.isOwner };
     } catch (err: unknown) {
-      const error = err as Error;
+      const error = err as Error & { status?: number; data?: { attemptsLeft?: number; retryAfter?: number } };
+      if (error.status === 429) {
+        return { success: false, error: "Забагато невдалих спроб входу.", attemptsLeft: 0, retryAfter: Number(error.data?.retryAfter) || 300 };
+      }
+      if (error.status === 401 || error.status === 403) {
+        const left = error.data?.attemptsLeft;
+        return {
+          success: false,
+          error: typeof left === "number" ? `Неправильний логін або пароль. ${left === 0 ? "Спроб більше не залишилось." : `Залишилось ${left} ${left === 1 ? "спроба" : left < 5 ? "спроби" : "спроб"}.`}` : "Неправильний логін або пароль.",
+          attemptsLeft: left,
+        };
+      }
       return {
         success: false,
         error: error.message || "Помилка з'єднання. Спробуйте ще раз.",

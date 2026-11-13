@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, LogIn, ShieldCheck, WifiOff } from "lucide-react";
+import { BarChart3, Lock, LogIn, ShieldCheck, WifiOff } from "lucide-react";
 import { useLogin } from "@/hooks/useLogin";
 
 function useOnline() {
@@ -15,7 +15,10 @@ function useOnline() {
 }
 
 export default function LoginPage() {
-  const { username, setUsername, password, setPassword, isLoading, error, handleSubmit, notAdmin, resetNotAdmin } = useLogin();
+  const { username, setUsername, password, setPassword, isLoading, error, errorKind, handleSubmit, notAdmin, resetNotAdmin, locked, lockLeft } = useLogin();
+  const mmss = `${Math.floor(lockLeft / 60)}:${String(lockLeft % 60).padStart(2, "0")}`;
+  const emptyUser = errorKind === "empty" && !username.trim();
+  const emptyPass = errorKind === "empty" && !password.trim();
   const [sessionEnded] = useState(() => sessionStorage.getItem("sessionEnded") === "1");
   const appUrl = import.meta.env.VITE_APP_URL as string | undefined;
   const [showPassword, setShowPassword] = useState(false);
@@ -62,24 +65,27 @@ export default function LoginPage() {
           </div>
 
           {sessionEnded && online && <p className="v3-login-banner v3-login-banner-blue" role="status">Сесія завершилась. Увійдіть знову — повернемо вас на ту саму сторінку.</p>}
+          {locked && <p className="v3-login-banner v3-login-banner-red" role="alert"><Lock size={16} aria-hidden="true" />Забагато невдалих спроб входу.</p>}
           {!online && <p className="v3-login-banner" role="status"><WifiOff size={16} aria-hidden="true" />Немає інтернету. Кнопка запрацює, щойно зв’язок повернеться.</p>}
 
           <form onSubmit={handleSubmit} aria-label="Вхід адміністратора" aria-busy={isLoading} noValidate>
             <div className="v3-field">
               <label htmlFor="login-username">Логін</label>
-              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="Логін без @" aria-invalid={!!error} />
+              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="Логін без @" disabled={locked} aria-invalid={emptyUser || errorKind === "auth"} />
             </div>
             <div className="v3-field">
               <label htmlFor="login-password">Пароль</label>
               <div className="v3-input-wrap">
-                <input id="login-password" name="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Введіть пароль" aria-invalid={!!error} aria-describedby={error ? "login-error" : undefined} />
+                <input id="login-password" name="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Введіть пароль" disabled={locked} aria-invalid={emptyPass || errorKind === "auth"} aria-describedby={error ? "login-error" : undefined} />
                 <button type="button" className="v3-input-action" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword}>{showPassword ? "Сховати" : "Показати"}</button>
               </div>
-              {error && <p id="login-error" role="alert" className="v3-field-error">{error}</p>}
+              {error && errorKind !== "empty" && !locked && <p id="login-error" role="alert" className="v3-field-error">{error}</p>}
             </div>
-            <button type="submit" disabled={isLoading || !online} className="v3-btn v3-btn-primary v3-login-submit">
-              {isLoading ? "Входимо…" : "Увійти до робочого простору →"}
+            <button type="submit" disabled={isLoading || !online || locked} className="v3-btn v3-btn-primary v3-login-submit">
+              {locked ? `Спробуйте через ${mmss}` : isLoading ? <><span className="v3-spin" aria-hidden="true" />Входимо…</> : "Увійти до робочого простору →"}
             </button>
+            {errorKind === "empty" && error && <p id="login-error" role="alert" className="v3-field-error v3-center">{error}</p>}
+            {locked && <p className="v3-login-hint">Вхід заблоковано на 5 хв після 5 невдалих спроб. Овнер бачить це в журналі дій.</p>}
           </form>
 
           <p className="v3-login-security"><ShieldCheck size={16} aria-hidden="true" />Лише для авторизованих адміністраторів</p>

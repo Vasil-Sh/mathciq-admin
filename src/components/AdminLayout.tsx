@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  BarChart3, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
+  BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
   LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Settings2, Swords, Users, X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/apiClient";
+import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -37,6 +39,10 @@ export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
+  const [sessionCount, setSessionCount] = useState<number | null>(null);
+  const [myActions, setMyActions] = useState<number | null>(null);
+  const [logoutOthers, setLogoutOthers] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const onAudit = pathname.startsWith("/audit");
   const badges = useNavBadges(user?.username, onAudit);
   const roleName = user?.isOwner ? "Овнер" : "Адмін";
@@ -46,6 +52,26 @@ export default function AdminLayout() {
   const loginNote = loginAt ? `вхід ${new Date(loginAt).toDateString() === new Date().toDateString() ? "сьогодні" : new Date(loginAt).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })} о ${new Date(loginAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}` : "";
 
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [pathname]);
+  // Counters in the account menu and the logout dialog — loaded when either opens.
+  useEffect(() => {
+    if (!accountOpen && !logoutOpen) return;
+    let cancelled = false;
+    api.get<{ sessions: unknown[] }>("/auth/sessions").then((r) => { if (!cancelled) setSessionCount(r.sessions?.length ?? null); }).catch(() => {});
+    if (accountOpen) api.get<{ total?: number }>(`/admin/audit?page=1&category=all&status=all&q=&from=&to=&userId=&history=&actor=${encodeURIComponent(handle)}`).then((r) => { if (!cancelled && typeof r.total === "number") setMyActions(r.total); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [accountOpen, logoutOpen, handle]);
+  useEffect(() => { if (logoutOpen) setLogoutOthers(false); }, [logoutOpen]);
+  const otherSessions = sessionCount ? sessionCount - 1 : 0;
+
+  async function doLogout() {
+    setLoggingOut(true);
+    // Revoke on the server first (best-effort), then clear the local session.
+    try { await api.post(logoutOthers ? "/auth/logout-all" : "/auth/logout", {}); } catch { /* local logout still happens */ }
+    setLoggingOut(false);
+    setLogoutOpen(false);
+    localStorage.removeItem("loginAt");
+    logout();
+  }
   useEffect(() => {
     if (!accountOpen) return;
     const close = (e: MouseEvent) => { if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false); };
@@ -96,8 +122,8 @@ export default function AdminLayout() {
                   <span><strong>@{handle}</strong><small>{roleName}{loginNote && ` · ${loginNote}`}</small></span>
                 </div>
                 <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Мій пароль</Link>
-                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><MonitorSmartphone size={17} aria-hidden="true" />Активні сесії</Link>
-                <Link role="menuitem" to={`/audit?q=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" />Мої дії в журналі</Link>
+                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><MonitorSmartphone size={17} aria-hidden="true" /><span className="v3-menu-label">Активні сесії</span>{sessionCount !== null && <span className="v3-menu-count">{sessionCount}</span>}</Link>
+                <Link role="menuitem" to={`/audit?q=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" /><span className="v3-menu-label">Мої дії в журналі</span>{myActions !== null && <span className="v3-menu-count">{myActions}</span>}</Link>
                 <div className="v3-menu-sep" />
                 <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти</button>
               </div>
@@ -145,9 +171,16 @@ export default function AdminLayout() {
         <DialogContent className="v3-modal sm:max-w-[440px]">
           <DialogTitle className="v3-modal-title">Вийти з адмінки?</DialogTitle>
           <DialogDescription className="v3-modal-sub">Незбережені зміни в Налаштуваннях буде втрачено.</DialogDescription>
+          {otherSessions > 0 && (
+            <label className={`v3-agree v3-agree-row${logoutOthers ? " is-on" : ""}`}>
+              <input type="checkbox" className="sr-only" checked={logoutOthers} onChange={(e) => setLogoutOthers(e.target.checked)} />
+              <span className={`v3-ck${logoutOthers ? " is-on" : ""}`} aria-hidden="true">{logoutOthers && <Check size={12} strokeWidth={3.2} />}</span>
+              <span>Вийти також на інших пристроях <span className="v3-dim2">(ще {otherSessions} {plural(otherSessions, "сесія", "сесії", "сесій")})</span></span>
+            </label>
+          )}
           <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
             <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setLogoutOpen(false)}>Скасувати</button>
-            <button type="button" className="v3-btn v3-btn-red" onClick={() => { setLogoutOpen(false); localStorage.removeItem("loginAt"); logout(); }}>Вийти</button>
+            <button type="button" className="v3-btn v3-btn-red" disabled={loggingOut} onClick={doLogout}>{loggingOut ? "Виходимо…" : "Вийти"}</button>
           </div></div>
         </DialogContent>
       </Dialog>

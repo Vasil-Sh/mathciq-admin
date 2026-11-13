@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowRight, Check, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, ChevronRight, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
@@ -311,6 +311,13 @@ export default function Dashboard() {
         ))}
       </section>
 
+      {isEmpty && (
+        <section className="v3-kpis v3-kpis-second">
+          <div className="v3-kpi"><span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span><strong className="v3-kpi-v v3-dimv">—</strong><span className="v3-kpi-n">порахуємо після першого пробного</span></div>
+          <div className="v3-kpi"><span className="v3-kpi-l"><span className="v3-kpi-ico"><MinusCircle size={16} aria-hidden="true" /></span>Скасування</span><strong className="v3-kpi-v v3-dimv">0</strong><span className="v3-kpi-n">скасувань і повернень немає</span></div>
+          <div className="v3-kpi v3-kpi-wide-sm"><span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile v3-kpi-l-tail">· {periodShort.toLowerCase()}</span></span><strong className="v3-kpi-v v3-dimv">0<small className="v3-kpi-unit"> ₴</small></strong><span className="v3-kpi-n">аналізів ще не було</span></div>
+        </section>
+      )}
       {!isEmpty && (
         <section className="v3-kpis v3-kpis-second">
           {conv && <Link to="/users" className="v3-kpi">
@@ -346,12 +353,12 @@ export default function Dashboard() {
             <p className="v3-note-dark"><span className="v3-hide-mobile">Коли з’явиться перший користувач з оплатою, дашборд почне рахувати показники автоматично.</span><span className="v3-only-mobile">Три кроки — і дашборд почне рахувати показники.</span></p>
           </div>
           <ol className="v3-steps">
-            <li><span>1</span><div><strong><span className="v3-hide-mobile">Перевірте тариф і тривалість підписки</span><span className="v3-only-mobile">Тариф і тривалість</span></strong><small className="v3-hide-mobile">Ціна за замовчуванням і кількість днів</small></div><Link to="/settings" className="v3-btn v3-btn-ghost v3-btn-sm">Налаштування</Link></li>
-            <li><span>2</span><div><strong><span className="v3-hide-mobile">Створіть першого користувача</span><span className="v3-only-mobile">Перший користувач</span></strong><small>Логін, Telegram, тариф</small></div><Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm">Створити</Link></li>
-            <li><span>3</span><div><strong><span className="v3-hide-mobile">Додайте банер на екран «Матчі»</span><span className="v3-only-mobile">Банер у «Матчах»</span></strong><small><span className="v3-hide-mobile">2 слоти · мітка «Реклама · 21+»</span><span className="v3-only-mobile">«Матчі» · 2 слоти</span></small></div><Link to="/banners" className="v3-btn v3-btn-ghost v3-btn-sm">Банери</Link></li>
+            <li><span>1</span><div><strong><span className="v3-hide-mobile">Перевірте тарифи й пробний період</span><span className="v3-only-mobile">Тарифи й пробний період</span></strong><small className="v3-hide-mobile">{settings?.basicPrice && settings?.proPrice ? `Базова ${settings.basicPrice} ₴ і Pro ${settings.proPrice} ₴ за 30 днів, пробний період` : "Базова й Pro за 30 днів, пробний період"}</small></div><Link to="/settings" className="v3-btn v3-btn-ghost v3-btn-sm"><span className="v3-hide-mobile">Налаштування</span><ChevronRight size={18} className="v3-only-mobile" aria-label="Налаштування" /></Link></li>
+            <li><span>2</span><div><strong><span className="v3-hide-mobile">Створіть першого користувача</span><span className="v3-only-mobile">Перший користувач</span></strong><small>Логін, Telegram, план: пробний, Базова або Pro</small></div><Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm"><span className="v3-hide-mobile">Створити</span><ChevronRight size={18} className="v3-only-mobile" aria-label="Створити" /></Link></li>
+            <li><span>3</span><div><strong><span className="v3-hide-mobile">Додайте банер на екран «Матчі»</span><span className="v3-only-mobile">Банер у «Матчах»</span></strong><small><span className="v3-hide-mobile">Екран «Матчі» · 2 слоти · мітка «Реклама · 21+»</span><span className="v3-only-mobile">«Матчі» · 2 слоти</span></small></div><Link to="/banners" className="v3-btn v3-btn-ghost v3-btn-sm"><span className="v3-hide-mobile">Банери</span><ChevronRight size={18} className="v3-only-mobile" aria-label="Банери" /></Link></li>
           </ol>
         </section>
-        {calmCard}
+        <div className="v3-hide-mobile v3-calm-wrap">{calmCard}</div>
       </section>}
 
       <section className="v3-dash-main">
@@ -359,18 +366,18 @@ export default function Dashboard() {
           <div className="v3-card-head">
             <div>
               <h2 className="v3-h2">{mode === "pay" ? "Оплати" : "Вартість підписок"} за місяцями</h2>
-              <p className="v3-note">{mode === "pay" ? "Ручний облік, без скасованих оплат" : "Оцінка за поточними тарифами, не платежі"} · {view.year}</p>
+              <p className="v3-note">{isEmpty ? `${view.year} · ручний облік оплат` : <>{mode === "pay" ? "Ручний облік, без скасованих оплат" : "Оцінка за поточними тарифами, не платежі"} · {view.year}</>}</p>
             </div>
             <div className="v3-chart-tools">
-            <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>
+            {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
               <button type="button" className={mode === "est" ? "is-on" : ""} aria-pressed={mode === "est"} onClick={() => setMode("est")}><span className="v3-hide-mobile">Вартість підписок</span><span className="v3-only-mobile">Підписки</span></button>
             </div>
             </div>
           </div>
-          <div className="v3-chart-total v3-hide-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>
-          <div className="v3-bars-wrap">
+          {!isEmpty && <div className="v3-chart-total v3-hide-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
+          <div className={`v3-bars-wrap${chartEmpty ? " is-empty" : ""}`}>
             <div className="v3-bars" role="img" aria-label={`Графік: ${view.series.filter((s) => !s.future).map((s) => `${MONTHS[monthIdx(s.m)]} ${money(s.v)}`).join(", ")}`}>
               {view.series.map((s, i) => {
                 const on = period === s.m || (period === "year" && s.m === now.key);
@@ -386,6 +393,7 @@ export default function Dashboard() {
             </div>
             {chartEmpty && (
               <div className="v3-chart-empty">
+                <span className="v3-chart-empty-ico" aria-hidden="true"><Wallet size={24} strokeWidth={1.8} /></span>
                 <strong>{mode === "pay" ? "Оплат ще немає" : "Активних підписок ще немає"}</strong>
                 <span className="v3-hide-mobile">Додайте першу оплату в картці користувача — графік і звіт заповняться автоматично.</span>
                 <span className="v3-only-mobile">Графік заповниться після першої оплати</span>
@@ -508,6 +516,7 @@ export default function Dashboard() {
         <p className="v3-note-dark v3-foot-note v3-hide-mobile">* Розрахунок за поточними тарифами, не облік оплат.</p>
       </section>}
 
+      {isEmpty && <div className="v3-dcard v3-calm-row v3-only-mobile"><span className="v3-calm-ico" aria-hidden="true"><Check size={18} strokeWidth={2} /></span><div><strong>Усе спокійно</strong><small>Немає підписок, що закінчуються</small></div></div>}
       {isEmpty && <Link to="/users" className="v3-btn v3-btn-primary v3-btn-block v3-only-mobile v3-mobile-cta">Створити першого користувача</Link>}
 
       <ExtendConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} items={expiring} days={EXTEND_DAYS} busy={extending} onConfirm={extendSelected} />

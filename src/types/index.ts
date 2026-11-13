@@ -33,6 +33,10 @@ export interface LoginResult {
   isOwner?: boolean;
   /** Signed in with a regular app account — the admin panel is not for it. */
   notAdmin?: boolean;
+  /** Wrong credentials: attempts left before the 5-minute lock. */
+  attemptsLeft?: number;
+  /** Locked after too many attempts: seconds until the next try. */
+  retryAfter?: number;
 }
 
 export type StatusFilter = "all" | "active" | "expired";
@@ -143,6 +147,8 @@ export interface AppSettings {
   subscriptionDays: number;
   bannerSpecText: string;
   aiUsdUah?: number;
+  basicPrice?: number;
+  proPrice?: number;
   churnInactiveDays?: number;
   churnLossStreak?: number;
 }

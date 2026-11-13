@@ -375,3 +375,20 @@
   .v3-ret-months { gap: 6px; font-size: 10px; }
   .v3-risk-row { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, .9fr) minmax(0, .9fr) auto; }
 }
+
+/* Empty chart: dashed grid, no bars (design «Дашборд, порожній стан») */
+.v3-bars-wrap.is-empty .v3-bars { background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .07) 0 1px, transparent 1px 25%) top / 100% calc(100% - 22px) no-repeat; }
+.v3-bars-wrap.is-empty .v3-bar, .v3-bars-wrap.is-empty .v3-bar-val { visibility: hidden; }
+.v3-bars-wrap.is-empty .v3-chart-empty { background: transparent; }
+.v3-chart-empty-ico { flex-shrink: 0; min-height: 52px; max-width: none !important; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: rgba(90, 140, 255, .14); color: #a3c0ff; }
+.v3-dimv { color: #8c95a6; }
+.v3-calm-wrap { display: contents; }
+.v3-calm-row { align-items: center; gap: 12px; padding: 14px 16px; }
+.v3-calm-row .v3-calm-ico { width: 36px; height: 36px; }
+.v3-calm-row strong { display: block; font-size: 14px; font-weight: 600; }
+.v3-calm-row small { color: var(--v3-muted); font-size: 12px; }
+@media (max-width: 767px) {
+  div.v3-calm-row.v3-only-mobile { display: flex; }
+  .v3-steps li { grid-template-columns: 32px minmax(0, 1fr) auto; }
+  .v3-steps li > a { grid-column: auto; justify-self: end; min-height: 36px; width: 36px; padding: 0; border: 0; background: transparent; color: var(--v3-ink-muted); }
+}
