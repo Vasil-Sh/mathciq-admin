@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
 import { relDay } from "@/lib/dashboardInsights";
-import { idleText, initials, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
+import { idleText, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
+import UserAvatar from "@/components/UserAvatar";
 
 type Tab = "all" | "idle" | "streak";
 const LIMIT = 5;
@@ -55,7 +56,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
               const tg = telegramLink(r.user.telegram);
               return (
                 <div key={r.user.id} className="v3-risk-row" role="row">
-                  <span role="cell" className="v3-risk-who"><span className="v3-av" aria-hidden="true">{initials(r.user.username)}</span><Link to={`/users?q=${encodeURIComponent(r.user.username)}`}><strong>@{r.user.username}</strong></Link></span>
+                  <span role="cell" className="v3-risk-who"><UserAvatar username={r.user.username} telegram={r.user.telegram} /><Link to={`/users?q=${encodeURIComponent(r.user.username)}`}><strong>@{r.user.username}</strong></Link></span>
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
                   <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
@@ -70,7 +71,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
               const tg = telegramLink(r.user.telegram);
               return (
                 <li key={r.user.id}>
-                  <span className="v3-av" aria-hidden="true">{initials(r.user.username)}</span>
+                  <UserAvatar username={r.user.username} telegram={r.user.telegram} />
                   <span className="v3-ret-who"><strong>@{r.user.username}</strong><small className={r.losing && tab !== "idle" ? "is-red" : undefined}>{r.losing && tab !== "idle" ? streakText(r.streak) : idleText(r)} · до {shortDate(r.user.endDate)}</small></span>
                   {tg && <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill">Написати</a>}
                 </li>

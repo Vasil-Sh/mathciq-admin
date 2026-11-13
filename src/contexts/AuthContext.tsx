@@ -18,6 +18,7 @@ interface AuthUser {
   role: "admin";
   /** Owner: may also delete/demote admins and appoint owners. */
   isOwner: boolean;
+  telegram?: string;
 }
 
 interface AuthContextType {
@@ -38,7 +39,7 @@ function getStoredUser(): AuthUser | null {
   const token = localStorage.getItem("authToken");
   // Only allow admin role
   if (username && role === "admin" && token) {
-    return { username, role: "admin", isOwner: localStorage.getItem("isOwner") === "1" };
+    return { username, role: "admin", isOwner: localStorage.getItem("isOwner") === "1", telegram: localStorage.getItem("telegram") || undefined };
   }
   return null;
 }
@@ -72,10 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setUser({ username: data.username, role: "admin", isOwner: !!data.isOwner });
+        setUser({ username: data.username, role: "admin", isOwner: !!data.isOwner, telegram: data.telegram || undefined });
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", data.username);
         localStorage.setItem("isOwner", data.isOwner ? "1" : "0");
+        if (data.telegram) localStorage.setItem("telegram", data.telegram); else localStorage.removeItem("telegram");
       } catch {
         clearToken();
         setUser(null);
@@ -120,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const result = await authService.login(username, password);
         if (result.success) {
-          setUser({ username, role: "admin", isOwner: !!result.isOwner });
+          setUser({ username, role: "admin", isOwner: !!result.isOwner, telegram: result.telegram });
         }
         return result;
       } finally {

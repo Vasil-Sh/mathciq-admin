@@ -86,7 +86,8 @@
 .v3-exp-who { min-width: 0; }
 .v3-exp-who strong { display: block; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-exp-who small { font-size: 12px; color: var(--v3-ink-muted); }
-.v3-av { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #e3ebff; color: #2450c4; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.v3-av { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #e3ebff; color: #2450c4; font-size: 12px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.v3-av-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .v3-btn-block { width: 100%; margin-top: auto; }
 .v3-link-btn { border: 0; background: none; padding: 0; color: #2450c4; font: 600 12px Inter, sans-serif; cursor: pointer; text-decoration: underline; }
 

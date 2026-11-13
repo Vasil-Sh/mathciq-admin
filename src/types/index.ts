@@ -31,6 +31,7 @@ export interface LoginResult {
   error?: string;
   isAdmin?: boolean;
   isOwner?: boolean;
+  telegram?: string;
   /** Signed in with a regular app account — the admin panel is not for it. */
   notAdmin?: boolean;
   /** Wrong credentials: attempts left before the 5-minute lock. */

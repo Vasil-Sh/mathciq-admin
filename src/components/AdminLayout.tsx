@@ -5,6 +5,7 @@ import {
   LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Settings2, Swords, Users, X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 import { api, getRefreshToken } from "@/lib/apiClient";
 import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
@@ -46,7 +47,6 @@ export default function AdminLayout() {
   const onAudit = pathname.startsWith("/audit");
   const badges = useNavBadges(user?.username, onAudit);
   const roleName = user?.isOwner ? "Овнер" : "Адмін";
-  const initial = (user?.username || "A").replace(/^@/, "").charAt(0).toUpperCase();
   const handle = (user?.username || "admin").replace(/^@/, "");
   const loginAt = Number(localStorage.getItem("loginAt") || 0);
   const loginNote = loginAt ? `вхід ${new Date(loginAt).toDateString() === new Date().toDateString() ? "сьогодні" : new Date(loginAt).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })} о ${new Date(loginAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}` : "";
@@ -111,14 +111,14 @@ export default function AdminLayout() {
           {auditButton}
           <div className="v3-account" ref={accountRef}>
             <button type="button" className="v3-account-btn" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((o) => !o)}>
-              <span className="v3-avatar" aria-hidden="true">{initial}</span>
+              <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar" />
               <span className="v3-account-copy"><strong>@{(user?.username || "admin").replace(/^@/, "")}</strong><small>{roleName}</small></span>
               <ChevronDown size={16} aria-hidden="true" />
             </button>
             {accountOpen && (
               <div className="v3-account-menu" role="menu">
                 <div className="v3-account-head">
-                  <span className="v3-avatar v3-avatar-ink" aria-hidden="true">{initial}</span>
+                  <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-avatar-ink" />
                   <span><strong>@{handle}</strong><small>{roleName}{loginNote && ` · ${loginNote}`}</small></span>
                 </div>
                 <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Мій пароль</Link>
@@ -153,7 +153,7 @@ export default function AdminLayout() {
           </nav>
           <div className="v3-mobile-account">
             <div className="v3-mobile-account-who">
-              <span className="v3-avatar v3-avatar-lg" aria-hidden="true">{initial}</span>
+              <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-avatar-lg" />
               <div><strong>@{(user?.username || "admin").replace(/^@/, "")}</strong><small>{roleName} · MatchIQ</small></div>
             </div>
             <div className="v3-mobile-account-actions">

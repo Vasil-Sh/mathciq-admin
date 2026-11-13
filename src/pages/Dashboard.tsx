@@ -10,9 +10,10 @@ import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import RetentionCard from "@/components/dashboard/RetentionCard";
 import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
 import PeriodMenu from "@/components/dashboard/PeriodMenu";
+import UserAvatar from "@/components/UserAvatar";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
-import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, initials, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
+import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
 import type { AdminUser, AdminUserOverview, AppSettings } from "@/types";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
@@ -473,7 +474,7 @@ export default function Dashboard() {
                   <ul>
                     {recentPaid.map((p) => (
                       <li key={p.id}>
-                        <span className="v3-av v3-av-sm" aria-hidden="true">{initials(p.username)}</span>
+                        <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
                         <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
                         <span className="v3-pay-amt">+{money(p.amount)}</span>
                       </li>
@@ -508,7 +509,7 @@ export default function Dashboard() {
                 {expiring.map(({ user, days }, i) => (
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
-                      <span className="v3-av" aria-hidden="true">{initials(user.username)}</span>
+                      <UserAvatar username={user.username} telegram={byId.get(user.id)?.telegram} />
                       <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(user.endDate)}</small></span>
                       <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>
                     </Link>

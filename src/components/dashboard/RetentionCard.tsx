@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { initials, telegramLink, type ChurnedRow } from "@/lib/dashboardInsights";
+import { telegramLink, type ChurnedRow } from "@/lib/dashboardInsights";
+import UserAvatar from "@/components/UserAvatar";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -91,7 +92,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
               const tg = telegramLink(user.telegram);
               return (
                 <li key={user.id}>
-                  <span className="v3-av v3-av-dark" aria-hidden="true">{initials(user.username)}</span>
+                  <UserAvatar username={user.username} telegram={user.telegram} className="v3-av-dark" />
                   <span className="v3-ret-who">
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link>
                     <small><span className="v3-hide-mobile v3-hide-wide">закінчилась {ended}{tenure && ` · ${tenure}`}</span><span className="v3-only-wide">{ended}{tenure && ` · ${tenure.replace(/^з нами (.+)$/, "$1 з нами")}`}</span><span className="v3-only-mobile">не продовжив · {ended}</span></small>

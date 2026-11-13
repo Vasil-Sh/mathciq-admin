@@ -12,7 +12,7 @@ class AuthService {
         token?: string;
         refreshToken?: string;
         error?: string;
-        user?: { isOwner?: boolean };
+        user?: { isOwner?: boolean; telegram?: string };
       }>("/auth/login", { username, password });
 
       if (!data.success) {
@@ -36,10 +36,11 @@ class AuthService {
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", username);
         localStorage.setItem("isOwner", data.user?.isOwner ? "1" : "0");
+        if (data.user?.telegram) localStorage.setItem("telegram", data.user.telegram); else localStorage.removeItem("telegram");
         localStorage.setItem("loginAt", String(Date.now()));
       }
 
-      return { success: true, isAdmin: true, isOwner: !!data.user?.isOwner };
+      return { success: true, isAdmin: true, isOwner: !!data.user?.isOwner, telegram: data.user?.telegram };
     } catch (err: unknown) {
       const error = err as Error & { status?: number; data?: { attemptsLeft?: number; retryAfter?: number } };
       if (error.status === 429) {

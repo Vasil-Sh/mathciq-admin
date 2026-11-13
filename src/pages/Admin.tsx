@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
+import UserAvatar from "@/components/UserAvatar";
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import { extendedEndDate, shortDate, daysLabel as daysWord } from "@/lib/subscriptions";
 import { canResetPassword, deleteBlockReason, roleLockReason } from "@/lib/permissions";
@@ -265,7 +266,7 @@ export default function Admin() {
               return (
                 <div key={u.id} className="v3-urow-wrap">
                   <div role="row" className={`v3-urow${sel ? " is-sel" : ""}`} onClick={() => openCard(u)}>
-                    <span role="cell" className="v3-uwho"><span className="v3-av" aria-hidden="true">{u.username.slice(0, 2).toUpperCase()}</span><span className="v3-uname"><button type="button" onClick={e => { e.stopPropagation(); openCard(u); }}>@{u.username}</button><small>{u.telegram || "Telegram не вказано"}</small></span></span>
+                    <span role="cell" className="v3-uwho"><UserAvatar username={u.username} telegram={u.telegram} /><span className="v3-uname"><button type="button" onClick={e => { e.stopPropagation(); openCard(u); }}>@{u.username}</button><small>{u.telegram || "Telegram не вказано"}</small></span></span>
                     <span role="cell" className="v3-num">{Number(u.priceMonth) ? `${Number(u.priceMonth)} ₴` : <span className="v3-muted">—</span>}</span>
                     <span role="cell"><span className="v3-num">{shortDate(u.endDate) || "—"}</span></span>
                     <span role="cell"><span className={`v3-tag ${st.c}`}>{st.t}</span></span>

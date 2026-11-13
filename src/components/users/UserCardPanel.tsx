@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, Lock, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
+import UserAvatar from "@/components/UserAvatar";
 import { roleLabel } from "@/lib/permissions";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { money, shortDate } from "@/lib/subscriptions";
@@ -111,7 +112,7 @@ export default function UserCardPanel({ user, extendDays, deleteReason, onEdit, 
   return (
     <aside className="v3-ucard" aria-label={`Картка ${user.username}`}>
       <div className="v3-uc-top">
-        <span className="v3-av v3-av-lg" aria-hidden="true">{user.username.slice(0, 2).toUpperCase()}</span>
+        <UserAvatar username={user.username} telegram={user.telegram} className="v3-av-lg" />
         <div className="v3-uc-id">
           <h2>@{user.username}</h2>
           <p>{user.telegram || "Telegram не вказано"} · {roleLabel(user)}</p>
