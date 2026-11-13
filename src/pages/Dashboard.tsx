@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, CircleCheck, RefreshCw, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
@@ -210,6 +210,13 @@ export default function Dashboard() {
   const report = activeOnly ? view.report.filter((r) => r.paid || r.users) : view.report;
   const totals = view.report.reduce((t, r) => ({ paid: t.paid + r.paid, users: t.users + r.users }), { paid: 0, users: 0 });
   const chartEmpty = view.total === 0;
+  const calmCard = (
+    <aside className="v3-dcard v3-calm-card" aria-label="Потребує уваги">
+      <span className="v3-calm-ico"><Check size={26} strokeWidth={1.8} aria-hidden="true" /></span>
+      <h2>Усе спокійно</h2>
+      <p>Підписок, що закінчуються за 7 днів, і незавершених дій немає.</p>
+    </aside>
+  );
 
   return (
     <div className="v3-page v3-dash">
@@ -228,7 +235,7 @@ export default function Dashboard() {
         ))}
       </section>
 
-      {isEmpty && (
+      {isEmpty && <section className="v3-dash-main">
         <section className="v3-wcard v3-onboard">
           <div>
             <span className="v3-tag">Перші кроки</span>
@@ -241,7 +248,8 @@ export default function Dashboard() {
             <li><span>3</span><div><strong>Додайте банер на екран «Матчі»</strong><small>2 слоти · мітка «Реклама · 21+»</small></div><Link to="/banners" className="v3-btn v3-btn-ghost v3-btn-sm">Банери</Link></li>
           </ol>
         </section>
-      )}
+        {calmCard}
+      </section>}
 
       <section className="v3-dash-main">
         <div className="v3-dcard v3-chart-card">
@@ -289,7 +297,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <aside className="v3-wcard v3-attention">
+        {!isEmpty && (!expiring.length && !usersError ? calmCard : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{!!expiring.length && <span className="v3-tag v3-tag-red">{expiring.length}</span>}</div>
           {usersError ? <p className="v3-note-dark">Не вдалося завантажити користувачів. <button type="button" className="v3-link-btn" onClick={() => load(true)}>Повторити</button></p>
             : expiring.length ? <>
@@ -307,8 +315,8 @@ export default function Dashboard() {
               </ul>
               {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі →</Link>}
               <button type="button" className="v3-btn v3-btn-dark v3-btn-block" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setConfirmOpen(true)}>Продовжити всім на +{EXTEND_DAYS} днів…</button>
-            </> : <div className="v3-calm"><CircleCheck size={22} aria-hidden="true" /><span><b>Усе спокійно.</b> Підписок, що закінчуються за 7 днів, немає.</span></div>}
-        </aside>
+            </> : null}
+        </aside>)}
       </section>
 
       {!isEmpty && <section className="v3-wcard">
