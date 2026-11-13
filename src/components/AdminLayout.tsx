@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   BarChart3, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
-  LogOut, Megaphone, Menu, MessageCircle, Settings2, Swords, Users, X,
+  LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Settings2, Swords, Users, X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -42,6 +41,9 @@ export default function AdminLayout() {
   const badges = useNavBadges(user?.username, onAudit);
   const roleName = user?.isOwner ? "Овнер" : "Адмін";
   const initial = (user?.username || "A").replace(/^@/, "").charAt(0).toUpperCase();
+  const handle = (user?.username || "admin").replace(/^@/, "");
+  const loginAt = Number(localStorage.getItem("loginAt") || 0);
+  const loginNote = loginAt ? `вхід ${new Date(loginAt).toDateString() === new Date().toDateString() ? "сьогодні" : new Date(loginAt).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })} о ${new Date(loginAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}` : "";
 
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [pathname]);
   useEffect(() => {
@@ -89,8 +91,15 @@ export default function AdminLayout() {
             </button>
             {accountOpen && (
               <div className="v3-account-menu" role="menu">
-                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Пароль і сесії</Link>
-                <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти з акаунта</button>
+                <div className="v3-account-head">
+                  <span className="v3-avatar v3-avatar-ink" aria-hidden="true">{initial}</span>
+                  <span><strong>@{handle}</strong><small>{roleName}{loginNote && ` · ${loginNote}`}</small></span>
+                </div>
+                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Мій пароль</Link>
+                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><MonitorSmartphone size={17} aria-hidden="true" />Активні сесії</Link>
+                <Link role="menuitem" to={`/audit?q=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" />Мої дії в журналі</Link>
+                <div className="v3-menu-sep" />
+                <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти</button>
               </div>
             )}
           </div>
@@ -107,14 +116,14 @@ export default function AdminLayout() {
             <button type="button" className="v3-icon-btn" onClick={() => setMobileOpen(false)} aria-label="Закрити меню"><X size={20} aria-hidden="true" /></button>
           </div>
           <nav aria-label="Основна навігація" className="v3-mobile-nav">
-            {navigation.map(({ label, href, icon: Icon, badge }) => (
+            {[...navigation.slice(0, -1), { label: "Журнал дій", href: "/audit", icon: History, badge: undefined }, navigation[navigation.length - 1]].map(({ label, href, icon: Icon, badge }) => (
               <NavLink key={href} to={href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
-                <Icon size={20} aria-hidden="true" />{label}{badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
+                <Icon size={20} aria-hidden="true" />{label}
+                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring"><span>{badges.usersExpiring}</span>закінчуються</span>}
+                {href === "/audit" && auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
+                {badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
               </NavLink>
             ))}
-            <NavLink to="/audit" className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
-              <History size={20} aria-hidden="true" />Журнал дій{auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
-            </NavLink>
           </nav>
           <div className="v3-mobile-account">
             <div className="v3-mobile-account-who">
@@ -133,12 +142,13 @@ export default function AdminLayout() {
       <footer className="v3-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
 
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger-bg text-danger shrink-0"><LogOut size={21} /></span><DialogTitle className="text-left">Вийти з облікового запису?</DialogTitle></div>
-            <DialogDescription className="text-left">Щоб повернутися до робочого простору, потрібно буде увійти знову.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter><Button variant="outline" onClick={() => setLogoutOpen(false)}>Скасувати</Button><Button variant="destructive" onClick={() => { setLogoutOpen(false); logout(); }}>Вийти</Button></DialogFooter>
+        <DialogContent className="v3-modal sm:max-w-[440px]">
+          <DialogTitle className="v3-modal-title">Вийти з адмінки?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">Незбережені зміни в Налаштуваннях буде втрачено.</DialogDescription>
+          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
+            <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setLogoutOpen(false)}>Скасувати</button>
+            <button type="button" className="v3-btn v3-btn-red" onClick={() => { setLogoutOpen(false); localStorage.removeItem("loginAt"); logout(); }}>Вийти</button>
+          </div></div>
         </DialogContent>
       </Dialog>
     </div>

@@ -149,11 +149,16 @@ export default function Dashboard() {
       [...view.report].reverse().map((r) => [`${r.name} ${view.year}`, r.paid, r.est, r.users, r.delta ?? ""]));
   }
 
+  const emptyPlatform = !!stats && stats.totalUsers - stats.adminUsers <= 0;
   const header = (
     <section className="v3-hero v3-hero-row">
       <div>
         <h1 className="v3-title">Дашборд</h1>
-        <p className="v3-subtitle">Оплати, підписки й активність MatchIQ — за обраний період.{updatedAt && <span className="v3-dim"> · Оновлено {updatedAt}</span>}</p>
+        <p className="v3-subtitle">
+          {emptyPlatform
+            ? <><span className="v3-hide-mobile">Тут з’являться оплати, підписки й активність, щойно на платформі будуть перші користувачі.</span><span className="v3-only-mobile">Показники з’являться після перших користувачів і оплат.</span></>
+            : <>Оплати, підписки й активність MatchIQ — за обраний період.{updatedAt && <span className="v3-dim"> · Оновлено {updatedAt}</span>}</>}
+        </p>
       </div>
       <div className="v3-chips" role="group" aria-label="Період">
         {periodChips.map((c) => <button key={c.key} type="button" className={`v3-chip v3-hide-mobile${period === c.key ? " is-on" : ""}`} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
@@ -214,7 +219,7 @@ export default function Dashboard() {
     <aside className="v3-dcard v3-calm-card" aria-label="Потребує уваги">
       <span className="v3-calm-ico"><Check size={26} strokeWidth={1.8} aria-hidden="true" /></span>
       <h2>Усе спокійно</h2>
-      <p>Підписок, що закінчуються за 7 днів, і незавершених дій немає.</p>
+      <p><span className="v3-hide-mobile">Підписок, що закінчуються за 7 днів, і незавершених дій немає.</span><span className="v3-only-mobile">Немає підписок, що закінчуються</span></p>
     </aside>
   );
 
@@ -239,13 +244,13 @@ export default function Dashboard() {
         <section className="v3-wcard v3-onboard">
           <div>
             <span className="v3-tag">Перші кроки</span>
-            <h2>Налаштуйте платформу за 3 кроки</h2>
-            <p className="v3-note-dark">Коли з’явиться перший користувач з оплатою, дашборд почне рахувати показники автоматично.</p>
+            <h2><span className="v3-hide-mobile">Налаштуйте платформу за 3 кроки</span><span className="v3-only-mobile">Налаштуйте платформу</span></h2>
+            <p className="v3-note-dark"><span className="v3-hide-mobile">Коли з’явиться перший користувач з оплатою, дашборд почне рахувати показники автоматично.</span><span className="v3-only-mobile">Три кроки — і дашборд почне рахувати показники.</span></p>
           </div>
           <ol className="v3-steps">
-            <li><span>1</span><div><strong>Перевірте тариф і тривалість підписки</strong><small>Ціна за замовчуванням і кількість днів</small></div><Link to="/settings" className="v3-btn v3-btn-ghost v3-btn-sm">Налаштування</Link></li>
-            <li><span>2</span><div><strong>Створіть першого користувача</strong><small>Логін, Telegram, тариф і період</small></div><Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm">Створити</Link></li>
-            <li><span>3</span><div><strong>Додайте банер на екран «Матчі»</strong><small>2 слоти · мітка «Реклама · 21+»</small></div><Link to="/banners" className="v3-btn v3-btn-ghost v3-btn-sm">Банери</Link></li>
+            <li><span>1</span><div><strong><span className="v3-hide-mobile">Перевірте тариф і тривалість підписки</span><span className="v3-only-mobile">Тариф і тривалість</span></strong><small className="v3-hide-mobile">Ціна за замовчуванням і кількість днів</small></div><Link to="/settings" className="v3-btn v3-btn-ghost v3-btn-sm">Налаштування</Link></li>
+            <li><span>2</span><div><strong><span className="v3-hide-mobile">Створіть першого користувача</span><span className="v3-only-mobile">Перший користувач</span></strong><small>Логін, Telegram, тариф</small></div><Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm">Створити</Link></li>
+            <li><span>3</span><div><strong><span className="v3-hide-mobile">Додайте банер на екран «Матчі»</span><span className="v3-only-mobile">Банер у «Матчах»</span></strong><small><span className="v3-hide-mobile">2 слоти · мітка «Реклама · 21+»</span><span className="v3-only-mobile">«Матчі» · 2 слоти</span></small></div><Link to="/banners" className="v3-btn v3-btn-ghost v3-btn-sm">Банери</Link></li>
           </ol>
         </section>
         {calmCard}
@@ -281,8 +286,9 @@ export default function Dashboard() {
             {chartEmpty && (
               <div className="v3-chart-empty">
                 <strong>{mode === "pay" ? "Оплат ще немає" : "Активних підписок ще немає"}</strong>
-                <span>Додайте першу оплату в картці користувача — графік і звіт заповняться автоматично.</span>
-                <Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm">Додати оплату</Link>
+                <span className="v3-hide-mobile">Додайте першу оплату в картці користувача — графік і звіт заповняться автоматично.</span>
+                <span className="v3-only-mobile">Графік заповниться після першої оплати</span>
+                <Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm v3-hide-mobile">Додати оплату</Link>
               </div>
             )}
           </div>
@@ -360,6 +366,8 @@ export default function Dashboard() {
         </ul>
         <p className="v3-note-dark v3-foot-note v3-hide-mobile">* Розрахунок за поточними тарифами, не облік оплат.</p>
       </section>}
+
+      {isEmpty && <Link to="/users" className="v3-btn v3-btn-primary v3-btn-block v3-only-mobile v3-mobile-cta">Створити першого користувача</Link>}
 
       <ExtendConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} items={expiring} days={EXTEND_DAYS} busy={extending} onConfirm={extendSelected} />
     </div>

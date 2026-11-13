@@ -11,6 +11,15 @@ const Banners = lazy(() => import("@/pages/Banners"));
 const Settings = lazy(() => import("@/pages/Settings"));
 import AdminLayout from "@/components/AdminLayout";
 import ComingSoon from "@/pages/ComingSoon";
+import NotFound from "@/pages/NotFound";
+
+/** Where to go after signing in: the page the session ended on, otherwise the dashboard. */
+function takeReturnTo() {
+  const to = sessionStorage.getItem("returnTo");
+  sessionStorage.removeItem("returnTo");
+  sessionStorage.removeItem("sessionEnded");
+  return to && to.startsWith("/") && !to.startsWith("/login") ? to : "/dashboard";
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isVerifying } = useAuth();
@@ -23,7 +32,7 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth();
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to={takeReturnTo()} replace /> : <LoginPage />} />
       <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження аналітики…</div>}><Dashboard /></Suspense>} />
         <Route path="/users" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження користувачів…</div>}><Admin /></Suspense>} />
@@ -35,6 +44,7 @@ function AppRoutes() {
         <Route path="/matches" element={<ComingSoon title="Матчі" subtitle="Дані з tips.gg і HLTV, ручні правки й довідник команд." planned={["Матчі на сьогодні та найближчі, ручні правки часу й рахунку", "Стан парсерів tips.gg і HLTV з повторним запуском", "Матчі, додані користувачами вручну, — об’єднання з офіційними", "Довідник команд і псевдонімів"]} />} />
         <Route path="/support" element={<ComingSoon title="Підтримка" subtitle="Звернення з форми «Проблема чи побажання» й модерація Telegram-груп." planned={["Звернення: нові, в роботі, вирішені; відповідь у застосунок і Telegram", "Шаблони відповідей", "Модерація Telegram-груп, які додали користувачі Pro"]} />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

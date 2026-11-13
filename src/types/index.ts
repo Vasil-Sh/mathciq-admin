@@ -31,6 +31,8 @@ export interface LoginResult {
   error?: string;
   isAdmin?: boolean;
   isOwner?: boolean;
+  /** Signed in with a regular app account — the admin panel is not for it. */
+  notAdmin?: boolean;
 }
 
 export type StatusFilter = "all" | "active" | "expired";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, Lock, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { roleLabel } from "@/lib/permissions";
@@ -44,7 +44,8 @@ function Section({ title, summary, open, onToggle, extra, children }: { title: s
 interface Props {
   user: UserData;
   extendDays: number;
-  canDelete: boolean;
+  /** Why this account cannot be deleted by the signed-in admin, or null. */
+  deleteReason: string | null;
   onEdit: () => void;
   onDelete: () => void;
   onExtend: () => void;
@@ -52,7 +53,7 @@ interface Props {
   onClose?: () => void;
 }
 
-export default function UserCardPanel({ user, extendDays, canDelete, onEdit, onDelete, onExtend, onChanged, onClose }: Props) {
+export default function UserCardPanel({ user, extendDays, deleteReason, onEdit, onDelete, onExtend, onChanged, onClose }: Props) {
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -127,8 +128,11 @@ export default function UserCardPanel({ user, extendDays, canDelete, onEdit, onD
         <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" onClick={() => setAddOpen(true)}>Додати оплату</button>
         <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={onExtend}>+{extendDays} днів…</button>
         <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={onEdit}><Pencil size={14} aria-hidden="true" />Редагувати</button>
-        {canDelete && <button type="button" className="v3-btn v3-btn-danger-outline v3-btn-sm" onClick={onDelete}><Trash2 size={14} aria-hidden="true" />Видалити</button>}
+        {deleteReason
+          ? <button type="button" className="v3-btn v3-btn-locked v3-btn-sm" disabled aria-describedby="uc-lock"><Lock size={14} aria-hidden="true" />Видалити</button>
+          : <button type="button" className="v3-btn v3-btn-danger-outline v3-btn-sm" onClick={onDelete}><Trash2 size={14} aria-hidden="true" />Видалити</button>}
       </div>
+      {deleteReason && <p id="uc-lock" className="v3-uc-lock"><Lock size={13} aria-hidden="true" />{deleteReason}.</p>}
 
       {error ? <div className="v3-uc-error" role="alert"><p>{error}</p><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={load}>Повторити</button></div> : !card ? <p className="v3-uc-loading" role="status">Завантаження картки…</p> : <>
         <Section title="Профіль" summary={price ? `${price} ₴ · до ${shortDate(user.endDate)}` : `до ${shortDate(user.endDate)}`} open={open.prof} onToggle={() => setOpen({ ...open, prof: !open.prof })}>

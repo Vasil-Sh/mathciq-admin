@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/apiClient";
+import { authService } from "@/lib/authService";
+import { expiringUsers } from "@/lib/subscriptions";
 
 /**
  * Counters shown in the top navigation.
@@ -16,6 +18,8 @@ export interface NavBadges {
   auditMore?: boolean;
   supportOpen?: number;
   matchesError?: boolean;
+  /** subscriptions ending within 7 days — shown on «Користувачі» in the mobile menu */
+  usersExpiring?: number;
 }
 
 const SEEN_KEY = "auditSeenAt";
@@ -40,6 +44,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
     if (onAuditPage) {
       markAuditSeen();
       setBadges((b) => ({ ...b, auditUnseen: 0, auditMore: false }));
+      authService.fetchUsers().then((users) => setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }))).catch(() => {});
       return;
     }
     // First visit on this browser: start counting from now, not from the beginning of time.
@@ -65,6 +70,10 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
       } catch {
         // Badge is a convenience — a failed request just leaves it as it was.
       }
+      try {
+        const users = await authService.fetchUsers();
+        if (!cancelled) setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }));
+      } catch { /* same as above */ }
     };
     load();
     const id = window.setInterval(load, POLL_MS);

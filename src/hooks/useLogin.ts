@@ -6,6 +6,7 @@ export function useLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notAdmin, setNotAdmin] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -18,6 +19,11 @@ export function useLogin() {
       }
 
       const result = await login(username.trim(), password);
+      if (result.notAdmin) {
+        setNotAdmin(username.trim().replace(/^@/, ""));
+        setPassword("");
+        return;
+      }
       if (!result.success) {
         setError(result.error || "Помилка входу");
       }
@@ -33,6 +39,8 @@ export function useLogin() {
     isLoading,
     error,
     setError,
+    notAdmin,
+    resetNotAdmin: () => { setNotAdmin(null); setUsername(""); },
     handleSubmit,
   };
 }

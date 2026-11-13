@@ -26,7 +26,8 @@ class AuthService {
       if (!data.isAdmin) {
         return {
           success: false,
-          error: "Доступ лише для адміністраторів. Ваш обліковий запис не має прав адміністратора.",
+          notAdmin: true,
+          error: "Адмінка доступна лише овнеру й адміністраторам.",
         };
       }
 
@@ -35,6 +36,7 @@ class AuthService {
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", username);
         localStorage.setItem("isOwner", data.user?.isOwner ? "1" : "0");
+        localStorage.setItem("loginAt", String(Date.now()));
       }
 
       return { success: true, isAdmin: true, isOwner: !!data.user?.isOwner };

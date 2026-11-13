@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, ShieldCheck, WifiOff } from "lucide-react";
+import { BarChart3, LogIn, ShieldCheck, WifiOff } from "lucide-react";
 import { useLogin } from "@/hooks/useLogin";
 
 function useOnline() {
@@ -15,7 +15,9 @@ function useOnline() {
 }
 
 export default function LoginPage() {
-  const { username, setUsername, password, setPassword, isLoading, error, handleSubmit } = useLogin();
+  const { username, setUsername, password, setPassword, isLoading, error, handleSubmit, notAdmin, resetNotAdmin } = useLogin();
+  const [sessionEnded] = useState(() => sessionStorage.getItem("sessionEnded") === "1");
+  const appUrl = import.meta.env.VITE_APP_URL as string | undefined;
   const [showPassword, setShowPassword] = useState(false);
   const online = useOnline();
 
@@ -39,6 +41,19 @@ export default function LoginPage() {
           </ul>
         </section>
 
+        {notAdmin ? (
+        <section className="v3-login-form" aria-labelledby="v3-login-title">
+          <div>
+            <p className="v3-login-eyebrow">Вхід адміністратора</p>
+            <h2 id="v3-login-title">Це акаунт користувача</h2>
+            <p className="v3-login-lead"><b>@{notAdmin}</b> — акаунт користувача. Адмінка доступна лише овнеру й адміністраторам.</p>
+          </div>
+          <div className="v3-login-alt">
+            {appUrl && <a href={appUrl} className="v3-btn v3-btn-primary">Відкрити застосунок MatchIQ</a>}
+            <button type="button" className="v3-btn v3-btn-ghost" onClick={resetNotAdmin}><LogIn size={16} aria-hidden="true" />Увійти іншим акаунтом</button>
+          </div>
+        </section>
+        ) : (
         <section className="v3-login-form" aria-labelledby="v3-login-title">
           <div>
             <p className="v3-login-eyebrow">Вхід адміністратора</p>
@@ -46,6 +61,7 @@ export default function LoginPage() {
             <p className="v3-login-lead">Увійдіть, щоб керувати користувачами, підписками та даними MatchIQ.</p>
           </div>
 
+          {sessionEnded && online && <p className="v3-login-banner v3-login-banner-blue" role="status">Сесія завершилась. Увійдіть знову — повернемо вас на ту саму сторінку.</p>}
           {!online && <p className="v3-login-banner" role="status"><WifiOff size={16} aria-hidden="true" />Немає інтернету. Кнопка запрацює, щойно зв’язок повернеться.</p>}
 
           <form onSubmit={handleSubmit} aria-label="Вхід адміністратора" aria-busy={isLoading} noValidate>
@@ -68,6 +84,7 @@ export default function LoginPage() {
 
           <p className="v3-login-security"><ShieldCheck size={16} aria-hidden="true" />Лише для авторизованих адміністраторів</p>
         </section>
+        )}
       </div>
     </main>
   );

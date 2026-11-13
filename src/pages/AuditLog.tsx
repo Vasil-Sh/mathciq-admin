@@ -98,7 +98,7 @@ export default function AuditLog() {
   const [urlParams] = useSearchParams();
   const userId=urlParams.get('userId') || '';
   const history=urlParams.get('history') || '';
-  const [searchDraft,setSearchDraft]=useState(''), [search,setSearch]=useState('');
+  const [searchDraft,setSearchDraft]=useState(urlParams.get('q') || ''), [search,setSearch]=useState(urlParams.get('q') || '');
   const [from,setFrom]=useState(''), [to,setTo]=useState('');
   const [category,setCategory] = useState("all");
   const [status,setStatus] = useState("all");

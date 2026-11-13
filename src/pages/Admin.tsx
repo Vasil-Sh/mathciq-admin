@@ -217,7 +217,7 @@ export default function Admin() {
     { key: "expired", label: "Неактивні", value: inactiveUsers, note: "підписка закінчилась", on: statusFilter === "expired" && roleFilter === "all", go: () => { setStatusFilter("expired"); setRole("all"); } },
   ];
   const card = selected && (
-    <UserCardPanel key={selected.id} user={selected} extendDays={extendDays} canDelete={!deleteBlockReason(currentAdmin, selected)}
+    <UserCardPanel key={selected.id} user={selected} extendDays={extendDays} deleteReason={deleteBlockReason(currentAdmin, selected)}
       onEdit={() => openEditDialog(selected, users.findIndex(u => u.id === selected.id))}
       onDelete={() => confirmDelete(users.findIndex(u => u.id === selected.id))}
       onExtend={() => setCardExtendOpen(true)} onChanged={fetchUsers}

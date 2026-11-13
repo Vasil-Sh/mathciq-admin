@@ -60,3 +60,13 @@
   .v3-login-form { padding: 24px; }
   .v3-login-form h2 { font-size: 30px; }
 }
+.v3-login-banner-blue { background: #e8efff; color: #1f3f99; }
+.v3-login-alt { display: flex; flex-direction: column; gap: 10px; }
+.v3-login-lead b { color: var(--v3-ink); }
+
+/* 404 */
+.v3-notfound { max-width: 640px; margin: 40px auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 48px 32px; border-radius: 28px; background: var(--v3-card); border: 1px solid var(--v3-line-dark); color: var(--v3-text); }
+.v3-notfound-code { font-size: 96px; font-weight: 300; letter-spacing: -.05em; line-height: 1; color: #a3c0ff; }
+.v3-notfound h1 { margin: 0; font-size: 28px; font-weight: 500; letter-spacing: -.02em; }
+.v3-notfound p { margin: 0; color: var(--v3-muted); font-size: 14px; line-height: 1.6; max-width: 460px; }
+.v3-notfound-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }

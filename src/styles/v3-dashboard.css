@@ -221,3 +221,4 @@
 .v3-calm-card p { margin: 0; color: var(--v3-muted); font-size: 13px; line-height: 1.6; max-width: 260px; }
 .v3-calm-ico { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: rgba(90, 140, 255, .14); color: #a3c0ff; }
 .v3-onboard { flex: 2 1 560px; min-width: 0; grid-template-columns: 1fr; }
+@media (max-width: 767px) { a.v3-mobile-cta.v3-only-mobile { display: flex; } }

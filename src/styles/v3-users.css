@@ -156,3 +156,5 @@
   .v3-select { flex: 1 1 140px; }
   .v3-form-grid { grid-template-columns: 1fr; }
 }
+.v3-btn-locked, .v3-btn-locked:disabled { background: transparent; color: #6f7888; border: 1px dashed rgba(255, 255, 255, .18); cursor: not-allowed; }
+.v3-uc-lock { margin: -6px 0 0; display: flex; align-items: center; gap: 6px; color: #9aa3b2; font-size: 12px; }
