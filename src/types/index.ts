@@ -142,4 +142,7 @@ export interface AppSettings {
   defaultMonthlyPrice: number;
   subscriptionDays: number;
   bannerSpecText: string;
+  aiUsdUah?: number;
+  churnInactiveDays?: number;
+  churnLossStreak?: number;
 }

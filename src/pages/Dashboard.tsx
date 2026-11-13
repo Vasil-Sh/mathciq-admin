@@ -10,8 +10,9 @@ import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import RetentionCard from "@/components/dashboard/RetentionCard";
 import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
-import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, initials, PARSER_NAMES, PLAN_COLORS, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
-import type { AdminUser, AdminUserOverview } from "@/types";
+import { fetchSettings } from "@/lib/adminSettingsApi";
+import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, initials, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
+import type { AdminUser, AdminUserOverview, AppSettings } from "@/types";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -64,14 +65,16 @@ export default function Dashboard() {
   const [overview, setOverview] = useState<AdminUserOverview[] | null>(null);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
   const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    const [s, u, o, p, t] = await Promise.allSettled([fetchAdminStats(), authService.fetchUsers(), fetchUsersOverview(), fetchParsers(), fetchOpenTickets()]);
+    const [s, u, o, p, t, st] = await Promise.allSettled([fetchAdminStats(), authService.fetchUsers(), fetchUsersOverview(), fetchParsers(), fetchOpenTickets(), fetchSettings()]);
     // Optional sources: on failure keep the last good value (null on first load hides the block).
     if (o.status === "fulfilled") setOverview(o.value);
     if (p.status === "fulfilled") setParsers(p.value);
     if (t.status === "fulfilled") setTickets(t.value);
+    if (st.status === "fulfilled") setSettings(st.value);
     if (s.status === "fulfilled") { setStats(s.value); setError(""); setUpdatedAt(hhmm()); }
     else setError((s.reason as Error)?.message || "Сервер не відповідає");
     if (u.status === "fulfilled") { setUsers(u.value); setUsersError(false); } else setUsersError(true);
@@ -123,8 +126,9 @@ export default function Dashboard() {
     const refundAmount = refunds.reduce((s, r) => s + r.amount, 0);
     const prevCancelled = prevSel(stats.cancellations?.byMonth).reduce((s, r) => s + r.count, 0) + prevSel(stats.refunds?.byMonth).reduce((s, r) => s + r.count, 0);
     const ai = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + r.costUsd, 0);
+    const aiCalls = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + (r.calls || 0), 0);
     const prevReg = reg[prevKey(now.key)] || 0;
-    return { series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
+    return { series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
   }, [stats, overview, mode, period, now.key, now.month, now.year]);
 
   const firstChip = Math.max(0, now.month - 3);
@@ -228,10 +232,14 @@ export default function Dashboard() {
   const byName = new Map((overview || []).map((u) => [u.username, u]));
   const periodShort = period === "year" ? `${now.year} рік` : MONTHS_FULL[monthIdx(period)];
   const usd = (n: number) => `$${n.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const rate = stats.aiUsage?.usdToUah || 0;
+  const aiMoney = (n: number) => (rate ? `≈ ${money(n * rate)}` : usd(n));
   const conv = stats.conversion;
-  const convTotal = conv ? conv.trial + conv.paid : 0;
-  const convPct = convTotal ? Math.round((conv.paid / convTotal) * 100) : 0;
+  const c30 = conv?.last30;
+  const convPct = c30 && c30.trialEnded ? Math.round((c30.converted / c30.trialEnded) * 100) : null;
   const aiToday = stats.aiUsage?.today;
+  const inactiveDays = settings?.churnInactiveDays || INACTIVE_DAYS;
+  const lossStreak = settings?.churnLossStreak || LOSS_STREAK;
 
   type Alert = { key: string; dot: "red" | "blue" | "amber"; title: string; sub: string; to: string; cta: string };
   const alerts: Alert[] = [];
@@ -248,12 +256,24 @@ export default function Dashboard() {
     const oldest = tickets && [...tickets].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
     alerts.push({ key: "support", dot: "red", title: `${openTickets} ${plural(openTickets, "відкрите звернення", "відкриті звернення", "відкритих звернень")}`, sub: oldest ? `найстаріше — ${ago(oldest.createdAt)}${oldest.username ? ` · @${oldest.username}` : ""}` : "очікують відповіді", to: "/support", cta: "Підтримка" });
   }
-  if (stats.selfLimitations > 0) alerts.push({ key: "self", dot: "blue", title: `Активні самообмеження · ${stats.selfLimitations}`, sub: "застосовано автоматично", to: "/users", cta: "Переглянути" });
-  if (stats.unverifiedAge > 0) alerts.push({ key: "age", dot: "amber", title: `Вік не підтверджено · ${stats.unverifiedAge}`, sub: "дата народження не вказана", to: "/users", cta: "Відкрити" });
+  const selfLim = stats.selfLimitation;
+  if (selfLim && (selfLim.new > 0 || selfLim.latest.length > 0)) {
+    const top = selfLim.latest[0];
+    alerts.push({
+      key: "self", dot: "blue",
+      title: selfLim.new > 1 ? `Нові запити на самообмеження · ${selfLim.new}` : selfLim.new === 1 ? "Новий запит на самообмеження" : "Самообмеження застосовано",
+      sub: top ? `@${top.username} · ${limitLabel(top.periodDays)} · ${top.status === "applied" ? "застосовано" : "очікує рішення"}` : "очікує рішення",
+      to: top ? `/users?q=${encodeURIComponent(top.username)}` : "/users", cta: "Переглянути",
+    });
+  }
+  if (stats.unverifiedAge > 0) {
+    const names = (stats.ageUnverified || []).map((a) => `@${a.username}`);
+    alerts.push({ key: "age", dot: "amber", title: `Вік не підтверджено · ${stats.unverifiedAge}`, sub: names.length ? names.join(", ") + (stats.unverifiedAge > names.length ? ` і ще ${stats.unverifiedAge - names.length}` : "") : "очікує підтвердження", to: names.length === 1 ? `/users?q=${encodeURIComponent(names[0].slice(1))}` : "/users", cta: "Відкрити" });
+  }
   const attentionCount = alerts.length + expiring.length;
   const recentPaid = (stats.recentPayments || []).filter((p) => p.status === "recorded").slice(0, 3);
   const churned = overview ? churnedUsers(overview) : null;
-  const risk = overview ? churnRisk(overview) : null;
+  const risk = overview ? churnRisk(overview, inactiveDays, lossStreak) : null;
   const retTotal = (stats.retention?.retained || 0) + (stats.retention?.churned || 0);
   const prevMonthIdx = monthIdx(prevKey(now.key));
   const kpis = [
@@ -294,9 +314,9 @@ export default function Dashboard() {
         <section className="v3-kpis v3-kpis-second">
           {conv && <Link to="/users" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span>
-            <strong className="v3-kpi-v">{convPct}<small className="v3-kpi-unit">%</small></strong>
-            <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span style={{ width: `${convPct}%` }} /></span>
-            <span className="v3-kpi-n"><span className="v3-hide-mobile">{conv.paid} з {convTotal} на платному тарифі · </span>зараз на пробному {conv.trial}</span>
+            <strong className="v3-kpi-v">{convPct === null ? "—" : <>{convPct}<small className="v3-kpi-unit">%</small></>}</strong>
+            <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span style={{ width: `${convPct || 0}%` }} /></span>
+            <span className="v3-kpi-n"><span className="v3-hide-mobile">{c30 && c30.trialEnded ? `${c30.converted} з ${c30.trialEnded} за 30 днів` : "за 30 днів пробних не закінчувалось"} · </span>{conv.trial ? `зараз на пробному ${conv.trial}` : "на пробному нікого"}</span>
           </Link>}
           <Link to="/payments" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><MinusCircle size={16} aria-hidden="true" /></span>Скасування</span>
@@ -306,10 +326,13 @@ export default function Dashboard() {
               <span className="v3-only-mobile">{view.refundAmount ? `повернено ${money(view.refundAmount)}` : "без повернень"}</span>
             </span>
           </Link>
-          {stats.aiUsage && <Link to="/settings" className="v3-kpi v3-kpi-wide-sm">
-            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile">&nbsp;· {periodShort.toLowerCase()}</span></span>
-            <strong className="v3-kpi-v">{usd(view.ai)}</strong>
-            <span className="v3-kpi-n"><span className="v3-hide-mobile">{periodShort} · </span>сьогодні {aiToday?.calls ?? 0} {plural(aiToday?.calls ?? 0, "аналіз", "аналізи", "аналізів")} (≈ {usd(aiToday?.costUsd ?? 0)})</span>
+          {stats.aiUsage && <Link to="/settings" className="v3-kpi v3-kpi-wide-sm v3-kpi-ai">
+            <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile v3-kpi-l-tail">· {periodShort.toLowerCase()}</span></span>
+            <strong className="v3-kpi-v">{rate ? <>≈ {Math.round(view.ai * rate).toLocaleString("uk-UA")}<small className="v3-kpi-unit"> ₴</small></> : usd(view.ai)}</strong>
+            <span className="v3-kpi-n">
+              <span className="v3-hide-mobile">{periodShort} · {view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")} · сьогодні {aiToday?.calls ?? 0} ({aiMoney(aiToday?.costUsd ?? 0)})</span>
+              <span className="v3-only-mobile v3-kpi-ai-side">{view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")}<br />сьогодні {aiToday?.calls ?? 0}</span>
+            </span>
           </Link>}
         </section>
       )}
@@ -384,7 +407,7 @@ export default function Dashboard() {
                     {recentPaid.map((p) => (
                       <li key={p.id}>
                         <span className="v3-av v3-av-sm" aria-hidden="true">{initials(p.username)}</span>
-                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
+                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
                         <span className="v3-pay-amt">+{money(p.amount)}</span>
                       </li>
                     ))}
@@ -433,8 +456,8 @@ export default function Dashboard() {
 
       {!isEmpty && (retTotal > 0 || (risk && overview)) && (
         <section className="v3-dash-pair">
-          {retTotal > 0 && <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} list={churned} />}
-          {risk && <ChurnRiskCard rows={risk} />}
+          {retTotal > 0 && <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} byMonth={stats.retention.byMonth} focusMonth={period === "year" || period === now.key ? prevKey(now.key) : period} list={churned} />}
+          {risk && <ChurnRiskCard rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
         </section>
       )}
 

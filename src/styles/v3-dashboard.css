@@ -314,3 +314,26 @@
 .v3-onboard { flex: 2 1 560px; min-width: 0; grid-template-columns: 1fr; }
 @media (max-width: 767px) { a.v3-mobile-cta.v3-only-mobile { display: flex; } }
 .v3-risk-card .v3-card-head > div:first-child { flex: 1 1 auto; }
+
+/* Retention: 6-month bars */
+.v3-ret-bars-head { display: flex; justify-content: space-between; color: var(--v3-muted); font-size: 12px; margin-bottom: 10px; }
+.v3-ret-bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end; height: 96px; }
+.v3-ret-col { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; }
+.v3-ret-col > span { font-size: 10px; color: var(--v3-muted); text-align: center; }
+.v3-ret-col > span.is-on { color: #a3c0ff; font-weight: 600; }
+.v3-ret-bar { border-radius: 6px; background: repeating-linear-gradient(135deg, #2a3140 0 4px, #232a37 4px 8px); }
+.v3-ret-bar.is-on { background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
+.v3-ret-months { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 6px; color: var(--v3-muted); font-size: 11px; text-align: center; }
+.v3-ret-months .is-on { color: #a3c0ff; }
+.v3-ret-mini { display: grid; grid-template-columns: repeat(6, 10px); gap: 4px; align-items: end; height: 48px; }
+.v3-ret-mini i { display: block; border-radius: 3px; background: repeating-linear-gradient(135deg, #2a3140 0 4px, #232a37 4px 8px); }
+.v3-ret-mini i.is-on { background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
+.v3-inline-link { color: #2450c4; font-weight: 600; }
+@media (max-width: 767px) {
+  .v3-ret-mobile { display: flex !important; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .v3-kpi-ai { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+  .v3-kpi-ai .v3-kpi-l { grid-column: 1; grid-row: 1; }
+  .v3-kpi-ai .v3-kpi-v { grid-column: 1; grid-row: 2; }
+  .v3-kpi-ai .v3-kpi-n { grid-column: 2; grid-row: 1 / span 2; margin: 0; text-align: right; }
+}
+.v3-kpi-l-tail { margin-left: -4px; }

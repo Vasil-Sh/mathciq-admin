@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
-import { idleText, initials, INACTIVE_DAYS, LOSS_STREAK, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
+import { idleText, initials, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
 
 type Tab = "all" | "idle" | "streak";
 const LIMIT = 5;
 const MOBILE_LIMIT = 3;
 
 /** «Ризик відтоку» — white card, from /admin/users (lastBetDate, lossStreak). */
-export default function ChurnRiskCard({ rows }: { rows: RiskRow[] }) {
+export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, thresholdsFromSettings }: { rows: RiskRow[]; inactiveDays: number; lossStreak: number; thresholdsFromSettings: boolean }) {
   const [tab, setTab] = useState<Tab>("all");
   const [expanded, setExpanded] = useState(false);
   const idle = rows.filter((r) => r.inactive);
@@ -81,7 +81,7 @@ export default function ChurnRiskCard({ rows }: { rows: RiskRow[] }) {
         </>
       )}
 
-      <p className="v3-note-dark v3-risk-foot v3-hide-mobile">Неактивні — {INACTIVE_DAYS}+ днів без нових ставок. Серія — {LOSS_STREAK}+ програшів поспіль.</p>
+      <p className="v3-note-dark v3-risk-foot v3-hide-mobile">Неактивні — {inactiveDays}+ днів без нових ставок. Серія — {lossStreak}+ програшів поспіль.{thresholdsFromSettings && <> Пороги можна змінити в <Link to="/settings" className="v3-inline-link">Налаштуваннях</Link>.</>}</p>
     </section>
   );
 }

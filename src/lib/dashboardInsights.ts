@@ -93,14 +93,14 @@ export function churnedUsers(overview: AdminUserOverview[]): ChurnedRow[] {
 
 export interface RiskRow { user: AdminUserOverview; idleDays: number | null; streak: number; inactive: boolean; losing: boolean; daysLeft: number }
 
-/** Active paid users with no bets for INACTIVE_DAYS+ or LOSS_STREAK+ losses in a row. */
-export function churnRisk(overview: AdminUserOverview[]): RiskRow[] {
+/** Active paid users with no bets for N+ days or M+ losses in a row (thresholds from Settings). */
+export function churnRisk(overview: AdminUserOverview[], inactiveDays = INACTIVE_DAYS, lossStreak = LOSS_STREAK): RiskRow[] {
   return overview
     .filter((u) => isActive(u) && isPaidPlan(u))
     .map((user) => {
       const idleDays = daysSince(user.lastBetDate || user.startDate || user.createdAt);
       const streak = Number(user.lossStreak) || 0;
-      return { user, idleDays, streak, inactive: idleDays !== null && idleDays >= INACTIVE_DAYS, losing: streak >= LOSS_STREAK, daysLeft: getDaysUntilExpiry(user.endDate) };
+      return { user, idleDays, streak, inactive: idleDays !== null && idleDays >= inactiveDays, losing: streak >= lossStreak, daysLeft: getDaysUntilExpiry(user.endDate) };
     })
     .filter((r) => r.inactive || r.losing)
     .sort((a, b) => a.daysLeft - b.daysLeft);
@@ -129,4 +129,11 @@ export async function fetchParsers(): Promise<ParserState[]> {
 export async function fetchOpenTickets(): Promise<SupportTicket[]> {
   const data = await api.get<{ tickets: SupportTicket[] }>("/admin/support-tickets?status=open");
   return data.tickets || [];
+}
+
+/** "1 рік" / "6 міс." / "14 днів" for a self-limitation period. */
+export function periodLabel(days: number): string {
+  if (days >= 365 && days % 365 === 0) { const y = days / 365; return `${y} ${plural(y, "рік", "роки", "років")}`; }
+  if (days >= 30 && days % 30 === 0) return `${days / 30} міс.`;
+  return `${days} ${plural(days, "день", "дні", "днів")}`;
 }
