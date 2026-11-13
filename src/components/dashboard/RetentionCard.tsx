@@ -4,6 +4,11 @@ import { initials, telegramLink, type ChurnedRow } from "@/lib/dashboardInsights
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 const mIdx = (m: string) => Number(m.slice(5, 7)) - 1;
+/** `count` month keys ending one month after `last` (i.e. including the current month). */
+function lastMonths(last: string, count: number): string[] {
+  const y = Number(last.slice(0, 4)), i = mIdx(last) + 1; // current month = focus + 1
+  return Array.from({ length: count }, (_, k) => { const d = new Date(y, i - (count - 1) + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+}
 
 interface Props {
   retained: number;
@@ -16,7 +21,9 @@ interface Props {
 
 /** «Утримання» — dark card. Per-month numbers from stats.retention.byMonth, the list from /admin/users. */
 export default function RetentionCard({ retained, churned, byMonth, focusMonth, list }: Props) {
-  const months = (byMonth || []).map((m) => {
+  // Always show 6 months (empty ones as «—»), even before the backend has any renewal history.
+  const keys = (byMonth && byMonth.length ? byMonth.map((m) => m.month) : lastMonths(focusMonth, 6));
+  const months = keys.map((key) => byMonth?.find((m) => m.month === key) || { month: key, ended: 0, renewed: 0 }).map((m) => {
     const total = m.ended + m.renewed;
     return { ...m, total, rate: total ? Math.round((m.renewed / total) * 100) : null };
   });
@@ -26,7 +33,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
     : { renewed: retained, lost: churned, total: retained + churned, rate: retained + churned ? Math.round((retained / (retained + churned)) * 100) : 0, label: "за весь час" };
   const withData = months.filter((m) => m.rate !== null);
   const avg = withData.length ? Math.round(withData.reduce((s, m) => s + (m.rate || 0), 0) / withData.length) : null;
-  const showBars = withData.length > 0;
+  const showBars = months.length > 0;
   const shown = (list || []).slice(0, 3);
 
   return (
@@ -60,7 +67,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
 
       {showBars && (
         <div className="v3-hide-mobile v3-ret-chart">
-          <div className="v3-ret-bars-head v3-hide-wide"><span>Утримання за 6 місяців</span>{avg !== null && <span>середнє {avg}%</span>}</div>
+          <div className="v3-ret-bars-head v3-hide-wide"><span>Утримання за 6 місяців</span><span>{avg !== null ? `середнє ${avg}%` : "даних за ці місяці ще немає"}</span></div>
           <div className="v3-ret-bars" role="img" aria-label={`Утримання за місяцями: ${months.map((m) => `${MONTHS[mIdx(m.month)]} ${m.rate === null ? "немає даних" : `${m.rate}%`}`).join(", ")}`}>
             {months.map((m) => {
               const on = m.month === focus?.month;
