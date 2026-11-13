@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "./admin-design.css";
 import "./styles/v3-shell.css";
+import "./styles/v3-dashboard.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

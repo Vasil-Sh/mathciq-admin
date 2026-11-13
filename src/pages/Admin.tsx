@@ -147,7 +147,7 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  useEffect(()=>{const status=urlParams.get("status"); if(status === "all" || status === "active" || status === "expired") {setStatusFilter(status);setSearchQuery("");}},[urlParams]);
+  useEffect(()=>{const status=urlParams.get("status"); if(status === "all" || status === "active" || status === "expired") {setStatusFilter(status);setSearchQuery("");} const q=urlParams.get("q"); if(q) setSearchQuery(q);},[urlParams]);
   const scopedUsers = users.filter(u=>roleFilter === "all" || (roleFilter === "admin" ? u.isAdmin : !u.isAdmin));
   const activeUsers = scopedUsers.filter(u => u.isActive).length;
   const inactiveUsers = scopedUsers.filter(u => !u.isActive).length;
