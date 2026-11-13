@@ -18,6 +18,7 @@ function takeReturnTo() {
   const to = sessionStorage.getItem("returnTo");
   sessionStorage.removeItem("returnTo");
   sessionStorage.removeItem("sessionEnded");
+  sessionStorage.removeItem("sessionsRevokedAt");
   return to && to.startsWith("/") && !to.startsWith("/login") ? to : "/dashboard";
 }
 

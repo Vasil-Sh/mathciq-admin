@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Lock, LogIn, ShieldCheck, WifiOff } from "lucide-react";
+import { BarChart3, Lock, LogIn, MonitorSmartphone, ShieldCheck, WifiOff } from "lucide-react";
 import { useLogin } from "@/hooks/useLogin";
 
 function useOnline() {
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const emptyUser = errorKind === "empty" && !username.trim();
   const emptyPass = errorKind === "empty" && !password.trim();
   const [sessionEnded] = useState(() => sessionStorage.getItem("sessionEnded") === "1");
+  const [revokedAt] = useState(() => Number(sessionStorage.getItem("sessionsRevokedAt") || 0) || null);
   const appUrl = import.meta.env.VITE_APP_URL as string | undefined;
   const [showPassword, setShowPassword] = useState(false);
   const online = useOnline();
@@ -64,7 +65,7 @@ export default function LoginPage() {
             <p className="v3-login-lead">Увійдіть, щоб керувати користувачами, підписками та даними MatchIQ.</p>
           </div>
 
-          {sessionEnded && online && <p className="v3-login-banner v3-login-banner-blue" role="status">Сесія завершилась. Увійдіть знову — повернемо вас на ту саму сторінку.</p>}
+          {sessionEnded && online && <p className="v3-login-banner v3-login-banner-blue" role="status"><MonitorSmartphone size={16} aria-hidden="true" />{revokedAt ? `Вас вийшло з усіх пристроїв (Налаштування → Сесії, ${new Date(revokedAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}). Увійдіть знову.` : "Сесія завершилась. Увійдіть знову — повернемо вас на ту саму сторінку."}</p>}
           {locked && <p className="v3-login-banner v3-login-banner-red" role="alert"><Lock size={16} aria-hidden="true" />Забагато невдалих спроб входу.</p>}
           {!online && <p className="v3-login-banner" role="status"><WifiOff size={16} aria-hidden="true" />Немає інтернету. Кнопка запрацює, щойно зв’язок повернеться.</p>}
 

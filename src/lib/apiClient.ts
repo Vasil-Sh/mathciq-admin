@@ -28,6 +28,19 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
+/** Set when the server says «logged out on all devices» (epoch ms), read by endSession. */
+let revokedAt: number | null = null;
+async function noteRevocation(res: Response) {
+  try {
+    const data = await res.clone().json();
+    if (data?.code === "SESSIONS_REVOKED") revokedAt = data.revokedAt ? Date.parse(data.revokedAt) : Date.now();
+  } catch { /* not JSON */ }
+}
+
 export function getApiBase(): string {
   return BASE;
 }
@@ -53,7 +66,7 @@ async function doRefresh(): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) { await noteRevocation(res); return false; }
     const data = await res.json();
     if (data.token) {
       setTokens(data.token, data.refreshToken || refreshToken || "");
@@ -68,7 +81,9 @@ async function doRefresh(): Promise<boolean> {
 /** Session is gone for good: drop tokens and let AuthContext send the user to /login. */
 function endSession() {
   clearToken();
-  window.dispatchEvent(new CustomEvent("auth:logout", { detail: { reason: "expired" } }));
+  const at = revokedAt;
+  revokedAt = null;
+  window.dispatchEvent(new CustomEvent("auth:logout", { detail: { reason: "expired", revokedAt: at } }));
 }
 
 /** Sends a request with auth, refreshing the token once on 401. Throws on non-2xx. */
@@ -89,6 +104,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
 
   // Auto-refresh on 401
   if (res.status === 401 && hadSession) {
+    await noteRevocation(res);
     const ok = await refreshAccessToken();
     if (ok) {
       headers["Authorization"] = `Bearer ${authToken}`;

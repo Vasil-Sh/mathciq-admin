@@ -212,3 +212,14 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-menu-label { flex: 1; text-align: left; }
 .v3-menu-count { color: #8a93a2; font-size: 12px; font-variant-numeric: tabular-nums; }
 .v3-agree-row { align-items: center; }
+
+/* Toasts: success shows a shrinking timer line (4 s; undo toasts 10 s), paused on hover like the timer itself */
+[data-sonner-toast][data-type="success"] { overflow: hidden; }
+[data-sonner-toast][data-type="success"]::after {
+  content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+  background: #00B24B; transform-origin: left; animation: v3-toast-timer 4s linear forwards;
+}
+[data-sonner-toast][data-type="success"].v3-toast-10s::after { animation-duration: 10s; }
+[data-sonner-toaster]:hover [data-sonner-toast]::after { animation-play-state: paused; }
+@keyframes v3-toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { [data-sonner-toast][data-type="success"]::after { display: none; } }

@@ -5,7 +5,7 @@ import {
   LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Settings2, Swords, Users, X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/apiClient";
+import { api, getRefreshToken } from "@/lib/apiClient";
 import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -66,7 +66,7 @@ export default function AdminLayout() {
   async function doLogout() {
     setLoggingOut(true);
     // Revoke on the server first (best-effort), then clear the local session.
-    try { await api.post(logoutOthers ? "/auth/logout-all" : "/auth/logout", {}); } catch { /* local logout still happens */ }
+    try { await api.post(logoutOthers ? "/auth/logout-all" : "/auth/logout", logoutOthers ? { refreshToken: getRefreshToken() } : {}); } catch { /* local logout still happens */ }
     setLoggingOut(false);
     setLogoutOpen(false);
     localStorage.removeItem("loginAt");

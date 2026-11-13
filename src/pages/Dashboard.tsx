@@ -152,7 +152,7 @@ export default function Dashboard() {
     if (done.length) {
       toast.success(`Продовжено ${done.length} ${done.length === 1 ? "підписку" : done.length < 5 ? "підписки" : "підписок"} на ${EXTEND_DAYS} днів`, {
         description: done.map((d) => `@${d.name}`).join(", "),
-        duration: 10_000,
+        duration: 10_000, className: "v3-toast-10s",
         action: {
           label: "Скасувати",
           onClick: async () => {

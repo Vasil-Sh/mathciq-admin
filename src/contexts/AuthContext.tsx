@@ -94,9 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const handleLogout = (e: Event) => {
       setUser(null);
-      if ((e as CustomEvent<{ reason?: string }>).detail?.reason === "expired") {
+      const detail = (e as CustomEvent<{ reason?: string; revokedAt?: number | null }>).detail;
+      if (detail?.reason === "expired") {
         // Login page shows why, and brings the admin back to the same page.
         sessionStorage.setItem("sessionEnded", "1");
+        if (detail.revokedAt) sessionStorage.setItem("sessionsRevokedAt", String(detail.revokedAt));
+        else sessionStorage.removeItem("sessionsRevokedAt");
         sessionStorage.setItem("returnTo", window.location.pathname + window.location.search);
         // Fixed id: several requests failing together show a single toast.
         toast.error("Сесія завершилась. Увійдіть знову.", { id: "session-expired" });

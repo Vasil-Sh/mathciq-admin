@@ -138,7 +138,7 @@ export default function Admin() {
       await authService.updateUser(u.id, { endDate: next });
       await fetchUsers();
       toast.success(`@${u.username} продовжено до ${shortDate(next)}`, withUndo ? {
-        description: "Без запису оплати", duration: 10_000,
+        description: "Без запису оплати", duration: 10_000, className: "v3-toast-10s",
         action: { label: "Скасувати", onClick: async () => { try { await authService.updateUser(u.id!, { endDate: prev }); toast.info("Продовження скасовано", { description: "Дата повернулась як була" }); } catch (e) { toast.error((e as Error).message); } await fetchUsers(); } },
       } : undefined);
     } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
