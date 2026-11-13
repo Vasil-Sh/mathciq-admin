@@ -10,13 +10,14 @@ interface Props {
   days: number;
   busy?: boolean;
   onConfirm: (ids: number[]) => void;
+  subtitle?: string;
 }
 
 /**
  * «Продовжити всім» — always asks first: a checklist of people and a required
  * acknowledgement that the payment was received or the extension agreed.
  */
-export default function ExtendConfirmDialog({ open, onOpenChange, items, days, busy, onConfirm }: Props) {
+export default function ExtendConfirmDialog({ open, onOpenChange, items, days, busy, onConfirm, subtitle }: Props) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [agreed, setAgreed] = useState(false);
 
@@ -40,7 +41,7 @@ export default function ExtendConfirmDialog({ open, onOpenChange, items, days, b
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="v3-modal sm:max-w-[560px]">
         <DialogTitle className="v3-modal-title">Продовжити {count} {word} на {days} днів?</DialogTitle>
-        <DialogDescription className="v3-modal-sub">Підписки, що закінчуються за 7 днів. Зніміть галочку, щоб когось пропустити.</DialogDescription>
+        <DialogDescription className="v3-modal-sub">{subtitle ?? "Підписки, що закінчуються за 7 днів. Зніміть галочку, щоб когось пропустити."}</DialogDescription>
 
         <ul className="v3-check-list">
           {items.map(({ user }) => {

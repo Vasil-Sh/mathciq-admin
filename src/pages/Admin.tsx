@@ -1,8 +1,7 @@
-import AnimatedNumber from "@/components/AnimatedNumber";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import UserProfileCard from "@/components/UserProfileCard";
 import { useSearchParams } from "react-router-dom";
-import UserDirectory, { UserAvatar } from "@/components/UserDirectory";
+import UserCardPanel from "@/components/users/UserCardPanel";
+import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
+import { extendedEndDate, shortDate, daysLabel as daysWord } from "@/lib/subscriptions";
 import { canResetPassword, deleteBlockReason, roleLockReason } from "@/lib/permissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSessionFilter } from "@/hooks/useSessionFilter";
@@ -13,10 +12,8 @@ import { authService } from "@/lib/authService";
 import { cleanPrice, parseDate, getDaysUntilExpiry, isSubscriptionActive } from "@/lib/adminUtils";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { downloadCsv } from "@/lib/csv";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Calendar, CheckCircle, CheckCircle2, Copy, XCircle, Loader2, Bell, AlertTriangle, Crown, Plus, Pencil, Trash2, Save, X, Search, ArrowUpDown, ArrowUp, ArrowDown, Zap, User, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AlertTriangle, ChevronLeft, ChevronRight, Crown, Download, Plus, RefreshCw, Search, ShieldCheck, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import type { UserData, StatusFilter, SortDirection } from "@/types";
 
@@ -24,14 +21,21 @@ const EMPTY_USER: Omit<UserData, "isActive" | "daysUntilExpiry"> = { telegram: "
 
 function todayFormatted() { const d = new Date(); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; }
 function monthLaterFormatted() { const d = new Date(); d.setMonth(d.getMonth() + 1); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; }
-function daysLabel(n: number) { if (n === 1) return "день"; if (n >= 2 && n <= 4) return "дні"; return "днів"; }
-function subsLabel(n: number) { if (n === 1) return "підписка закінчується"; if (n >= 2 && n <= 4) return "підписки закінчуються"; return "підписок закінчуються"; }
+function useWide() {
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1180px)").matches);
+  useEffect(() => { const m = window.matchMedia("(min-width: 1180px)"); const f = () => setWide(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
+  return wide;
+}
 
 export default function Admin() {
   const [urlParams,setUrlParams] = useSearchParams();
   const roleFilter = ["user","admin"].includes(urlParams.get("role") || "") ? urlParams.get("role")! : "all";
   const newOnly = urlParams.get("new") === "month";
-  const [profileUser,setProfileUser]=useState<UserData|null>(null);
+  const [selectedId,setSelectedId]=useState<number|null>(null);
+  const [mobileCardOpen,setMobileCardOpen]=useState(false);
+  const [confirmRow,setConfirmRow]=useState<number|null>(null);
+  const [cardExtendOpen,setCardExtendOpen]=useState(false);
+  const wide = useWide();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -125,17 +129,20 @@ export default function Admin() {
     finally { setLoading(false); }
   };
 
-  const handleExtend = async (i: number) => {
-    const u = users[i]; if (!u?.id) return;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const currentEnd = parseDate(u.endDate);
-    const base = currentEnd && currentEnd > today ? currentEnd : today;
-    const newEnd = new Date(base); newEnd.setDate(newEnd.getDate() + extendDays);
-    const newEndStr = `${newEnd.getFullYear()}-${String(newEnd.getMonth()+1).padStart(2,"0")}-${String(newEnd.getDate()).padStart(2,"0")}`;
+  const extendUser = async (u: UserData, withUndo = true) => {
+    if (!u.id) return;
+    const prev = u.endDate;
+    const next = extendedEndDate(u.endDate, extendDays);
     setLoading(true);
-    try { await authService.updateUser(u.id, { endDate: newEndStr }); toast.success(`Підписку продовжено — до ${newEndStr}`); await fetchUsers(); }
-    catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
-    finally { setLoading(false); }
+    try {
+      await authService.updateUser(u.id, { endDate: next });
+      await fetchUsers();
+      toast.success(`@${u.username} продовжено до ${shortDate(next)}`, withUndo ? {
+        description: "Без запису оплати", duration: 10_000,
+        action: { label: "Скасувати", onClick: async () => { try { await authService.updateUser(u.id!, { endDate: prev }); toast.info("Продовження скасовано", { description: "Дата повернулась як була" }); } catch (e) { toast.error((e as Error).message); } await fetchUsers(); } },
+      } : undefined);
+    } catch (err: unknown) { toast.error((err as { message?: string }).message || "Помилка"); }
+    finally { setLoading(false); setConfirmRow(null); setCardExtendOpen(false); }
   };
 
   const confirmDelete = (i: number) => { const blocked = users[i] && deleteBlockReason(currentAdmin, users[i]); if (blocked) { toast.error(blocked); return; } setDeletingIndex(i); setDeleteDialogOpen(true); };
@@ -195,64 +202,101 @@ export default function Admin() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  const selected = users.find(u => u.id === selectedId) || pagedUsers[0]?.user || null;
+  const needsExtend = (u: UserData) => !u.isAdmin && (!u.isActive || (u.daysUntilExpiry ?? 99) <= 7);
+  const setRole = (value: string) => { const next = new URLSearchParams(urlParams); if (value === "all") next.delete("role"); else next.set("role", value); setUrlParams(next); setPage(1); };
+  const openCard = (u: UserData) => { setSelectedId(u.id ?? null); setConfirmRow(null); if (!wide) setMobileCardOpen(true); };
+  const openAdd = () => { setNewUser({ ...EMPTY_USER, priceMonth: defaultPrice, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); };
+  const start = displayedUsers.length ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const end = Math.min(page * PAGE_SIZE, displayedUsers.length);
+  const statusOf = (u: UserData) => !u.isActive ? { t: "Закінчилась", c: "v3-tag-red" } : (u.daysUntilExpiry ?? 99) <= 7 ? { t: (u.daysUntilExpiry ?? 0) === 0 ? "Сьогодні" : `${daysWord(u.daysUntilExpiry ?? 0)}`, c: (u.daysUntilExpiry ?? 0) <= 2 ? "v3-tag-red" : "v3-tag-amber" } : { t: "Активна", c: "v3-tag-green" };
+  const sums = [
+    { key: "all", label: "Усі користувачі", value: users.length, note: "усі облікові записи", on: statusFilter === "all" && roleFilter === "all", go: () => { setStatusFilter("all"); setRole("all"); } },
+    { key: "active", label: "Активні", value: activeUsers, note: "з активною підпискою", on: statusFilter === "active" && roleFilter === "all", go: () => { setStatusFilter("active"); setRole("all"); } },
+    { key: "admin", label: "Адміністратори", value: adminUsers, note: "мають права керування", on: roleFilter === "admin", go: () => { setStatusFilter("all"); setRole("admin"); } },
+    { key: "expired", label: "Неактивні", value: inactiveUsers, note: "підписка закінчилась", on: statusFilter === "expired" && roleFilter === "all", go: () => { setStatusFilter("expired"); setRole("all"); } },
+  ];
+  const card = selected && (
+    <UserCardPanel key={selected.id} user={selected} extendDays={extendDays} canDelete={!deleteBlockReason(currentAdmin, selected)}
+      onEdit={() => openEditDialog(selected, users.findIndex(u => u.id === selected.id))}
+      onDelete={() => confirmDelete(users.findIndex(u => u.id === selected.id))}
+      onExtend={() => setCardExtendOpen(true)} onChanged={fetchUsers}
+      onClose={wide ? undefined : () => setMobileCardOpen(false)} />
+  );
+
   return (
-    <div className="users-page admin-users-screen">
-      <div className="page-container space-y-6">
-        <div className="admin-page-hero"><div><p className="page-eyebrow">КЕРУВАННЯ ПЛАТФОРМОЮ</p><h1 className="page-title">Користувачі</h1><p className="page-subtitle">Люди, підписки та доступ до MatchIQ.</p></div>
-          <Button onClick={() => { setNewUser({ ...EMPTY_USER, priceMonth: defaultPrice, startDate: todayFormatted(), endDate: monthLaterFormatted() }); setLastCreatedPassword(""); setAddDialogOpen(true); }} className="shadow-sm">
-            <Plus className="h-4 w-4" />Додати користувача
-          </Button>
-          <Button variant="outline" onClick={exportUsersCsv}>
-            <Download className="h-4 w-4" />Експорт CSV
-          </Button>
+    <div className="v3-page v3-users">
+      <section className="v3-hero v3-hero-row">
+        <div>
+          <h1 className="v3-title">Користувачі</h1>
+          <p className="v3-subtitle">Люди, підписки та доступ до MatchIQ.{lastUpdate && <span className="v3-dim"> · Оновлено {lastUpdate.split(", ")[1] || lastUpdate}</span>}</p>
         </div>
-        {error && <Alert><AlertTriangle className="h-5 w-5 text-danger" /><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="v3-chips">
+          <button type="button" className="v3-chip" onClick={exportUsersCsv}><Download size={15} aria-hidden="true" />Експорт CSV</button>
+          <button type="button" className="v3-btn v3-btn-primary" onClick={openAdd}><Plus size={17} aria-hidden="true" />Додати користувача</button>
+        </div>
+      </section>
+      {error && <div className="v3-stale" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>{error}</span><button type="button" onClick={fetchUsers}>Повторити</button></div>}
 
-        {expiringUsers.length > 0 && (
-          <section className="admin-expiry-notice" aria-label="Підписки, що потребують уваги">
-            <header className="expiry-notice-heading">
-              <span className="detail-panel-icon"><Bell size={19} aria-hidden="true" /></span>
-              <div><h2>Час продовжити підписки</h2><p>{expiringUsers.length} {subsLabel(expiringUsers.length)} протягом 3 днів</p></div>
-            </header>
-            <ul className="expiry-notice-list">{expiringUsers.map((u, i) => (
-              <li key={u.id || i} className="expiry-notice-action-row">
-                <div className="expiry-notice-identity"><UserAvatar user={u} /><div className="expiry-notice-person"><strong>{u.username}</strong><span>{u.telegram || "Користувач MatchIQ"}</span></div></div>
-                <span className="expiry-notice-deadline">{u.daysUntilExpiry === 0 ? "Сьогодні" : `Через ${u.daysUntilExpiry} ${daysLabel(u.daysUntilExpiry ?? 0)}`}</span>
-                <span className="expiry-notice-date">До {parseDate(u.endDate)?.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }) || u.endDate}</span>
-                <Button size="sm" disabled={loading} onClick={() => handleExtend(users.indexOf(u))}><Zap size={15} />+{extendDays} дн.</Button>
-              </li>
-            ))}</ul>
-          </section>
-        )}
+      <section className="v3-sums" aria-label="Підсумки">
+        {sums.map(x => <button key={x.key} type="button" className={`v3-sum${x.on ? " is-on" : ""}`} aria-pressed={x.on} onClick={x.go}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{x.value}</strong><span className="v3-sum-n">{x.note}</span></button>)}
+      </section>
 
-        <div className="users-summary-grid">
-          {[
-            { icon: Users, label: "Всього користувачів", value: users.length, note: "Усі облікові записи", tone: "user-summary--blue" },
-            { icon: CheckCircle, label: "Активні", value: activeUsers, note: "З активною підпискою", tone: "user-summary--green" },
-            { icon: Crown, label: "Адміністратори", value: adminUsers, note: "Мають права керування", tone: "user-summary--amber" },
-            { icon: XCircle, label: "Неактивні", value: inactiveUsers, note: "Підписка неактивна", tone: "user-summary--rose" },
-          ].map(({ icon: Icon, label, value, note, tone }) => (
-            <section key={label} className={`card-admin user-summary ${tone}`}>
-              <div className="user-summary-top"><span className="user-summary-icon"><Icon size={19} strokeWidth={1.7} /></span><h2>{label}</h2></div>
-              <strong className="user-summary-value"><AnimatedNumber value={value}/></strong>
-              <p className="user-summary-note"><span />{note}</p>
-            </section>
-          ))}
+      <section className="v3-users-main">
+        <div className="v3-wcard v3-ulist" aria-busy={loading}>
+          <div className="v3-ulist-head">
+            <div><h2 className="v3-h2">Список користувачів <span className="v3-count-chip">{scopedUsers.length}</span></h2><p className="v3-note-dark">Клік по рядку — картка користувача</p></div>
+            <button type="button" className="v3-round" onClick={fetchUsers} disabled={loading} aria-label="Оновити список"><RefreshCw size={15} className={loading ? "animate-spin" : ""} /></button>
+          </div>
+          <div className="v3-ulist-tools">
+            <div className="v3-seg v3-seg-soft" role="group" aria-label="Статус підписки">
+              {([["all", "Усі", scopedUsers.length], ["active", "Активні", activeUsers], ["expired", "Прострочені", inactiveUsers]] as const).map(([k, l, n]) => <button key={k} type="button" className={statusFilter === k ? "is-on" : ""} aria-pressed={statusFilter === k} onClick={() => setStatusFilter(k)}>{l}<span>{n}</span></button>)}
+            </div>
+            <label className="v3-search"><Search size={16} aria-hidden="true" /><input aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />{searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
+            <select className="v3-select" aria-label="Роль" value={roleFilter} onChange={e => setRole(e.target.value)}><option value="all">Усі ролі</option><option value="user">Користувачі</option><option value="admin">Адміністратори</option></select>
+            <select className="v3-select" aria-label="Сортування" value={sortDirection || "none"} onChange={e => setSortDirection(e.target.value === "none" ? null : e.target.value as SortDirection)}><option value="none">Без сортування</option><option value="asc">Найближче завершення</option><option value="desc">Найпізніше завершення</option></select>
+            {newOnly && <button type="button" className="v3-filter-chip" onClick={() => { const next = new URLSearchParams(urlParams); next.delete("new"); setUrlParams(next); }}>Нові цього місяця <X size={13} aria-hidden="true" /></button>}
+          </div>
+
+          <div className="v3-urows" role="table" aria-label="Користувачі">
+            <div className="v3-uth" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Тариф</span><span role="columnheader">Доступ до</span><span role="columnheader">Статус</span><span role="columnheader">Роль</span><span role="columnheader" className="v3-sr">Дія</span></div>
+            {pagedUsers.length ? pagedUsers.map(({ user: u }) => {
+              const st = statusOf(u); const sel = wide && selected?.id === u.id;
+              return (
+                <div key={u.id} className="v3-urow-wrap">
+                  <div role="row" className={`v3-urow${sel ? " is-sel" : ""}`} onClick={() => openCard(u)}>
+                    <span role="cell" className="v3-uwho"><span className="v3-av" aria-hidden="true">{u.username.slice(0, 2).toUpperCase()}</span><span className="v3-uname"><button type="button" onClick={e => { e.stopPropagation(); openCard(u); }}>@{u.username}</button><small>{u.telegram || "Telegram не вказано"}</small></span></span>
+                    <span role="cell" className="v3-num">{Number(u.priceMonth) ? `${Number(u.priceMonth)} ₴` : <span className="v3-muted">—</span>}</span>
+                    <span role="cell"><span className="v3-num">{shortDate(u.endDate) || "—"}</span></span>
+                    <span role="cell"><span className={`v3-tag ${st.c}`}>{st.t}</span></span>
+                    <span role="cell"><span className={`v3-role${u.isOwner ? " is-owner" : u.isAdmin ? " is-admin" : ""}`}>{u.isOwner ? <Crown size={12} aria-hidden="true" /> : u.isAdmin ? <ShieldCheck size={12} aria-hidden="true" /> : null}{u.isOwner ? "Овнер" : u.isAdmin ? "Адмін" : "Користувач"}</span></span>
+                    <span role="cell" className="v3-uact">{needsExtend(u) && <button type="button" className="v3-ext" disabled={loading} onClick={e => { e.stopPropagation(); setConfirmRow(confirmRow === u.id ? null : u.id ?? null); }} aria-expanded={confirmRow === u.id}>+{extendDays} днів</button>}</span>
+                  </div>
+                  {confirmRow === u.id && (
+                    <div className="v3-pop" role="dialog" aria-label={`Продовжити ${u.username}`}>
+                      <strong>Продовжити @{u.username} на {extendDays} днів?</strong>
+                      <span>до {shortDate(u.endDate) || "—"} → <b>{shortDate(extendedEndDate(u.endDate, extendDays))}</b> Без запису оплати — якщо гроші прийшли, краще «Додати оплату» в картці.</span>
+                      <div><button type="button" className="v3-btn v3-btn-ghost v3-btn-sm" onClick={() => setConfirmRow(null)}>Скасувати</button><button type="button" className="v3-btn v3-btn-blue v3-btn-sm" autoFocus disabled={loading} onClick={() => extendUser(u)}>Продовжити</button></div>
+                    </div>
+                  )}
+                </div>
+              );
+            }) : <div className="v3-uempty"><Users size={28} aria-hidden="true" /><strong>{loading ? "Завантаження користувачів…" : "Нікого не знайдено"}</strong><span>{searchQuery || statusFilter !== "all" ? "Спробуйте інший запит або змініть фільтр." : "Додайте першого користувача."}</span>{(searchQuery || statusFilter !== "all") && <button type="button" className="v3-btn v3-btn-ghost v3-btn-sm" onClick={() => { setSearchQuery(""); setStatusFilter("all"); }}>Скинути фільтри</button>}</div>}
+          </div>
+
+          <div className="v3-pager">
+            <span>Показано <b>{start}–{end}</b> із <b>{displayedUsers.length}</b>{displayedUsers.length !== scopedUsers.length && ` · усього ${scopedUsers.length}`}</span>
+            <nav aria-label="Сторінки"><button type="button" className="v3-round" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Попередня сторінка"><ChevronLeft size={16} /></button><span><b>{page}</b> / {totalPages}</span><button type="button" className="v3-round" disabled={page >= totalPages} onClick={() => setPage(page + 1)} aria-label="Наступна сторінка"><ChevronRight size={16} /></button></nav>
+          </div>
         </div>
 
-        <UserDirectory
-          headerControls={<div className="users-scope-controls"><div className="directory-role-filter"><span id="users-role-label">Облікові записи</span><Select value={roleFilter} onValueChange={value=>{const next=new URLSearchParams(urlParams);next.set('role',value);setUrlParams(next);setPage(1)}}><SelectTrigger className="directory-sort" aria-labelledby="users-role-label"><Users size={14} /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Усі ролі</SelectItem><SelectItem value="user">Користувачі</SelectItem><SelectItem value="admin">Адміністратори</SelectItem></SelectContent></Select></div>{newOnly && <button onClick={()=>{const next=new URLSearchParams(urlParams);next.delete('new');setUrlParams(next)}}>Нові цього місяця ×</button>}</div>}
-          rows={pagedUsers} counts={{ all: scopedUsers.length, active: activeUsers, expired: inactiveUsers }}
-          filteredCount={displayedUsers.length} updated={lastUpdate} busy={loading}
-          search={searchQuery} onSearch={setSearchQuery} status={statusFilter} onStatus={setStatusFilter}
-          sort={sortDirection} onSort={setSortDirection} page={page} pageSize={PAGE_SIZE}
-          totalPages={totalPages} onPage={setPage} onRefresh={fetchUsers}
-          onOpen={setProfileUser} onExtend={handleExtend} onDelete={confirmDelete}
-          extendDays={extendDays} actor={currentAdmin}
-        />
-      </div>
+        {wide && card}
+      </section>
 
-      {profileUser && <UserProfileCard key={profileUser.id} user={profileUser} onUserChanged={fetchUsers} onClose={()=>setProfileUser(null)} onEdit={()=>{openEditDialog(profileUser,users.findIndex(u=>u.id===profileUser.id));setProfileUser(null)}}/>}
+      {!wide && <Dialog open={mobileCardOpen && !!selected} onOpenChange={setMobileCardOpen}><DialogContent className="v3-sheet"><DialogTitle className="sr-only">Картка користувача</DialogTitle><DialogDescription className="sr-only">Профіль, ставки, оплати й нотатка</DialogDescription>{card}</DialogContent></Dialog>}
+
+      {selected && <ExtendConfirmDialog open={cardExtendOpen} onOpenChange={setCardExtendOpen} items={[{ user: { id: selected.id!, username: selected.username, role: selected.isAdmin ? "admin" : "user", telegram: selected.telegram, priceMonth: selected.priceMonth, startDate: selected.startDate, endDate: selected.endDate }, days: selected.daysUntilExpiry ?? 0 }]} days={extendDays} busy={loading} subtitle="Дата закінчення зсунеться без запису оплати." onConfirm={() => extendUser(selected)} />}
+
       <UserEditorDialog mode="add" open={addDialogOpen} onClose={handleCloseAddDialog}
         value={newUser} onChange={updates => setNewUser(current => ({ ...current, ...updates }))}
         onSave={handleAddUser} busy={loading} password={lastCreatedPassword} />
@@ -260,20 +304,11 @@ export default function Admin() {
         value={editingUser} onChange={updates => setEditingUser(current => current ? { ...current, ...updates } : current)}
         onSave={handleSaveEdit} busy={loading} password={lastResetPassword} onResetPassword={canResetPassword(currentAdmin, editingUser) ? handleResetPassword : undefined} />}
 
-      {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md !p-0 !gap-0 overflow-x-hidden overflow-y-auto">
-          <div className="px-6 pt-6 pb-6">
-            <DialogTitle className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-9 h-9 rounded-btn bg-danger-bg flex items-center justify-center"><Trash2 className="h-5 w-5 text-danger" /></div>
-              Видалити користувача?
-            </DialogTitle>
-            <DialogDescription>Ви впевнені, що хочете видалити "<span className="text-ink font-medium">{users[deletingIndex]?.username}</span>"? Цю дію неможливо скасувати.</DialogDescription>
-          </div>
-          <div className="px-6 py-4 flex flex-row justify-end gap-3">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Скасувати</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Видалити</Button>
-          </div>
+        <DialogContent className="v3-modal sm:max-w-[460px]">
+          <DialogTitle className="v3-modal-title">Видалити @{users[deletingIndex]?.username}?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">Акаунт зникне назавжди. Ставки й оплати залишаться в журналі дій. Цю дію не можна скасувати.</DialogDescription>
+          <div className="v3-modal-foot"><span /><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={() => setDeleteDialogOpen(false)}>Скасувати</button><button type="button" className="v3-btn v3-btn-red" onClick={handleDelete} disabled={loading}>{loading ? "Видаляємо…" : "Видалити"}</button></div></div>
         </DialogContent>
       </Dialog>
     </div>
