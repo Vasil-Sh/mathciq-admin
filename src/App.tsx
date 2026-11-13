@@ -45,7 +45,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <AppRoutes />
-        <Toaster position="bottom-right" theme="dark" richColors closeButton duration={4000} />
+        <Toaster position="bottom-right" theme="dark" richColors closeButton duration={4000} visibleToasts={3} offset={24} style={{ width: 380 }} />
       </Router>
     </AuthProvider>
   );
