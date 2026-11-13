@@ -10,6 +10,7 @@ const AuditLog = lazy(() => import("@/pages/AuditLog"));
 const Banners = lazy(() => import("@/pages/Banners"));
 const Settings = lazy(() => import("@/pages/Settings"));
 import AdminLayout from "@/components/AdminLayout";
+import ComingSoon from "@/pages/ComingSoon";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isVerifying } = useAuth();
@@ -30,6 +31,9 @@ function AppRoutes() {
         <Route path="/banners" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження банерів…</div>}><Banners /></Suspense>} />
         <Route path="/audit" element={<Suspense fallback={<div role="status">Завантаження журналу…</div>}><AuditLog /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<div role="status">Завантаження налаштувань…</div>}><Settings /></Suspense>} />
+        <Route path="/payments" element={<ComingSoon title="Оплати" subtitle="Ручний облік оплат, повернення й промокоди." planned={["Список оплат із фільтрами Записано / Скасовано / Повернено", "Деталі оплати, чек для користувача, повернення грошей", "Промокоди: знижка, термін дії, ліміт використань"]} />} />
+        <Route path="/matches" element={<ComingSoon title="Матчі" subtitle="Дані з tips.gg і HLTV, ручні правки й довідник команд." planned={["Матчі на сьогодні та найближчі, ручні правки часу й рахунку", "Стан парсерів tips.gg і HLTV з повторним запуском", "Матчі, додані користувачами вручну, — об’єднання з офіційними", "Довідник команд і псевдонімів"]} />} />
+        <Route path="/support" element={<ComingSoon title="Підтримка" subtitle="Звернення з форми «Проблема чи побажання» й модерація Telegram-груп." planned={["Звернення: нові, в роботі, вирішені; відповідь у застосунок і Telegram", "Шаблони відповідей", "Модерація Telegram-груп, які додали користувачі Pro"]} />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
@@ -41,7 +45,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <AppRoutes />
-        <Toaster position="top-center" richColors closeButton duration={4000} />
+        <Toaster position="bottom-right" theme="dark" richColors closeButton duration={4000} />
       </Router>
     </AuthProvider>
   );

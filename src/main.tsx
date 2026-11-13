@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./admin-design.css";
+import "./styles/v3-shell.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
