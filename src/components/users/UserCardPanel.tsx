@@ -142,13 +142,12 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       )}
       {endsWithoutRenewal(user) && <p className="v3-uc-info">Підписку скасовано — доступ до {shortDate(user.endDate)}, далі без продовження.</p>}
 
-      {!admin && (
-        <div className="v3-uc-mini">
-          <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro</button>
-          <button type="button" className="v3-mini" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
-          <button type="button" className="v3-mini is-danger" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
-        </div>
-      )}
+      <div className="v3-uc-foot v3-uc-foot-top">
+        <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" disabled={!online} onClick={onEdit}>Редагувати</button>
+        <button type="button" className={`v3-btn v3-btn-sm ${resetReason ? "v3-btn-locked" : "v3-btn-ghost-dark"}`} disabled={!!resetReason || !online} title={resetReason || off} onClick={onResetPassword}>{resetReason && <Lock size={13} aria-hidden="true" />}Скинути пароль</button>
+        <button type="button" className={`v3-btn v3-btn-sm v3-uc-del ${deleteReason ? "v3-btn-locked" : "v3-btn-danger-outline"}`} disabled={!!deleteReason || !online} title={deleteReason || off} aria-describedby={deleteReason ? "uc-lock" : undefined} onClick={onDelete}>{deleteReason && <Lock size={13} aria-hidden="true" />}Видалити</button>
+      </div>
+      {(deleteReason || resetReason) && <p id="uc-lock" className="v3-uc-lock"><Lock size={13} aria-hidden="true" />{deleteReason || resetReason}.</p>}
 
       {error ? <div className="v3-uc-error" role="alert"><p>{error}</p><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={load}>Повторити</button></div> : <>
         <Section id="prof" title="Профіль" summary={`План ${plan.plan}`} open={open.prof} onToggle={() => setOpen({ ...open, prof: !open.prof })}>
@@ -210,13 +209,15 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           <small>Бачать лише адміністратори{card?.note?.updatedBy ? ` · @${card.note.updatedBy}, ${shortDate((card.note.updatedAt || "").slice(0, 10))}` : ""}</small>
         </section>
 
-        <div className="v3-uc-foot">
-          <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" disabled={!online} onClick={onEdit}>Редагувати</button>
-          <button type="button" className={`v3-btn v3-btn-sm ${resetReason ? "v3-btn-locked" : "v3-btn-ghost-dark"}`} disabled={!!resetReason || !online} title={resetReason || off} onClick={onResetPassword}>{resetReason && <Lock size={13} aria-hidden="true" />}Скинути пароль</button>
-          <button type="button" className={`v3-btn v3-btn-sm v3-uc-del ${deleteReason ? "v3-btn-locked" : "v3-btn-danger-outline"}`} disabled={!!deleteReason || !online} title={deleteReason || off} aria-describedby={deleteReason ? "uc-lock" : undefined} onClick={onDelete}>{deleteReason && <Lock size={13} aria-hidden="true" />}Видалити</button>
-        </div>
-        {(deleteReason || resetReason) && <p id="uc-lock" className="v3-uc-lock"><Lock size={13} aria-hidden="true" />{deleteReason || resetReason}.</p>}
       </>}
+
+      {!admin && (
+        <div className="v3-uc-mini v3-uc-mini-bottom">
+          <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro</button>
+          <button type="button" className="v3-mini" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
+          <button type="button" className="v3-mini is-danger" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
+        </div>
+      )}
 
       <AddPaymentDialog open={dlg === "pay"} onOpenChange={(o) => setDlg(o ? "pay" : null)} userId={user.id} username={user.username} endDate={user.endDate} priceMonth={String(user.priceMonth || "")} onSaved={changed}
         planLabel={plan.plan} onReceipt={async (id) => { try { const r = await api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`); const p = r.payments.find((x) => String(x.id) === String(id)); if (p) openReceipt(p); } catch (e) { toast.error((e as Error).message); } }} />

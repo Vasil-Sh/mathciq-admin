@@ -384,3 +384,6 @@
 .v3-uc-sum { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v3-uc-sec-tools .v3-uc-link, .v3-colbtn { white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 480px) { .v3-uc-sec:not(.is-open) .v3-uc-link { display: none; } }
+/* Rows swapped: Edit / Reset / Delete sit under the subscription block, Pro / Refund / Cancel at the bottom */
+.v3-uc-foot.v3-uc-foot-top { padding-top: 0; border-top: 0; }
+.v3-uc-mini-bottom { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .06); }
