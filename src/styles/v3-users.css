@@ -237,7 +237,8 @@
 .v3-uc-excl svg { flex-shrink: 0; margin-top: 1px; }
 .v3-uc-excl strong { color: #fff; }
 .v3-uc-info { margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--v3-card2); color: #c3c9d4; font-size: 12px; }
-.v3-uc-mini { display: flex; flex-wrap: wrap; gap: 8px; }
+.v3-uc-mini { display: flex; flex-wrap: nowrap; gap: 8px; }
+.v3-uc-mini .v3-mini { flex: 1 1 auto; min-width: 0; padding: 0 10px; }
 .v3-mini { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: #e7eaf0; font: 600 12px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
 .v3-mini:hover:not(:disabled) { border-color: rgba(255, 255, 255, .3); }
 .v3-mini.is-danger { color: #ff9a88; border-color: rgba(255, 122, 102, .3); }
@@ -370,3 +371,16 @@
 .v3-users-main > .v3-ucard { flex: 1 1 380px; max-width: 440px; }
 @media (min-width: 1600px) { .v3-users-main > .v3-ulist { flex: 2.2 1 900px; } }
 .v3-uc-pays li > .v3-tag { justify-self: end; }
+
+/* Receipt: Telegram spans both columns under Download / Copy (desktop); on mobile it sits next to Save PNG */
+.v3-receipt-send { grid-column: 1 / -1; }
+@media (max-width: 767px) { .v3-receipt-send { grid-column: auto; } }
+/* Card panel and sheets scroll without a visible scrollbar */
+.v3-ucard, .v3-sheet, .v3-modal { scrollbar-width: none; }
+.v3-ucard::-webkit-scrollbar, .v3-sheet::-webkit-scrollbar, .v3-modal::-webkit-scrollbar { display: none; }
+/* Collapsed section heads stay on one line: title fixed, summary truncates, links never wrap */
+.v3-uc-sec-l { white-space: nowrap; flex-shrink: 0; }
+.v3-uc-sec-tools { min-width: 0; }
+.v3-uc-sum { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-uc-sec-tools .v3-uc-link, .v3-colbtn { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 480px) { .v3-uc-sec:not(.is-open) .v3-uc-link { display: none; } }

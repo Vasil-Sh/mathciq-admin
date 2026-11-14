@@ -22,7 +22,7 @@ const telegramUrl = (t?: string) => { const h = (t || "").replace(/^https?:\/\/t
 
 function Section({ id, title, summary, open, onToggle, extra, children }: { id: string; title: string; summary?: string; open: boolean; onToggle: () => void; extra?: ReactNode; children: ReactNode }) {
   return (
-    <section className="v3-uc-sec" aria-labelledby={`uc-${id}`}>
+    <section className={`v3-uc-sec${open ? " is-open" : ""}`} aria-labelledby={`uc-${id}`}>
       <div className="v3-uc-sec-head">
         <p className="v3-uc-sec-l" id={`uc-${id}`}>{title}</p>
         <span className="v3-uc-sec-tools">
@@ -59,7 +59,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<PayWithRefund[]>([]);
-  const [open, setOpen] = useState({ prof: true, bets: true, pay: true });
+  const [open, setOpen] = useState({ prof: false, bets: false, pay: false });
   const [editingNote, setEditingNote] = useState(false);
   const [draft, setDraft] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -144,7 +144,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
       {!admin && (
         <div className="v3-uc-mini">
-          <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro на N днів</button>
+          <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro</button>
           <button type="button" className="v3-mini" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
           <button type="button" className="v3-mini is-danger" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
         </div>

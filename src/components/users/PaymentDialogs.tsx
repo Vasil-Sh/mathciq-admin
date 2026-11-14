@@ -157,13 +157,7 @@ export function ReceiptDialog({ data, username, onOpenChange }: { data: { image:
         <div className="v3-receipt-tools">
           <button type="button" className="v3-btn v3-btn-ghost" onClick={() => data && savePaymentReceipt(data.image, data.payment.id)}><Download size={15} aria-hidden="true" /><span className="v3-hide-mobile">Завантажити PNG</span><span className="v3-only-mobile">Зберегти PNG</span></button>
           <button type="button" className="v3-btn v3-btn-ghost v3-hide-mobile" onClick={copy}><Copy size={15} aria-hidden="true" />Копіювати</button>
-          <button type="button" className="v3-btn v3-btn-blue v3-only-mobile" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : "У Telegram"}</button>
-        </div>
-        <div className="v3-modal-foot v3-hide-mobile">
-          <span className="v3-hint">Таке зображення бачить користувач</span>
-          <div className="v3-modal-actions">
-            <button type="button" className="v3-btn v3-btn-blue" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : "Надіслати в Telegram"}</button>
-          </div>
+          <button type="button" className="v3-btn v3-btn-blue v3-receipt-send" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : <><span className="v3-hide-mobile">Надіслати в Telegram</span><span className="v3-only-mobile">У Telegram</span></>}</button>
         </div>
       </DialogContent>
     </Dialog>
