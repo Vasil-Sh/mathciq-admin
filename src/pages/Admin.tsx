@@ -138,12 +138,12 @@ export default function Admin() {
     try {
       await authService.updateUser(u.id, { endDate: next });
       await load();
-      toast.success(`@${u.username} продовжено до ${shortDate(next)}`, {
-        description: "Без запису оплати", duration: 10_000, className: "v3-toast-10s",
+      toast.success(`Підписку продовжено до ${next.split("-").reverse().slice(0, 2).join(".")}`, {
+        description: `@${u.username} · +${extendDays} днів`, duration: 10_000, className: "v3-toast-10s",
         action: { label: "Скасувати", onClick: async () => { try { await authService.updateUser(u.id, { endDate: prev }); toast.info("Продовження скасовано", { description: "Дата повернулась як була" }); } catch (e) { toast.error((e as Error).message); } load(); } },
       });
     } catch (e) {
-      toast.error(`Не вдалося продовжити підписку @${u.username}`, { description: `${(e as Error).message}. Зміни не збережено.`, action: { label: "Повторити", onClick: () => extend(u) } });
+      toast.error("Продовження не збережено", { description: navigator.onLine ? `@${u.username}: ${(e as Error).message}` : "Немає з’єднання. Спробуйте ще раз.", action: { label: "Повторити", onClick: () => extend(u) } });
     } finally { setRowConfirm(null); setExtendFor(null); }
   }
 
@@ -155,12 +155,16 @@ export default function Admin() {
     const price = plan === "pro" ? settings?.proPrice || 600 : plan === "basic" ? settings?.basicPrice || 300 : 0;
     try {
       if (form.mode === "create") {
-        if (all.some((u) => u.username.toLowerCase() === f.username.toLowerCase())) { toast.error("Користувач з таким логіном уже є"); return; }
+        if (all.some((u) => u.username.toLowerCase() === f.username.toLowerCase())) { toast.error("Логін уже зайнятий", { description: `@${f.username} вже є — оберіть інший логін` }); return; }
         const r = await authService.createUser({ username: f.username, telegram: f.telegram, role: f.role === "user" ? "user" : "admin", priceMonth: f.role === "user" ? String(price) : "0", startDate: f.role === "user" ? f.startDate : "", endDate: f.role === "user" ? f.endDate : "", plan, trialEndDate: plan === "trial" ? f.endDate : undefined });
         if (f.role === "owner" && r.userId) await authService.updateUser(r.userId, { isOwner: true } as never);
         setForm(null);
         setPassword({ username: r.username, password: r.password, meta: `${f.role === "owner" ? "Овнер" : f.role === "admin" ? "Адміністратор" : "Користувач"}${f.role === "user" && f.endDate ? ` · до ${shortDate(f.endDate)}` : ""}` });
-        toast.success("Користувача створено", { description: `@${r.username}` });
+        const planTxt = f.role !== "user" ? (f.role === "owner" ? "Овнер" : "Адміністратор") : plan === "trial" ? `План ${settings?.trialPlan === "basic" ? "Базова" : "Pro"} · пробний ${settings?.trialDays || 7} днів` : `План ${plan === "pro" ? "Pro" : "Базова"}`;
+        toast.success(`@${r.username} створено`, {
+          description: `${planTxt}${f.role === "user" && f.endDate ? ` · до ${f.endDate.split("-").reverse().slice(0, 2).join(".")}` : ""}`,
+          action: r.userId ? { label: "Відкрити", onClick: () => { setTab("users"); setSelectedId(r.userId!); if (!wide) setSheetOpen(true); } } : undefined,
+        });
       } else {
         const u = form.user;
         const patch: Record<string, unknown> = { username: f.username, telegram: f.telegram };
@@ -185,7 +189,7 @@ export default function Admin() {
   async function doDelete() {
     if (!deleting) return;
     setBusyDelete(true);
-    try { await authService.deleteUser(deleting.id); toast.success(`@${deleting.username} видалено`); setDeleting(null); setSelectedId(null); setSheetOpen(false); await load(); }
+    try { await authService.deleteUser(deleting.id); toast.success(`@${deleting.username} видалено`, { description: "Ставки й оплати залишились у журналі дій." }); setDeleting(null); setSelectedId(null); setSheetOpen(false); await load(); }
     catch (e) { toast.error((e as Error).message); } finally { setBusyDelete(false); }
   }
   async function doReset() {

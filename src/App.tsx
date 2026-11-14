@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
+import { Check, Info } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -56,7 +57,23 @@ export default function App() {
     <AuthProvider>
       <Router>
         <AppRoutes />
-        <Toaster position="bottom-right" theme="dark" richColors closeButton duration={4000} visibleToasts={3} offset={24} style={{ width: 380 }} />
+        <Toaster
+          position="bottom-right" theme="dark" closeButton duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
+          icons={{
+            success: <Check size={16} strokeWidth={2.6} aria-hidden="true" />,
+            info: <Info size={16} strokeWidth={2.4} aria-hidden="true" />,
+            error: <span aria-hidden="true" className="v3-toast-bang">!</span>,
+            warning: <span aria-hidden="true" className="v3-toast-bang">!</span>,
+          }}
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast: "v3-toast", title: "v3-toast-title", description: "v3-toast-desc", icon: "v3-toast-ic",
+              actionButton: "v3-toast-act", cancelButton: "v3-toast-act", closeButton: "v3-toast-x",
+              success: "is-ok", error: "is-err", info: "is-info", warning: "is-err",
+            },
+          }}
+        />
       </Router>
     </AuthProvider>
   );

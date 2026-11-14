@@ -19,8 +19,9 @@ const addDays = (v: string, n: number) => { const d = new Date(`${v}T12:00:00Z`)
 const dmy = (v: string) => v.split("-").reverse().join(".");
 
 /** «Додати оплату» — manual record; extends access by default (same rules as before). */
-export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate, priceMonth, onSaved }: {
+export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate, priceMonth, onSaved, planLabel, onReceipt }: {
   open: boolean; onOpenChange: (o: boolean) => void; userId: number; username: string; endDate: string; priceMonth: string; onSaved: () => void;
+  planLabel?: string; onReceipt?: (paymentId: string) => void;
 }) {
   const [days, setDays] = useState(30);
   const [form, setForm] = useState({ requestId: "", amount: "", paidOn: "", periodStart: "", periodEnd: "", note: "", extendSubscription: true });
@@ -41,8 +42,12 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
     if (lock.current) return;
     lock.current = true; setBusy(true);
     try {
-      await api.post(`/admin/users/${userId}/payments`, form);
-      toast.success(form.extendSubscription ? "Оплату записано, підписку продовжено" : "Оплату записано", { description: `@${username} · ${form.amount} ₴` });
+      const r = await api.post<{ id: string }>(`/admin/users/${userId}/payments`, form);
+      const until = form.extendSubscription ? ` · до ${form.periodEnd.split("-").reverse().slice(0, 2).join(".")}` : "";
+      toast.success(`Оплату №${r.id} додано`, {
+        description: `@${username}${planLabel ? ` · ${planLabel}` : ""} · ${Number(form.amount).toLocaleString("uk-UA")} ₴${until}`,
+        action: onReceipt ? { label: "Чек", onClick: () => onReceipt(r.id) } : undefined,
+      });
       onOpenChange(false);
       onSaved();
     } catch (err) { toast.error((err as Error).message); } finally { lock.current = false; setBusy(false); }
@@ -90,7 +95,7 @@ export function CancelPaymentDialog({ payment, onOpenChange, onDone }: { payment
     setBusy(true);
     try {
       await api.post(`/admin/payments/${payment.id}/cancel`, { reason });
-      toast.success(`Запис №${payment.id} скасовано`, { description: "Сума не входить у звіт, підписка без змін" });
+      toast.success(`Оплату №${payment.id} скасовано`, { description: "Запис лишився в історії, термін підписки без змін" });
       onOpenChange(false);
       onDone();
     } catch (err) { toast.error((err as Error).message); } finally { setBusy(false); }

@@ -218,7 +218,8 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         {(deleteReason || resetReason) && <p id="uc-lock" className="v3-uc-lock"><Lock size={13} aria-hidden="true" />{deleteReason || resetReason}.</p>}
       </>}
 
-      <AddPaymentDialog open={dlg === "pay"} onOpenChange={(o) => setDlg(o ? "pay" : null)} userId={user.id} username={user.username} endDate={user.endDate} priceMonth={String(user.priceMonth || "")} onSaved={changed} />
+      <AddPaymentDialog open={dlg === "pay"} onOpenChange={(o) => setDlg(o ? "pay" : null)} userId={user.id} username={user.username} endDate={user.endDate} priceMonth={String(user.priceMonth || "")} onSaved={changed}
+        planLabel={plan.plan} onReceipt={async (id) => { try { const r = await api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`); const p = r.payments.find((x) => String(x.id) === String(id)); if (p) openReceipt(p); } catch (e) { toast.error((e as Error).message); } }} />
       <GrantProDialog user={user} open={dlg === "pro"} onOpenChange={(o) => setDlg(o ? "pro" : null)} onDone={changed} />
       <RefundDialog user={user} payment={lastRecorded} open={dlg === "refund"} onOpenChange={(o) => setDlg(o ? "refund" : null)} onDone={changed} />
       <CancelSubscriptionDialog user={user} open={dlg === "cancel"} onOpenChange={(o) => setDlg(o ? "cancel" : null)} onDone={changed} />

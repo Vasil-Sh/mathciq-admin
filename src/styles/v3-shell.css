@@ -213,16 +213,29 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-menu-count { color: #8a93a2; font-size: 12px; font-variant-numeric: tabular-nums; }
 .v3-agree-row { align-items: center; }
 
-/* Toasts: success shows a shrinking timer line (4 s; undo toasts 10 s), paused on hover like the timer itself */
-[data-sonner-toast][data-type="success"] { overflow: hidden; }
-[data-sonner-toast][data-type="success"]::after {
-  content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
-  background: #00B24B; transform-origin: left; animation: v3-toast-timer 4s linear forwards;
-}
-[data-sonner-toast][data-type="success"].v3-toast-10s::after { animation-duration: 10s; }
-[data-sonner-toaster]:hover [data-sonner-toast]::after { animation-play-state: paused; }
+/* Toasts — design «Сповіщення · загальні»: dark card, round icon, text, underlined action, round close.
+   Success: green, 4 s with a shrinking timer line (paused on hover); errors coral, stay until closed; info blue, 3 s. */
+.v3-toast { position: relative; display: flex; align-items: center; gap: 12px; width: 380px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 14px; border-radius: 18px; background: #161b24; border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); color: #f4f6fa; font-family: Inter, system-ui, sans-serif; overflow: hidden; }
+.v3-toast.is-err { border-color: rgba(255, 122, 102, .28); }
+.v3-toast [data-icon], .v3-toast-ic { display: grid; place-items: center; width: 34px; height: 34px; margin: 0; border-radius: 50%; flex-shrink: 0; order: 0; }
+.v3-toast.is-ok [data-icon] { background: #00B24B; color: #fff; }
+.v3-toast.is-err [data-icon] { background: rgba(255, 122, 102, .16); color: #ff9a88; }
+.v3-toast.is-info [data-icon] { background: rgba(90, 140, 255, .18); color: #a3c0ff; }
+.v3-toast-bang { font: 700 15px Inter, sans-serif; line-height: 1; }
+.v3-toast [data-content] { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; order: 1; }
+.v3-toast-title { font-size: 14px; font-weight: 600; color: #f4f6fa; line-height: 1.3; }
+.v3-toast-desc { font-size: 12px; color: #8c95a6; line-height: 1.45; }
+.v3-toast-act { order: 2; flex-shrink: 0; padding: 0; border: 0; background: transparent; font: 600 12px Inter, sans-serif; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; cursor: pointer; color: #4cd98a; }
+.v3-toast.is-err .v3-toast-act { color: #ff9a88; }
+.v3-toast-x { order: 3; position: static !important; transform: none !important; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14) !important; background: transparent !important; color: #c3c9d4; flex-shrink: 0; cursor: pointer; }
+.v3-toast-x:hover { border-color: rgba(255, 255, 255, .3) !important; color: #fff; }
+.v3-toast-x svg { width: 12px; height: 12px; }
+.v3-toast.is-ok::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: #00B24B; transform-origin: left; animation: v3-toast-timer 4s linear forwards; }
+.v3-toast.is-ok::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .05); }
+.v3-toast.is-ok.v3-toast-10s::after { animation-duration: 10s; }
+[data-sonner-toaster]:hover .v3-toast::after { animation-play-state: paused; }
 @keyframes v3-toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-@media (prefers-reduced-motion: reduce) { [data-sonner-toast][data-type="success"]::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { .v3-toast.is-ok::after { animation: none; } }
 
 /* ── Motion: menus, mobile menu, page changes ── */
 @keyframes v3-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
