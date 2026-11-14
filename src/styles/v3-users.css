@@ -387,3 +387,9 @@
 /* Rows swapped: Edit / Reset / Delete sit under the subscription block, Pro / Refund / Cancel at the bottom */
 .v3-uc-foot.v3-uc-foot-top { padding-top: 0; border-top: 0; }
 .v3-uc-mini-bottom { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .06); }
+/* Top row fills the width like the bottom row: three buttons stretch, no gap before Видалити */
+@media (min-width: 768px) {
+  .v3-uc-foot.v3-uc-foot-top { flex-wrap: nowrap; }
+  .v3-uc-foot.v3-uc-foot-top .v3-btn { flex: 1 1 auto; min-width: 0; padding: 0 12px; }
+  .v3-uc-foot.v3-uc-foot-top .v3-uc-del { margin-left: 0; }
+}
