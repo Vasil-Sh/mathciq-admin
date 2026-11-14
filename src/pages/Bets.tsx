@@ -31,6 +31,7 @@ export default function Bets() {
   const [game, setGame] = useState("all");
   const [sort, setSort] = useState<Sort>("bets");
   const [showAll, setShowAll] = useState(false);
+  const [includeStaff, setIncludeStaff] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, Detail>>({});
@@ -57,7 +58,7 @@ export default function Bets() {
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const qq = params.get("q"); if (qq !== null) setQ(qq); }, [params]);
 
-  const people = useMemo(() => (users || []).filter((u) => !isAdminU(u)), [users]);
+  const people = useMemo(() => (users || []).filter((u) => includeStaff || !isAdminU(u)), [users, includeStaff]);
   const playing = useMemo(() => people.filter((u) => u.betCount > 0), [people]);
   const gameCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -206,8 +207,9 @@ export default function Bets() {
   }
 
   const sub = (u: AdminUserOverview) => {
+    const role = isAdminU(u) ? `${u.isOwner || u.role === "owner" ? "Овнер" : "Адмін"} · ` : "";
     const g = userGames(u).join(" · ") || (u.betCount ? "—" : "ще не грає");
-    return (u.lossStreak || 0) >= STREAK_ALERT ? `${g} · ${u.lossStreak} поспіль програшів` : g;
+    return role + ((u.lossStreak || 0) >= STREAK_ALERT ? `${g} · ${u.lossStreak} поспіль програшів` : g);
   };
   const wlText = (s: Stats) => `${s.wins} / ${s.losses}${s.pending ? ` · ${s.pending} очік.` : ""}`;
 
@@ -220,6 +222,7 @@ export default function Bets() {
           <span className="v3-bt-sort-l">Сортування:</span>
           {SORTS.map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
         </div>
+        <button type="button" className={`v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
       </div>
       <div className={`v3-bt-cols v3-bt-th${xwide ? " is-x" : ""}`} role="row"><span>Користувач</span><span>Ставок</span><span>Сума ставок</span><span>Профіт</span>{xwide && <><span>ROI</span><span>Банк зараз</span></>}<span>Вінрейт · В / П</span><span /></div>
       {rows.length === 0 ? filteredEmpty : rows.slice(0, limit).map(({ u, s }) => {
@@ -256,6 +259,7 @@ export default function Bets() {
         {gamesSeg("v3-bt-mseg")}
         <button type="button" className="v3-bt-msort" aria-label={`Сортування: ${SORTS.find((x) => x[0] === sort)![1]}. Натисніть, щоб змінити`} onClick={() => setSort(SORTS[(SORTS.findIndex((x) => x[0] === sort) + 1) % SORTS.length][0])}><ArrowDownUp size={14} aria-hidden="true" />{SORTS.find((x) => x[0] === sort)![1]}</button>
       </div>
+      <button type="button" className={`v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
       {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : rows.slice(0, limit).map(({ u, s }) => {
         const open = openId === u.id, alert = (u.lossStreak || 0) >= STREAK_ALERT;
         const head = (
