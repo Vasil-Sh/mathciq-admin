@@ -175,4 +175,6 @@ export interface AppSettings {
   aiDailyLimit?: number;
   churnInactiveDays?: number;
   churnLossStreak?: number;
+  adsOddsInList?: boolean;
+  adsMatchDetails?: boolean;
 }
