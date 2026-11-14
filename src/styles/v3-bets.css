@@ -7,7 +7,7 @@
 /* KPIs */
 .v3-bt-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
 .v3-bt-kpi { padding: 22px; border-radius: 24px; }
-.v3-bt-kpi.is-blue { background: #3a6df0; }
+.v3-bt-kpi.is-blue { background: #3a6df0; color: #fff; }
 .v3-bt-kpi .l { color: #c3c9d4; font-size: 13px; }
 .v3-bt-kpi.is-blue .l { color: #e3ebff; }
 .v3-bt-kpi .v { margin-top: 12px; font-size: 38px; font-weight: 400; letter-spacing: -.035em; line-height: 1; }
@@ -116,7 +116,7 @@
 .v3-bt-skrow i.is-av { width: 36px; height: 36px; border-radius: 50%; }
 
 /* Mobile */
-.v3-bt-mkpi { padding: 16px; border-radius: 22px; background: #3a6df0; }
+.v3-bt-mkpi { padding: 16px; border-radius: 22px; background: #3a6df0; color: #fff; }
 .v3-bt-mkpi .l { color: #e3ebff; font-size: 12px; }
 .v3-bt-mkpi .v { margin-top: 8px; font-size: 36px; letter-spacing: -.035em; line-height: 1; }
 .v3-bt-mkpi .f { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .2); font-size: 12px; color: #dfe7ff; }
