@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
 import UserAvatar from "@/components/UserAvatar";
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
@@ -66,6 +67,7 @@ export default function Admin() {
   const [sort, setSort] = useSessionFilter<Sort>("users.sort2", "end-asc", SORTS);
   const [page, setPage] = useState(1);
   const [mobileShown, setMobileShown] = useState(PAGE_SIZE);
+  const [showErr, setShowErr] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [rowConfirm, setRowConfirm] = useState<number | null>(null);
@@ -295,18 +297,18 @@ export default function Admin() {
           <p className="v3-subtitle"><span className="v3-hide-mobile">Облікові записи, підписки, оплати й доступ до MatchIQ.</span><span className="v3-only-mobile">{all.length} {plural(all.length, "запис", "записи", "записів")} · {counts.paid} платних · {counts.trial} на пробному</span></p>
         </div>
         <div className="v3-chips">
-          <button type="button" className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length}><Download size={15} aria-hidden="true" />Експорт CSV</button>
+          {!emptyPlatform && <button type="button" className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length}><Download size={15} aria-hidden="true" />Експорт CSV</button>}
           <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online} onClick={() => setForm({ mode: "create" })}><Plus size={17} aria-hidden="true" />Створити користувача</button>
           <button type="button" className="v3-fab v3-only-mobile" aria-label="Створити користувача" disabled={!online} onClick={() => setForm({ mode: "create" })}><Plus size={20} strokeWidth={2.4} aria-hidden="true" /></button>
         </div>
       </section>
 
-      <div className="v3-ptabs" role="tablist" aria-label="Розділи">
+      {!(emptyPlatform && !exclCount) && <div className="v3-ptabs" role="tablist" aria-label="Розділи">
         <button type="button" role="tab" aria-selected={tab === "users"} className={`v3-ptab${tab === "users" ? " is-on" : ""}`} onClick={() => setTab("users")}>Усі користувачі</button>
         <button type="button" role="tab" aria-selected={tab === "excl"} className={`v3-ptab${tab === "excl" ? " is-on" : ""}`} onClick={() => setTab("excl")}>Самообмеження{exclCount ? <span>{exclCount}</span> : null}</button>
-      </div>
+      </div>}
 
-      {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Список станом на {updatedAt || "—"} — створення, оплати й продовження недоступні.</span></div>}
+      {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Список станом на {updatedAt || "—"} — створення, оплати й продовження недоступні.</span><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={() => { if (navigator.onLine) load(); else toast.info("Досі немає з’єднання"); }}>Перевірити ще раз</button></div>}
 
       {tab === "excl" ? <SelfLimitationsTab onCount={setExclCount} /> : <>
         {error && users !== null && <div className="v3-stale" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>Не вдалося оновити список: {error}. Показано дані станом на {updatedAt}.</span><button type="button" onClick={load}>Спробувати ще раз</button></div>}
@@ -314,9 +316,39 @@ export default function Admin() {
           <div className="v3-dcard v3-uerror" role="alert">
             <span className="v3-uerror-ico" aria-hidden="true">!</span>
             <strong>Не вдалося завантажити користувачів</strong>
-            <span>Сервер не відповів ({error}). Фільтри й пошук збережено.</span>
-            <div><button type="button" className="v3-btn v3-btn-blue" onClick={load}>Спробувати ще раз</button></div>
+            <span>Сервер не відповів. Фільтри й пошук збережено.</span>
+            {showErr && <code className="v3-uerror-det">{error}</code>}
+            <div><button type="button" className="v3-btn v3-btn-blue" onClick={load}>Спробувати ще раз</button><button type="button" className="v3-btn v3-btn-ghost-dark" aria-expanded={showErr} onClick={() => setShowErr((v) => !v)}>{showErr ? "Сховати" : "Деталі"}</button></div>
           </div>
+        ) : emptyPlatform && wide ? (
+          <>
+            {/* Design «Користувачі · порожньо»: nobody but admins yet */}
+            <section className="v3-sums" aria-label="Підсумки">
+              <div className="v3-sum is-static"><span className="v3-sum-l">Усі облікові записи</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">лише {admins === 1 ? "ваш акаунт овнера" : "адміністратори"}</span></div>
+              <div className="v3-sum is-static"><span className="v3-sum-l">Платні · Базова і Pro</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">—</span></div>
+              <div className="v3-sum is-static"><span className="v3-sum-l">На пробному періоді</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">—</span></div>
+              <div className="v3-sum is-static"><span className="v3-sum-l">Адміністратори</span><strong className="v3-sum-v">{admins}</strong><span className="v3-sum-n">{(() => { const o = all.find((u) => u.isOwner); return o ? `@${o.username} · овнер` : "—"; })()}</span></div>
+            </section>
+            <section className="v3-users-empty">
+              <div className="v3-wcard v3-ue-main">
+                <div className="v3-ue-ghost" aria-hidden="true">{[40, 47, 54, 61, 68, 45].map((w, i) => <div key={i} className="v3-ue-grow"><i className="is-av" /><div><i style={{ width: `${w}%`, height: 12 }} /><i style={{ width: `${25 + (i % 4) * 5}%`, height: 9, marginTop: 8 }} /></div><i style={{ height: 12 }} /><i style={{ height: 22, borderRadius: 999 }} /></div>)}</div>
+                <div className="v3-ue-over">
+                  <span className="v3-ue-ico" aria-hidden="true"><UserPlus size={28} strokeWidth={1.8} /></span>
+                  <h2>Додайте першого користувача</h2>
+                  <p>Створіть обліковий запис і оберіть план: пробний на {settings?.trialDays || 7} днів, Базова або Pro. Пароль згенерується автоматично.</p>
+                  <div><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => setForm({ mode: "create" })}>Створити користувача</button><Link to="/settings" className="v3-btn v3-btn-ghost">Тарифи</Link></div>
+                </div>
+              </div>
+              <aside className="v3-dcard v3-ue-side">
+                <strong>Що з’явиться тут</strong>
+                <ol>
+                  <li><span>1</span><div><b>Список і картка користувача</b><small>План, наступна оплата, вік 21+, нотатка й історія змін</small></div></li>
+                  <li><span>2</span><div><b>Оплати й чеки</b><small>Ручний облік оплат і чек, який можна надіслати в Telegram</small></div></li>
+                  <li><span>3</span><div><b>Статистика ставок</b><small>Ставки, вінрейт і профіт кожного користувача</small></div></li>
+                </ol>
+              </aside>
+            </section>
+          </>
         ) : <>
           <section className="v3-sums v3-hide-mobile" aria-label="Підсумки">
             {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : x.value}</strong><span className="v3-sum-n">{x.note}</span></button>)}

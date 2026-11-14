@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Lock, X } from "lucide-react";
+import { ChevronDown, Lock, User as UserIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import UserAvatar from "@/components/UserAvatar";
@@ -98,6 +98,8 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const admin = isAdmin(user);
   const st = statusOf(user);
   const ui = STATUS_UI[st];
+  const selfAccount = !!deleteReason && deleteReason.startsWith("Власний");
+  const viewOnly = !selfAccount && !!deleteReason && !!resetReason;
   const plan = planCell(user, settings);
   const bets = (card?.stats || []).reduce((s, x) => s + Number(x.bets || 0), 0);
   const wins = (card?.stats || []).reduce((s, x) => s + Number(x.wins || 0), 0);
@@ -120,7 +122,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           <h2>@{user.username}</h2>
           <p>{tg || "Telegram не вказано"} · {role}</p>
         </div>
-        <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>
+        {viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>}
         {onClose && <button type="button" className="v3-icon-btn v3-uc-close" onClick={onClose} aria-label="Закрити картку"><X size={18} /></button>}
       </div>
 
@@ -147,7 +149,11 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         <button type="button" className={`v3-btn v3-btn-sm ${resetReason ? "v3-btn-locked" : "v3-btn-ghost-dark"}`} disabled={!!resetReason || !online} title={resetReason || off} onClick={onResetPassword}>{resetReason && <Lock size={13} aria-hidden="true" />}Скинути пароль</button>
         <button type="button" className={`v3-btn v3-btn-sm v3-uc-del ${deleteReason ? "v3-btn-locked" : "v3-btn-danger-outline"}`} disabled={!!deleteReason || !online} title={deleteReason || off} aria-describedby={deleteReason ? "uc-lock" : undefined} onClick={onDelete}>{deleteReason && <Lock size={13} aria-hidden="true" />}Видалити</button>
       </div>
-      {(deleteReason || resetReason) && <p id="uc-lock" className="v3-uc-lock"><Lock size={13} aria-hidden="true" />{deleteReason || resetReason}.</p>}
+      {selfAccount ? (
+        <div id="uc-lock" className="v3-uc-self"><span className="v3-uc-self-ico" aria-hidden="true"><UserIcon size={16} /></span><span><strong>Це ваш акаунт</strong><small>Власний обліковий запис видалити не можна</small></span></div>
+      ) : (deleteReason || resetReason) && (
+        <div id="uc-lock" className="v3-uc-lockbox"><Lock size={16} aria-hidden="true" /><span>{viewOnly ? "Змінювати роль, скидати пароль і видаляти адміністраторів може лише овнер." : `${deleteReason || resetReason}.`}</span></div>
+      )}
 
       {error ? <div className="v3-uc-error" role="alert"><p>{error}</p><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={load}>Повторити</button></div> : <>
         <Section id="prof" title="Профіль" summary={`План ${plan.plan}`} open={open.prof} onToggle={() => setOpen({ ...open, prof: !open.prof })}>
