@@ -222,7 +222,6 @@ export default function Bets() {
           <span className="v3-bt-sort-l">Сортування:</span>
           {SORTS.map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
         </div>
-        <button type="button" className={`v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
       </div>
       <div className={`v3-bt-cols v3-bt-th${xwide ? " is-x" : ""}`} role="row"><span>Користувач</span><span>Ставок</span><span>Сума ставок</span><span>Профіт</span>{xwide && <><span>ROI</span><span>Банк зараз</span></>}<span>Вінрейт · В / П</span><span /></div>
       {rows.length === 0 ? filteredEmpty : rows.slice(0, limit).map(({ u, s }) => {
@@ -259,7 +258,6 @@ export default function Bets() {
         {gamesSeg("v3-bt-mseg")}
         <button type="button" className="v3-bt-msort" aria-label={`Сортування: ${SORTS.find((x) => x[0] === sort)![1]}. Натисніть, щоб змінити`} onClick={() => setSort(SORTS[(SORTS.findIndex((x) => x[0] === sort) + 1) % SORTS.length][0])}><ArrowDownUp size={14} aria-hidden="true" />{SORTS.find((x) => x[0] === sort)![1]}</button>
       </div>
-      <button type="button" className={`v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
       {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : rows.slice(0, limit).map(({ u, s }) => {
         const open = openId === u.id, alert = (u.lossStreak || 0) >= STREAK_ALERT;
         const head = (
@@ -286,7 +284,10 @@ export default function Bets() {
           <h1 className="v3-title">Ставки</h1>
           <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час</span></p>
         </div>
-        {!noBetsAtAll && <button type="button" className="v3-chip v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}><RefreshCw size={14} aria-hidden="true" className={busy ? "v3-bt-rot" : undefined} />Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
+        <div className="v3-chips">
+          <button type="button" className={`v3-chip${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
+          {!noBetsAtAll && <button type="button" className="v3-chip v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}><RefreshCw size={14} aria-hidden="true" className={busy ? "v3-bt-rot" : undefined} />Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
+        </div>
       </section>
 
       {offline}
