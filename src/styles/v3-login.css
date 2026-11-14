@@ -77,3 +77,10 @@
 .v3-spin { display: inline-block; width: 14px; height: 14px; margin-right: 8px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); border-top-color: #fff; box-sizing: border-box; vertical-align: -2px; animation: v3-rot .8s linear infinite; }
 @keyframes v3-rot { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .v3-spin { animation: none; } }
+
+/* Living contour map behind the login cards (KokonutUI «Topo Background», MIT) */
+.v3-login { position: relative; overflow: hidden; isolation: isolate; }
+.v3-login > .v3-login-grid { position: relative; z-index: 1; }
+.v3-topo { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; color: #6f95ff; }
+.v3-topo-layer { position: absolute; inset: 0; pointer-events: none; }
+.v3-topo-canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity .5s ease-out; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent); }

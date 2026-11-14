@@ -1,3 +1,4 @@
+import TopoBackground from "@/components/kokonutui/topo-background";
 import { useEffect, useState } from "react";
 import { BarChart3, Lock, LogIn, MonitorSmartphone, ShieldCheck, WifiOff } from "lucide-react";
 import { useLogin } from "@/hooks/useLogin";
@@ -27,6 +28,7 @@ export default function LoginPage() {
 
   return (
     <main className="v3-login">
+      <TopoBackground className="v3-login-topo" seed={26} interval={0.07} speed={0.6} />
       <div className="v3-login-grid">
         <section className="v3-login-story" aria-labelledby="v3-login-story-title">
           <div className="v3-logo v3-logo-static">
