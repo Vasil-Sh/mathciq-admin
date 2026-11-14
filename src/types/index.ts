@@ -139,6 +139,8 @@ export interface Banner {
   href: string;
   createdAt?: string;
   updatedAt?: string;
+  updatedBy?: string | null;
+  changedAt?: string | null;
 }
 
 export interface BannerInput {

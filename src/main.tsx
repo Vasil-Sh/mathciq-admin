@@ -9,6 +9,7 @@ import "./styles/v3-dashboard.css";
 import "./styles/v3-login.css";
 import "./styles/v3-users.css";
 import "./styles/v3-bets.css";
+import "./styles/v3-ads.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
