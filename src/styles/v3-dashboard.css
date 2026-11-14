@@ -152,7 +152,13 @@
   .v3-bar-val { display: none; }
   .v3-modal[data-state] { top: auto; bottom: 0; left: 0; transform: none; width: 100%; max-width: 100%; border-radius: 28px 28px 0 0; max-height: 92dvh; }
   .v3-modal-actions { width: 100%; }
-  .v3-modal-actions .v3-btn { flex: 1; }
+  .v3-modal-actions .v3-btn { flex: 1; min-height: 50px; }
+  /* Design «модалки на мобільному»: grab handle, round close, main action wider (1 : 1.4) in the thumb zone */
+  .v3-modal[data-state] { padding-top: 26px; }
+  .v3-modal[data-state]::before { content: ""; position: absolute; top: 10px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 999px; background: #d5dae2; }
+  .v3-modal-actions .v3-btn:last-child:not(:first-child) { flex: 1.4; }
+  .v3-modal .v3-modal-title { padding-right: 44px; }
+  .v3-modal .v3-modal-x { top: 20px; right: 18px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #dde1e7; background: #fff; color: #3e4656; }
 }
 
 /* ── Dashboard: states and mobile variants from the design ── */

@@ -107,7 +107,10 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-menu-item:hover { background: #f1f4fa; }
 .v3-menu-item.is-danger { color: #b3321c; }
 
-.v3-burger, .v3-icon-btn {
+/* Narrow header (design Mobile / UsersMobile): one pill with the avatar and the menu icon; Журнал дій lives in the menu */
+.v3-burger { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 5px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: var(--v3-card); color: var(--v3-text); cursor: pointer; }
+.v3-burger .v3-burger-av { width: 34px; height: 34px; }
+.v3-icon-btn {
   display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
   border: 1px solid var(--v3-line-dark); background: var(--v3-card); color: var(--v3-text); cursor: pointer;
 }
@@ -115,8 +118,7 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 @media (min-width: 1180px) {
   .v3-nav { display: flex; }
   .v3-audit-slot.is-desk { display: contents; }
-  .v3-audit-slot.is-narrow { display: none; }
-  .v3-account { display: block; }
+    .v3-account { display: block; }
   .v3-burger { display: none; }
 }
 @media (max-width: 767px) {

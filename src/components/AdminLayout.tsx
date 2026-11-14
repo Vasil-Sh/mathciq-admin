@@ -111,7 +111,6 @@ export default function AdminLayout() {
           <span className="v3-audit-slot is-desk">{auditButton}</span>
         </div>
         <div className="v3-header-end">
-          <span className="v3-audit-slot is-narrow">{auditButton}</span>
           <div className="v3-account" ref={accountRef}>
             <button type="button" className="v3-account-btn" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((o) => !o)}>
               <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar" />
@@ -132,7 +131,7 @@ export default function AdminLayout() {
               </div>
             )}
           </div>
-          <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><Menu size={21} aria-hidden="true" /></button>
+          <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-burger-av" /><Menu size={18} aria-hidden="true" /></button>
         </div>
       </header>
 

@@ -29,7 +29,7 @@ function DialogContent({ className, children, onInteractOutside, ...props }: Rea
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-btn text-subtle hover:text-ink transition-colors focus:outline-none">
+        <DialogPrimitive.Close className="v3-modal-x absolute right-4 top-4 rounded-btn text-subtle hover:text-ink transition-colors focus:outline-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
