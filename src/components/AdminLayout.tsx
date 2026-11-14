@@ -125,7 +125,7 @@ export default function AdminLayout() {
                 </div>
                 <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Мій пароль</Link>
                 <Link role="menuitem" to="/settings#account" className="v3-menu-item"><MonitorSmartphone size={17} aria-hidden="true" /><span className="v3-menu-label">Активні сесії</span>{sessionCount !== null && <span className="v3-menu-count">{sessionCount}</span>}</Link>
-                <Link role="menuitem" to={`/audit?q=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" /><span className="v3-menu-label">Мої дії в журналі</span>{myActions !== null && <span className="v3-menu-count">{myActions}</span>}</Link>
+                <Link role="menuitem" to={`/audit?actor=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" /><span className="v3-menu-label">Мої дії в журналі</span>{myActions !== null && <span className="v3-menu-count">{myActions}</span>}</Link>
                 <div className="v3-menu-sep" />
                 <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти</button>
               </div>
