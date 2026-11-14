@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { Check, Info } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -60,10 +59,10 @@ export default function App() {
         <Toaster
           position="bottom-right" theme="dark" closeButton duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
           icons={{
-            success: <Check size={16} strokeWidth={2.6} aria-hidden="true" />,
-            info: <Info size={16} strokeWidth={2.4} aria-hidden="true" />,
-            error: <span aria-hidden="true" className="v3-toast-bang">!</span>,
-            warning: <span aria-hidden="true" className="v3-toast-bang">!</span>,
+            success: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>,
+            info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 8h.01" /><path d="M11 12h1v5h1" /></svg>,
+            error: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 7v6" /><path d="M12 17h.01" /></svg>,
+            warning: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 7v6" /><path d="M12 17h.01" /></svg>,
           }}
           toastOptions={{
             unstyled: true,
