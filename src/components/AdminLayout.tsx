@@ -100,6 +100,7 @@ export default function AdminLayout() {
       <a href="#main-content" className="skip-link">Перейти до вмісту</a>
       <header className="v3-header">
         <Logo />
+        <div className="v3-nav-group">
         <nav aria-label="Основна навігація" className="v3-nav">
           {navigation.map(({ label, href, badge }) => (
             <NavLink key={href} to={href} className={({ isActive }) => `v3-navlink${isActive ? " is-active" : ""}`}>
@@ -107,8 +108,10 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+          <span className="v3-audit-slot is-desk">{auditButton}</span>
+        </div>
         <div className="v3-header-end">
-          {auditButton}
+          <span className="v3-audit-slot is-narrow">{auditButton}</span>
           <div className="v3-account" ref={accountRef}>
             <button type="button" className="v3-account-btn" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((o) => !o)}>
               <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar" />
