@@ -15,7 +15,7 @@
 .v3-logo-static { pointer-events: none; }
 .v3-login-story h1 { margin: 0; font-size: clamp(40px, 5vw, 60px); font-weight: 300; letter-spacing: -.04em; line-height: 1.05; }
 .v3-login-story p { margin: 18px 0 0; color: var(--v3-muted); font-size: 14px; line-height: 1.7; max-width: 420px; }
-.v3-login-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.v3-login-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .v3-login-tiles li { padding: 16px; border-radius: 18px; background: var(--v3-card2); display: flex; flex-direction: column; gap: 6px; }
 .v3-login-tiles strong { font-size: 13px; font-weight: 600; }
 .v3-login-tiles span { color: var(--v3-muted); font-size: 12px; line-height: 1.5; }
