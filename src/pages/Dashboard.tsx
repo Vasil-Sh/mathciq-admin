@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowRight, ArrowUp, Check, ChevronRight, Download, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
@@ -100,6 +100,40 @@ export default function Dashboard() {
     setRefreshing(false);
   }, []);
   useEffect(() => { load(); }, [load]);
+  // Телефон: потягніть сторінку вниз з самого верху — дані оновляться (дизайн «Дашборд, мобільна»)
+  const PULL_MAX = 110, PULL_GO = 70;
+  const [pull, setPull] = useState(0);
+  const [pulling, setPulling] = useState(false);
+  const pullRef = useRef({ y0: 0, on: false, d: 0 });
+  useEffect(() => {
+    const mobile = () => window.matchMedia("(max-width: 767px)").matches;
+    const start = (e: TouchEvent) => {
+      if (!mobile() || window.scrollY > 0 || document.querySelector(".v3-cmd-backdrop, [role=dialog]")) return;
+      pullRef.current = { y0: e.touches[0].clientY, on: true, d: 0 };
+    };
+    const move = (e: TouchEvent) => {
+      if (!pullRef.current.on) return;
+      const dy = e.touches[0].clientY - pullRef.current.y0;
+      if (dy <= 0 || window.scrollY > 0) { if (pullRef.current.d) { pullRef.current.d = 0; setPull(0); setPulling(false); } return; }
+      const d = Math.min(PULL_MAX, dy * 0.5);
+      pullRef.current.d = d;
+      setPulling(true);
+      setPull(d);
+    };
+    const end = () => {
+      if (!pullRef.current.on) return;
+      const go = pullRef.current.d >= PULL_GO;
+      pullRef.current.on = false;
+      setPulling(false);
+      if (go) { setPull(56); load(true).then(() => { setPull(0); toast.success("Дані оновлено", { description: `станом на ${hhmm()}` }); }); }
+      else setPull(0);
+    };
+    window.addEventListener("touchstart", start, { passive: true });
+    window.addEventListener("touchmove", move, { passive: true });
+    window.addEventListener("touchend", end);
+    window.addEventListener("touchcancel", end);
+    return () => { window.removeEventListener("touchstart", start); window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); window.removeEventListener("touchcancel", end); };
+  }, [load]);
   useEffect(() => {
     if (!online) return;
     const id = window.setInterval(() => load(), REFRESH_MS);
@@ -422,8 +456,13 @@ export default function Dashboard() {
     </aside>
   );
 
+  const ptrLabel = refreshing && pull ? "Оновлюємо…" : pull >= PULL_GO ? "Відпустіть, щоб оновити" : "Потягніть, щоб оновити";
   return (
-    <div className="v3-page v3-dash">
+    <div className={`v3-page v3-dash${pulling ? " is-pulling" : ""}`} style={pull ? { transform: `translateY(${pull}px)` } : undefined}>
+      <div className="v3-ptr v3-only-mobile" aria-hidden={!pull} style={{ opacity: Math.min(1, pull / 40) }}>
+        <svg className={refreshing && pull ? "is-spin" : ""} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.6" /><circle cx="12" cy="12" r="9" fill="none" stroke="#5a8cff" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="56.5" strokeDashoffset={refreshing && pull ? 40 : 56.5 - Math.min(1, pull / PULL_GO) * 56.5} transform="rotate(-90 12 12)" /></svg>
+        <span>{ptrLabel}</span>
+      </div>
       {header}
 
       {!online && <div className="v3-stale v3-offline" role="status"><WifiOff size={18} aria-hidden="true" /><span><b>Немає інтернету.</b> Показуємо дані з останнього оновлення{updatedAt ? ` о ${updatedAt}` : ""}. Продовження й зміни запрацюють після відновлення зв’язку, автооновлення призупинено.</span><button type="button" onClick={() => load(true)}>Перевірити ще раз</button></div>}

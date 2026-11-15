@@ -57,7 +57,7 @@ export default function App() {
       <Router>
         <AppRoutes />
         <Toaster
-          position="bottom-right" theme="dark" closeButton duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
+          position="bottom-right" theme="dark" closeButton swipeDirections={["right", "left", "bottom"]} duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
           icons={{
             success: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>,
             info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 8h.01" /><path d="M11 12h1v5h1" /></svg>,

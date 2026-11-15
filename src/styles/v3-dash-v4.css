@@ -299,3 +299,16 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
   .v3-swipe-note { display: block; margin: 4px 0 0; color: var(--v3-ink-muted); font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .v3-swipe-face { transition: none; animation: none !important; } }
+
+/* Телефон: оновлення потягуванням вниз */
+.v3-dash { transition: transform .35s cubic-bezier(.3, 1.2, .4, 1); }
+.v3-dash.is-pulling { transition: none; }
+.v3-ptr { display: none; }
+@media (max-width: 767px) {
+  .v3-ptr { position: absolute; left: 0; right: 0; top: -48px; display: flex; align-items: center; justify-content: center; gap: 10px; height: 40px; color: var(--v3-muted); font-size: 12px; pointer-events: none; }
+  .v3-dash { position: relative; }
+  .v3-ptr svg.is-spin { animation: v3-rot .8s linear infinite; }
+}
+/* Сповіщення: свайп убік закриває, картка тьмяніє в русі */
+.v3-toast[data-swiping="true"] { opacity: .8; cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { .v3-dash { transition: none; } .v3-ptr svg.is-spin { animation: none; } }
