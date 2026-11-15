@@ -129,9 +129,9 @@ export default function LoginPage() {
           {online && backOnline && <p className="v3-login-banner v3-login-banner-green" role="status"><Check size={16} aria-hidden="true" className="v3-login-pop" />З’єднання відновлено — можна входити.</p>}
 
           <form onSubmit={(e) => { if (blocked) { e.preventDefault(); onSubmitClick(e as unknown as React.MouseEvent); return; } handleSubmit(e); }} aria-label="Вхід адміністратора" aria-busy={isLoading} noValidate>
-            <div className="v3-field">
+            <div className={"v3-field" + (emptyUser || errorKind === "auth" ? shakeCls : "")}>
               <label htmlFor="login-username">Логін</label>
-              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="Логін без @" disabled={locked} aria-invalid={emptyUser || errorKind === "auth"} className={emptyUser || errorKind === "auth" ? shakeCls.trim() : undefined} />
+              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="Логін без @" disabled={locked} aria-invalid={emptyUser || errorKind === "auth"} />
             </div>
             <div className="v3-field">
               <label htmlFor="login-password">Пароль</label>

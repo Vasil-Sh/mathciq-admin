@@ -145,3 +145,6 @@
   .v3-login-form .v3-field-error, .v3-bob, .v3-lock-wiggle, .v3-login-pop, .v3-login-prog, .v3-login-tip { animation: none !important; }
   .v3-login-tiles li, .v3-login-submit, .v3-login-arrow, .v3-login-drain { transition: none !important; }
 }
+
+/* iPhone: поля 16px — Safari не збільшує сторінку при введенні (і не «застрягає» збільшеною) */
+.v3-field input, .v3-field select, .v3-field textarea { font-size: 16px; }
