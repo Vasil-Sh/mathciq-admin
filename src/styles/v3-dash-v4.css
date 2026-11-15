@@ -336,3 +336,13 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
   .v3-dash-side.is-calm .v3-paylist { margin: 0; }
 }
 @media (min-width: 768px) { .v3-chart-foot.is-calm { display: none; } }
+
+/* iPhone (застосунок на головному екрані): темний фон і при «відтягуванні» сторінки, відступи під статус-бар і жест «додому» */
+html, body { background: #0a0d13 !important; }
+html { color-scheme: dark; }
+.v3-header { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+@media (max-width: 767px) { .v3-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); } }
+.v3-page { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
+.v3-login { padding-top: calc(40px + env(safe-area-inset-top, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 767px) { .v3-login { padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
+.v3-mobile-menu[data-state] { padding-top: calc(18px + env(safe-area-inset-top, 0px)) !important; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
