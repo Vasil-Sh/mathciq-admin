@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Check, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
 import { relDay } from "@/lib/dashboardInsights";
@@ -13,6 +14,15 @@ const MOBILE_LIMIT = 3;
 export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, thresholdsFromSettings }: { rows: RiskRow[]; inactiveDays: number; lossStreak: number; thresholdsFromSettings: boolean }) {
   const [tab, setTab] = useState<Tab>("all");
   const [expanded, setExpanded] = useState(false);
+  // «Написати» відкриває Telegram у новій вкладці; кнопка на 2,5 с показує «Відкрито».
+  const [sent, setSent] = useState<number | null>(null);
+  const sentTimer = useRef<number | undefined>(undefined);
+  const markSent = (id: number) => { setSent(id); window.clearTimeout(sentTimer.current); sentTimer.current = window.setTimeout(() => setSent(null), 2500); };
+  const writeBtn = (id: number, tg: string) => (
+    <a href={tg} target="_blank" rel="noreferrer" className={`v3-btn-pill${sent === id ? " is-sent" : ""}`} onClick={() => markSent(id)}>
+      {sent === id ? <><Check size={13} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><Send size={13} aria-hidden="true" />Написати</>}
+    </a>
+  );
   const idle = rows.filter((r) => r.inactive);
   const streak = rows.filter((r) => r.losing);
   const list = tab === "idle" ? idle : tab === "streak" ? streak : rows;
@@ -60,7 +70,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
                   <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
-                  <span role="cell">{tg ? <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill">Написати</a> : null}</span>
+                  <span role="cell">{tg ? writeBtn(r.user.id, tg) : null}</span>
                 </div>
               );
             })}
@@ -73,7 +83,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                 <li key={r.user.id}>
                   <UserAvatar username={r.user.username} telegram={r.user.telegram} />
                   <span className="v3-ret-who"><strong>@{r.user.username}</strong><small className={r.losing && tab !== "idle" ? "is-red" : undefined}>{r.losing && tab !== "idle" ? streakText(r.streak) : idleText(r)} · до {shortDate(r.user.endDate)}</small></span>
-                  {tg && <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill">Написати</a>}
+                  {tg && writeBtn(r.user.id, tg)}
                 </li>
               );
             })}

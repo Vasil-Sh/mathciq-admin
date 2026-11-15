@@ -6,6 +6,7 @@ import "./admin-design.css";
 import "./lib/toastDefaults";
 import "./styles/v3-shell.css";
 import "./styles/v3-dashboard.css";
+import "./styles/v3-dash-v4.css";
 import "./styles/v3-login.css";
 import "./styles/v3-users.css";
 import "./styles/v3-bets.css";

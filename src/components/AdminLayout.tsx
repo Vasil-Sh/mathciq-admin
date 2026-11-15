@@ -97,6 +97,8 @@ export default function AdminLayout() {
 
   return (
     <div className="v3-shell">
+      {/* Фон «Зоряний пил»: рідкі крихітні точки ледь мерехтять (дизайн «Основа · фон застосунку») */}
+      <div className="v3-stars" aria-hidden="true"><i /><i /><i /></div>
       <a href="#main-content" className="skip-link">Перейти до вмісту</a>
       <header className="v3-header">
         <Logo />

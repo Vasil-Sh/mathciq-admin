@@ -1,0 +1,119 @@
+/* ── Дашборд v4: компактний масштаб, шапка по центру, зоряний фон ── */
+
+/* Фон «Зоряний пил» під усім застосунком: три шари точок мерехтять не в такт і дуже повільно дрейфують */
+.v3-shell { position: relative; isolation: isolate; }
+.v3-stars { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.v3-stars i { position: absolute; inset: -60px; display: block; will-change: opacity, transform; }
+.v3-stars i:nth-child(1) { background-image: radial-gradient(1.2px 1.2px at 21% 52%, #fff, transparent), radial-gradient(1.0px 1.0px at 70% 14%, #cfe0ff, transparent), radial-gradient(1.3px 1.3px at 66% 29%, #fff, transparent), radial-gradient(1.1px 1.1px at 55% 10%, #fff, transparent), radial-gradient(1.1px 1.1px at 56% 9%, #fff, transparent), radial-gradient(1.6px 1.6px at 82% 82%, #fff, transparent), radial-gradient(1.3px 1.3px at 52% 8%, #fff, transparent), radial-gradient(1.0px 1.0px at 19% 39%, #dbe6ff, transparent), radial-gradient(1.1px 1.1px at 17% 75%, #cfe0ff, transparent), radial-gradient(1.3px 1.3px at 89% 25%, #fff, transparent), radial-gradient(1.3px 1.3px at 83% 26%, #cfe0ff, transparent), radial-gradient(1.1px 1.1px at 93% 10%, #fff, transparent), radial-gradient(1.4px 1.4px at 65% 89%, #dbe6ff, transparent), radial-gradient(1.5px 1.5px at 61% 76%, #dbe6ff, transparent); background-size: 637px 541px; animation: v3-st1 7s ease-in-out infinite alternate, v3-st-drift 140s linear infinite; }
+.v3-stars i:nth-child(2) { background-image: radial-gradient(1.3px 1.3px at 33% 25%, #fff, transparent), radial-gradient(1.1px 1.1px at 40% 69%, #dbe6ff, transparent), radial-gradient(1.6px 1.6px at 95% 59%, #cfe0ff, transparent), radial-gradient(1.4px 1.4px at 11% 17%, #dbe6ff, transparent), radial-gradient(1.1px 1.1px at 45% 21%, #dbe6ff, transparent), radial-gradient(1.3px 1.3px at 87% 11%, #cfe0ff, transparent), radial-gradient(1.2px 1.2px at 46% 78%, #dbe6ff, transparent), radial-gradient(1.4px 1.4px at 60% 10%, #fff, transparent), radial-gradient(1.7px 1.7px at 62% 91%, #fff, transparent), radial-gradient(1.0px 1.0px at 91% 41%, #dbe6ff, transparent); background-size: 853px 719px; background-position: 211px 97px; animation: v3-st2 9s ease-in-out infinite alternate, v3-st-drift 190s linear infinite reverse; }
+.v3-stars i:nth-child(3) { background-image: radial-gradient(1.9px 1.9px at 51% 87%, #cfe0ff, transparent), radial-gradient(1.8px 1.8px at 61% 47%, #fff, transparent), radial-gradient(2.1px 2.1px at 65% 9%, #fff, transparent), radial-gradient(2.2px 2.2px at 18% 96%, #fff, transparent); background-size: 1171px 983px; background-position: 433px 301px; animation: v3-st3 13s ease-in-out infinite alternate; }
+@keyframes v3-st1 { from { opacity: .26; } to { opacity: .68; } }
+@keyframes v3-st2 { from { opacity: .64; } to { opacity: .22; } }
+@keyframes v3-st3 { 0% { opacity: .15; } 50% { opacity: .64; } 100% { opacity: .26; } }
+@keyframes v3-st-drift { to { transform: translate(-60px, 40px); } }
+@media (max-width: 767px) { .v3-stars i { background-size: 268px 227px; } .v3-stars i:nth-child(2) { background-size: 358px 302px; } .v3-stars i:nth-child(3) { background-size: 492px 413px; } }
+@media (prefers-reduced-motion: reduce) { .v3-stars i { animation: none !important; opacity: .45; } }
+
+/* Шапка: меню з журналом дій рівно по центру, логотип ліворуч, акаунт праворуч */
+@media (min-width: 1180px) {
+  .v3-header { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .v3-header > .v3-logo { justify-self: start; }
+  .v3-nav-group { margin: 0; }
+  .v3-header-end { margin-left: 0; justify-self: end; }
+}
+.v3-header, .v3-page { max-width: 1600px; }
+
+/* Компактний масштаб (дошка «Дашборд 1920 · компактний варіант») */
+.v3-dash .v3-title { font-size: clamp(44px, 5vw, 60px); }
+.v3-kpi { padding: 18px 20px; border-radius: 22px; }
+.v3-kpi-v { margin-top: 10px; font-size: 36px; }
+.v3-kpi-n { margin-top: 6px; }
+.v3-bars { height: 170px; }
+.v3-dash-top { gap: 14px; }
+.v3-kpis { gap: 14px; }
+.v3-dash-main { gap: 14px; }
+@media (min-width: 1600px) {
+  .v3-dash .v3-title { font-size: 64px; }
+  .v3-dash-top { gap: 14px; }
+  .v3-dash-top > .v3-kpis { gap: 14px; }
+  .v3-dash-pair { gap: 14px; }
+}
+@media (max-width: 767px) { .v3-bars { height: 150px; } .v3-kpi-v { font-size: 26px; margin-top: 8px; } .v3-kpi { padding: 16px; border-radius: 20px; } }
+
+/* Права колонка: «Потребує уваги» за вмістом, під ним тарифи (лише ≥1600) */
+.v3-dash-side { display: contents; }
+.v3-side-plans { padding: 22px; }
+.v3-side-plans .v3-plans { margin: 0; padding: 0; border: 0; }
+.v3-side-plans .v3-plan-legend { grid-template-columns: 1fr; }
+@media (min-width: 1600px) {
+  .v3-dash-top .v3-dash-side { display: flex; flex-direction: column; gap: 14px; grid-column: 2; grid-row: 1 / span 3; min-width: 0; }
+  .v3-dash-top .v3-dash-side > .v3-attention, .v3-dash-top .v3-dash-side > .v3-calm-mini { flex: none; grid-column: auto; grid-row: auto; }
+  .v3-dash-top .v3-dash-side > .v3-side-plans { flex: 1 1 auto; display: flex !important; flex-direction: column; justify-content: center; }
+  .v3-chart-foot { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* «Потребує уваги» щільніше */
+.v3-attention .v3-alert-row, .v3-attention .v3-exp-row { padding: 8px 0; }
+.v3-attention .v3-exp-row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; }
+.v3-attention .v3-exp-row .v3-av { width: 32px; height: 32px; font-size: 11px; }
+.v3-attention .v3-exp-who strong { font-size: 13px; }
+.v3-tag-green { background: #e3f6ea; color: #1f6b3a; }
+.v3-tag-pop { animation: v3-tag-pop .45s cubic-bezier(.3, 1.7, .5, 1) both; }
+@keyframes v3-tag-pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* «Усе спокійно» — маленька картка замість порожнього блоку */
+.v3-calm-mini { flex: 1 1 340px; min-width: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 14px; padding: 22px; animation: v3-calm-in .45s cubic-bezier(.2, .9, .25, 1.15) both; }
+@keyframes v3-calm-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
+.v3-calm-mini-head { display: flex; align-items: center; gap: 12px; }
+.v3-calm-mini-head p { margin: 2px 0 0; }
+.v3-calm-ok { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #e3f6ea; color: #1f7a3d; flex-shrink: 0; animation: v3-calm-ok 2.8s ease-in-out infinite; }
+@keyframes v3-calm-ok { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 178, 75, .25); } 50% { box-shadow: 0 0 0 8px rgba(0, 178, 75, 0); } }
+.v3-calm-mini-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.v3-calm-mini-grid > div { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 14px; background: #f5f7fb; font-size: 11px; color: var(--v3-ink-muted); }
+.v3-calm-mini-grid b { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--v3-ink); font-weight: 600; }
+.v3-calm-dot { width: 7px; height: 7px; border-radius: 50%; background: #00B24B; animation: v3-breathe 2.4s ease-in-out infinite; }
+@keyframes v3-breathe { 50% { transform: scale(.7); opacity: .55; } }
+.v3-calm-mini-link { align-self: flex-start; color: #2450c4; }
+@media (min-width: 1600px) { .v3-dash-top .v3-dash-side > .v3-calm-mini { align-self: stretch; } }
+
+/* «Продовжити всім»: відблиск, аватарки, підтвердження, прогрес */
+.v3-xall { margin-top: auto; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.v3-xall-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; cursor: pointer; overflow: hidden; transition: transform .16s cubic-bezier(.3, 1.4, .5, 1), background .2s; }
+.v3-xall-btn::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .18), transparent); transform: skewX(-20deg); transition: left .6s ease; }
+.v3-xall-btn:hover:not(:disabled)::after { left: 120%; }
+.v3-xall-btn:hover:not(:disabled) { background: #1b212c; }
+.v3-xall-btn:active:not(:disabled) { transform: scale(.97); }
+.v3-xall-btn:disabled { background: #e4e7ec; color: #8a93a2; cursor: not-allowed; }
+.v3-xall-ar { display: inline-block; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+.v3-xall-btn:hover:not(:disabled) .v3-xall-ar { transform: translateX(4px); }
+.v3-xall-avs { display: inline-flex; }
+.v3-xall-avs .v3-xall-av { width: 22px; height: 22px; margin-left: -7px; border: 2px solid #11151c; font-size: 8px; transition: margin .35s cubic-bezier(.3, 1.5, .5, 1); }
+.v3-xall-avs .v3-xall-av:first-child { margin-left: 0; }
+.v3-xall-btn:hover:not(:disabled) .v3-xall-av:not(:first-child) { margin-left: -2px; }
+.v3-xall-ask { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; animation: v3-xall-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
+.v3-xall-ask .v3-btn { min-height: 46px; white-space: nowrap; }
+@keyframes v3-xall-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+.v3-xall-run { position: relative; display: grid; place-items: center; min-height: 46px; border-radius: 999px; background: #e9edf3; overflow: hidden; font: 600 13px Inter, sans-serif; color: var(--v3-ink); }
+.v3-xall-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #00B24B; transition: width .5s cubic-bezier(.3, .8, .4, 1); }
+.v3-xall-lbl { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+.v3-xall-run.is-done { background: #00B24B; color: #fff; animation: v3-xall-done .5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes v3-xall-done { 40% { transform: scale(1.03); } }
+.v3-xall-pick { align-self: center; color: #2450c4; text-decoration: none; }
+.v3-xall-pick:hover { text-decoration: underline; }
+
+/* Ризик відтоку: «Написати» → «Відкрито» */
+.v3-btn-pill.is-sent { background: #e3f6ea; color: #1f6b3a; }
+.v3-btn-pill svg { margin-right: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-tag-pop, .v3-calm-mini, .v3-calm-ok, .v3-calm-dot, .v3-xall-ask, .v3-xall-run.is-done { animation: none !important; }
+  .v3-xall-btn, .v3-xall-btn::after, .v3-xall-ar, .v3-xall-av, .v3-xall-fill { transition: none !important; }
+}
+
+/* Графік забирає вільну висоту картки, коли сусідній блок вищий (без порожнечі над тарифами) */
+.v3-chart-card { display: flex; flex-direction: column; }
+.v3-chart-card > .v3-bars-wrap { flex: 1 1 auto; display: flex; flex-direction: column; }
+.v3-chart-card > .v3-bars-wrap > .v3-bars { flex: 1 1 auto; height: auto; min-height: 170px; }
+.v3-chart-card > .v3-chart-foot { margin-top: 0; }
+@media (max-width: 767px) { .v3-chart-card > .v3-bars-wrap > .v3-bars { min-height: 150px; } }
+@media (min-width: 1600px) { .v3-dash-top .v3-dash-side > .v3-side-plans { justify-content: flex-start; gap: 26px; } .v3-side-plans .v3-paylist { margin: 0; } }

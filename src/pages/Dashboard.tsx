@@ -63,6 +63,14 @@ export default function Dashboard() {
   const [activeOnly, setActiveOnly] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [extending, setExtending] = useState(false);
+  // «Продовжити всім»: кнопка → підтвердження в ній самій → прогрес по рядках → «Продовжено»
+  const [extPhase, setExtPhase] = useState<"idle" | "ask" | "run" | "done">("idle");
+  const [extDoneIds, setExtDoneIds] = useState<number[]>([]);
+  useEffect(() => {
+    if (extPhase !== "ask") return;
+    const id = window.setTimeout(() => setExtPhase("idle"), 6000);
+    return () => window.clearTimeout(id);
+  }, [extPhase]);
   const [showDetails, setShowDetails] = useState(false);
   const [barOpen, setBarOpen] = useState<string | null>(null);
   // Bars grow from zero once data is in (and again when the chart mode changes).
@@ -160,19 +168,27 @@ export default function Dashboard() {
   const periodOptions = [{ key: "year", label: "Поточний рік" }, ...Array.from({ length: now.month }, (_, i) => ({ key: monthKey(now.year, now.month - 1 - i), label: `${MONTHS_FULL[now.month - 1 - i]} ${now.year}` }))];
   const periodLabel = period === "year" ? `${now.year} рік` : `${MONTHS_FULL[monthIdx(period)]} ${period.slice(0, 4)}`;
 
-  async function extendSelected(ids: number[]) {
+  async function extendSelected(ids: number[], inline = false) {
     const targets = expiring.filter((e) => ids.includes(e.user.id));
     setExtending(true);
+    if (inline) { setExtDoneIds([]); setExtPhase("run"); }
     const done: { id: number; prev: string; name: string }[] = [];
     for (const { user } of targets) {
       try {
         await authService.updateUser(user.id, { endDate: extendedEndDate(user.endDate, EXTEND_DAYS) });
         done.push({ id: user.id, prev: user.endDate, name: user.username });
+        if (inline) setExtDoneIds((v) => [...v, user.id]);
       } catch { /* reported below */ }
     }
     setExtending(false);
     setConfirmOpen(false);
+    if (inline) {
+      setExtPhase(done.length ? "done" : "idle");
+      // Дати час побачити зелені «+30 днів» у рядках, потім оновити список.
+      await new Promise((r) => window.setTimeout(r, 1800));
+    }
     await load();
+    if (inline) { setExtPhase("idle"); setExtDoneIds([]); }
     if (done.length < targets.length) toast.error(`Не вдалося продовжити ${targets.length - done.length} з ${targets.length}`, { description: "Решту продовжено. Спробуйте ще раз для тих, що залишились." });
     if (done.length) {
       toast.success(`Продовжено ${done.length} ${done.length === 1 ? "підписку" : done.length < 5 ? "підписки" : "підписок"} на ${EXTEND_DAYS} днів`, {
@@ -331,6 +347,46 @@ export default function Dashboard() {
       </div>
     );
   }
+  const calmSide = !attentionCount && !usersError;
+  const payBlock = (cls: string) => (
+                <div className={`v3-paylist v3-hide-mobile ${cls}`}>
+                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати →</Link></div>
+                  <ul>
+                    {recentPaid.map((p) => (
+                      <li key={p.id}>
+                        <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
+                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
+                        <span className="v3-pay-amt">+{money(p.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+  );
+  const plansBlock = (cls: string) => (
+                <div className={`v3-plans ${cls}`}>
+                  <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
+                  <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[p.plan] || "#7fdcaa" }} />)}</div>
+                  <ul className="v3-plan-legend">
+                    {view.plans.map((p) => <li key={p.plan}><span className="v3-dot" style={{ background: PLAN_COLORS[p.plan] || "#7fdcaa" }} /><span>{p.label}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
+                  </ul>
+                </div>
+  );
+  const nextRenewal = users.filter((u) => u.endDate && new Date(u.endDate).getTime() > Date.now()).sort((a, b) => a.endDate.localeCompare(b.endDate))[0];
+  const parsersOk = parsers ? !parsers.some((p) => p.open || p.failures24h > 0) : stats.parserFailures24h === 0;
+  const calmCompact = (
+    <aside className="v3-wcard v3-calm-mini" aria-label="Потребує уваги">
+      <div className="v3-calm-mini-head">
+        <span className="v3-calm-ok"><Check size={18} strokeWidth={2.6} aria-hidden="true" /></span>
+        <div><h2 className="v3-h2">Усе спокійно</h2><p className="v3-note-dark">Збоїв, звернень і підписок, що закінчуються за 7 днів, немає</p></div>
+      </div>
+      <div className="v3-calm-mini-grid">
+        <div><span>Парсери</span><b>{parsersOk && <i className="v3-calm-dot" aria-hidden="true" />}{parsersOk ? "працюють" : "є збої"}</b></div>
+        <div><span>Звернення</span><b>{openTickets ? `${openTickets} нових` : "0 нових"}</b></div>
+        <div><span>Найближче</span><b>{nextRenewal ? shortDate(nextRenewal.endDate) : "—"}</b></div>
+      </div>
+      <Link to="/users?status=active" className="v3-head-link v3-calm-mini-link">Усі підписки <span aria-hidden="true">→</span></Link>
+    </aside>
+  );
   const calmCard = (
     <aside className="v3-dcard v3-calm-card" aria-label="Потребує уваги">
       <span className="v3-calm-ico"><Check size={26} strokeWidth={1.8} aria-hidden="true" /></span>
@@ -460,34 +516,14 @@ export default function Dashboard() {
           </div>
           {!isEmpty && (view.planTotal > 0 || recentPaid.length > 0) && (
             <div className="v3-chart-foot">
-              {view.planTotal > 0 && (
-                <div className="v3-plans">
-                  <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
-                  <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[p.plan] || "#7fdcaa" }} />)}</div>
-                  <ul className="v3-plan-legend">
-                    {view.plans.map((p) => <li key={p.plan}><span className="v3-dot" style={{ background: PLAN_COLORS[p.plan] || "#7fdcaa" }} /><span>{p.label}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
-                  </ul>
-                </div>
-              )}
-              {recentPaid.length > 0 && (
-                <div className="v3-paylist v3-hide-mobile">
-                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати →</Link></div>
-                  <ul>
-                    {recentPaid.map((p) => (
-                      <li key={p.id}>
-                        <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
-                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
-                        <span className="v3-pay-amt">+{money(p.amount)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {view.planTotal > 0 && plansBlock("v3-hide-wide")}
+              {recentPaid.length > 0 && payBlock(calmSide ? "v3-hide-wide" : "")}
             </div>
           )}
         </div>
 
-        {!isEmpty && (!attentionCount && !usersError ? calmCard : <aside className="v3-wcard v3-attention">
+        {!isEmpty && <div className="v3-dash-side">
+        {!attentionCount && !usersError ? calmCompact : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{attentionCount > 0 && <span className="v3-tag v3-tag-red">{attentionCount}</span>}</div>
           <p className="v3-note-dark v3-hide-mobile">Збої, звернення, вік і підписки</p>
           {alerts.length > 0 && (
@@ -511,16 +547,40 @@ export default function Dashboard() {
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
                       <UserAvatar username={user.username} telegram={byId.get(user.id)?.telegram} />
-                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(user.endDate)}</small></span>
-                      <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>
+                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(extDoneIds.includes(user.id) ? extendedEndDate(user.endDate, EXTEND_DAYS) : user.endDate)}</small></span>
+                      {extDoneIds.includes(user.id)
+                        ? <span className="v3-tag v3-tag-green v3-tag-pop">+{EXTEND_DAYS} днів</span>
+                        : <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>}
                     </Link>
                   </li>
                 ))}
               </ul>
               {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі →</Link>}
-              <button type="button" className="v3-btn v3-btn-dark v3-btn-block" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setConfirmOpen(true)}>Продовжити всім на +{EXTEND_DAYS} днів…</button>
+              <div className="v3-xall">
+                {extPhase === "idle" && (
+                  <button type="button" className="v3-xall-btn" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setExtPhase("ask")}>
+                    <span className="v3-xall-avs v3-hide-mobile" aria-hidden="true">{expiring.slice(0, 4).map(({ user }) => <UserAvatar key={user.id} username={user.username} telegram={byId.get(user.id)?.telegram} className="v3-xall-av" />)}</span>
+                    <span className="v3-hide-mobile">Продовжити всім на +{EXTEND_DAYS} днів</span><span className="v3-only-mobile">Продовжити всім · +{EXTEND_DAYS} днів</span><span className="v3-xall-ar" aria-hidden="true">→</span>
+                  </button>
+                )}
+                {extPhase === "ask" && (
+                  <div className="v3-xall-ask" role="group" aria-label="Підтвердження продовження">
+                    <button type="button" className="v3-btn v3-btn-outline" onClick={() => setExtPhase("idle")}>Скасувати</button>
+                    <button type="button" className="v3-btn v3-btn-primary" onClick={() => extendSelected(expiring.map((e) => e.user.id), true)}><span className="v3-hide-mobile">Так, продовжити {expiring.length} · +{EXTEND_DAYS} днів</span><span className="v3-only-mobile">Так, {expiring.length} · +{EXTEND_DAYS} днів</span></button>
+                  </div>
+                )}
+                {(extPhase === "run" || extPhase === "done") && (
+                  <div className={`v3-xall-run${extPhase === "done" ? " is-done" : ""}`} role="status">
+                    <span className="v3-xall-fill" style={{ width: `${(extDoneIds.length / Math.max(1, expiring.length)) * 100}%` }} aria-hidden="true" />
+                    <span className="v3-xall-lbl">{extPhase === "done" ? <><Check size={15} strokeWidth={3} aria-hidden="true" />Продовжено {extDoneIds.length} {extDoneIds.length === 1 ? "підписку" : extDoneIds.length < 5 ? "підписки" : "підписок"}</> : `Продовжуємо ${extDoneIds.length} з ${expiring.length}…`}</span>
+                  </div>
+                )}
+                {extPhase === "idle" && <button type="button" className="v3-link-btn v3-xall-pick" disabled={!online} onClick={() => setConfirmOpen(true)}>Вибрати, кому продовжити</button>}
+              </div>
             </> : null}
-        </aside>)}
+        </aside>}
+        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className="v3-dcard v3-side-plans v3-only-wide">{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
+        </div>}
       </section>
       </div>
 
