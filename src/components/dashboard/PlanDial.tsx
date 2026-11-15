@@ -4,7 +4,8 @@ type Plan = { plan: string; label: string; count: number };
 
 const R = 40;
 const C = 2 * Math.PI * R;
-const GAP = 14; // градусів між сегментами
+// Проміжок між сегментами з урахуванням круглих кінців (товщина 12 при r=40 «з’їдає» ~17°)
+const GAP = 26;
 
 /**
  * «Активні за тарифами» — кільце, яке можна крутити (KokonutUI «Spending Ring», під стиль MatchIQ).

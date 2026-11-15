@@ -312,3 +312,17 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
 /* Сповіщення: свайп убік закриває, картка тьмяніє в русі */
 .v3-toast[data-swiping="true"] { opacity: .8; cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) { .v3-dash { transition: none; } .v3-ptr svg.is-spin { animation: none; } }
+
+/* Перемикачі: однакова товщина тексту (без стрибків ширини) і м'якший рух пігулки */
+.v3-seg > button, .v3-seg > button.is-on, .v3-seg-soft button, .v3-seg-soft button.is-on, .v3-pseg > button, .v3-pseg > button.is-on { font-weight: 600; }
+.v3-pill { transition: left .38s cubic-bezier(.3, 1.08, .4, 1), width .38s cubic-bezier(.3, 1.08, .4, 1), opacity .2s; }
+.v3-seg-soft .v3-pill { box-shadow: 0 4px 10px rgba(58, 109, 240, .25); }
+
+/* Помісячний звіт: поточний місяць — акцентний рядок */
+.v3-table tbody tr.is-current > * { background: #f3f7ff; }
+.v3-table tbody tr.is-current > th { position: relative; box-shadow: inset 3px 0 0 var(--v3-nav); }
+.v3-table tbody tr.is-current > th:first-child { border-radius: 12px 0 0 12px; }
+.v3-table tbody tr.is-current > td:last-child { border-radius: 0 12px 12px 0; }
+.v3-table tbody tr.is-current .v3-month { font-weight: 700; color: #11151c; }
+.v3-table tbody tr.is-current td { color: #11151c; font-weight: 600; }
+.v3-table tbody tr.is-current + tr > * { border-top-color: transparent; }

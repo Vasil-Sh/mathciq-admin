@@ -680,7 +680,7 @@ export default function Dashboard() {
             <thead><tr><th scope="col">Місяць</th><th scope="col">Отримані оплати</th><th scope="col">Вартість підписок*</th><th scope="col">Нові користувачі</th><th scope="col">До попереднього</th></tr></thead>
             <tbody key={activeOnly ? "act" : "all"} className="v3-rep-body">
               {report.map((r, ri) => (
-                <tr key={r.m} style={{ animationDelay: `${Math.min(ri, 10) * 0.04}s` }}>
+                <tr key={r.m} className={r.current ? "is-current" : undefined} style={{ animationDelay: `${Math.min(ri, 10) * 0.04}s` }}>
                   <th scope="row"><span className="v3-month">{r.name}{r.current && <span className="v3-tag">Поточний</span>}</span></th>
                   <td className="v3-num v3-strong">{money(r.paid)}</td>
                   <td className="v3-num v3-dim2">{money(r.est)}</td>
