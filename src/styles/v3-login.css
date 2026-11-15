@@ -148,3 +148,28 @@
 
 /* iPhone: поля 16px — Safari не збільшує сторінку при введенні (і не «застрягає» збільшеною) */
 .v3-field input, .v3-field select, .v3-field textarea { font-size: 16px; }
+
+/* Вхід на телефоні вміщається в екран без прокрутки */
+@media (max-width: 767px) {
+  .v3-login { min-height: 100dvh; align-items: center; }
+  .v3-login-grid { gap: 12px; }
+  .v3-login-story { padding: 18px 20px; gap: 12px; }
+  .v3-login-story h1 { font-size: 26px; line-height: 1.1; }
+  .v3-login-story p { margin-top: 8px; font-size: 13px; line-height: 1.5; }
+  .v3-login-form { padding: 20px; gap: 14px; }
+  .v3-login-form h2 { font-size: 26px; margin-top: 4px; }
+  .v3-login-form .v3-field { gap: 6px; }
+  .v3-login-form .v3-field input { min-height: 48px; }
+  .v3-login-lead { font-size: 13px; margin-top: 6px; }
+  .v3-login-form form { gap: 12px; }
+  .v3-login-submit { min-height: 50px; }
+}
+
+/* Вхід на телефоні: контурні лінії до самого верху екрана */
+@media (max-width: 767px) {
+  .v3-topo-canvas { -webkit-mask-image: linear-gradient(to bottom, #000, #000 86%, transparent); mask-image: linear-gradient(to bottom, #000, #000 86%, transparent); }
+}
+
+/* Відступи під статус-бар і жест «додому» (застосунок на головному екрані iPhone) */
+.v3-login { padding-top: calc(40px + env(safe-area-inset-top, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 767px) { .v3-login { padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }

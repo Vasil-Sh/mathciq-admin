@@ -343,9 +343,16 @@ html { color-scheme: dark; }
 .v3-header { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 767px) { .v3-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); } }
 .v3-page { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
-.v3-login { padding-top: calc(40px + env(safe-area-inset-top, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 767px) { .v3-login { padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
 .v3-mobile-menu[data-state] { padding-top: calc(18px + env(safe-area-inset-top, 0px)) !important; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
 
 /* iPhone: будь-яке поле введення не менше 16px, інакше Safari збільшує сторінку при фокусі */
 @media (max-width: 767px) { input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; } }
+
+/* Шапка: фон застосунку (зорі) просвічує й під статус-баром — замість суцільної темної смуги */
+.v3-header { background: linear-gradient(rgba(10, 13, 19, .72), rgba(10, 13, 19, .38) 70%, rgba(10, 13, 19, 0)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+
+/* Телефон: без смужки прокрутки (там, де браузер дозволяє її сховати) */
+@media (max-width: 767px) {
+  html, body { scrollbar-width: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+}
