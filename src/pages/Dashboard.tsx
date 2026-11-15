@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowRight, Check, ChevronRight, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUp, Check, ChevronRight, Download, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
@@ -13,9 +13,11 @@ import PeriodMenu from "@/components/dashboard/PeriodMenu";
 import UserAvatar from "@/components/UserAvatar";
 import RollingNumber from "@/components/RollingNumber";
 import PlanDial from "@/components/dashboard/PlanDial";
+import PillTrack from "@/components/PillTrack";
+import SwipeRow from "@/components/dashboard/SwipeRow";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
-import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
+import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, telegramLink, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
 import type { AdminUser, AdminUserOverview, AppSettings } from "@/types";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
@@ -121,7 +123,7 @@ export default function Dashboard() {
     return () => cancelAnimationFrame(id);
   }, [stats ? 1 : 0, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const view = useMemo(() => {
+  const viewMemo = useMemo(() => {
     if (!stats) return null;
     const pay = Object.fromEntries((stats.paymentsByMonth || []).map((r) => [r.month, r]));
     const est = Object.fromEntries(stats.revenueByMonth.map((r) => [r.month, r.revenue]));
@@ -161,6 +163,7 @@ export default function Dashboard() {
     const prevReg = reg[prevKey(now.key)] || 0;
     return { pay, est, reg, series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
   }, [stats, overview, mode, period, now.key, now.month, now.year]);
+  const view = viewMemo;
 
   const firstChip = Math.max(0, now.month - 3);
   const recentChips = Array.from({ length: now.month - firstChip }, (_, i) => ({ key: monthKey(now.year, firstChip + i), label: MONTHS_FULL[firstChip + i] }));
@@ -212,6 +215,14 @@ export default function Dashboard() {
 
   function exportCsv() {
     if (!view) return;
+    const v = view;
+    toast.promise(new Promise<void>((resolve) => window.setTimeout(() => { doExport(v); resolve(); }, 700)), {
+      loading: "Готуємо CSV…",
+      success: `Звіт за ${v.year} рік завантажено`,
+      error: "Не вдалося сформувати CSV",
+    });
+  }
+  function doExport(view: NonNullable<typeof viewMemo>) {
     downloadCsv(`matchiq-report-${view.year}.csv`, ["Місяць", "Отримані оплати, ₴", "Вартість підписок, ₴", "Нові користувачі", "До попереднього, %"],
       [...view.report].reverse().map((r) => [`${r.name} ${view.year}`, r.paid, r.est, r.users, r.delta ?? ""]));
   }
@@ -224,16 +235,20 @@ export default function Dashboard() {
         <p className="v3-subtitle">
           {emptyPlatform
             ? <><span className="v3-hide-mobile">Тут з’являться оплати, підписки й активність, щойно на платформі будуть перші користувачі.</span><span className="v3-only-mobile">Показники з’являться після перших користувачів і оплат.</span></>
-            : <>Оплати, підписки й активність MatchIQ — за обраний період.{updatedAt && <span className="v3-dim"> · Оновлено {updatedAt}</span>}</>}
+            : <>Оплати, підписки й активність MatchIQ — за обраний період.{updatedAt && <span className="v3-dim v3-only-mobile"> · Оновлено {updatedAt}</span>}</>}
         </p>
       </div>
       <div className="v3-chips" role="group" aria-label="Період">
-        {periodChips.map((c) => <button key={c.key} type="button" className={`v3-chip v3-hide-mobile${period === c.key ? " is-on" : ""}`} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
+        <div className="v3-seg v3-pseg v3-hide-mobile">
+          <PillTrack active={`${period}-${periodChips.length}`} />
+          {periodChips.map((c) => <button key={c.key} type="button" className={period === c.key ? "is-on" : ""} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
+        </div>
+        {updatedAt && <span className="v3-asof v3-hide-mobile">станом на {updatedAt}</span>}
         <div className="v3-only-mobile v3-period-wrap"><PeriodMenu value={period} options={periodOptions} onChange={setPeriod} /></div>
         <button type="button" className="v3-chip v3-refresh" onClick={() => load(true)} disabled={refreshing || !online} aria-label={`Оновити дані · автоматично раз на хвилину`} title="Автооновлення раз на хвилину">
           {/* Кільце: скільки лишилось до автооновлення; на паузі без зв'язку */}
           {loadedAt > 0 && online && !refreshing && <svg key={loadedAt} className="v3-ar-ring" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.4" /><circle className="v3-ar-p" cx="10" cy="10" r="8" fill="none" stroke="#5a8cff" strokeWidth="2.4" strokeLinecap="round" style={{ animationDuration: `${REFRESH_MS}ms` }} /></svg>}
-          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span>
+          <RefreshCw size={14} className={`v3-ref-ic${refreshing ? " animate-spin" : ""}`} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span>
         </button>
       </div>
     </section>
@@ -329,6 +344,12 @@ export default function Dashboard() {
   const report = activeOnly ? view.report.filter((r) => r.paid || r.users) : view.report;
   const totals = view.report.reduce((t, r) => ({ paid: t.paid + r.paid, users: t.users + r.users }), { paid: 0, users: 0 });
   const chartEmpty = view.total === 0;
+  const barCmp = (i: number) => {
+    const cur = view.series[i]?.v || 0, prev = i > 0 ? view.series[i - 1]?.v || 0 : 0;
+    if (!prev) return "клік — деталі місяця";
+    const d = Math.round(((cur - prev) / prev) * 1000) / 10;
+    return `${pct(d)} до ${MONTHS_GEN[monthIdx(view.series[i - 1].m)]}`;
+  };
   function monthPopover(m: string, i: number) {
     const name = MONTHS_FULL[monthIdx(m)];
     const p = view!.pay[m];
@@ -357,7 +378,7 @@ export default function Dashboard() {
   const calmSide = !attentionCount && !usersError;
   const payBlock = (cls: string) => (
                 <div className={`v3-paylist v3-hide-mobile ${cls}`}>
-                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати →</Link></div>
+                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати <span className="v3-ar" aria-hidden="true">→</span></Link></div>
                   <ul>
                     {recentPaid.map((p) => (
                       <li key={p.id}>
@@ -390,7 +411,7 @@ export default function Dashboard() {
         <div><span>Звернення</span><b>{openTickets ? `${openTickets} нових` : "0 нових"}</b></div>
         <div><span>Найближче</span><b>{nextRenewal ? shortDate(nextRenewal.endDate) : "—"}</b></div>
       </div>
-      <Link to="/users?status=active" className="v3-head-link v3-calm-mini-link">Усі підписки <span aria-hidden="true">→</span></Link>
+      <Link to="/users?status=active" className="v3-head-link v3-calm-mini-link">Усі підписки <span className="v3-ar" aria-hidden="true">→</span></Link>
     </aside>
   );
   const calmCard = (
@@ -414,7 +435,7 @@ export default function Dashboard() {
           <Link key={label} to={to} className={`v3-kpi${hero ? " is-hero" : ""}`}>
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Icon size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">{label}</span><span className="v3-only-mobile">{short}</span></span>
             <strong className="v3-kpi-v"><RollingNumber key={`${value}-${period}`} text={value} /></strong>
-            <span className="v3-kpi-n">{note}{delta != null && <> · <span className={`v3-kpi-delta ${delta >= 0 ? "is-up" : "is-down"}`}>{pct(delta)}</span> {deltaNote}</>}</span>
+            <span className="v3-kpi-n">{delta != null && <><span className={`v3-dl ${hero ? "is-onblue" : delta >= 0 ? "is-up" : "is-down"}${delta < 0 ? " is-neg" : ""}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{pct(Math.abs(delta)).replace("+", "")}</span><span className="sr-only">{delta >= 0 ? "зростання" : "падіння"} </span>{deltaNote} · </>}{note}</span>
           </Link>
         ))}
       </section>
@@ -431,7 +452,7 @@ export default function Dashboard() {
           {conv && <Link to="/users" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span>
             <strong className="v3-kpi-v">{convPct === null ? "—" : <><RollingNumber key={`cv-${convPct}`} text={String(convPct)} /><small className="v3-kpi-unit">%</small></>}</strong>
-            <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span style={{ width: `${convPct || 0}%` }} /></span>
+            <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span className="v3-fill" style={{ width: `${convPct || 0}%` }} /></span>
             <span className="v3-kpi-n"><span className="v3-hide-mobile">{c30 && c30.trialEnded ? `${c30.converted} з ${c30.trialEnded} за 30 днів` : "за 30 днів пробних не закінчувалось"} · </span>{conv.trial ? `зараз на пробному ${conv.trial}` : "на пробному нікого"}</span>
           </Link>}
           <Link to="/payments" className="v3-kpi">
@@ -479,6 +500,7 @@ export default function Dashboard() {
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
             <div className="v3-seg" role="group" aria-label="Показник графіка">
+              <PillTrack active={mode} />
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
               <button type="button" className={mode === "est" ? "is-on" : ""} aria-pressed={mode === "est"} onClick={() => setMode("est")}><span className="v3-hide-mobile">Вартість підписок</span><span className="v3-only-mobile">Підписки</span></button>
             </div>
@@ -501,6 +523,7 @@ export default function Dashboard() {
                     ) : (
                       <div className="v3-bar-slot" style={{ height: grown ? h : "0%" }}>
                         <button type="button" className={`v3-bar${on ? " is-on" : ""}`} aria-expanded={open} aria-label={`${name}: ${money(s.v)} — деталі`} onClick={() => setBarOpen(open ? null : s.m)} />
+                        {!open && <span className={`v3-bar-tip${i < 2 ? " is-l" : i > 9 ? " is-r" : ""}`} aria-hidden="true"><span>{name} {s.m.slice(0, 4)}</span><b>{money(s.v)}</b><span>{barCmp(i)}</span></span>}
                         {open && <div className="v3-bar-backdrop v3-only-mobile" aria-hidden="true" onClick={() => setBarOpen(null)} />}
                         {open && monthPopover(s.m, i)}
                       </div>
@@ -534,12 +557,12 @@ export default function Dashboard() {
           <p className="v3-note-dark v3-hide-mobile">Збої, звернення, вік і підписки</p>
           {alerts.length > 0 && (
             <ul className="v3-alerts">
-              {alerts.map((al) => (
+              {alerts.map((al, ai) => (
                 <li key={al.key}>
                   <Link to={al.to} className="v3-alert-row">
-                    <span className={`v3-alert-dot is-${al.dot}`} aria-hidden="true" />
+                    <span className={`v3-alert-dot is-${al.dot}${ai === 0 && al.dot === "red" ? " is-pulse" : ""}`} aria-hidden="true" style={{ animationDelay: `${ai * 0.4}s` }} />
                     <span className="v3-exp-who"><strong>{al.title}</strong><small>{al.sub}</small></span>
-                    <span className="v3-alert-cta"><span className="v3-hide-mobile">{al.cta} </span>→</span>
+                    <span className="v3-alert-cta"><span className="v3-hide-mobile">{al.cta} </span><span className="v3-ar" aria-hidden="true">→</span></span>
                   </Link>
                 </li>
               ))}
@@ -551,6 +574,7 @@ export default function Dashboard() {
               <ul className="v3-exp-list">
                 {expiring.map(({ user, days }, i) => (
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
+                    <SwipeRow tg={telegramLink(byId.get(user.id)?.telegram || user.telegram)} onExtend={() => extendSelected([user.id])} extendLabel={`+${EXTEND_DAYS} днів`} hint={i === 0}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
                       <UserAvatar username={user.username} telegram={byId.get(user.id)?.telegram} />
                       <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(extDoneIds.includes(user.id) ? extendedEndDate(user.endDate, EXTEND_DAYS) : user.endDate)}</small></span>
@@ -558,10 +582,12 @@ export default function Dashboard() {
                         ? <span className="v3-tag v3-tag-green v3-tag-pop">+{EXTEND_DAYS} днів</span>
                         : <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>}
                     </Link>
+                    </SwipeRow>
                   </li>
                 ))}
               </ul>
-              {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі →</Link>}
+              <p className="v3-only-mobile v3-swipe-note">Потягніть рядок вліво — «Написати» або «+{EXTEND_DAYS} днів»</p>
+              {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} користувачі <span className="v3-ar" aria-hidden="true">→</span></Link>}
               <div className="v3-xall">
                 {extPhase === "idle" && (
                   <button type="button" className="v3-xall-btn" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setExtPhase("ask")}>
@@ -602,19 +628,20 @@ export default function Dashboard() {
           <div><h2 className="v3-h2">Помісячний звіт</h2><p className="v3-note-dark">Оплати, вартість підписок і нові реєстрації</p></div>
           <div className="v3-head-actions v3-hide-mobile">
             <div className="v3-seg v3-seg-light" role="group" aria-label="Місяці у звіті">
+              <PillTrack active={activeOnly} />
               <button type="button" className={!activeOnly ? "is-on" : ""} aria-pressed={!activeOnly} onClick={() => setActiveOnly(false)}>Усі місяці <span>{view.report.length}</span></button>
               <button type="button" className={activeOnly ? "is-on" : ""} aria-pressed={activeOnly} onClick={() => setActiveOnly(true)}>З активністю <span>{view.report.filter((r) => r.paid || r.users).length}</span></button>
             </div>
-            <button type="button" className="v3-btn v3-btn-outline" onClick={exportCsv}>Експорт CSV</button>
+            <button type="button" className="v3-btn v3-btn-outline v3-export" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
           </div>
         </div>
 
         <div className="v3-table-scroll v3-hide-mobile" role="region" aria-label="Помісячний звіт" tabIndex={0}>
           <table className="v3-table">
             <thead><tr><th scope="col">Місяць</th><th scope="col">Отримані оплати</th><th scope="col">Вартість підписок*</th><th scope="col">Нові користувачі</th><th scope="col">До попереднього</th></tr></thead>
-            <tbody>
-              {report.map((r) => (
-                <tr key={r.m}>
+            <tbody key={activeOnly ? "act" : "all"} className="v3-rep-body">
+              {report.map((r, ri) => (
+                <tr key={r.m} style={{ animationDelay: `${Math.min(ri, 10) * 0.04}s` }}>
                   <th scope="row"><span className="v3-month">{r.name}{r.current && <span className="v3-tag">Поточний</span>}</span></th>
                   <td className="v3-num v3-strong">{money(r.paid)}</td>
                   <td className="v3-num v3-dim2">{money(r.est)}</td>

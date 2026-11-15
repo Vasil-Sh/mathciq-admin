@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
-import { Check, Send } from "lucide-react";
+import { useState } from "react";
+import WriteButton from "@/components/dashboard/WriteButton";
+import PillTrack from "@/components/PillTrack";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
 import { relDay } from "@/lib/dashboardInsights";
@@ -14,15 +15,7 @@ const MOBILE_LIMIT = 3;
 export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, thresholdsFromSettings }: { rows: RiskRow[]; inactiveDays: number; lossStreak: number; thresholdsFromSettings: boolean }) {
   const [tab, setTab] = useState<Tab>("all");
   const [expanded, setExpanded] = useState(false);
-  // «Написати» відкриває Telegram у новій вкладці; кнопка на 2,5 с показує «Відкрито».
-  const [sent, setSent] = useState<number | null>(null);
-  const sentTimer = useRef<number | undefined>(undefined);
-  const markSent = (id: number) => { setSent(id); window.clearTimeout(sentTimer.current); sentTimer.current = window.setTimeout(() => setSent(null), 2500); };
-  const writeBtn = (id: number, tg: string) => (
-    <a href={tg} target="_blank" rel="noreferrer" className={`v3-btn-pill${sent === id ? " is-sent" : ""}`} onClick={() => markSent(id)}>
-      {sent === id ? <><Check size={13} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><Send size={13} aria-hidden="true" />Написати</>}
-    </a>
-  );
+
   const idle = rows.filter((r) => r.inactive);
   const streak = rows.filter((r) => r.losing);
   const list = tab === "idle" ? idle : tab === "streak" ? streak : rows;
@@ -48,6 +41,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
           <p className="v3-note-dark"><span className="v3-hide-mobile">Платні користувачі, які можуть не продовжити — за даними ставок</span><span className="v3-only-mobile">За даними ставок: неактивні й серії програшів</span></p>
         </div>
         <div className="v3-seg v3-seg-soft" role="group" aria-label="Причина ризику">
+          <PillTrack active={tab} />
           {tabs.map((t) => (
             <button key={t.key} type="button" className={tab === t.key ? "is-on" : ""} aria-pressed={tab === t.key} onClick={() => { setTab(t.key); setExpanded(false); }}>
               <span className="v3-hide-mobile">{t.label}</span><span className="v3-only-mobile">{t.short}</span> <span className="v3-seg-n">{t.n}</span>
@@ -70,7 +64,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
                   <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
-                  <span role="cell">{tg ? writeBtn(r.user.id, tg) : null}</span>
+                  <span role="cell">{tg ? <WriteButton href={tg} /> : null}</span>
                 </div>
               );
             })}
@@ -83,7 +77,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                 <li key={r.user.id}>
                   <UserAvatar username={r.user.username} telegram={r.user.telegram} />
                   <span className="v3-ret-who"><strong>@{r.user.username}</strong><small className={r.losing && tab !== "idle" ? "is-red" : undefined}>{r.losing && tab !== "idle" ? streakText(r.streak) : idleText(r)} · до {shortDate(r.user.endDate)}</small></span>
-                  {tg && writeBtn(r.user.id, tg)}
+                  {tg && <WriteButton href={tg} />}
                 </li>
               );
             })}

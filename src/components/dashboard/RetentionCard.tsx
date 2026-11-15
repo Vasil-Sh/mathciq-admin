@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { telegramLink, type ChurnedRow } from "@/lib/dashboardInsights";
 import UserAvatar from "@/components/UserAvatar";
+import WriteButton from "@/components/dashboard/WriteButton";
+import RollingNumber from "@/components/RollingNumber";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -44,15 +46,15 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
           <h2 id="ret-title" className="v3-h2">Утримання</h2>
           <p className="v3-note v3-hide-mobile"><span className="v3-hide-wide">Хто продовжив підписку після її закінчення</span><span className="v3-only-wide">Хто продовжив підписку</span> · {t.label}</p>
         </div>
-        <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile v3-hide-wide">Деталі →</Link>
+        <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile v3-hide-wide">Деталі <span className="v3-ar" aria-hidden="true">→</span></Link>
         <span className="v3-note v3-only-mobile">{t.label}</span>
       </div>
 
-      <strong className="v3-ret-big v3-only-wide">{t.rate}%</strong>
+      <strong className="v3-ret-big v3-only-wide"><RollingNumber text={`${t.rate}%`} /></strong>
       <div className="v3-ret-tiles v3-hide-mobile">
-        <div className="v3-hide-wide"><span>Утримання</span><strong className="is-blue">{t.rate}%</strong></div>
-        <div><span>Продовжили</span><strong>{t.renewed}<small> з {t.total}</small></strong></div>
-        <div><span>Відтік</span><strong className={t.lost ? "is-red" : undefined}>{t.lost}</strong></div>
+        <div className="v3-hide-wide"><span>Утримання</span><strong className="is-blue"><RollingNumber text={`${t.rate}%`} /></strong></div>
+        <div><span>Продовжили</span><strong><RollingNumber text={String(t.renewed)} /><small> з {t.total}</small></strong></div>
+        <div><span>Відтік</span><strong className={t.lost ? "is-red" : undefined}><RollingNumber text={String(t.lost)} /></strong></div>
       </div>
       <div className="v3-ret-mobile v3-only-mobile">
         <div>
@@ -70,12 +72,13 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
         <div className="v3-hide-mobile v3-ret-chart">
           <div className="v3-ret-bars-head v3-hide-wide"><span>Утримання за 6 місяців</span><span>{avg !== null ? `середнє ${avg}%` : "даних за ці місяці ще немає"}</span></div>
           <div className="v3-ret-bars" role="img" aria-label={`Утримання за місяцями: ${months.map((m) => `${MONTHS[mIdx(m.month)]} ${m.rate === null ? "немає даних" : `${m.rate}%`}`).join(", ")}`}>
-            {months.map((m) => {
+            {months.map((m, i) => {
               const on = m.month === focus?.month;
               return (
-                <div key={m.month} className="v3-ret-col">
+                <div key={m.month} className="v3-ret-col" tabIndex={0}>
                   <span className={on ? "is-on" : undefined}>{m.rate === null ? "—" : `${m.rate}%`}</span>
-                  <div className={`v3-ret-bar${on ? " is-on" : ""}`} style={{ height: m.rate === null ? "4%" : `${Math.max(6, m.rate)}%` }} />
+                  <div className={`v3-ret-bar${on ? " is-on" : ""}`} style={{ height: m.rate === null ? "4%" : `${Math.max(6, m.rate)}%`, animationDelay: `${i * 0.06}s` }} />
+                  <span className="v3-ret-tip" role="tooltip">{MONTHS_FULL[mIdx(m.month)]}<b>{m.rate === null ? "немає даних" : `${m.rate}%`}</b>{m.total ? `продовжили ${m.renewed} з ${m.total}` : "підписки не закінчувались"}{i > 0 && m.rate !== null && months[i - 1].rate !== null ? <em>{(m.rate - (months[i - 1].rate as number)) >= 0 ? "+" : "−"}{Math.abs(m.rate - (months[i - 1].rate as number))} п. до попереднього</em> : null}</span>
                 </div>
               );
             })}
@@ -86,7 +89,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
 
       {((list && shown.length > 0) || avg !== null) && (
         <div className="v3-ret-side">
-          {list && shown.length > 0 && <div className="v3-ret-side-head v3-hide-mobile"><h3 className="v3-ret-sub">Не продовжили</h3><Link to="/users?status=expired" className="v3-ret-more v3-only-wide">Усі →</Link></div>}
+          {list && shown.length > 0 && <div className="v3-ret-side-head v3-hide-mobile"><h3 className="v3-ret-sub">Не продовжили</h3><Link to="/users?status=expired" className="v3-ret-more v3-only-wide">Усі <span className="v3-ar" aria-hidden="true">→</span></Link></div>}
           <ul className="v3-ret-list">
             {shown.map(({ user, ended, tenure }) => {
               const tg = telegramLink(user.telegram);
@@ -97,7 +100,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link>
                     <small><span className="v3-hide-mobile v3-hide-wide">закінчилась {ended}{tenure && ` · ${tenure}`}</span><span className="v3-only-wide">{ended}{tenure && ` · ${tenure.replace(/^з нами (.+)$/, "$1 з нами")}`}</span><span className="v3-only-mobile">не продовжив · {ended}</span></small>
                   </span>
-                  {tg && <a href={tg} target="_blank" rel="noreferrer" className="v3-btn-pill v3-btn-pill-dark">Написати</a>}
+                  {tg && <WriteButton href={tg} dark />}
                 </li>
               );
             })}

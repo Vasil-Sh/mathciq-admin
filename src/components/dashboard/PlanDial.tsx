@@ -49,7 +49,7 @@ export default function PlanDial({ plans, colors, total, unit }: { plans: Plan[]
     return best;
   };
   const onDown = (e: React.PointerEvent) => {
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch { /* синтетичні події */ }
     st.current = { a0: angleAt(e), r0: rot, moved: false };
     setDrag(true);
   };
