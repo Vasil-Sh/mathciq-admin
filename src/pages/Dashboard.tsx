@@ -583,14 +583,14 @@ export default function Dashboard() {
             )}
           </div>
           {!isEmpty && (view.planTotal > 0 || recentPaid.length > 0) && (
-            <div className="v3-chart-foot">
-              {view.planTotal > 0 && plansBlock("v3-hide-wide")}
-              {recentPaid.length > 0 && payBlock(calmSide ? "v3-hide-wide" : "")}
+            <div className={`v3-chart-foot${calmSide ? " is-calm" : ""}`}>
+              {view.planTotal > 0 && plansBlock(calmSide ? "v3-hide-desk" : "v3-hide-wide")}
+              {recentPaid.length > 0 && payBlock(calmSide ? "v3-hide-desk" : "")}
             </div>
           )}
         </div>
 
-        {!isEmpty && <div className="v3-dash-side">
+        {!isEmpty && <div className={`v3-dash-side${calmSide ? " is-calm" : ""}`}>
         {!attentionCount && !usersError ? calmCompact : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{attentionCount > 0 && <span className="v3-tag v3-tag-red">{attentionCount}</span>}</div>
           <p className="v3-note-dark v3-hide-mobile">Збої, звернення, вік і підписки</p>
@@ -650,7 +650,7 @@ export default function Dashboard() {
               </div>
             </> : null}
         </aside>}
-        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className="v3-dcard v3-side-plans v3-only-wide">{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
+        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className={`v3-dcard v3-side-plans ${calmSide ? "v3-hide-mobile" : "v3-only-wide"}`}>{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
         </div>}
       </section>
       </div>

@@ -326,3 +326,13 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
 .v3-table tbody tr.is-current .v3-month { font-weight: 700; color: #11151c; }
 .v3-table tbody tr.is-current td { color: #11151c; font-weight: 600; }
 .v3-table tbody tr.is-current + tr > * { border-top-color: transparent; }
+
+/* «Усе спокійно» на десктопі: під маленькою карткою — тарифи й останні оплати, без порожнечі */
+@media (min-width: 768px) {
+  .v3-hide-desk { display: none !important; }
+  .v3-dash-side.is-calm { display: flex; flex-direction: column; gap: 14px; flex: 1 1 340px; min-width: 0; }
+  .v3-dash-side.is-calm > .v3-calm-mini { flex: none; align-self: stretch; }
+  .v3-dash-side.is-calm > .v3-side-plans { flex: 1 1 auto; display: flex; flex-direction: column; gap: 26px; }
+  .v3-dash-side.is-calm .v3-paylist { margin: 0; }
+}
+@media (min-width: 768px) { .v3-chart-foot.is-calm { display: none; } }
