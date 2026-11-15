@@ -11,6 +11,8 @@ import RetentionCard from "@/components/dashboard/RetentionCard";
 import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
 import PeriodMenu from "@/components/dashboard/PeriodMenu";
 import UserAvatar from "@/components/UserAvatar";
+import RollingNumber from "@/components/RollingNumber";
+import PlanDial from "@/components/dashboard/PlanDial";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
@@ -58,6 +60,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
+  const [loadedAt, setLoadedAt] = useState(0);
   const [period, setPeriod] = useState<string>(now.key);
   const [mode, setMode] = useState<"pay" | "est">("pay");
   const [activeOnly, setActiveOnly] = useState(false);
@@ -88,7 +91,7 @@ export default function Dashboard() {
     if (p.status === "fulfilled") setParsers(p.value);
     if (t.status === "fulfilled") setTickets(t.value);
     if (st.status === "fulfilled") setSettings(st.value);
-    if (s.status === "fulfilled") { setStats(s.value); setError(""); setUpdatedAt(hhmm()); }
+    if (s.status === "fulfilled") { setStats(s.value); setError(""); setUpdatedAt(hhmm()); setLoadedAt(Date.now()); }
     else setError((s.reason as Error)?.message || "Сервер не відповідає");
     if (u.status === "fulfilled") { setUsers(u.value); setUsersError(false); } else setUsersError(true);
     setLoading(false);
@@ -227,7 +230,11 @@ export default function Dashboard() {
       <div className="v3-chips" role="group" aria-label="Період">
         {periodChips.map((c) => <button key={c.key} type="button" className={`v3-chip v3-hide-mobile${period === c.key ? " is-on" : ""}`} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
         <div className="v3-only-mobile v3-period-wrap"><PeriodMenu value={period} options={periodOptions} onChange={setPeriod} /></div>
-        <button type="button" className="v3-chip v3-refresh" onClick={() => load(true)} disabled={refreshing || !online} aria-label="Оновити дані"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span></button>
+        <button type="button" className="v3-chip v3-refresh" onClick={() => load(true)} disabled={refreshing || !online} aria-label={`Оновити дані · автоматично раз на хвилину`} title="Автооновлення раз на хвилину">
+          {/* Кільце: скільки лишилось до автооновлення; на паузі без зв'язку */}
+          {loadedAt > 0 && online && !refreshing && <svg key={loadedAt} className="v3-ar-ring" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.4" /><circle className="v3-ar-p" cx="10" cy="10" r="8" fill="none" stroke="#5a8cff" strokeWidth="2.4" strokeLinecap="round" style={{ animationDuration: `${REFRESH_MS}ms` }} /></svg>}
+          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span>
+        </button>
       </div>
     </section>
   );
@@ -365,12 +372,11 @@ export default function Dashboard() {
   const plansBlock = (cls: string) => (
                 <div className={`v3-plans ${cls}`}>
                   <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
-                  <div className="v3-plan-bar" aria-hidden="true">{view.plans.map((p) => <span key={p.plan} style={{ flex: p.count, background: p.plan === "trial" ? "repeating-linear-gradient(135deg,#3a4253 0 4px,#232a37 4px 8px)" : PLAN_COLORS[p.plan] || "#7fdcaa" }} />)}</div>
-                  <ul className="v3-plan-legend">
-                    {view.plans.map((p) => <li key={p.plan}><span className="v3-dot" style={{ background: PLAN_COLORS[p.plan] || "#7fdcaa" }} /><span>{p.label}</span><strong>{p.count}</strong><small>{Math.round((p.count / view.planTotal) * 100)}%</small></li>)}
-                  </ul>
+                  <PlanDial plans={view.plans} colors={PLAN_COLORS} total={view.planTotal} unit={overview ? "активних" : "усього"} />
+                  <p className="v3-dial-hint v3-hide-mobile">Крутіть кільце або оберіть рядок</p>
                 </div>
   );
+
   const nextRenewal = users.filter((u) => u.endDate && new Date(u.endDate).getTime() > Date.now()).sort((a, b) => a.endDate.localeCompare(b.endDate))[0];
   const parsersOk = parsers ? !parsers.some((p) => p.open || p.failures24h > 0) : stats.parserFailures24h === 0;
   const calmCompact = (
@@ -407,7 +413,7 @@ export default function Dashboard() {
         {kpis.map(({ icon: Icon, label, short, value, note, delta, deltaNote, to, hero }) => (
           <Link key={label} to={to} className={`v3-kpi${hero ? " is-hero" : ""}`}>
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Icon size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">{label}</span><span className="v3-only-mobile">{short}</span></span>
-            <strong className="v3-kpi-v">{value}</strong>
+            <strong className="v3-kpi-v"><RollingNumber key={`${value}-${period}`} text={value} /></strong>
             <span className="v3-kpi-n">{note}{delta != null && <> · <span className={`v3-kpi-delta ${delta >= 0 ? "is-up" : "is-down"}`}>{pct(delta)}</span> {deltaNote}</>}</span>
           </Link>
         ))}
@@ -424,13 +430,13 @@ export default function Dashboard() {
         <section className="v3-kpis v3-kpis-second">
           {conv && <Link to="/users" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span>
-            <strong className="v3-kpi-v">{convPct === null ? "—" : <>{convPct}<small className="v3-kpi-unit">%</small></>}</strong>
+            <strong className="v3-kpi-v">{convPct === null ? "—" : <><RollingNumber key={`cv-${convPct}`} text={String(convPct)} /><small className="v3-kpi-unit">%</small></>}</strong>
             <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span style={{ width: `${convPct || 0}%` }} /></span>
             <span className="v3-kpi-n"><span className="v3-hide-mobile">{c30 && c30.trialEnded ? `${c30.converted} з ${c30.trialEnded} за 30 днів` : "за 30 днів пробних не закінчувалось"} · </span>{conv.trial ? `зараз на пробному ${conv.trial}` : "на пробному нікого"}</span>
           </Link>}
           <Link to="/payments" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><MinusCircle size={16} aria-hidden="true" /></span>Скасування</span>
-            <strong className={`v3-kpi-v${view.cancels ? " is-red" : ""}`}>{view.cancels}</strong>
+            <strong className={`v3-kpi-v${view.cancels ? " is-red" : ""}`}><RollingNumber key={`c-${view.cancels}-${period}`} text={String(view.cancels)} /></strong>
             <span className="v3-kpi-n">
               <span className="v3-hide-mobile">{periodShort} · {view.refundCount ? `${view.refundCount} з поверненням ${money(view.refundAmount)}` : "без повернень"}{period !== "year" && ` · у ${MONTHS_LOC[monthIdx(prevKey(period))]} ${view.prevCancelled}`}</span>
               <span className="v3-only-mobile">{view.refundAmount ? `повернено ${money(view.refundAmount)}` : "без повернень"}</span>
@@ -438,7 +444,7 @@ export default function Dashboard() {
           </Link>
           {stats.aiUsage && <Link to="/settings" className="v3-kpi v3-kpi-wide-sm v3-kpi-ai">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile v3-kpi-l-tail">· {periodShort.toLowerCase()}</span></span>
-            <strong className="v3-kpi-v">{rate ? <>≈ {Math.round(view.ai * rate).toLocaleString("uk-UA")}<small className="v3-kpi-unit"> ₴</small></> : usd(view.ai)}</strong>
+            <strong className="v3-kpi-v">{rate ? <>≈ <RollingNumber key={`ai-${period}-${Math.round(view.ai * rate)}`} text={Math.round(view.ai * rate).toLocaleString("uk-UA")} /><small className="v3-kpi-unit"> ₴</small></> : usd(view.ai)}</strong>
             <span className="v3-kpi-n">
               <span className="v3-hide-mobile">{periodShort} · {view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")} · сьогодні {aiToday?.calls ?? 0} ({aiMoney(aiToday?.costUsd ?? 0)})</span>
               <span className="v3-only-mobile v3-kpi-ai-side">{view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")}<br />сьогодні {aiToday?.calls ?? 0}</span>

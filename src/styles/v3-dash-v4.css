@@ -117,3 +117,71 @@
 .v3-chart-card > .v3-chart-foot { margin-top: 0; }
 @media (max-width: 767px) { .v3-chart-card > .v3-bars-wrap > .v3-bars { min-height: 150px; } }
 @media (min-width: 1600px) { .v3-dash-top .v3-dash-side > .v3-side-plans { justify-content: flex-start; gap: 26px; } .v3-side-plans .v3-paylist { margin: 0; } }
+
+/* Цифри прокручуються до значення */
+.v3-roll { display: inline-flex; align-items: baseline; }
+.v3-roll-row { display: inline-flex; align-items: flex-start; line-height: 1; }
+.v3-roll-col { display: inline-block; height: 1em; overflow: hidden; }
+.v3-roll-strip { display: flex; flex-direction: column; transition: transform 1s cubic-bezier(.2, .9, .25, 1); }
+.v3-roll-strip > span { height: 1em; line-height: 1; }
+.v3-roll-ch { white-space: pre; }
+@media (prefers-reduced-motion: reduce) { .v3-roll-strip { transition: none; } }
+
+/* Кільце тарифів, яке можна крутити */
+.v3-dial-wrap { display: flex; align-items: center; gap: 20px; margin-top: 12px; }
+.v3-dial { position: relative; width: 124px; height: 124px; flex-shrink: 0; cursor: grab; touch-action: none; border-radius: 50%; outline-offset: 4px; }
+.v3-dial.is-drag { cursor: grabbing; }
+.v3-dial svg { width: 100%; height: 100%; display: block; }
+.v3-dial-mark { position: absolute; left: 50%; top: -6px; width: 0; height: 0; margin-left: -6px; border: 6px solid transparent; border-top-color: #f4f6fa; z-index: 1; animation: v3-dial-mark 2.4s ease-in-out infinite; }
+@keyframes v3-dial-mark { 50% { transform: translateY(2px); } }
+.v3-dial-c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.v3-dial-c strong { font-size: 26px; font-weight: 400; letter-spacing: -.02em; line-height: 1; animation: v3-dial-num .35s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes v3-dial-num { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
+.v3-dial-c small { margin-top: 3px; color: var(--v3-muted); font-size: 10px; }
+.v3-dial-legend { flex: 1; min-width: 0; grid-template-columns: 1fr !important; }
+.v3-dial-legend li { padding: 0 !important; }
+.v3-dial-legend button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; margin: 0 -8px; border: 0; border-radius: 10px; background: transparent; color: #c3c9d4; font: 400 13px Inter, sans-serif; text-align: left; cursor: pointer; transition: background .2s, color .2s; box-sizing: content-box; }
+.v3-dial-legend button > span:nth-child(2) { flex: 1; min-width: 0; }
+.v3-dial-legend button:hover { background: rgba(255, 255, 255, .05); }
+.v3-dial-legend button.is-on { background: rgba(90, 140, 255, .12); color: #f4f6fa; }
+.v3-dial-legend small { width: 40px; text-align: right; color: var(--v3-muted); font-size: 12px; }
+.v3-dial-hint { margin: 8px 0 0; color: var(--v3-muted); font-size: 11px; }
+@media (max-width: 767px) { .v3-dial { width: 108px; height: 108px; } .v3-dial-wrap { gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .v3-dial-mark, .v3-dial-c strong { animation: none; } .v3-dial svg g { transition: none !important; } }
+
+/* Кільце автооновлення на «Оновити» */
+.v3-refresh { position: relative; }
+.v3-ar-ring { transform: rotate(-90deg); flex-shrink: 0; }
+.v3-ar-ring .v3-ar-p { stroke-dasharray: 50.27; stroke-dashoffset: 50.27; animation: v3-ar-fill linear forwards; }
+@keyframes v3-ar-fill { to { stroke-dashoffset: 0; } }
+.v3-refresh .v3-ar-ring + svg { display: none; }
+.v3-refresh:hover .v3-ar-ring { display: none; }
+.v3-refresh:hover .v3-ar-ring + svg { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .v3-ar-ring { display: none; } .v3-refresh .v3-ar-ring + svg { display: inline-block; } }
+
+/* Швидкий пошук */
+.v3-search-btn { cursor: pointer; }
+.v3-tip-wrap { position: relative; display: inline-flex; }
+.v3-tip { position: absolute; left: 50%; top: calc(100% + 10px); z-index: 50; display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 10px; background: #fff; color: #11151c; font: 500 12px Inter, sans-serif; white-space: nowrap; box-shadow: 0 10px 24px rgba(0, 0, 0, .35); opacity: 0; transform: translate(-50%, -6px) scale(.96); pointer-events: none; transition: opacity .15s, transform .15s; }
+.v3-tip kbd, .v3-cmd kbd { padding: 1px 6px; border-radius: 6px; background: #eef1f6; color: #3e4656; font: 600 11px Inter, sans-serif; border: 1px solid #dde1e7; }
+.v3-tip-wrap:hover .v3-tip, .v3-tip-wrap:focus-within .v3-tip { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity .2s .35s, transform .25s cubic-bezier(.2, .9, .25, 1.3) .35s; }
+.v3-cmd-backdrop { position: fixed; inset: 0; z-index: 100; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; background: rgba(5, 7, 11, .55); backdrop-filter: blur(4px); animation: v3-fade-in .2s ease both; }
+.v3-cmd { width: min(620px, 100%); border-radius: 22px; background: #fff; color: #11151c; box-shadow: 0 40px 100px rgba(0, 0, 0, .55); overflow: hidden; animation: v3-cmd-in .28s cubic-bezier(.2, .9, .25, 1.15) both; }
+@keyframes v3-cmd-in { from { opacity: 0; transform: translateY(-10px) scale(.97); } to { opacity: 1; transform: none; } }
+.v3-cmd-in { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #edf0f3; color: #5f6878; }
+.v3-cmd-in input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #11151c; font: 400 16px Inter, sans-serif; }
+.v3-cmd-list { list-style: none; margin: 0; padding: 8px; max-height: 50vh; overflow: auto; }
+.v3-cmd-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; animation: v3-cmd-row .25s ease both; }
+@keyframes v3-cmd-row { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.v3-cmd-list li.is-on { background: #f1f4fa; }
+.v3-cmd-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #eef3ff; color: #2450c4; flex-shrink: 0; }
+.v3-cmd-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.v3-cmd-txt strong { font-size: 14px; font-weight: 600; }
+.v3-cmd-txt small { color: #5f6878; font-size: 12px; }
+.v3-cmd-enter { color: #2450c4; }
+.v3-cmd-ar { color: #b9c1cd; }
+.v3-cmd-empty { justify-content: center; color: #5f6878; font-size: 13px; cursor: default !important; }
+.v3-cmd-foot { display: flex; gap: 16px; padding: 10px 18px; border-top: 1px solid #edf0f3; color: #5f6878; font-size: 11px; }
+.v3-cmd-foot span { display: inline-flex; align-items: center; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { .v3-cmd-backdrop, .v3-cmd, .v3-cmd-list li { animation: none; } .v3-tip { transition: none !important; } }
+.v3-shell .v3-cmd-in input:focus-visible, .v3-cmd-in input:focus-visible { outline: none; }

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
-  LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Settings2, Swords, Users, X,
+  LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X,
 } from "lucide-react";
+import CommandPalette from "@/components/CommandPalette";
 import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
 import { api, getRefreshToken } from "@/lib/apiClient";
@@ -88,6 +89,23 @@ export default function AdminLayout() {
   };
   const auditCount = badges.auditUnseen ? (badges.auditMore ? `${badges.auditUnseen}+` : String(badges.auditUnseen)) : "";
 
+  // Швидкий пошук: Ctrl K / ⌘K з будь-якої сторінки
+  const [cmdOpen, setCmdOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K" || e.code === "KeyK")) { e.preventDefault(); setCmdOpen((o) => !o); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const searchButton = (
+    <span className="v3-tip-wrap">
+      <button type="button" className="v3-audit v3-search-btn" onClick={() => setCmdOpen(true)} aria-label="Швидкий пошук, Ctrl K" aria-keyshortcuts="Control+K">
+        <Search size={19} aria-hidden="true" />
+      </button>
+      <span className="v3-tip" role="tooltip">Швидкий пошук <kbd>Ctrl K</kbd></span>
+    </span>
+  );
   const auditButton = (
     <Link to="/audit" className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
       <History size={19} aria-hidden="true" />
@@ -110,7 +128,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-          <span className="v3-audit-slot is-desk">{auditButton}</span>
+          <span className="v3-audit-slot is-desk">{searchButton}{auditButton}</span>
         </div>
         <div className="v3-header-end">
           <div className="v3-account" ref={accountRef}>
@@ -136,6 +154,7 @@ export default function AdminLayout() {
           <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-burger-av" /><Menu size={18} aria-hidden="true" /></button>
         </div>
       </header>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} links={[...navigation, { label: "Журнал дій", href: "/audit", icon: History }].map(({ label, href, icon }) => ({ label, href, icon }))} />
 
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
         <DialogContent className="v3-mobile-menu">
