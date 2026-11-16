@@ -234,7 +234,8 @@ export default function Admin() {
           const st = statusOf(u), ui = STATUS_UI[st], p = planCell(u, settings), n = nextCell(u), sel = wide && selected?.id === u.id;
           return (
             <div key={u.id} className="v3-urow-wrap">
-              <div role="row" className={`v3-urow${sel ? " is-sel" : ""}`} onClick={() => openCard(u)}>
+              <div role="row" className={`v3-urow${sel ? " is-sel" : ""}`}>
+                <button type="button" className="v3-urow-open" tabIndex={-1} aria-hidden="true" onClick={() => openCard(u)} />
                 <span role="cell" className="v3-uwho"><UserAvatar username={u.username} telegram={u.telegram} /><span className="v3-uname"><button type="button" onClick={(e) => { e.stopPropagation(); openCard(u); }}>@{u.username}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</button><small>{u.telegram ? `t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}` : "Telegram не вказано"}{u.isOwner ? " · Овнер" : ""}</small></span></span>
                 <span role="cell" className="v3-uplan"><strong>{p.plan}</strong><small>{p.price}</small></span>
                 <span role="cell" className={`v3-unext ${n.cls}`}>{n.text}</span>
@@ -256,9 +257,9 @@ export default function Admin() {
   );
 
   function emptyState() {
-    if (emptyPlatform) return <div className="v3-uempty"><span className="v3-uempty-ico is-outline" aria-hidden="true"><UserPlus size={22} /></span><strong>Додайте першого користувача</strong><span>Тут будуть облікові записи, підписки й оплати. Поки є лише {admins === 1 ? "ваш акаунт" : "акаунти адміністраторів"}.</span><button type="button" className="v3-btn v3-btn-blue" onClick={() => setForm({ mode: "create" })}>Створити користувача</button></div>;
+    if (emptyPlatform) return <div className="v3-uempty"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-uempty-ico is-outline v3-empty-float"><UserPlus size={22} /></span></span><strong>Додайте першого користувача</strong><span>Тут будуть облікові записи, підписки й оплати. Поки є лише {admins === 1 ? "ваш акаунт" : "акаунти адміністраторів"}.</span><button type="button" className="v3-btn v3-btn-blue" onClick={() => setForm({ mode: "create" })}>Створити користувача</button></div>;
     const segLabel = segs.find((s) => s.key === filter)?.label.toLowerCase() || sums.find((s) => s.key === filter)?.label.toLowerCase();
-    return <div className="v3-uempty"><span className="v3-uempty-ico" aria-hidden="true"><SearchX size={22} /></span><strong>Нікого не знайдено</strong><span>{q.trim() ? `За запитом «${q.trim()}»${filter !== "all" ? ` серед «${segLabel}»` : ""} немає збігів. Спробуйте інший логін${filter !== "all" || ageOnly ? " або шукайте серед усіх" : ""}.` : "У цьому фільтрі нікого немає."}</span><div className="v3-uempty-acts">{q.trim() && <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setQ("")}>Очистити пошук</button>}{(filter !== "all" || ageOnly) && <button type="button" className="v3-btn v3-btn-blue" onClick={() => { setFilter("all"); setAgeOnly(false); }}>Шукати серед усіх</button>}</div></div>;
+    return <div className="v3-uempty"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-uempty-ico v3-empty-float"><SearchX size={22} /></span></span><strong>Нікого не знайдено</strong><span>{q.trim() ? `За запитом «${q.trim()}»${filter !== "all" ? ` серед «${segLabel}»` : ""} немає збігів. Спробуйте інший логін${filter !== "all" || ageOnly ? " або шукайте серед усіх" : ""}.` : "У цьому фільтрі нікого немає."}</span><div className="v3-uempty-acts">{q.trim() && <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setQ("")}>Очистити пошук</button>}{(filter !== "all" || ageOnly) && <button type="button" className="v3-btn v3-btn-blue" onClick={() => { setFilter("all"); setAgeOnly(false); }}>Шукати серед усіх</button>}</div></div>;
   }
 
   const mobileList = (
