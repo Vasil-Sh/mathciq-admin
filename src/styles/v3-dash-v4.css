@@ -491,3 +491,13 @@ html { color-scheme: dark; }
 }
 .v3-feed-foot { margin-top: auto; }
 .v3-feed-list li:nth-child(4) { animation-delay: .15s; } .v3-feed-list li:nth-child(5) { animation-delay: .2s; } .v3-feed-list li:nth-child(6) { animation-delay: .25s; }
+
+/* Порожні стани — «Empty State» з каталогу (Motion4 · Сповіщення 06): іконка плаває, навколо розходяться кільця */
+.v3-empty-halo { position: relative; display: inline-grid; }
+.v3-empty-halo::before, .v3-empty-halo::after { content: ""; position: absolute; inset: -10px; border-radius: 22px; border: 2px solid rgba(90, 140, 255, .2); animation: v3-halo 3.2s ease-out infinite; pointer-events: none; }
+.v3-empty-halo::after { animation-delay: 1.6s; }
+.v3-empty-float { animation: v3-float 3.2s ease-in-out infinite; }
+@keyframes v3-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes v3-halo { 0% { transform: scale(.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+.v3-feed-blank .v3-empty-halo { margin: 10px 0 6px; }
+@media (prefers-reduced-motion: reduce) { .v3-empty-float, .v3-empty-halo::before, .v3-empty-halo::after { animation: none; } .v3-empty-halo::before, .v3-empty-halo::after { opacity: 0; } }

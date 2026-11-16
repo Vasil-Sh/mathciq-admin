@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowRight, ArrowUp, Check, ChevronRight, Download, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUp, Check, ChevronRight, Download, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff, UserCheck } from "lucide-react";
 import { fetchAdminStats, type AdminStats } from "@/lib/adminStatsApi";
 import { authService } from "@/lib/authService";
 import { downloadCsv } from "@/lib/csv";
@@ -434,9 +434,9 @@ export default function Dashboard() {
         <button type="button" className={feedTab === "lost" ? "is-on" : ""} aria-pressed={feedTab === "lost"} onClick={() => setFeed("lost")}>Не продовжили <span>{churned ? churned.length : 0}</span></button>
       </div>
       {feedTab === "pay" && !feedPaid.length ? (
-        <div key="pay0" className="v3-feed-blank"><strong>Оплат ще немає</strong><small>Нові оплати з’являться тут одразу після запису в картці користувача.</small></div>
+        <div key="pay0" className="v3-feed-blank"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-chart-empty-ico v3-empty-float"><Wallet size={20} strokeWidth={1.8} /></span></span><strong>Оплат ще немає</strong><small>Нові оплати з’являться тут одразу після запису в картці користувача.</small></div>
       ) : feedTab === "lost" && !lostList.length ? (
-        <div key="lost0" className="v3-feed-blank"><strong>Відтоку немає</strong><small>Усі, у кого закінчилась підписка, продовжили її.</small></div>
+        <div key="lost0" className="v3-feed-blank"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-chart-empty-ico v3-empty-float"><UserCheck size={20} strokeWidth={1.8} /></span></span><strong>Відтоку немає</strong><small>Усі, у кого закінчилась підписка, продовжили її.</small></div>
       ) : feedTab === "pay" ? (
         <ul key="pay" className="v3-feed-list">
           {feedPaid.map((p) => (
@@ -616,7 +616,7 @@ export default function Dashboard() {
             </div>
             {chartEmpty && (
               <div className="v3-chart-empty">
-                <span className="v3-chart-empty-ico" aria-hidden="true"><Wallet size={24} strokeWidth={1.8} /></span>
+                <span className="v3-empty-halo" aria-hidden="true"><span className="v3-chart-empty-ico v3-empty-float"><Wallet size={24} strokeWidth={1.8} /></span></span>
                 <strong>{mode === "pay" ? "Оплат ще немає" : "Активних підписок ще немає"}</strong>
                 <span className="v3-hide-mobile">Додайте першу оплату в картці користувача — графік заповниться автоматично.</span>
                 <span className="v3-only-mobile">Графік заповниться після першої оплати</span>
@@ -631,7 +631,7 @@ export default function Dashboard() {
           <section className="v3-dcard v3-side-plans">{plansBlock("")}</section>
           <section className="v3-dcard v3-side-plans v3-feed v3-feed-empty" aria-label="Останні оплати">
             <div className="v3-seg is-dim" aria-hidden="true"><button type="button" className="is-on" tabIndex={-1}>Останні оплати <span>0</span></button><button type="button" tabIndex={-1}>Не продовжили <span>0</span></button></div>
-            <div className="v3-feed-blank"><span className="v3-chart-empty-ico" aria-hidden="true"><Wallet size={20} strokeWidth={1.8} /></span><strong>Тут з’являться оплати</strong><small>Останні оплати й ті, хто не продовжив підписку, — щойно будуть перші користувачі.</small></div>
+            <div className="v3-feed-blank"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-chart-empty-ico v3-empty-float"><Wallet size={20} strokeWidth={1.8} /></span></span><strong>Тут з’являться оплати</strong><small>Останні оплати й ті, хто не продовжив підписку, — щойно будуть перші користувачі.</small></div>
           </section>
         </div>}
         {!isEmpty && retCard && <div className="v3-ret-slot v3-ret-top">{retCard}</div>}
