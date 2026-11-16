@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Plus, Send } from "lucide-react";
+import { MoreHorizontal, Plus, Send } from "lucide-react";
 
 const OPEN = -148;
 
@@ -40,6 +40,10 @@ export default function SwipeRow({ children, tg, onExtend, extendLabel, hint }: 
       <div className={`v3-swipe-face${drag ? " is-drag" : ""}${hint && x === 0 ? " is-hint" : ""}`} style={{ transform: `translateX(${x}px)` }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onClickCapture={onClickCapture}>
         {children}
       </div>
+      {/* Альтернатива свайпу: кнопка відкриває ті самі дії (клавіатура, VoiceOver, один дотик) */}
+      <button type="button" className="v3-swipe-more" aria-label={x === 0 ? "Дії: Написати, +30 днів" : "Сховати дії"} aria-expanded={x !== 0} onClick={() => setX((v) => (v === 0 ? OPEN : 0))} style={{ transform: `translateX(${x}px)` }}>
+        <MoreHorizontal size={16} aria-hidden="true" />
+      </button>
     </div>
   );
 }

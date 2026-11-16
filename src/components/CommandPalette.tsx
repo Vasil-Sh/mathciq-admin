@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, CornerDownLeft, Search, User } from "lucide-react";
 import { authService } from "@/lib/authService";
@@ -35,6 +36,14 @@ export default function CommandPalette({ open, onClose, links }: { open: boolean
   }, [q, users, links]);
 
   useEffect(() => { setActive(0); }, [q]);
+  // Модальне вікно: решта застосунку недоступна для фокуса, після закриття фокус повертається туди, звідки відкрили
+  useEffect(() => {
+    if (!open) return;
+    const back = document.activeElement as HTMLElement | null;
+    const root = document.getElementById("root");
+    root?.setAttribute("inert", "");
+    return () => { root?.removeAttribute("inert"); if (back && document.contains(back)) back.focus(); };
+  }, [open]);
   if (!open) return null;
 
   const go = (href: string) => { onClose(); navigate(href); };
@@ -45,7 +54,7 @@ export default function CommandPalette({ open, onClose, links }: { open: boolean
     else if (e.key === "Escape") { e.preventDefault(); onClose(); }
   };
 
-  return (
+  return createPortal(
     <div className="v3-cmd-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="v3-cmd" role="dialog" aria-modal="true" aria-label="Швидкий пошук">
         <div className="v3-cmd-in">
@@ -68,6 +77,7 @@ export default function CommandPalette({ open, onClose, links }: { open: boolean
         </ul>
         <div className="v3-cmd-foot"><span><kbd>↑</kbd><kbd>↓</kbd> вибір</span><span><kbd>Enter</kbd> перейти</span><span><kbd>Ctrl</kbd><kbd>K</kbd> відкрити будь-де</span></div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -80,16 +80,16 @@
 .v3-xall { margin-top: auto; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 .v3-xall-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; cursor: pointer; overflow: hidden; transition: transform .16s cubic-bezier(.3, 1.4, .5, 1), background .2s; }
 .v3-xall-btn::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .18), transparent); transform: skewX(-20deg); transition: left .6s ease; }
-.v3-xall-btn:hover:not(:disabled)::after { left: 120%; }
-.v3-xall-btn:hover:not(:disabled) { background: #1b212c; }
-.v3-xall-btn:active:not(:disabled) { transform: scale(.97); }
+@media (hover: hover) { .v3-xall-btn:hover:not(:disabled)::after { left: 120%; } }
+@media (hover: hover) { .v3-xall-btn:hover:not(:disabled) { background: #1b212c; } }
+.v3-xall-btn:active:not(:disabled) { transform: scale(.96); }
 .v3-xall-btn:disabled { background: #e4e7ec; color: #8a93a2; cursor: not-allowed; }
 .v3-xall-ar { display: inline-block; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
-.v3-xall-btn:hover:not(:disabled) .v3-xall-ar { transform: translateX(4px); }
+@media (hover: hover) { .v3-xall-btn:hover:not(:disabled) .v3-xall-ar { transform: translateX(4px); } }
 .v3-xall-avs { display: inline-flex; }
 .v3-xall-avs .v3-xall-av { width: 22px; height: 22px; margin-left: -7px; border: 2px solid #11151c; font-size: 8px; transition: margin .35s cubic-bezier(.3, 1.5, .5, 1); }
 .v3-xall-avs .v3-xall-av:first-child { margin-left: 0; }
-.v3-xall-btn:hover:not(:disabled) .v3-xall-av:not(:first-child) { margin-left: -2px; }
+@media (hover: hover) { .v3-xall-btn:hover:not(:disabled) .v3-xall-av:not(:first-child) { margin-left: -2px; } }
 .v3-xall-ask { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; animation: v3-xall-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
 .v3-xall-ask .v3-btn { min-height: 46px; white-space: nowrap; }
 @keyframes v3-xall-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
@@ -99,7 +99,7 @@
 .v3-xall-run.is-done { background: #00B24B; color: #fff; animation: v3-xall-done .5s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes v3-xall-done { 40% { transform: scale(1.03); } }
 .v3-xall-pick { align-self: center; color: #2450c4; text-decoration: none; }
-.v3-xall-pick:hover { text-decoration: underline; }
+@media (hover: hover) { .v3-xall-pick:hover { text-decoration: underline; } }
 
 /* Ризик відтоку: «Написати» → «Відкрито» */
 .v3-btn-pill.is-sent { background: #e3f6ea; color: #1f6b3a; }
@@ -142,7 +142,7 @@
 .v3-dial-legend li { padding: 0 !important; }
 .v3-dial-legend button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; margin: 0 -8px; border: 0; border-radius: 10px; background: transparent; color: #c3c9d4; font: 400 13px Inter, sans-serif; text-align: left; cursor: pointer; transition: background .2s, color .2s; box-sizing: content-box; }
 .v3-dial-legend button > span:nth-child(2) { flex: 1; min-width: 0; }
-.v3-dial-legend button:hover { background: rgba(255, 255, 255, .05); }
+@media (hover: hover) { .v3-dial-legend button:hover { background: rgba(255, 255, 255, .05); } }
 .v3-dial-legend button.is-on { background: rgba(90, 140, 255, .12); color: #f4f6fa; }
 .v3-dial-legend small { width: 40px; text-align: right; color: var(--v3-muted); font-size: 12px; }
 .v3-dial-hint { margin: 8px 0 0; color: var(--v3-muted); font-size: 11px; }
@@ -155,8 +155,8 @@
 .v3-ar-ring .v3-ar-p { stroke-dasharray: 50.27; stroke-dashoffset: 50.27; animation: v3-ar-fill linear forwards; }
 @keyframes v3-ar-fill { to { stroke-dashoffset: 0; } }
 .v3-refresh .v3-ar-ring + svg { display: none; }
-.v3-refresh:hover .v3-ar-ring { display: none; }
-.v3-refresh:hover .v3-ar-ring + svg { display: inline-block; }
+@media (hover: hover) { .v3-refresh:hover .v3-ar-ring { display: none; } }
+@media (hover: hover) { .v3-refresh:hover .v3-ar-ring + svg { display: inline-block; } }
 @media (prefers-reduced-motion: reduce) { .v3-ar-ring { display: none; } .v3-refresh .v3-ar-ring + svg { display: inline-block; } }
 
 /* Швидкий пошук */
@@ -200,7 +200,7 @@
 .v3-pseg > button.is-on { color: #fff; font-weight: 600; }
 .v3-asof { color: var(--v3-muted); font-size: 12px; white-space: nowrap; margin-left: 4px; }
 .v3-refresh .v3-ref-ic { transition: transform .4s cubic-bezier(.3, 1.4, .5, 1); }
-.v3-refresh:hover:not(:disabled) .v3-ref-ic:not(.animate-spin) { transform: rotate(180deg); }
+@media (hover: hover) { .v3-refresh:hover:not(:disabled) .v3-ref-ic:not(.animate-spin) { transform: rotate(180deg); } }
 .v3-dash .v3-chips { align-items: center; }
 
 /* Зміна до попереднього періоду — чип зі стрілкою */
@@ -225,20 +225,20 @@
 .v3-bar-tip b { display: block; margin: 2px 0; font-size: 16px; font-weight: 600; }
 .v3-bar-slot:hover .v3-bar-tip, .v3-bar:focus-visible + .v3-bar-tip { opacity: 1; transform: none; }
 .v3-bar { transition: filter .2s; }
-.v3-bar-slot:hover .v3-bar { filter: brightness(1.35); }
+@media (hover: hover) { .v3-bar-slot:hover .v3-bar { filter: brightness(1.35); } }
 @media (hover: none), (max-width: 767px) { .v3-bar-tip { display: none; } }
 
 /* «Потребує уваги»: рядки без ліній, підсвітка, дихаючі точки, стрілка їде */
 .v3-attention .v3-alert-row, .v3-attention .v3-exp-row { border-top: 0; margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 12px; }
-.v3-attention .v3-alert-row:hover, .v3-attention .v3-exp-row:hover { background: #f5f7fb; translate: none; }
+@media (hover: hover) { .v3-attention .v3-alert-row:hover, .v3-attention .v3-exp-row:hover { background: #f5f7fb; translate: none; } }
 .v3-alert-dot { position: relative; animation: v3-breathe 2.4s ease-in-out infinite; }
 .v3-alert-dot.is-pulse { animation: none; }
 .v3-alert-dot.is-pulse::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #e5533f; animation: v3-pls 1.6s ease-out infinite; }
 @keyframes v3-pls { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
 .v3-ar { display: inline-block; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
-a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: translateX(4px); }
+@media (hover: hover) { a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: translateX(4px); } }
 .v3-head-link, .v3-ret-more, .v3-more-link { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat; padding-bottom: 2px; transition: background-size .3s, color .2s; text-decoration: none; }
-.v3-head-link:hover, .v3-ret-more:hover, .v3-more-link:hover { background-size: 100% 1.5px; }
+@media (hover: hover) { .v3-head-link:hover, .v3-ret-more:hover, .v3-more-link:hover { background-size: 100% 1.5px; } }
 
 /* Утримання: стовпчики ростуть, підказка при наведенні */
 .v3-ret-col { position: relative; outline: 0; cursor: default; }
@@ -254,7 +254,7 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
 /* «Написати»: літачок нахиляється, при кліку злітає → «Відкриваємо…» → «✓ Відкрито» */
 .v3-write { gap: 6px; overflow: hidden; }
 .v3-write-pl { display: inline-grid; transition: transform .35s cubic-bezier(.2, .9, .25, 1.2); }
-.v3-write:hover .v3-write-pl { transform: translate(2px, -2px) rotate(-8deg); }
+@media (hover: hover) { .v3-write:hover .v3-write-pl { transform: translate(2px, -2px) rotate(-8deg); } }
 .v3-write-pl.is-fly { animation: v3-fly .6s cubic-bezier(.5, 0, .75, 0) both; }
 @keyframes v3-fly { to { transform: translate(50px, -30px) rotate(-20deg); opacity: 0; } }
 .v3-write-ok { animation: v3-okc .4s cubic-bezier(.2, .9, .25, 1.5) both; margin-right: 0 !important; }
@@ -264,7 +264,7 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
 
 /* Ризик відтоку: підсвітка рядка, рядки з'являються по черзі при зміні вкладки */
 .v3-risk-row:not(.v3-risk-th) { margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 12px; transition: background .2s; animation: v3-row-in .4s cubic-bezier(.2, .9, .25, 1) both; }
-.v3-risk-row:not(.v3-risk-th):hover { background: #f5f7fb; }
+@media (hover: hover) { .v3-risk-row:not(.v3-risk-th):hover { background: #f5f7fb; } }
 .v3-risk-row:nth-child(2) { animation-delay: .03s; } .v3-risk-row:nth-child(3) { animation-delay: .07s; } .v3-risk-row:nth-child(4) { animation-delay: .11s; } .v3-risk-row:nth-child(5) { animation-delay: .15s; } .v3-risk-row:nth-child(6) { animation-delay: .19s; }
 .v3-risk-th { margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
 @keyframes v3-row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -272,7 +272,7 @@ a:hover .v3-ar, .v3-alert-row:hover .v3-ar, button:hover .v3-ar { transform: tra
 /* Помісячний звіт: рядки по черзі, стрілка експорту «падає» */
 .v3-rep-body tr { animation: v3-row-in .4s cubic-bezier(.2, .9, .25, 1) both; }
 .v3-export-ic { transition: transform .35s cubic-bezier(.2, .9, .25, 1.4); }
-.v3-export:hover .v3-export-ic { transform: translateY(2px); }
+@media (hover: hover) { .v3-export:hover .v3-export-ic { transform: translateY(2px); } }
 .v3-export { gap: 8px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -356,3 +356,13 @@ html { color-scheme: dark; }
   html, body { scrollbar-width: none; }
   html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 0; height: 0; display: none; }
 }
+
+
+/* Рядок «закінчується»: кнопка «⋯» — альтернатива свайпу */
+.v3-swipe-more { display: none; }
+@media (max-width: 767px) {
+  .v3-swipe-more { position: absolute; top: 50%; right: 2px; margin-top: -16px; z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 10px; background: transparent; color: var(--v3-ink-muted); cursor: pointer; transition: transform .35s cubic-bezier(.3, 1.2, .4, 1), background .15s; }
+  .v3-swipe-more[aria-expanded="true"] { visibility: hidden; }
+  .v3-swipe-face .v3-exp-row { padding-right: 30px !important; }
+}
+@media (prefers-reduced-motion: reduce) { .v3-swipe-more { transition: none; } }

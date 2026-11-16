@@ -127,7 +127,7 @@
 /* Кнопка входу: стрілка, прогрес, пауза, неактивна з поясненням */
 .v3-login-submit-wrap { position: relative; display: flex; flex-direction: column; }
 .v3-login-submit { position: relative; overflow: hidden; transition: transform .16s cubic-bezier(.3, 1.4, .5, 1), background .3s, color .3s; }
-.v3-login-submit:not(.is-blocked):active { transform: scale(.98); }
+.v3-login-submit:not(.is-blocked):active { transform: scale(.96); }
 .v3-login-submit-label { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .v3-login-arrow { display: inline-block; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
 .v3-login-submit:hover .v3-login-arrow { transform: translateX(4px); }

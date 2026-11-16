@@ -83,6 +83,9 @@ export default function PlanDial({ plans, colors, total, unit }: { plans: Plan[]
         role="slider"
         tabIndex={0}
         aria-label="Активні за тарифами — крутіть кільце або стрілки"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, segs.length - 1)}
+        aria-valuenow={sel}
         aria-valuetext={cur ? `${cur.label}: ${cur.count}` : ""}
         onPointerDown={onDown}
         onPointerMove={onMove}
