@@ -353,7 +353,9 @@ html { color-scheme: dark; }
 @media (max-width: 767px) { input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: var(--fs-title) !important; } }
 
 /* Шапка: фон застосунку (зорі) просвічує й під статус-баром — замість суцільної темної смуги */
-.v3-header { background: linear-gradient(rgba(10, 13, 19, .72), rgba(10, 13, 19, .38) 70%, rgba(10, 13, 19, 0)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+/* Фон, розмиття й маска — на ::before: маска на самій шапці обрізала випадне меню акаунта до висоти шапки */
+.v3-header { background: none; }
+.v3-header::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(rgba(10, 13, 19, .72), rgba(10, 13, 19, .38) 70%, rgba(10, 13, 19, 0)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
 
 /* Телефон: без смужки прокрутки (там, де браузер дозволяє її сховати) */
 @media (max-width: 767px) {
@@ -461,3 +463,31 @@ html { color-scheme: dark; }
   .v3-dash-side > .v3-attention, .v3-dash-side > .v3-calm-mini { grid-column: 1 / -1; }
   .v3-dash-side > .v3-side-plans:only-of-type { grid-column: 1 / -1; }
 }
+
+/* Порожній дашборд — та сама розкладка: праворуч «Усе спокійно», тарифи (порожні кільця) і стрічка */
+.v3-empty-side { display: none; }
+.v3-feed-empty .v3-seg.is-dim { opacity: .55; pointer-events: none; }
+.v3-feed-blank { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 8px 8px; text-align: center; border-top: 1px solid rgba(255, 255, 255, .06); }
+.v3-feed-blank .v3-chart-empty-ico { width: 40px; height: 40px; min-height: 40px; border-radius: 12px; }
+.v3-feed-blank strong { font-size: var(--fs-body); font-weight: 600; }
+.v3-feed-blank small { max-width: 260px; color: var(--v3-muted); font-size: var(--fs-cap); line-height: 1.5; }
+.v3-export:disabled { opacity: .5; cursor: not-allowed; background: transparent !important; color: var(--v3-text) !important; }
+@media (min-width: 1200px) {
+  .v3-dash-top.is-empty { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto auto 1fr; gap: 14px; align-items: stretch; }
+  .v3-dash-top.is-empty > .v3-kpis { grid-column: 1; }
+  .v3-dash-top.is-empty > .v3-kpis-second { margin-top: 0; }
+  .v3-dash-top.is-empty > .v3-dash-onboard { grid-column: 1; grid-row: 3; }
+  .v3-dash-top.is-empty > .v3-dash-onboard .v3-calm-wrap { display: none; }
+  .v3-dash-top.is-empty > .v3-dash-main:not(.v3-dash-onboard) { display: contents; }
+  .v3-dash-top.is-empty .v3-chart-card { grid-column: 1; grid-row: 4; }
+  .v3-dash-top.is-empty .v3-empty-side { display: flex; flex-direction: column; gap: 14px; grid-column: 2; grid-row: 1 / span 4; min-width: 0; }
+  .v3-dash-top.is-empty .v3-empty-side > .v3-calm-card { flex: 1 1 auto; }
+}
+
+/* «Усе спокійно»: тарифи за вмістом, стрічка забирає решту висоти (до 6 рядків), посилання — донизу */
+@media (min-width: 768px) {
+  .v3-dash-side.is-calm > .v3-side-plans { flex: none; }
+  .v3-dash-side.is-calm > .v3-feed { flex: 1 1 auto; }
+}
+.v3-feed-foot { margin-top: auto; }
+.v3-feed-list li:nth-child(4) { animation-delay: .15s; } .v3-feed-list li:nth-child(5) { animation-delay: .2s; } .v3-feed-list li:nth-child(6) { animation-delay: .25s; }

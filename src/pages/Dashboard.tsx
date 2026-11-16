@@ -376,7 +376,8 @@ export default function Dashboard() {
     alerts.push({ key: "age", dot: "amber", title: `Вік не підтверджено · ${stats.unverifiedAge}`, sub: names.length ? names.join(", ") + (stats.unverifiedAge > names.length ? ` і ще ${stats.unverifiedAge - names.length}` : "") : "очікує підтвердження", to: names.length === 1 ? `/users?q=${encodeURIComponent(names[0].slice(1))}` : "/users", cta: "Відкрити" });
   }
   const attentionCount = alerts.length + expiring.length;
-  const recentPaid = (stats.recentPayments || []).filter((p) => p.status === "recorded").slice(0, 3);
+  const recentPaidAll = (stats.recentPayments || []).filter((p) => p.status === "recorded").slice(0, 6);
+  const recentPaid = recentPaidAll.slice(0, 3);
   const churned = overview ? churnedUsers(overview) : null;
   const risk = overview ? churnRisk(overview, inactiveDays, lossStreak) : null;
   const retTotal = (stats.retention?.retained || 0) + (stats.retention?.churned || 0);
@@ -420,18 +421,25 @@ export default function Dashboard() {
     );
   }
   const calmSide = !attentionCount && !usersError;
-  const lostList = (churned || []).slice(0, 3);
-  const feedTab = (feed === "lost" && lostList.length) || !recentPaid.length ? "lost" : "pay";
+  // Коли праворуч «Усе спокійно» (менша картка), у стрічці вистачає місця на 6 рядків
+  const feedN = !attentionCount && !usersError ? 6 : 3;
+  const feedPaid = recentPaidAll.slice(0, feedN);
+  const lostList = (churned || []).slice(0, feedN);
+  const feedTab = feed;
   const feedBlock = (
     <section className="v3-dcard v3-side-plans v3-side-pay v3-feed v3-hide-mobile" aria-label="Останні оплати й ті, хто не продовжив">
       <div className="v3-seg" role="group" aria-label="Що показати">
         <PillTrack active={feedTab} />
-        {recentPaid.length > 0 && <button type="button" className={feedTab === "pay" ? "is-on" : ""} aria-pressed={feedTab === "pay"} onClick={() => setFeed("pay")}>Останні оплати <span>{recentPaid.length}</span></button>}
-        {lostList.length > 0 && <button type="button" className={feedTab === "lost" ? "is-on" : ""} aria-pressed={feedTab === "lost"} onClick={() => setFeed("lost")}>Не продовжили <span>{churned!.length}</span></button>}
+        <button type="button" className={feedTab === "pay" ? "is-on" : ""} aria-pressed={feedTab === "pay"} onClick={() => setFeed("pay")}>Останні оплати <span>{feedPaid.length}</span></button>
+        <button type="button" className={feedTab === "lost" ? "is-on" : ""} aria-pressed={feedTab === "lost"} onClick={() => setFeed("lost")}>Не продовжили <span>{churned ? churned.length : 0}</span></button>
       </div>
-      {feedTab === "pay" ? (
+      {feedTab === "pay" && !feedPaid.length ? (
+        <div key="pay0" className="v3-feed-blank"><strong>Оплат ще немає</strong><small>Нові оплати з’являться тут одразу після запису в картці користувача.</small></div>
+      ) : feedTab === "lost" && !lostList.length ? (
+        <div key="lost0" className="v3-feed-blank"><strong>Відтоку немає</strong><small>Усі, у кого закінчилась підписка, продовжили її.</small></div>
+      ) : feedTab === "pay" ? (
         <ul key="pay" className="v3-feed-list">
-          {recentPaid.map((p) => (
+          {feedPaid.map((p) => (
             <li key={p.id}>
               <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
               <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
@@ -461,7 +469,7 @@ export default function Dashboard() {
                 <div className={`v3-plans ${cls}`}>
                   <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
                   <PlanDial plans={view.plans} colors={PLAN_COLORS} total={view.planTotal} unit={overview ? "активних" : "усього"} />
-                  <p className="v3-dial-hint v3-hide-mobile">Оберіть рядок, щоб виділити кільце</p>
+                  <p className="v3-dial-hint v3-hide-mobile">{view.planTotal > 0 ? "Оберіть рядок, щоб виділити кільце" : "Кільця заповняться з першими підписками"}</p>
                 </div>
   );
 
@@ -571,7 +579,7 @@ export default function Dashboard() {
             </div>
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
-            {!isEmpty && <button type="button" className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>}
+            <button type="button" className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv} disabled={isEmpty} title={isEmpty ? "Експорт з’явиться після першої оплати" : undefined}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <PillTrack active={mode} />
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
@@ -610,7 +618,7 @@ export default function Dashboard() {
               <div className="v3-chart-empty">
                 <span className="v3-chart-empty-ico" aria-hidden="true"><Wallet size={24} strokeWidth={1.8} /></span>
                 <strong>{mode === "pay" ? "Оплат ще немає" : "Активних підписок ще немає"}</strong>
-                <span className="v3-hide-mobile">Додайте першу оплату в картці користувача — графік і звіт заповняться автоматично.</span>
+                <span className="v3-hide-mobile">Додайте першу оплату в картці користувача — графік заповниться автоматично.</span>
                 <span className="v3-only-mobile">Графік заповниться після першої оплати</span>
                 <Link to="/users" className="v3-btn v3-btn-primary v3-btn-sm v3-hide-mobile">Додати оплату</Link>
               </div>
@@ -618,6 +626,14 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {isEmpty && <div className="v3-dash-side v3-empty-side v3-hide-mobile">
+          {calmCard}
+          <section className="v3-dcard v3-side-plans">{plansBlock("")}</section>
+          <section className="v3-dcard v3-side-plans v3-feed v3-feed-empty" aria-label="Останні оплати">
+            <div className="v3-seg is-dim" aria-hidden="true"><button type="button" className="is-on" tabIndex={-1}>Останні оплати <span>0</span></button><button type="button" tabIndex={-1}>Не продовжили <span>0</span></button></div>
+            <div className="v3-feed-blank"><span className="v3-chart-empty-ico" aria-hidden="true"><Wallet size={20} strokeWidth={1.8} /></span><strong>Тут з’являться оплати</strong><small>Останні оплати й ті, хто не продовжив підписку, — щойно будуть перші користувачі.</small></div>
+          </section>
+        </div>}
         {!isEmpty && retCard && <div className="v3-ret-slot v3-ret-top">{retCard}</div>}
         {!isEmpty && <div className={`v3-dash-side${calmSide ? " is-calm" : ""}`}>
         {!attentionCount && !usersError ? calmCompact : <aside className="v3-wcard v3-attention">
@@ -680,7 +696,7 @@ export default function Dashboard() {
             </> : null}
         </aside>}
         {view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}</section>}
-        {(recentPaid.length > 0 || lostList.length > 0) && feedBlock}
+        {feedBlock}
         </div>}
       </section>
       </div>
