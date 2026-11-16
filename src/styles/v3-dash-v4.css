@@ -409,3 +409,7 @@ html { color-scheme: dark; }
 @keyframes v3-shoot { 0%, 92% { opacity: 0; translate: 0 0; } 93% { opacity: 1; } 100% { opacity: 0; translate: 520px 170px; } }
 @media (max-width: 767px) { .v3-twk:nth-of-type(2n) { display: none; } .v3-shoot-2 { display: none; } }
 @media (prefers-reduced-motion: reduce) { .v3-twk, .v3-shoot { animation: none !important; opacity: 0; } }
+
+/* Поточний місяць: замість смуги, що гнеться по заокругленому краю, — коротка окрема позначка */
+.v3-table tbody tr.is-current > th { box-shadow: none; }
+.v3-table tbody tr.is-current > th::before { content: ""; position: absolute; left: 4px; top: 50%; width: 3px; height: 20px; border-radius: 2px; background: var(--v3-nav); transform: translateY(-50%); }
