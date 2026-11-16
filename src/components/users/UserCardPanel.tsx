@@ -275,14 +275,14 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           </Section>
         )}
 
-        <section className="v3-uc-note">
+        {!mobile && <section className="v3-uc-note">
           <div className="v3-uc-note-head"><strong>Внутрішня нотатка</strong>{!editingNote && card && <button type="button" onClick={() => { setDraft(card.note?.content || ""); setEditingNote(true); }}>Редагувати</button>}</div>
           {editingNote ? <>
             <textarea aria-label="Внутрішня нотатка" autoFocus value={draft} maxLength={5000} rows={3} onChange={(e) => setDraft(e.target.value)} placeholder="Напишіть, що варто знати іншим адмінам" />
             <div className="v3-uc-note-foot"><span>{draft.length}/5000</span><span><button type="button" className="v3-link-sm v3-link-dark" onClick={() => setEditingNote(false)} disabled={savingNote}>Скасувати</button><button type="button" className="v3-btn v3-btn-dark v3-btn-sm" disabled={savingNote || draft === (card?.note?.content || "")} onClick={saveNote}>{savingNote ? "Збереження…" : "Зберегти"}</button></span></div>
           </> : <p>{card ? card.note?.content || "Нотаток ще немає." : "…"}</p>}
           <small>Бачать лише адміністратори{card?.note?.updatedBy ? ` · @${card.note.updatedBy}, ${shortDate((card.note.updatedAt || "").slice(0, 10))}` : ""}</small>
-        </section>
+        </section>}
 
       </>}
 
