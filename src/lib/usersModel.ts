@@ -6,7 +6,7 @@ import { shortDate } from "@/lib/subscriptions";
 import { plural } from "@/lib/dashboardInsights";
 
 export type UStatus = "admin" | "blocked" | "cancelled" | "trial" | "ended" | "urgent" | "soon" | "active";
-export type UFilter = "all" | "paid" | "trial" | "basic" | "pro" | "ended" | "cancelled" | "closed";
+export type UFilter = "all" | "paid" | "trial" | "basic" | "pro" | "ended" | "cancelled" | "closed" | "expiring";
 
 export const STATUS_UI: Record<UStatus, { label: string; cls: string }> = {
   admin: { label: "Адмін", cls: "v3-st-admin" },
@@ -50,6 +50,19 @@ export function statusOf(u: AdminUserOverview): UStatus {
   return "active";
 }
 
+/** Days left when the subscription or trial ends within 7 days (the «закінчуються» badge in the menu), otherwise null. */
+export function expiringDays(u: AdminUserOverview): number | null {
+  const s = statusOf(u), d = daysLeft(u);
+  return s === "urgent" || s === "soon" || (s === "trial" && d <= 7) ? d : null;
+}
+export const isExpiring = (u: AdminUserOverview) => expiringDays(u) !== null;
+/** Status tag; a trial that ends within 7 days is coloured like any other ending subscription. */
+export function tagOf(u: AdminUserOverview): { label: string; cls: string } {
+  const s = statusOf(u), d = expiringDays(u);
+  if (s === "trial" && d !== null) return { label: "Закінчується", cls: d <= 2 ? STATUS_UI.urgent.cls : STATUS_UI.soon.cls };
+  return STATUS_UI[s];
+}
+
 export function matches(u: AdminUserOverview, f: UFilter): boolean {
   const s = statusOf(u);
   switch (f) {
@@ -61,6 +74,7 @@ export function matches(u: AdminUserOverview, f: UFilter): boolean {
     case "ended": return s === "ended";
     case "cancelled": return s === "cancelled";
     case "closed": return s === "ended" || s === "cancelled";
+    case "expiring": return isExpiring(u);
   }
 }
 
@@ -81,7 +95,11 @@ export function nextCell(u: AdminUserOverview): { text: string; cls: string } {
   if (s === "blocked") return { text: `— · самообмеження до ${shortDate(u.selfLimitedUntil!)}`, cls: "" };
   if (s === "cancelled") return { text: `— · скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}`, cls: "" };
   if (s === "ended") return { text: u.endDate ? `— · закінчилась ${shortDate(u.endDate)}` : "—", cls: "" };
-  if (s === "trial") return { text: `${shortDate(u.endDate)} · кінець пробного`, cls: "" };
+  if (s === "trial") {
+    if (d > 7) return { text: `${shortDate(u.endDate)} · кінець пробного`, cls: "" };
+    const w = d === 0 ? "сьогодні" : d === 1 ? "завтра" : `через ${d} ${plural(d, "день", "дні", "днів")}`;
+    return { text: `${shortDate(u.endDate)} · пробний закінчиться ${w}`, cls: d <= 2 ? "is-urgent" : "is-soon" };
+  }
   if (endsWithoutRenewal(u)) return { text: `${shortDate(u.endDate)} · без продовження`, cls: "" };
   const when = d === 0 ? "сьогодні" : d === 1 ? "завтра" : `через ${d} ${plural(d, "день", "дні", "днів")}`;
   return { text: d <= 7 ? `${shortDate(u.endDate)} · ${when}` : shortDate(u.endDate), cls: s === "urgent" ? "is-urgent" : s === "soon" ? "is-soon" : "" };

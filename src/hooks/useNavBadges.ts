@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { isExpiring } from "@/lib/usersModel";
+import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { api } from "@/lib/apiClient";
-import { authService } from "@/lib/authService";
-import { expiringUsers } from "@/lib/subscriptions";
 import { fetchOpenTickets, fetchParsers, PARSER_NAMES } from "@/lib/dashboardInsights";
 
 /**
@@ -59,7 +59,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
       markAuditSeen();
       loadOps();
       setBadges((b) => ({ ...b, auditUnseen: 0, auditMore: false }));
-      authService.fetchUsers().then((users) => setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }))).catch(() => {});
+      fetchUsersOverview().then((users) => setBadges((b) => ({ ...b, usersExpiring: users.filter(isExpiring).length }))).catch(() => {});
       return () => { cancelled = true; };
     }
     // First visit on this browser: start counting from now, not from the beginning of time.
@@ -85,8 +85,8 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
         // Badge is a convenience — a failed request just leaves it as it was.
       }
       try {
-        const users = await authService.fetchUsers();
-        if (!cancelled) setBadges((b) => ({ ...b, usersExpiring: expiringUsers(users, 7).length }));
+        const users = await fetchUsersOverview();
+        if (!cancelled) setBadges((b) => ({ ...b, usersExpiring: users.filter(isExpiring).length }));
       } catch { /* same as above */ }
       await loadOps();
     };

@@ -169,9 +169,9 @@ export default function AdminLayout() {
           </div>
           <nav aria-label="Основна навігація" className="v3-mobile-nav">
             {[...navigation.slice(0, -1), { label: "Журнал дій", href: "/audit", icon: History, badge: undefined }, navigation[navigation.length - 1]].map(({ label, href, icon: Icon, badge }) => (
-              <NavLink key={href} to={href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
+              <NavLink key={href} to={href === "/users" && badges.usersExpiring ? "/users?status=expiring" : href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
                 <Icon size={20} aria-hidden="true" />{label}
-                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring"><span>{badges.usersExpiring}</span>закінчуються</span>}
+                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring" title="Відкрити список тих, у кого підписка закінчується за 7 днів"><span>{badges.usersExpiring}</span>закінчуються</span>}
                 {href === "/audit" && auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
                 {badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
               </NavLink>

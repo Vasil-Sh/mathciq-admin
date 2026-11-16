@@ -24,14 +24,14 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { fetchAdminStats } from "@/lib/adminStatsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter } from "@/lib/usersModel";
+import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 const PAGE_SIZE = 10;
 type Sort = "end-asc" | "end-desc" | "new" | "name";
-const FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed"];
+const FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed", "expiring"];
 const SORTS: Sort[] = ["end-asc", "end-desc", "new", "name"];
 
 /** The matched part of a login in yellow (catalog · Inputs · search highlight). */
@@ -123,12 +123,12 @@ export default function Admin() {
   // Links from other screens: ?q=, ?status=expired|active
   useEffect(() => {
     const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); }
-    const s = urlParams.get("status"); if (s === "expired") setFilter("closed"); else if (s === "active") setFilter("paid");
+    const s = urlParams.get("status"); if (s === "expiring") { setFilter("expiring"); setTab("users"); } else if (s === "expired") setFilter("closed"); else if (s === "active") setFilter("paid");
   }, [urlParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const all = users || [];
   const counts = useMemo(() => {
-    const c: Record<UFilter, number> = { all: 0, paid: 0, trial: 0, basic: 0, pro: 0, ended: 0, cancelled: 0, closed: 0 };
+    const c: Record<UFilter, number> = { all: 0, paid: 0, trial: 0, basic: 0, pro: 0, ended: 0, cancelled: 0, closed: 0, expiring: 0 };
     for (const u of all) for (const f of FILTERS) if (matches(u, f)) c[f]++;
     return c;
   }, [all]);
@@ -302,7 +302,7 @@ export default function Admin() {
       <div className="v3-uth" role="row"><span role="columnheader" className="v3-uth-who" aria-sort={sort === "name" ? "ascending" : "none"}><button type="button" role="checkbox" aria-checked={allPicked} aria-label="Вибрати всіх на сторінці" className={`v3-ckb${allPicked ? " is-on" : ""}`} disabled={!pickable.length} onClick={toggleAll}><Check size={12} strokeWidth={3.4} aria-hidden="true" /></button>{sortHead("Користувач", "name").props.children}</span><span role="columnheader">План</span>{sortHead("Наступна оплата", "end")}{xwide && <><span role="columnheader">Сплачено</span><span role="columnheader">AI сьогодні</span></>}<span role="columnheader">Статус</span><span role="columnheader" className="v3-r">Швидка дія</span></div>
       {users === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-urow is-skel" aria-hidden="true"><span className="v3-uwho"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: 140 }} /></span><span className="v3-skel v3-skel-light" style={{ width: 70 }} /><span className="v3-skel v3-skel-light" style={{ width: 110 }} /><span className="v3-skel v3-skel-light" style={{ width: 80 }} /><span /></div>)
         : paged.length ? paged.map((u) => {
-          const st = statusOf(u), ui = STATUS_UI[st], p = planCell(u, settings), n = nextCell(u), sel = wide && selected?.id === u.id;
+          const st = statusOf(u), ui = tagOf(u), p = planCell(u, settings), n = nextCell(u), sel = wide && selected?.id === u.id;
           return (
             <div key={u.id} className="v3-urow-wrap">
               <div role="row" ref={(el) => { if (el) rowEls.current.set(u.id, el); else rowEls.current.delete(u.id); }} className={`v3-urow${sel ? " is-sel" : ""}${picked.has(u.id) ? " is-picked" : ""}${newId === u.id ? " is-new" : ""}${leavingId === u.id ? " is-leaving" : ""}`}>
@@ -354,8 +354,9 @@ export default function Admin() {
   const mobileList = (
     <div className="v3-umobile">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-      <div className="v3-mfilters">
-        <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : [])]} />
+      <div className={`v3-mfilters${counts.expiring > 0 ? " has-exp" : ""}`}>
+        <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : []), ...(filter === "expiring" ? [{ value: "expiring" as UFilter, label: `Закінчуються · ${counts.expiring}` }] : [])]} />
+        {counts.expiring > 0 && <button type="button" className={`v3-mage v3-expchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-expchip-n">{counts.expiring}</span>Закінчуються</button>}
         {noAge > 0 && <button type="button" className={`v3-mage${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік ? · {noAge}</button>}
       </div>
       <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближча оплата" }, { value: "end-desc", label: "Найпізніша оплата" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
@@ -366,9 +367,9 @@ export default function Admin() {
       <ul className="v3-mcards" onTouchStart={onListTouchStart} onTouchMove={onListTouchMove} onTouchEnd={onListTouchEnd} onTouchCancel={onListTouchEnd}>
         {users === null && loading ? Array.from({ length: 5 }, (_, i) => <li key={i} className="v3-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /><span className="v3-skel v3-skel-light" style={{ width: 60 }} /></li>)
           : list.length ? list.slice(0, mobileShown).map((u) => {
-            const st = statusOf(u), ui = STATUS_UI[st], p = planCell(u, settings);
+            const st = statusOf(u), ui = tagOf(u), p = planCell(u, settings);
             const d = daysLeft(u);
-            const tag = st === "urgent" || st === "soon" ? `${d} ${plural(d, "день", "дні", "днів")}` : ui.label;
+            const tag = isExpiring(u) ? (d === 0 ? "сьогодні" : `${d} ${plural(d, "день", "дні", "днів")}`) : ui.label;
             const line = isAdmin(u) ? `${u.isOwner ? "Овнер" : "Адмін"} · повний доступ` : st === "blocked" ? `${p.plan} · самообмеження до ${shortDate(u.selfLimitedUntil!)}` : st === "cancelled" ? `${p.plan} · скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}` : st === "trial" ? `Пробний · до ${shortDate(u.endDate)}` : st === "ended" ? `${p.plan} · закінчилась ${shortDate(u.endDate)}` : `${p.plan} · оплата ${shortDate(u.endDate)}`;
             return (
               <li key={u.id} className={`v3-mitem${menuId === u.id ? " is-lifted" : ""}`}><button type="button" className={`v3-mcard${pressId === u.id ? " is-press" : ""}`}
@@ -470,6 +471,7 @@ export default function Admin() {
         <PillTrack active={filter} />
                     {segs.map((s) => <button key={s.key} type="button" className={filter === s.key ? "is-on" : ""} aria-pressed={filter === s.key} onClick={() => setFilter(s.key)}>{s.label} <span className="v3-seg-n">{counts[s.key]}</span></button>)}
                   </div>
+                  {counts.expiring > 0 && <button type="button" className={`v3-agechip v3-expchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-expchip-n">{counts.expiring}</span>Закінчуються за 7 днів{filter === "expiring" && <X size={13} aria-hidden="true" />}</button>}
                   {noAge > 0 && <button type="button" className={`v3-agechip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік не підтверджено · {noAge}{ageOnly && <X size={13} aria-hidden="true" />}</button>}
                   <Dropdown className="is-light v3-sort-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближче завершення" }, { value: "end-desc", label: "Найпізніше завершення" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />
                 </div>

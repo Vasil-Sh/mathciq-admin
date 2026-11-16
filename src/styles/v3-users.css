@@ -688,3 +688,12 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-ptabs.has-pill > .v3-ptab.is-on { background: transparent; }
 .v3-ptabs > .v3-pill { top: 0; bottom: 0; background: #fff; box-shadow: none; }
 @media (max-width: 767px) { .v3-ptabs > .v3-pill { top: 4px; bottom: 4px; } }
+
+/* «Закінчуються» chip — same orange counter as the badge in the menu, so the link from the menu lands on a visible, matching filter */
+.v3-expchip { display: inline-flex; align-items: center; gap: 6px; padding-inline-start: 5px; }
+.v3-expchip-n { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #f0a03c; color: #fff; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.v3-expchip.is-on .v3-expchip-n { background: #fff; color: #b56b00; }
+@media (hover: hover) { .v3-mage.v3-expchip:not(.is-on):hover { background: rgba(240, 160, 60, .2); border-color: rgba(240, 160, 60, .6); } }
+.v3-mfilters.has-exp { display: flex; flex-wrap: wrap; }
+.v3-mfilters.has-exp > :first-child { flex: 1 1 100%; }
+.v3-mfilters.has-exp > button { flex: 0 0 auto; }
