@@ -372,9 +372,6 @@
   .v3-chart-foot { grid-template-columns: minmax(0, 1fr); }
 
   .v3-dash-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 18px; }
-  .v3-ret-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: dense; column-gap: 24px; row-gap: 16px; align-content: start; }
-  .v3-ret-card > .v3-card-head, .v3-ret-card > .v3-ret-big, .v3-ret-card > .v3-ret-tiles, .v3-ret-card > .v3-ret-chart { grid-column: 1; }
-  .v3-ret-card > .v3-ret-side { grid-column: 2; grid-row: 1 / span 4; }
   .v3-ret-big { display: block; font-size: var(--fs-hero); font-weight: 300; letter-spacing: -.04em; line-height: 1; color: #a3c0ff; }
   .v3-ret-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .v3-ret-tiles strong { font-size: var(--fs-stat); margin-top: 6px; }

@@ -423,4 +423,41 @@ html { color-scheme: dark; }
 .v3-side-pay .v3-plans-head { margin-top: 0; }
 .v3-chart-tools .v3-export { min-height: 40px; }
 /* ≥1600: права колонка вища за ліву — зайва висота йде в рядок графіка, а не в KPI */
-@media (min-width: 1600px) { .v3-dash-top:not(.is-empty) { grid-template-rows: auto auto 1fr; } }
+@media (min-width: 1600px) { .v3-dash-top:not(.is-empty) { grid-template-rows: auto auto 1fr auto; } .v3-dash-top .v3-dash-side { grid-row: 1 / span 4 !important; } }
+
+/* Одна стрічка: «Останні оплати / Не продовжили» (пігулка — «Чіпи» з каталогу, рядки — поява списку) */
+.v3-feed { display: flex; flex-direction: column; gap: 12px; }
+.v3-feed .v3-seg { align-self: flex-start; }
+.v3-feed-list { list-style: none; margin: 0; padding: 0; }
+.v3-feed-list li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, .06); animation: v3-row-in .4s cubic-bezier(.2, .9, .25, 1) both; }
+.v3-feed-list li:nth-child(2) { animation-delay: .05s; } .v3-feed-list li:nth-child(3) { animation-delay: .1s; }
+.v3-feed-list .v3-pay-who a { color: inherit; text-decoration: none; }
+.v3-feed-foot { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .06); }
+@media (prefers-reduced-motion: reduce) { .v3-feed-list li { animation: none; } }
+
+/* 1200–1599: права колонка з першого рядка KPI — без порожнечі й без надмірно розтягнутого графіка */
+@media (min-width: 1200px) and (max-width: 1599px) {
+  .v3-dash-top:not(.is-empty) { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto 1fr auto; gap: 14px; align-items: stretch; }
+  .v3-dash-top:not(.is-empty) > .v3-kpis { grid-column: 1; }
+  .v3-dash-top:not(.is-empty) > .v3-kpis-second { margin-top: 0; }
+  .v3-dash-top:not(.is-empty) > .v3-dash-main:not(.v3-dash-onboard) { display: contents; }
+  .v3-dash-top:not(.is-empty) .v3-chart-card { grid-column: 1; }
+  .v3-dash-top:not(.is-empty) .v3-dash-side { grid-column: 2; grid-row: 1 / span 4; }
+  .v3-dash-top:not(.is-empty) .v3-dash-side > .v3-attention { flex: none; }
+}
+
+/* «Утримання»: від 1200 — у лівій колонці під графіком (колонки рівні), нижче — у парі з «Ризиком відтоку» */
+.v3-ret-slot { display: flex; min-width: 0; flex: 1 1 380px; }
+.v3-ret-slot > .v3-ret-card { flex: 1 1 auto; }
+.v3-ret-top { display: none; }
+@media (min-width: 1200px) {
+  .v3-ret-top { display: flex; grid-column: 1; grid-row: 4; }
+  .v3-ret-pair { display: none; }
+  .v3-dash-pair { display: block; }
+}
+/* 768–1199: права колонка переходить під графік — «Потребує уваги» на всю ширину, тарифи й стрічка поруч */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .v3-dash-side { flex: 1 1 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .v3-dash-side > .v3-attention, .v3-dash-side > .v3-calm-mini { grid-column: 1 / -1; }
+  .v3-dash-side > .v3-side-plans:only-of-type { grid-column: 1 / -1; }
+}

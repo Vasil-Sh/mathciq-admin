@@ -13,6 +13,7 @@ import PeriodMenu from "@/components/dashboard/PeriodMenu";
 import UserAvatar from "@/components/UserAvatar";
 import RollingNumber from "@/components/RollingNumber";
 import PlanDial from "@/components/dashboard/PlanDial";
+import WriteButton from "@/components/dashboard/WriteButton";
 import PillTrack from "@/components/PillTrack";
 import SwipeRow from "@/components/dashboard/SwipeRow";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -64,6 +65,7 @@ export default function Dashboard() {
   const [updatedAt, setUpdatedAt] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
   const [period, setPeriod] = useState<string>(now.key);
+  const [feed, setFeed] = useState<"pay" | "lost">("pay");
   const [mode, setMode] = useState<"pay" | "est">("pay");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [extending, setExtending] = useState(false);
@@ -414,20 +416,43 @@ export default function Dashboard() {
     );
   }
   const calmSide = !attentionCount && !usersError;
-  const payBlock = (cls: string) => (
-                <div className={`v3-paylist v3-hide-mobile ${cls}`}>
-                  <div className="v3-plans-head"><h3>Останні оплати</h3><Link to="/payments" className="v3-head-link">Усі оплати <span className="v3-ar" aria-hidden="true">→</span></Link></div>
-                  <ul>
-                    {recentPaid.map((p) => (
-                      <li key={p.id}>
-                        <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
-                        <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
-                        <span className="v3-pay-amt">+{money(p.amount)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+  const lostList = (churned || []).slice(0, 3);
+  const feedTab = (feed === "lost" && lostList.length) || !recentPaid.length ? "lost" : "pay";
+  const feedBlock = (
+    <section className="v3-dcard v3-side-plans v3-side-pay v3-feed v3-hide-mobile" aria-label="Останні оплати й ті, хто не продовжив">
+      <div className="v3-seg" role="group" aria-label="Що показати">
+        <PillTrack active={feedTab} />
+        {recentPaid.length > 0 && <button type="button" className={feedTab === "pay" ? "is-on" : ""} aria-pressed={feedTab === "pay"} onClick={() => setFeed("pay")}>Останні оплати <span>{recentPaid.length}</span></button>}
+        {lostList.length > 0 && <button type="button" className={feedTab === "lost" ? "is-on" : ""} aria-pressed={feedTab === "lost"} onClick={() => setFeed("lost")}>Не продовжили <span>{churned!.length}</span></button>}
+      </div>
+      {feedTab === "pay" ? (
+        <ul key="pay" className="v3-feed-list">
+          {recentPaid.map((p) => (
+            <li key={p.id}>
+              <UserAvatar username={p.username} telegram={byName.get(p.username)?.telegram} className="v3-av-sm" />
+              <span className="v3-pay-who"><strong>@{p.username}</strong><small>{[p.plan ? PLAN_NAMES[p.plan] : byName.has(p.username) ? planText(byName.get(p.username)).split(" · ")[0] : "", p.promoCode, relDay(p.paidOn)].filter(Boolean).join(" · ")}</small></span>
+              <span className="v3-pay-amt">+{money(p.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul key="lost" className="v3-feed-list">
+          {lostList.map(({ user, ended, tenure }) => {
+            const tg = telegramLink(user.telegram);
+            return (
+              <li key={user.id}>
+                <UserAvatar username={user.username} telegram={user.telegram} className="v3-av-sm" />
+                <span className="v3-pay-who"><Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link><small>закінчилась {ended}{tenure && ` · ${tenure}`}</small></span>
+                {tg && <WriteButton href={tg} dark />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="v3-feed-foot"><Link to={feedTab === "pay" ? "/payments" : "/users?status=expired"} className="v3-head-link">{feedTab === "pay" ? "Усі оплати" : "Усі, хто не продовжив"} <span className="v3-ar" aria-hidden="true">→</span></Link></div>
+    </section>
   );
+  const retCard = retTotal > 0 ? <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} byMonth={stats.retention.byMonth} focusMonth={period === "year" || period === now.key ? prevKey(now.key) : period} list={churned} /> : null;
   const plansBlock = (cls: string) => (
                 <div className={`v3-plans ${cls}`}>
                   <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
@@ -589,6 +614,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {!isEmpty && retCard && <div className="v3-ret-slot v3-ret-top">{retCard}</div>}
         {!isEmpty && <div className={`v3-dash-side${calmSide ? " is-calm" : ""}`}>
         {!attentionCount && !usersError ? calmCompact : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{attentionCount > 0 && <span className="v3-tag v3-tag-red">{attentionCount}</span>}</div>
@@ -650,14 +676,14 @@ export default function Dashboard() {
             </> : null}
         </aside>}
         {view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}</section>}
-        {recentPaid.length > 0 && <section className="v3-dcard v3-side-plans v3-side-pay v3-hide-mobile">{payBlock("")}</section>}
+        {(recentPaid.length > 0 || lostList.length > 0) && feedBlock}
         </div>}
       </section>
       </div>
 
       {!isEmpty && (retTotal > 0 || (risk && overview)) && (
         <section className="v3-dash-pair">
-          {retTotal > 0 && <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} byMonth={stats.retention.byMonth} focusMonth={period === "year" || period === now.key ? prevKey(now.key) : period} list={churned} />}
+          {retTotal > 0 && <div className="v3-ret-slot v3-ret-pair">{retCard}</div>}
           {risk && <ChurnRiskCard rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
         </section>
       )}

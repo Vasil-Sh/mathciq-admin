@@ -89,8 +89,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
 
       {((list && shown.length > 0) || avg !== null) && (
         <div className="v3-ret-side">
-          {list && shown.length > 0 && <div className="v3-ret-side-head v3-hide-mobile"><h3 className="v3-ret-sub">Не продовжили</h3><Link to="/users?status=expired" className="v3-ret-more v3-only-wide">Усі <span className="v3-ar" aria-hidden="true">→</span></Link></div>}
-          <ul className="v3-ret-list">
+          <ul className="v3-ret-list v3-only-mobile">
             {shown.map(({ user, ended, tenure }) => {
               const tg = telegramLink(user.telegram);
               return (
