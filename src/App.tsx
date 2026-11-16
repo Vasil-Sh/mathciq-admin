@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,19 @@ function takeReturnTo() {
   sessionStorage.removeItem("sessionEnded");
   sessionStorage.removeItem("sessionsRevokedAt");
   return to && to.startsWith("/") && !to.startsWith("/login") ? to : "/dashboard";
+}
+
+/** Phones get notifications at the top, so they never cover a sheet's buttons at the bottom. */
+function useIsPhone() {
+  const q = "(max-width: 767px)";
+  const [phone, setPhone] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const on = () => setPhone(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return phone;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -52,12 +65,13 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const phone = useIsPhone();
   return (
     <AuthProvider>
       <Router>
         <AppRoutes />
         <Toaster
-          position="bottom-right" theme="dark" closeButton swipeDirections={["right", "left", "bottom"]} duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
+          position={phone ? "top-center" : "bottom-right"} theme="dark" closeButton swipeDirections={phone ? ["top", "left", "right"] : ["right", "left", "bottom"]} duration={4000} visibleToasts={3} offset={24} mobileOffset={16} style={{ width: 380 }}
           icons={{
             success: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>,
             info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 8h.01" /><path d="M11 12h1v5h1" /></svg>,
