@@ -11,6 +11,7 @@ import { api, getRefreshToken } from "@/lib/apiClient";
 import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import StarField from "./StarField";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -116,7 +117,7 @@ export default function AdminLayout() {
   return (
     <div className="v3-shell">
       {/* Фон «Зоряний пил»: рідкі крихітні точки ледь мерехтять (дизайн «Основа · фон застосунку») */}
-      <div className="v3-stars" aria-hidden="true"><i /><i /><i /></div>
+      <StarField />
       <a href="#main-content" className="skip-link">Перейти до вмісту</a>
       <header className="v3-header">
         <Logo />
