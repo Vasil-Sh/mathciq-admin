@@ -638,7 +638,7 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-mselect-dd .v3-dd-btn { min-height: 46px; }
 
 /* ── Phone card, as in the design «мобільна, картка користувача» ── */
-.v3-uc-mbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 4px; }
+.v3-uc-mbar { position: absolute; top: 20px; right: 18px; z-index: 2; display: flex; }
 .v3-uc-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px 0 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #f4f6fa; font: 600 14px Inter, sans-serif; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
 .v3-uc-back:active { transform: scale(.96); }
 .v3-uc-more { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); }
@@ -666,3 +666,4 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 @media (hover: hover) { .v3-lrow:not(:disabled):hover { background: #eef2f8; } }
 .v3-uc-mact .v3-btn { font-size: 13px; white-space: nowrap; }
 .v3-ucard.is-m .v3-uc-sum { display: none; }
+.v3-ucard.is-m .v3-uc-id > h2, .v3-ucard.is-m .v3-uc-id > p { padding-right: 52px; }

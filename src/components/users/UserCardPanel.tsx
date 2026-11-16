@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
@@ -130,7 +130,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
     <aside className={`v3-ucard${mobile ? " is-m" : ""}`} aria-label={`Картка ${user.username}`}>
       {mobile && (
         <div className="v3-uc-mbar">
-          <button type="button" className="v3-uc-back" onClick={onClose}><ChevronLeft size={18} aria-hidden="true" />Користувачі</button>
           <button type="button" className="v3-icon-btn v3-uc-more" aria-label="Більше дій" aria-haspopup="dialog" onClick={() => setMore(true)}><MoreHorizontal size={18} aria-hidden="true" /></button>
         </div>
       )}

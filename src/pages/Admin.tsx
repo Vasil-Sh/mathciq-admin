@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
 import UserAvatar from "@/components/UserAvatar";
 import UndoRing from "@/components/UndoRing";
+import RollingNumber from "@/components/RollingNumber";
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import UserFormDialog, { type UserForm } from "@/components/users/UserFormDialog";
 import SelfLimitationsTab from "@/components/users/SelfLimitationsTab";
@@ -430,7 +431,7 @@ export default function Admin() {
               <div className="v3-sum is-static"><span className="v3-sum-l">Усі облікові записи</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">лише {admins === 1 ? "ваш акаунт овнера" : "адміністратори"}</span></div>
               <div className="v3-sum is-static"><span className="v3-sum-l">Платні · Базова і Pro</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">—</span></div>
               <div className="v3-sum is-static"><span className="v3-sum-l">На пробному періоді</span><strong className="v3-sum-v">0</strong><span className="v3-sum-n">—</span></div>
-              <div className="v3-sum is-static"><span className="v3-sum-l">Адміністратори</span><strong className="v3-sum-v">{admins}</strong><span className="v3-sum-n">{(() => { const o = all.find((u) => u.isOwner); return o ? `@${o.username} · овнер` : "—"; })()}</span></div>
+              <div className="v3-sum is-static"><span className="v3-sum-l">Адміністратори</span><strong className="v3-sum-v"><RollingNumber key={`adm-${admins}`} text={String(admins)} /></strong><span className="v3-sum-n">{(() => { const o = all.find((u) => u.isOwner); return o ? `@${o.username} · овнер` : "—"; })()}</span></div>
             </section>
             <section className="v3-users-empty">
               <div className="v3-wcard v3-ue-main">
@@ -454,7 +455,7 @@ export default function Admin() {
           </>
         ) : <>
           <section className="v3-sums v3-hide-mobile" aria-label="Підсумки">
-            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : x.value}</strong><span className="v3-sum-n">{x.note}</span></button>)}
+            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : <RollingNumber key={`${x.key}-${x.value}`} text={String(x.value)} />}</strong><span className="v3-sum-n">{x.note}</span></button>)}
           </section>
 
           {!wide ? mobileList : (
