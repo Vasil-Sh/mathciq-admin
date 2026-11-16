@@ -501,7 +501,9 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-ckb-gap { width: 20px; flex-shrink: 0; }
 .v3-uwho { gap: 12px; }
 .v3-urow.is-picked:not(.is-sel) { background: #f3f7ff; }
-.v3-search input:focus, .v3-search input:focus-visible { outline: none; }
+.v3-search input, .v3-search input:focus, .v3-search input:focus-visible, .v3-msearch input:focus, .v3-msearch input:focus-visible { outline: none !important; box-shadow: none !important; -webkit-appearance: none; appearance: none; }
+/* The ring is on the whole field instead */
+.v3-msearch:focus-within { border-color: #5b8cff; box-shadow: 0 0 0 3px rgba(91, 140, 255, .2); }
 .v3-bulk { position: sticky; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 10px; width: fit-content; margin: 12px auto 0; padding: 8px 8px 8px 16px; border-radius: 999px; background: #11151c; color: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, .35); animation: v3-bulk-in .35s cubic-bezier(.2, .9, .25, 1.2) both; }
 .v3-bulk-n { font-size: 13px; color: #c3c9d4; }
 .v3-bulk-n b { display: inline-block; color: #fff; animation: v3-rn .35s cubic-bezier(.2, .9, .25, 1.3) both; }
