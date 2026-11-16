@@ -369,7 +369,7 @@
   .v3-dash-top.is-empty { grid-template-columns: minmax(0, 1fr); }
   .v3-chart-tools .v3-chart-total { display: flex !important; margin-top: 0; }
   .v3-chart-tools .v3-chart-total strong { font-size: var(--fs-kpi); }
-  .v3-chart-foot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+  .v3-chart-foot { grid-template-columns: minmax(0, 1fr); }
 
   .v3-dash-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 18px; }
   .v3-ret-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: dense; column-gap: 24px; row-gap: 16px; align-content: start; }

@@ -435,7 +435,7 @@ export default function Dashboard() {
                 <div className={`v3-plans ${cls}`}>
                   <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
                   <PlanDial plans={view.plans} colors={PLAN_COLORS} total={view.planTotal} unit={overview ? "активних" : "усього"} />
-                  <p className="v3-dial-hint v3-hide-mobile">Крутіть кільце або оберіть рядок</p>
+                  <p className="v3-dial-hint v3-hide-mobile">Оберіть рядок, щоб виділити кільце</p>
                 </div>
   );
 
@@ -481,7 +481,7 @@ export default function Dashboard() {
           <Link key={label} to={to} className={`v3-kpi${hero ? " is-hero" : ""}`}>
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Icon size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">{label}</span><span className="v3-only-mobile">{short}</span></span>
             <strong className="v3-kpi-v"><RollingNumber key={`${value}-${period}`} text={value} /></strong>
-            <span className="v3-kpi-n">{delta != null && <><span className={`v3-dl ${hero ? "is-onblue" : delta >= 0 ? "is-up" : "is-down"}${delta < 0 ? " is-neg" : ""}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{pct(Math.abs(delta)).replace("+", "")}</span><span className="sr-only">{delta >= 0 ? "зростання" : "падіння"} </span>{deltaNote} · </>}{note}</span>
+            <span className="v3-kpi-n">{delta != null && <><span className={`v3-dl ${hero ? "is-onblue " : ""}${delta >= 0 ? "is-up" : "is-down"}${delta < 0 ? " is-neg" : ""}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{pct(Math.abs(delta)).replace("+", "")}</span><span className="sr-only">{delta >= 0 ? "зростання" : "падіння"} </span>{deltaNote} · </>}{note}</span>
           </Link>
         ))}
       </section>
@@ -589,11 +589,8 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          {!isEmpty && (view.planTotal > 0 || recentPaid.length > 0) && (
-            <div className={`v3-chart-foot${calmSide ? " is-calm" : ""}`}>
-              {view.planTotal > 0 && plansBlock(calmSide ? "v3-hide-desk" : "v3-hide-wide")}
-              {recentPaid.length > 0 && payBlock(calmSide ? "v3-hide-desk" : "")}
-            </div>
+          {!isEmpty && recentPaid.length > 0 && (
+            <div className={`v3-chart-foot${calmSide ? " is-calm" : ""}`}>{payBlock(calmSide ? "v3-hide-desk" : "")}</div>
           )}
         </div>
 
@@ -657,7 +654,7 @@ export default function Dashboard() {
               </div>
             </> : null}
         </aside>}
-        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className={`v3-dcard v3-side-plans ${calmSide ? "v3-hide-mobile" : "v3-only-wide"}`}>{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
+        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
         </div>}
       </section>
       </div>

@@ -43,6 +43,12 @@
 /* Права колонка: «Потребує уваги» за вмістом, під ним тарифи (лише ≥1600) */
 .v3-dash-side { display: contents; }
 .v3-side-plans { padding: 22px; }
+@media (min-width: 768px) {
+  .v3-dash-side { display: flex; flex-direction: column; gap: 14px; flex: 1 1 340px; min-width: 0; }
+  .v3-dash-side > .v3-attention { flex: 1 1 auto; }
+  .v3-dash-side > .v3-side-plans { flex: none; }
+}
+@media (max-width: 767px) { .v3-dash-side > .v3-side-plans { order: 1; } .v3-dash-side > .v3-attention, .v3-dash-side > .v3-calm-mini { order: 2; } }
 .v3-side-plans .v3-plans { margin: 0; padding: 0; border: 0; }
 .v3-side-plans .v3-plan-legend { grid-template-columns: 1fr; }
 @media (min-width: 1600px) {
@@ -50,6 +56,7 @@
   .v3-dash-top .v3-dash-side > .v3-attention, .v3-dash-top .v3-dash-side > .v3-calm-mini { flex: none; grid-column: auto; grid-row: auto; }
   .v3-dash-top .v3-dash-side > .v3-side-plans { flex: 1 1 auto; display: flex !important; flex-direction: column; justify-content: center; }
   .v3-chart-foot { grid-template-columns: minmax(0, 1fr); }
+  .v3-dash-top .v3-dash-side > .v3-side-plans { flex: none; }
 }
 
 /* «Потребує уваги» щільніше */
@@ -129,18 +136,10 @@
 
 /* Кільце тарифів, яке можна крутити */
 .v3-dial-wrap { display: flex; align-items: center; gap: 20px; margin-top: 12px; }
-.v3-dial { position: relative; width: 124px; height: 124px; flex-shrink: 0; cursor: grab; touch-action: none; border-radius: 50%; outline-offset: 4px; }
-.v3-dial.is-drag { cursor: grabbing; }
-.v3-dial svg { width: 100%; height: 100%; display: block; }
-/* Spending Ring (каталог Motion4 · Метрики 03): сегменти малюються по колу при першому показі */
-.v3-dial-seg { transition: stroke-width .3s, opacity .3s; animation: v3-dial-draw 1.3s cubic-bezier(.2, .9, .25, 1) both; }
-@keyframes v3-dial-draw { from { stroke-dasharray: 0 252; } }
-.v3-dial-mark { position: absolute; left: 50%; top: -6px; width: 0; height: 0; margin-left: -6px; border: 6px solid transparent; border-top-color: #f4f6fa; z-index: 1; animation: v3-dial-mark 2.4s ease-in-out infinite; }
-@keyframes v3-dial-mark { 50% { transform: translateY(2px); } }
-.v3-dial-c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-.v3-dial-c strong { font-size: var(--fs-stat); font-weight: 400; letter-spacing: -.02em; line-height: 1; animation: v3-dial-num .35s cubic-bezier(.3, 1.5, .5, 1); }
-@keyframes v3-dial-num { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
-.v3-dial-c small { margin-top: 3px; color: var(--v3-muted); font-size: var(--fs-cap); }
+/* Spending Ring (каталог Motion4 · Метрики 03): кільце на тариф, малюється по колу при показі */
+.v3-sring { width: 124px; height: 124px; flex-shrink: 0; display: block; transform: rotate(-90deg); }
+.v3-sring-p { transition: opacity .3s, stroke-width .3s cubic-bezier(.3, 1.5, .5, 1); animation: v3-sring-draw 1.6s cubic-bezier(.2, .9, .25, 1) both; }
+@keyframes v3-sring-draw { from { stroke-dashoffset: var(--len); } }
 .v3-dial-legend { flex: 1; min-width: 0; grid-template-columns: 1fr !important; }
 .v3-dial-legend li { padding: 0 !important; }
 .v3-dial-legend button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; margin: 0 -8px; border: 0; border-radius: 10px; background: transparent; color: #c3c9d4; font: 400 13px Inter, sans-serif; text-align: left; cursor: pointer; transition: background .2s, color .2s; box-sizing: content-box; }
@@ -149,8 +148,8 @@
 .v3-dial-legend button.is-on { background: rgba(90, 140, 255, .12); color: #f4f6fa; }
 .v3-dial-legend small { width: 40px; text-align: right; color: var(--v3-muted); font-size: var(--fs-cap); }
 .v3-dial-hint { margin: 8px 0 0; color: var(--v3-muted); font-size: var(--fs-cap); }
-@media (max-width: 767px) { .v3-dial { width: 108px; height: 108px; } .v3-dial-wrap { gap: 14px; } }
-@media (prefers-reduced-motion: reduce) { .v3-dial-mark, .v3-dial-c strong, .v3-dial-seg { animation: none; } .v3-dial svg g { transition: none !important; } }
+@media (max-width: 767px) { .v3-sring { width: 108px; height: 108px; } .v3-dial-wrap { gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .v3-sring-p { animation: none; } }
 
 /* Кільце автооновлення на «Оновити» */
 .v3-refresh { position: relative; }
@@ -213,6 +212,8 @@
 .v3-dl.is-up { background: rgba(0, 178, 75, .16); color: #4cd98a; }
 .v3-dl.is-down { background: rgba(229, 83, 63, .16); color: #ff8b78; }
 .v3-dl.is-onblue { background: rgba(255, 255, 255, .2); color: #fff; }
+.v3-dl.is-onblue.is-up { background: #08843a; }
+.v3-dl.is-onblue.is-down { background: #c2341f; }
 @keyframes v3-dl-in { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
 /* Смужка «Пробний → платний» наповнюється */
 .v3-kpi-bar > .v3-fill { animation: v3-fill 1.2s .2s cubic-bezier(.2, .9, .25, 1) both; }
@@ -318,8 +319,8 @@
 
 /* Перемикачі: однакова товщина тексту (без стрибків ширини) і м'якший рух пігулки */
 .v3-seg > button, .v3-seg > button.is-on, .v3-seg-soft button, .v3-seg-soft button.is-on, .v3-pseg > button, .v3-pseg > button.is-on { font-weight: 600; }
-.v3-pill { transition: left .38s cubic-bezier(.3, 1.08, .4, 1), width .38s cubic-bezier(.3, 1.08, .4, 1), opacity .2s; }
-.v3-seg-soft .v3-pill { box-shadow: 0 4px 10px rgba(58, 109, 240, .25); }
+.v3-pill { transition: left .45s cubic-bezier(.3, 1.25, .4, 1), width .45s cubic-bezier(.3, 1.25, .4, 1), opacity .2s; }
+.v3-seg-soft .v3-pill { box-shadow: 0 6px 16px rgba(58, 109, 240, .4); }
 
 /* Помісячний звіт: поточний місяць — акцентний рядок */
 .v3-table tbody tr.is-current > * { background: #f3f7ff; }
