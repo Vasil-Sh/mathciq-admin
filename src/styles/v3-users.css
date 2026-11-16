@@ -603,3 +603,32 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 @keyframes v3-m-l { from { opacity: 0; transform: translateX(-30px); } }
 @media (hover: hover) { .v3-date-grid button:not(.is-on):not(:disabled):hover { background: #f1f4f9; } .v3-date-head button:hover { background: #e6ebf3; } }
 @media (prefers-reduced-motion: reduce) { .v3-date-pop, .v3-date-grid button, .v3-date-m, .v3-date-grid { animation: none !important; } .v3-date-btn svg { transition: none; } }
+
+/* ── Phone, as in the design ── */
+/* Pull the list down to refresh (catalog · Mobile · refresh) */
+.v3-ptr { display: flex; align-items: flex-end; justify-content: center; gap: 8px; overflow: hidden; color: #8c95a6; font-size: 12px; transition: height .35s cubic-bezier(.2, .9, .25, 1); }
+.v3-ptr.is-drag { transition: none; }
+.v3-ptr.is-ready { color: #a3c0ff; }
+.v3-ptr-ar { display: inline-block; padding-bottom: 2px; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.v3-ptr.is-ready .v3-ptr-ar { transform: rotate(180deg); }
+.v3-ptr > span:last-child { padding-bottom: 2px; }
+.v3-ptr-sp { width: 14px; height: 14px; margin-bottom: 2px; border-radius: 50%; border: 2px solid #a3c0ff; border-right-color: transparent; animation: v3-spin .7s linear infinite; }
+@keyframes v3-spin { to { transform: rotate(360deg); } }
+/* Hold a card for its menu (catalog · Mobile · long press) */
+.v3-mitem { position: relative; }
+.v3-mitem.is-lifted { z-index: 41; }
+.v3-mcard { position: relative; overflow: hidden; -webkit-touch-callout: none; user-select: none; }
+.v3-mcard-lp { position: absolute; inset: 0; border-radius: inherit; background: rgba(58, 109, 240, .16); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+.v3-mcard.is-press .v3-mcard-lp { animation: v3-lp .5s linear forwards; }
+.v3-mcard.is-press { transform: scale(.97); transition: transform .5s ease; }
+@keyframes v3-lp { to { transform: scaleX(1); } }
+.v3-mitem.is-lifted .v3-mcard { transform: translateY(-4px) scale(1.02); box-shadow: 0 18px 40px rgba(0, 0, 0, .5); transition: transform .3s cubic-bezier(.2, .9, .25, 1.2), box-shadow .3s; }
+.v3-lpscrim { position: fixed; inset: 0; z-index: 40; background: rgba(5, 7, 11, .5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: v3-fade .2s ease both; }
+@keyframes v3-fade { from { opacity: 0; } }
+.v3-lpmenu { position: absolute; left: 12px; right: 12px; top: calc(100% + 8px); z-index: 42; display: flex; flex-direction: column; padding: 6px; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); transform-origin: top; animation: v3-lp-in .25s cubic-bezier(.2, .9, .25, 1.2) both; }
+@keyframes v3-lp-in { from { opacity: 0; transform: translateY(-6px) scale(.96); } }
+.v3-lpmenu > button, .v3-lpmenu > a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: #11151c; font: 500 14px Inter, sans-serif; text-align: left; text-decoration: none; cursor: pointer; animation: v3-opt-in .25s ease both; }
+.v3-lpmenu > :nth-child(2) { animation-delay: .04s; } .v3-lpmenu > :nth-child(3) { animation-delay: .08s; }
+.v3-lpmenu > button:disabled { color: #a0a8b6; }
+@media (hover: hover) { .v3-lpmenu > button:not(:disabled):hover, .v3-lpmenu > a:hover { background: #f1f4f9; } }
+@media (prefers-reduced-motion: reduce) { .v3-ptr-sp, .v3-mcard.is-press .v3-mcard-lp, .v3-lpscrim, .v3-lpmenu, .v3-lpmenu > * { animation: none !important; } .v3-ptr, .v3-ptr-ar { transition: none; } }

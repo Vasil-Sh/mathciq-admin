@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, Check, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowRight, Check, Send, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
@@ -89,6 +89,12 @@ export default function Admin() {
   const [newId, setNewId] = useState<number | null>(null);
   const [leavingId, setLeavingId] = useState<number | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [pull, setPull] = useState(0);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pressId, setPressId] = useState<number | null>(null);
+  const [menuId, setMenuId] = useState<number | null>(null);
+  const touch = useRef<{ y: number; x: number; t: number | null; moved: boolean; long: boolean }>({ y: 0, x: 0, t: null, moved: false, long: false });
   const rowEls = useRef(new Map<number, HTMLElement>());
   const prevTops = useRef(new Map<number, number>());
   const sortMoved = useRef(false);
@@ -323,6 +329,24 @@ export default function Admin() {
     return <div className="v3-uempty"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-uempty-ico v3-empty-float"><SearchX size={22} /></span></span><strong>Нікого не знайдено</strong><span>{q.trim() ? `За запитом «${q.trim()}»${filter !== "all" ? ` серед «${segLabel}»` : ""} немає збігів. Спробуйте інший логін${filter !== "all" || ageOnly ? " або шукайте серед усіх" : ""}.` : "У цьому фільтрі нікого немає."}</span><div className="v3-uempty-acts">{q.trim() && <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setQ("")}>Очистити пошук</button>}{(filter !== "all" || ageOnly) && <button type="button" className="v3-btn v3-btn-blue" onClick={() => { setFilter("all"); setAgeOnly(false); }}>Шукати серед усіх</button>}</div></div>;
   }
 
+  // Phone: pull the list down to refresh (catalog · Mobile · refresh) and hold a card for its menu (catalog · Mobile · long press).
+  const onListTouchStart = (e: React.TouchEvent) => { const t = e.touches[0]; touch.current = { ...touch.current, y: t.clientY, x: t.clientX, moved: false }; };
+  const onListTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0], dy = t.clientY - touch.current.y, dx = t.clientX - touch.current.x;
+    if (Math.abs(dy) > 8 || Math.abs(dx) > 8) { touch.current.moved = true; if (touch.current.t) { window.clearTimeout(touch.current.t); touch.current.t = null; setPressId(null); } }
+    if (window.scrollY <= 0 && dy > 0 && !refreshing && Math.abs(dy) > Math.abs(dx)) { setPulling(true); setPull(Math.min(110, dy * 0.5)); }
+  };
+  const onListTouchEnd = async () => {
+    if (!pulling) return;
+    setPulling(false);
+    if (pull < 60) { setPull(0); return; }
+    setPull(56); setRefreshing(true);
+    try { await load(); } finally { setRefreshing(false); setPull(0); }
+  };
+  const pressStart = (id: number) => { touch.current.long = false; setPressId(id); touch.current.t = window.setTimeout(() => { touch.current.long = true; touch.current.t = null; setPressId(null); setMenuId(id); if (navigator.vibrate) navigator.vibrate(10); }, 500); };
+  const pressEnd = () => { if (touch.current.t) { window.clearTimeout(touch.current.t); touch.current.t = null; } setPressId(null); };
+  const menuUser = all.find((u) => u.id === menuId) || null;
+
   const mobileList = (
     <div className="v3-umobile">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
@@ -331,7 +355,11 @@ export default function Admin() {
         {noAge > 0 && <button type="button" className={`v3-mage${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік ? · {noAge}</button>}
       </div>
       <div className="v3-mmeta"><label><span className="sr-only">Сортування</span><select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Сортування"><option value="end-asc">Найближча оплата ↓</option><option value="end-desc">Найпізніша оплата</option><option value="new">Нові спочатку</option><option value="name">За логіном</option></select></label>{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
-      <ul className="v3-mcards">
+      <div className={`v3-ptr${pulling ? " is-drag" : ""}${pull >= 60 && !refreshing ? " is-ready" : ""}`} style={{ height: pull }} role="status" aria-live="polite">
+        {refreshing ? <span className="v3-ptr-sp" aria-hidden="true" /> : <span className="v3-ptr-ar" aria-hidden="true">↓</span>}
+        <span>{refreshing ? "Оновлюємо…" : pull >= 60 ? "Відпустіть, щоб оновити" : pull > 0 ? "Потягніть, щоб оновити" : ""}</span>
+      </div>
+      <ul className="v3-mcards" onTouchStart={onListTouchStart} onTouchMove={onListTouchMove} onTouchEnd={onListTouchEnd} onTouchCancel={onListTouchEnd}>
         {users === null && loading ? Array.from({ length: 5 }, (_, i) => <li key={i} className="v3-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /><span className="v3-skel v3-skel-light" style={{ width: 60 }} /></li>)
           : list.length ? list.slice(0, mobileShown).map((u) => {
             const st = statusOf(u), ui = STATUS_UI[st], p = planCell(u, settings);
@@ -339,14 +367,26 @@ export default function Admin() {
             const tag = st === "urgent" || st === "soon" ? `${d} ${plural(d, "день", "дні", "днів")}` : ui.label;
             const line = isAdmin(u) ? `${u.isOwner ? "Овнер" : "Адмін"} · повний доступ` : st === "blocked" ? `${p.plan} · самообмеження до ${shortDate(u.selfLimitedUntil!)}` : st === "cancelled" ? `${p.plan} · скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}` : st === "trial" ? `Пробний · до ${shortDate(u.endDate)}` : st === "ended" ? `${p.plan} · закінчилась ${shortDate(u.endDate)}` : `${p.plan} · оплата ${shortDate(u.endDate)}`;
             return (
-              <li key={u.id}><button type="button" className="v3-mcard" onClick={() => openCard(u)}>
+              <li key={u.id} className={`v3-mitem${menuId === u.id ? " is-lifted" : ""}`}><button type="button" className={`v3-mcard${pressId === u.id ? " is-press" : ""}`}
+                onTouchStart={() => pressStart(u.id)} onTouchEnd={pressEnd} onTouchCancel={pressEnd} onContextMenu={(e) => { e.preventDefault(); setMenuId(u.id); }}
+                onClick={() => { if (touch.current.long) { touch.current.long = false; return; } openCard(u); }}>
+                <span className="v3-mcard-lp" aria-hidden="true" />
                 <UserAvatar username={u.username} telegram={u.telegram} />
                 <span className="v3-mcard-who"><strong>@{hl(u.username, q)}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</strong><small>{line}</small></span>
                 <span className={`v3-tag ${ui.cls}`}>{tag}</span>
-              </button></li>
+              </button>
+              {menuId === u.id && (
+                <div className="v3-lpmenu" role="menu" aria-label={`Дії з @${u.username}`}>
+                  {canQuickExtend(u) && <button type="button" role="menuitem" disabled={!online} onClick={() => { setMenuId(null); setExtendFor(u); }}><Plus size={16} aria-hidden="true" />Продовжити на {extendDays} днів</button>}
+                  {u.telegram && <a role="menuitem" href={`https://t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}`} target="_blank" rel="noopener noreferrer" onClick={() => setMenuId(null)}><Send size={16} aria-hidden="true" />Написати в Telegram</a>}
+                  <button type="button" role="menuitem" onClick={() => { setMenuId(null); openCard(u); }}><ArrowRight size={16} aria-hidden="true" />Відкрити картку</button>
+                </div>
+              )}
+              </li>
             );
           }) : <li className="v3-mcard-empty">{emptyState()}</li>}
       </ul>
+      {menuUser && <div className="v3-lpscrim" onClick={() => setMenuId(null)} aria-hidden="true" />}
       {list.length > mobileShown && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setMobileShown(mobileShown + PAGE_SIZE)}>Показати ще {Math.min(PAGE_SIZE, list.length - mobileShown)}{list.length - mobileShown > PAGE_SIZE ? ` із ${list.length - mobileShown}` : ""}</button>}
     </div>
   );
