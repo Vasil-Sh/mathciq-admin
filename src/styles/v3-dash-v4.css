@@ -417,3 +417,10 @@ html { color-scheme: dark; }
 /* Поточний місяць: замість смуги, що гнеться по заокругленому краю, — коротка окрема позначка */
 .v3-table tbody tr.is-current > th { box-shadow: none; }
 .v3-table tbody tr.is-current > th::before { content: ""; position: absolute; left: 4px; top: 50%; width: 3px; height: 20px; border-radius: 2px; background: var(--v3-nav); transform: translateY(-50%); }
+
+/* «Останні оплати» — окремий блок у правій колонці під тарифами */
+.v3-side-pay .v3-paylist { margin: 0; }
+.v3-side-pay .v3-plans-head { margin-top: 0; }
+.v3-chart-tools .v3-export { min-height: 40px; }
+/* ≥1600: права колонка вища за ліву — зайва висота йде в рядок графіка, а не в KPI */
+@media (min-width: 1600px) { .v3-dash-top:not(.is-empty) { grid-template-rows: auto auto 1fr; } }

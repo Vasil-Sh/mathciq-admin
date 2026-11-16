@@ -65,7 +65,6 @@ export default function Dashboard() {
   const [loadedAt, setLoadedAt] = useState(0);
   const [period, setPeriod] = useState<string>(now.key);
   const [mode, setMode] = useState<"pay" | "est">("pay");
-  const [activeOnly, setActiveOnly] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [extending, setExtending] = useState(false);
   // «Продовжити всім»: кнопка → підтвердження в ній самій → прогрес по рядках → «Продовжено»
@@ -382,8 +381,6 @@ export default function Dashboard() {
     { icon: Users, label: "Активні користувачі", short: "Активні", value: String(stats.activeUsers), note: isEmpty ? "без адміністраторів" : `з ${regularUsers}`, to: "/users?role=user&status=active" },
     { icon: UserPlus, label: "Нові цього місяця", short: "Нові цього місяця", value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?role=user&status=all&new=month" },
   ];
-  const report = activeOnly ? view.report.filter((r) => r.paid || r.users) : view.report;
-  const totals = view.report.reduce((t, r) => ({ paid: t.paid + r.paid, users: t.users + r.users }), { paid: 0, users: 0 });
   const chartEmpty = view.total === 0;
   const barCmp = (i: number) => {
     const cur = view.series[i]?.v || 0, prev = i > 0 ? view.series[i - 1]?.v || 0 : 0;
@@ -545,6 +542,7 @@ export default function Dashboard() {
             </div>
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
+            {!isEmpty && <button type="button" className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>}
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <PillTrack active={mode} />
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
@@ -589,9 +587,6 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          {!isEmpty && recentPaid.length > 0 && (
-            <div className={`v3-chart-foot${calmSide ? " is-calm" : ""}`}>{payBlock(calmSide ? "v3-hide-desk" : "")}</div>
-          )}
         </div>
 
         {!isEmpty && <div className={`v3-dash-side${calmSide ? " is-calm" : ""}`}>
@@ -654,7 +649,8 @@ export default function Dashboard() {
               </div>
             </> : null}
         </aside>}
-        {(view.planTotal > 0 || (calmSide && recentPaid.length > 0)) && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}{calmSide && recentPaid.length > 0 && payBlock("")}</section>}
+        {view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}</section>}
+        {recentPaid.length > 0 && <section className="v3-dcard v3-side-plans v3-side-pay v3-hide-mobile">{payBlock("")}</section>}
         </div>}
       </section>
       </div>
@@ -666,48 +662,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {!isEmpty && <section className="v3-dcard v3-report">
-        <div className="v3-card-head">
-          <div><h2 className="v3-h2">Помісячний звіт</h2><p className="v3-note-dark">Оплати, вартість підписок і нові реєстрації</p></div>
-          <div className="v3-head-actions v3-hide-mobile">
-            <div className="v3-seg" role="group" aria-label="Місяці у звіті">
-              <PillTrack active={activeOnly} />
-              <button type="button" className={!activeOnly ? "is-on" : ""} aria-pressed={!activeOnly} onClick={() => setActiveOnly(false)}>Усі місяці <span>{view.report.length}</span></button>
-              <button type="button" className={activeOnly ? "is-on" : ""} aria-pressed={activeOnly} onClick={() => setActiveOnly(true)}>З активністю <span>{view.report.filter((r) => r.paid || r.users).length}</span></button>
-            </div>
-            <button type="button" className="v3-btn v3-btn-ghost-dark v3-export" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
-          </div>
-        </div>
-
-        <div className="v3-table-scroll v3-hide-mobile" role="region" aria-label="Помісячний звіт" tabIndex={0}>
-          <table className="v3-table">
-            <thead><tr><th scope="col">Місяць</th><th scope="col">Отримані оплати</th><th scope="col">Вартість підписок*</th><th scope="col">Нові користувачі</th><th scope="col">До попереднього</th></tr></thead>
-            <tbody key={activeOnly ? "act" : "all"} className="v3-rep-body">
-              {report.map((r, ri) => (
-                <tr key={r.m} className={r.current ? "is-current" : undefined} style={{ animationDelay: `${Math.min(ri, 10) * 0.04}s` }}>
-                  <th scope="row"><span className="v3-month">{r.name}{r.current && <span className="v3-tag">Поточний</span>}</span></th>
-                  <td className="v3-num v3-strong">{money(r.paid)}</td>
-                  <td className="v3-num v3-dim2">{money(r.est)}</td>
-                  <td className="v3-num">{r.users}</td>
-                  <td className={`v3-num v3-strong ${r.delta === null ? "v3-dim2" : r.delta >= 0 ? "v3-up" : "v3-down"}`}>{r.delta === null ? "—" : pct(r.delta)}</td>
-                </tr>
-              ))}
-              {!report.length && <tr><td colSpan={5} className="v3-empty-cell">У {view.year} році ще немає оплат і реєстрацій.</td></tr>}
-            </tbody>
-            <tfoot><tr><th scope="row">Підсумок · {view.report.length} міс.</th><td className="v3-num">{money(totals.paid)}</td><td className="v3-num v3-dim2">—</td><td className="v3-num">{totals.users}</td><td className="v3-num">—</td></tr></tfoot>
-          </table>
-        </div>
-
-        <ul className="v3-report-cards v3-only-mobile">
-          {view.report.slice(0, 3).map((r) => (
-            <li key={r.m}>
-              <div><strong>{r.name}{r.current && <span className="v3-tag">Поточний</span>}</strong><small>{r.users} нових{r.delta !== null && <> · <span className={r.delta >= 0 ? "v3-up" : "v3-down"}>{pct(r.delta)}</span></>}</small></div>
-              <b>{money(r.paid)}</b>
-            </li>
-          ))}
-        </ul>
-        <p className="v3-note-dark v3-foot-note v3-hide-mobile">* Розрахунок за поточними тарифами, не облік оплат.</p>
-      </section>}
 
       {isEmpty && <div className="v3-dcard v3-calm-row v3-only-mobile"><span className="v3-calm-ico" aria-hidden="true"><Check size={18} strokeWidth={2} /></span><div><strong>Усе спокійно</strong><small>Немає підписок, що закінчуються</small></div></div>}
       {isEmpty && <Link to="/users" className="v3-btn v3-btn-primary v3-btn-block v3-only-mobile v3-mobile-cta">Створити першого користувача</Link>}
