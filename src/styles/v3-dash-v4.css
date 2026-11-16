@@ -85,7 +85,7 @@
 
 /* «Продовжити всім»: відблиск, аватарки, підтвердження, прогрес */
 .v3-xall { margin-top: auto; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-.v3-xall-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; cursor: pointer; overflow: hidden; transition: transform .16s cubic-bezier(.3, 1.4, .5, 1), background .2s; }
+.v3-xall-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; white-space: nowrap; cursor: pointer; overflow: hidden; transition: transform .16s cubic-bezier(.3, 1.4, .5, 1), background .2s; }
 .v3-xall-btn::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .18), transparent); transform: skewX(-20deg); transition: left .6s ease; }
 @media (hover: hover) { .v3-xall-btn:hover:not(:disabled)::after { left: 120%; } }
 @media (hover: hover) { .v3-xall-btn:hover:not(:disabled) { background: #1b212c; } }
@@ -96,6 +96,7 @@
 .v3-xall-avs { display: inline-flex; }
 .v3-xall-avs .v3-xall-av { width: 28px; height: 28px; margin-left: -8px; border: 2px solid #11151c; font-size: 12px; transition: margin .35s cubic-bezier(.3, 1.5, .5, 1); }
 .v3-xall-avs .v3-xall-av:first-child { margin-left: 0; }
+.v3-xall-avs .v3-xall-av:nth-child(n+4) { display: none; }
 @media (hover: hover) { .v3-xall-btn:hover:not(:disabled) .v3-xall-av:not(:first-child) { margin-left: -2px; } }
 .v3-xall-ask { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; animation: v3-xall-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
 .v3-xall-ask .v3-btn { min-height: 46px; white-space: nowrap; }
