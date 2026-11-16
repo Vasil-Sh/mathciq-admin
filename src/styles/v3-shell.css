@@ -279,3 +279,9 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   .v3-account-menu, .v3-mobile-menu[data-state="open"], .v3-modal[data-state="open"], .v3-main > *, .v3-count { animation: none !important; }
   .v3-account-btn svg { transition: none; }
 }
+
+/* Phone: notification spans the full width at the top */
+@media (max-width: 767px) {
+  [data-sonner-toaster][data-y-position="top"] { left: 16px !important; right: 16px !important; width: auto !important; transform: none !important; }
+  [data-sonner-toaster] .v3-toast { width: 100%; max-width: none; }
+}
