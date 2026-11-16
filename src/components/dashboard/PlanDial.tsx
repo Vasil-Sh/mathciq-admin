@@ -100,7 +100,7 @@ export default function PlanDial({ plans, colors, total, unit }: { plans: Plan[]
               <circle key={s.plan} cx="50" cy="50" r={R} fill="none" stroke={color(s.plan)} strokeLinecap="round"
                 strokeWidth={i === sel ? 12 : 8} opacity={i === sel ? 1 : 0.5}
                 strokeDasharray={`${(s.sweep / 360) * C} ${C}`} strokeDashoffset={-(s.start / 360) * C}
-                style={{ transition: "stroke-width .3s, opacity .3s" }} />
+                className="v3-dial-seg" style={{ animationDelay: `${i * 0.12}s` }} />
             ))}
           </g>
         </svg>

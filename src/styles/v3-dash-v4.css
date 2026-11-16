@@ -132,6 +132,9 @@
 .v3-dial { position: relative; width: 124px; height: 124px; flex-shrink: 0; cursor: grab; touch-action: none; border-radius: 50%; outline-offset: 4px; }
 .v3-dial.is-drag { cursor: grabbing; }
 .v3-dial svg { width: 100%; height: 100%; display: block; }
+/* Spending Ring (каталог Motion4 · Метрики 03): сегменти малюються по колу при першому показі */
+.v3-dial-seg { transition: stroke-width .3s, opacity .3s; animation: v3-dial-draw 1.3s cubic-bezier(.2, .9, .25, 1) both; }
+@keyframes v3-dial-draw { from { stroke-dasharray: 0 252; } }
 .v3-dial-mark { position: absolute; left: 50%; top: -6px; width: 0; height: 0; margin-left: -6px; border: 6px solid transparent; border-top-color: #f4f6fa; z-index: 1; animation: v3-dial-mark 2.4s ease-in-out infinite; }
 @keyframes v3-dial-mark { 50% { transform: translateY(2px); } }
 .v3-dial-c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
@@ -147,7 +150,7 @@
 .v3-dial-legend small { width: 40px; text-align: right; color: var(--v3-muted); font-size: var(--fs-cap); }
 .v3-dial-hint { margin: 8px 0 0; color: var(--v3-muted); font-size: var(--fs-cap); }
 @media (max-width: 767px) { .v3-dial { width: 108px; height: 108px; } .v3-dial-wrap { gap: 14px; } }
-@media (prefers-reduced-motion: reduce) { .v3-dial-mark, .v3-dial-c strong { animation: none; } .v3-dial svg g { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .v3-dial-mark, .v3-dial-c strong, .v3-dial-seg { animation: none; } .v3-dial svg g { transition: none !important; } }
 
 /* Кільце автооновлення на «Оновити» */
 .v3-refresh { position: relative; }
