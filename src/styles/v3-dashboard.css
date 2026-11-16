@@ -490,3 +490,11 @@ a.v3-kpi { transition: border-color .15s, translate .18s; }
 
 /* ══ Наведення лише для миші ══ */
 @media (hover:hover){@media (hover:hover){.v3-chip:hover{ border-color: rgba(255, 255, 255, .3); }.v3-kpi:hover{ border-color: rgba(255, 255, 255, .2); }.v3-exp-row:hover strong{ color: #2450c4; }.v3-btn-outline:hover{ border-color: #b9c1cd; }.v3-btn-ghost:hover{ border-color: #b9c1cd; }.v3-btn-blue:hover{ background: #2f5bd0; }.v3-head-link:hover{ color: #a3c0ff; }.v3-alert-row:hover strong{ color: #2450c4; }.v3-btn-pill:hover{ background: #262d3a; color: #fff; }.v3-btn-pill-dark:hover{ border-color: rgba(255, 255, 255, .32); background: transparent; }.v3-period-list button:hover{ background: #f1f4fa; }button.v3-bar:hover{ filter: brightness(1.35); }a.v3-kpi:hover{ translate: 0 -2px; }.v3-alert-row:hover,.v3-exp-row:hover{ translate: 2px 0; }}}
+
+/* Avatar: initials underneath, photo on top once it has loaded; blur-in from the catalog */
+.v3-av.v3-av-in { position: relative; overflow: hidden; }
+.v3-av-in .v3-av-img { position: absolute; inset: 0; opacity: 0; transition: opacity .3s; }
+.v3-av-in .v3-av-img.is-on { opacity: 1; animation: v3-avf .6s ease both; }
+.v3-av-in { animation: v3-avf .6s ease both; }
+@keyframes v3-avf { from { filter: blur(6px); transform: scale(1.08); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .v3-av-in, .v3-av-in .v3-av-img.is-on { animation: none; } }

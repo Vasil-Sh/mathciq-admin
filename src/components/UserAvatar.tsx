@@ -8,25 +8,27 @@ interface Props {
 }
 
 /**
- * Round avatar for a user: their Telegram photo when a handle is known,
- * falling back to the first two letters of the login.
+ * Round avatar for a user. The initials are always there; the Telegram photo
+ * fades in over them only once it has really loaded (Telegram serves an empty
+ * picture for accounts without a photo, which used to leave a blank circle).
+ * The blur-in comes from the animation catalog (Lists · avatars load).
  */
 export default function UserAvatar({ username, telegram, className = "" }: Props) {
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState<"wait" | "ok" | "none">("wait");
   const handle = telegramUsername(telegram);
   const initials = (username || "?").slice(0, 2).toUpperCase();
   return (
-    <span className={`v3-av ${className}`} aria-hidden="true">
-      {handle && !failed ? (
+    <span className={`v3-av v3-av-in ${className}`} aria-hidden="true">
+      <span className="v3-av-ini">{initials}</span>
+      {handle && state !== "none" && (
         <img
-          className="v3-av-img"
+          className={`v3-av-img${state === "ok" ? " is-on" : ""}`}
           src={`https://t.me/i/userpic/320/${handle}.jpg`}
           alt=""
           loading="lazy"
-          onError={() => setFailed(true)}
+          onLoad={(e) => setState(e.currentTarget.naturalWidth > 24 ? "ok" : "none")}
+          onError={() => setState("none")}
         />
-      ) : (
-        initials
       )}
     </span>
   );

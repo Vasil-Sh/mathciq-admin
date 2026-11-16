@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Lock, User as UserIcon, X } from "lucide-react";
+import { Check, ChevronDown, Lock, Send, User as UserIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import UserAvatar from "@/components/UserAvatar";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { shortDate } from "@/lib/subscriptions";
 import { plural } from "@/lib/dashboardInsights";
-import { ageText, birthText, isAdmin, leftTag, longDate, planCell, planName, progress, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
+import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, planName, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import { AddPaymentDialog, CancelPaymentDialog, ReceiptDialog, type Payment } from "./PaymentDialogs";
 import { CancelSubscriptionDialog, GrantProDialog, RefundDialog } from "./UserActionDialogs";
@@ -50,12 +50,16 @@ interface Props {
   onDelete: () => void;
   onResetPassword: () => void;
   onExtend: () => void;
+  /** Opens the edit form at the age block (badge «Вік не підтверджено · підтвердити»). */
+  onConfirmAge?: () => void;
   onChanged: () => void;
   onClose?: () => void;
 }
 
 /** Right-hand user card (design «Користувачі v3 · список + картка»). */
-export default function UserCardPanel({ user, settings, extendDays, online, deleteReason, resetReason, onEdit, onDelete, onResetPassword, onExtend, onChanged, onClose }: Props) {
+export default function UserCardPanel({ user, settings, extendDays, online, deleteReason, resetReason, onEdit, onDelete, onResetPassword, onExtend, onConfirmAge, onChanged, onClose }: Props) {
+  const [wr, setWr] = useState<"idle" | "fly" | "done">("idle");
+  useEffect(() => { setWr("idle"); }, [user.id]);
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<PayWithRefund[]>([]);
@@ -113,6 +117,11 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const role = user.isOwner ? "Овнер" : admin ? "Адміністратор" : "Користувач";
   const canCancelSub = !admin && ["active", "soon", "urgent", "trial"].includes(st) && !endsWithoutRenewal(user);
   const off = online ? undefined : "Запрацює після відновлення зв’язку";
+  const dl = user.endDate ? daysLeft(user) : null;
+  const ringC = dl !== null && dl < 3 ? "#e5533d" : dl !== null && dl < 7 ? "#f0a03c" : "#00B24B";
+  const ringOff = dl === null ? 314 : Math.round(314 * (1 - Math.min(1, Math.max(0, dl) / 30)));
+  const tgHandle = tg ? tg.replace(/^t\.me\//, "") : "";
+  const write = () => { if (!tgHandle || wr !== "idle") return; setWr("fly"); window.open(`https://t.me/${tgHandle}`, "_blank", "noopener"); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); };
 
   return (
     <aside className="v3-ucard" aria-label={`Картка ${user.username}`}>
@@ -121,6 +130,14 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         <div className="v3-uc-id">
           <h2>@{user.username}</h2>
           <p>{tg || "Telegram не вказано"} · {role}</p>
+          {!admin && (
+            <div className="v3-bdgs">
+              {user.ageConfirmed
+                ? <span className="v3-bdg is-ok"><Check size={13} strokeWidth={3} className="v3-bdg-ck" aria-hidden="true" />Вік підтверджено</span>
+                : <button type="button" className="v3-bdg is-warn" disabled={!online} onClick={onConfirmAge || onEdit}>Вік не підтверджено · підтвердити</button>}
+              {user.selfLimitedUntil && <span className="v3-bdg is-lock"><Lock size={12} aria-hidden="true" />Самообмеження</span>}
+            </div>
+          )}
         </div>
         {viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>}
         {onClose && <button type="button" className="v3-icon-btn v3-uc-close" onClick={onClose} aria-label="Закрити картку"><X size={18} /></button>}
@@ -128,9 +145,22 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
       <div className="v3-uc-sub">
         <div className="v3-uc-sub-top"><span>Підписка</span><span className="v3-uc-sub-tag">{leftTag(user)}</span></div>
-        <strong className="v3-uc-sub-plan">{admin ? `${plan.plan} · безстроково` : `${plan.plan} · ${user.endDate ? `до ${longDate(user.endDate)}` : "без дати"}`}</strong>
-        <div className="v3-uc-sub-bar" aria-hidden="true"><span style={{ width: `${progress(user)}%` }} /></div>
-        <div className="v3-uc-sub-meta"><span>{admin ? "без обмежень" : user.startDate ? `з ${longDate(user.startDate)}` : ""}</span><span>{plan.price}</span></div>
+        <div className="v3-uc-sub-main">
+          {!admin && dl !== null && (
+            <div className="v3-dring" role="img" aria-label={`${Math.max(0, dl)} ${plural(Math.max(0, dl), "день", "дні", "днів")} до кінця`}>
+              <svg width="96" height="96" viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="58" fill="#ffffff" />
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#e8ecf3" strokeWidth="10" />
+                <circle className="v3-dring-p" cx="60" cy="60" r="50" fill="none" stroke={ringC} strokeWidth="10" strokeLinecap="round" strokeDasharray="314" strokeDashoffset={ringOff} />
+              </svg>
+              <span className="v3-dring-in" aria-hidden="true"><strong key={dl}>{Math.max(0, dl)}</strong><small>{plural(Math.max(0, dl), "день", "дні", "днів")} до кінця</small></span>
+            </div>
+          )}
+          <div className="v3-uc-sub-txt">
+            <strong className="v3-uc-sub-plan">{admin ? `${plan.plan} · безстроково` : `${plan.plan} · ${user.endDate ? `до ${longDate(user.endDate)}` : "без дати"}`}</strong>
+            <span className="v3-uc-sub-meta">{admin ? "без обмежень" : [user.startDate ? `з ${longDate(user.startDate)}` : "", plan.price].filter(Boolean).join(" · ")}</span>
+          </div>
+        </div>
         {!admin && (
           <div className="v3-uc-sub-actions">
             <button type="button" className="v3-btn v3-btn-white" disabled={!online} title={off} onClick={() => setDlg("pay")}>Додати оплату</button>
@@ -144,7 +174,10 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       )}
       {endsWithoutRenewal(user) && <p className="v3-uc-info">Підписку скасовано — доступ до {shortDate(user.endDate)}, далі без продовження.</p>}
 
-      <div className="v3-uc-foot v3-uc-foot-top">
+      <div className="v3-uc-foot v3-uc-foot-top v3-uc-grid2">
+        <button type="button" className={`v3-btn v3-btn-ghost-dark v3-btn-sm v3-write${wr === "done" ? " is-done" : ""}`} disabled={!tgHandle} title={tgHandle ? `Відкрити чат з @${tgHandle} у Telegram` : "Telegram не вказано"} onClick={write}>
+          {wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати</>}
+        </button>
         <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" disabled={!online} onClick={onEdit}>Редагувати</button>
         <button type="button" className={`v3-btn v3-btn-sm ${resetReason ? "v3-btn-locked" : "v3-btn-ghost-dark"}`} disabled={!!resetReason || !online} title={resetReason || off} onClick={onResetPassword}>{resetReason && <Lock size={13} aria-hidden="true" />}Скинути пароль</button>
         <button type="button" className={`v3-btn v3-btn-sm v3-uc-del ${deleteReason ? "v3-btn-locked" : "v3-btn-danger-outline"}`} disabled={!!deleteReason || !online} title={deleteReason || off} aria-describedby={deleteReason ? "uc-lock" : undefined} onClick={onDelete}>{deleteReason && <Lock size={13} aria-hidden="true" />}Видалити</button>
