@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { isoToday } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
@@ -34,23 +35,29 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
   const basic = settings?.basicPrice || 300, pro = settings?.proPrice || 600;
   const [f, setF] = useState<UserForm>({ username: "", telegram: "", plan: "trial", startDate: "", endDate: "", role: "user", birthDate: "", ageConfirmed: false });
   const [touchedEnd, setTouchedEnd] = useState(false);
+  const [initial, setInitial] = useState("");
+  const [guard, setGuard] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    // Remember the form as it opened, so we know when something changed (catalog · Forms · unsaved changes).
+    const start = (v: UserForm) => { setF(v); setInitial(JSON.stringify(v)); };
     setTouchedEnd(false);
     if (mode === "edit" && user) {
-      setF({ username: user.username, telegram: user.telegram || "", plan: planOf(user.proUntil ? user.proBasePlan : user.plan), startDate: user.startDate || "", endDate: user.endDate || "", role: user.isOwner ? "owner" : user.role === "admin" ? "admin" : "user", birthDate: user.birthDate || "", ageConfirmed: !!user.ageConfirmed });
+      start({ username: user.username, telegram: user.telegram || "", plan: planOf(user.proUntil ? user.proBasePlan : user.plan), startDate: user.startDate || "", endDate: user.endDate || "", role: user.isOwner ? "owner" : user.role === "admin" ? "admin" : "user", birthDate: user.birthDate || "", ageConfirmed: !!user.ageConfirmed });
     } else {
       const t = isoToday();
-      setF({ username: "", telegram: "", plan: "trial", startDate: t, endDate: addDays(t, trialDays - 1), role: "user", birthDate: "", ageConfirmed: false });
+      start({ username: "", telegram: "", plan: "trial", startDate: t, endDate: addDays(t, trialDays - 1), role: "user", birthDate: "", ageConfirmed: false });
     }
+    setGuard(false);
   }, [open, mode, user, trialDays]);
+  const dirty = mode === "edit" && !!initial && initial !== JSON.stringify(f);
 
   // New account: the end date follows the plan until the admin edits it by hand.
   const pickPlan = (plan: Plan) => setF((x) => ({ ...x, plan, endDate: mode === "create" && !touchedEnd && x.startDate ? addDays(x.startDate, (plan === "trial" ? trialDays : subDays) - 1) : x.endDate }));
   const isAdminRole = f.role !== "user";
   const valid = f.username.trim().length > 0 && /^[A-Za-z0-9_.-]{2,100}$/.test(f.username.trim()) && (isAdminRole || (f.startDate && f.endDate && f.endDate >= f.startDate));
-  const dlg = (o: boolean) => { if (!busy) onOpenChange(o); };
+  const dlg = (o: boolean) => { if (busy) return; if (!o && dirty && !guard) { setGuard(true); return; } onOpenChange(o); };
 
   return (
     <Dialog open={open} onOpenChange={dlg}>
@@ -75,8 +82,8 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
                 ))}
               </div>
               <div className="v3-form-grid">
-                <div className="v3-field"><label htmlFor="uf-start">Дата початку</label><input id="uf-start" type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></div>
-                <div className="v3-field"><label htmlFor="uf-end">Дата закінчення</label><input id="uf-end" type="date" min={f.startDate} value={f.endDate} onChange={(e) => { setTouchedEnd(true); setF({ ...f, endDate: e.target.value }); }} /></div>
+                <div className="v3-field"><label id="uf-start-l">Дата початку</label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => setF({ ...f, startDate: v })} /></div>
+                <div className="v3-field"><label id="uf-end-l">Дата закінчення</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); }} /></div>
               </div>
               {mode === "create" && <p className="v3-note-info">Пробний період — один на людину. Для Базової й Pro сума плану запишеться як перша оплата.</p>}
             </fieldset>
@@ -105,8 +112,14 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             {roleLock && <p className="v3-lock-note"><Lock size={13} aria-hidden="true" />{roleLock}</p>}
           </fieldset>
 
+          {guard && (
+            <div className="v3-guard" role="alertdialog" aria-label="Незбережені зміни">
+              <strong>Закрити без збереження?</strong><span>Зміни в цій формі буде втрачено.</span>
+              <div><button type="button" className="v3-btn v3-btn-ghost v3-btn-sm" onClick={() => setGuard(false)} autoFocus>Повернутись</button><button type="button" className="v3-btn v3-btn-red v3-btn-sm" onClick={() => { setGuard(false); onOpenChange(false); }}>Закрити</button></div>
+            </div>
+          )}
           <div className="v3-modal-foot">
-            <span className="v3-hint">{mode === "create" ? "Пароль згенерується автоматично" : "Зміни запишуться в журнал дій"}</span>
+            {dirty ? <span className="v3-dirty" role="status"><i aria-hidden="true" />Є незбережені зміни</span> : <span className="v3-hint">{mode === "create" ? "Пароль згенерується автоматично" : "Зміни запишуться в журнал дій"}</span>}
             <div className="v3-modal-actions">
               <button type="button" className="v3-btn v3-btn-ghost" onClick={() => dlg(false)} disabled={busy}>Скасувати</button>
               <button type="submit" className="v3-btn v3-btn-blue" disabled={busy || !valid}>{busy ? "Зберігаємо…" : mode === "create" ? "Створити" : "Зберегти"}</button>

@@ -6,6 +6,7 @@ import { BM_STATUS, bookmakerStatus, deleteBookmaker, dmy, entityStats, initials
 import { updateSettings } from "@/lib/adminSettingsApi";
 import { plural } from "@/lib/dashboardInsights";
 import type { AppSettings } from "@/types";
+import UndoRing from "@/components/UndoRing";
 
 const EMPTY: BookmakerInput = { name: "", licenseNumber: "", licenseUntil: null, moderationText: "", link: "", buttonText: "Коефіцієнт у партнера → перейти", clickPrice: null, showOddsInList: true, showMatchDetails: true, active: true };
 
@@ -40,7 +41,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
     try {
       setSettings(await updateSettings({ [key]: next }));
       if (next) toast.success(`«${name}» увімкнено`, { description: "Партнери знову показуються на цьому місці" });
-      else toast.success(`«${name}» вимкнено`, { description: key === "adsOddsInList" ? "Плашки букмекерів зникли з рядків матчів для всіх" : "Блок «Коефіцієнт у партнера» зник для всіх", action: { label: "Повернути", onClick: () => toggleGlobal(key) } });
+      else toast.success(`«${name}» вимкнено`, { description: key === "adsOddsInList" ? "Плашки букмекерів зникли з рядків матчів для всіх" : "Блок «Коефіцієнт у партнера» зник для всіх", action: { label: <UndoRing label="Повернути" />, onClick: () => toggleGlobal(key) } });
     } catch (e) { toast.error("Не вдалося змінити місце показу", { description: (e as Error).message }); }
   }
 
@@ -70,7 +71,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
   async function remove(b: Bookmaker) {
     try {
       await deleteBookmaker(b.id); setList((l) => l.filter((x) => x.id !== b.id)); setSelId(null);
-      toast.success("Партнера видалено", { description: b.name, duration: 10_000, className: "v3-toast-10s", action: { label: "Повернути", onClick: async () => { try { await saveBookmaker(null, { ...b }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
+      toast.success("Партнера видалено", { description: b.name, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: async () => { try { await saveBookmaker(null, { ...b }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
     } catch (e) { toast.error("Не вдалося видалити партнера", { description: (e as Error).message }); }
   }
 

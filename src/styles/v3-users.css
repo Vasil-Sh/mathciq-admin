@@ -521,3 +521,85 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-tt-tip { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; max-width: 280px; padding: 8px 10px; border-radius: 10px; background: #fff; color: #11151c; font-size: 12px; line-height: 1.45; white-space: normal; box-shadow: 0 12px 28px rgba(0, 0, 0, .4); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .2s, transform .2s; transition-delay: 0s; }
 .v3-tt:focus-visible .v3-tt-tip { opacity: 1; transform: none; transition-delay: .4s; }
 @media (hover: hover) { .v3-tt:hover .v3-tt-tip { opacity: 1; transform: none; transition-delay: .4s; } }
+
+/* ── Dialogs, as in the design ── */
+/* «Видати Pro» in three steps with a burst at the end (catalog · Domain · steps) */
+.v3-wz-wrap { margin: 4px 0 2px; }
+.v3-wz { display: flex; gap: 4px; }
+.v3-wz i { position: relative; flex: 1; height: 4px; border-radius: 2px; background: #e5e8ee; overflow: hidden; }
+.v3-wz i::after { content: ""; position: absolute; inset: 0; background: #3a6df0; transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.2, .9, .25, 1); }
+.v3-wz i.is-on::after { transform: scaleX(1); }
+.v3-wz-l { display: flex; justify-content: space-between; margin-top: 6px; color: #5f6878; font-size: 12px; }
+.v3-wz-l .is-cur { color: #11151c; font-weight: 600; }
+.v3-swap { display: flex; flex-direction: column; gap: 14px; animation: v3-swap .3s cubic-bezier(.2, .9, .25, 1) both; }
+@keyframes v3-swap { from { opacity: 0; transform: translateX(12px); } }
+.v3-prodone { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 6px; text-align: center; }
+.v3-prodone strong { font-size: 18px; font-weight: 600; }
+.v3-prodone > span:last-child { color: #5f6878; font-size: 13px; }
+.v3-burst { position: relative; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #00B24B; color: #fff; animation: v3-b-in .5s cubic-bezier(.2, .9, .25, 1.6) both; }
+.v3-burst::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid #00B24B; animation: v3-b-ring .8s ease-out .1s both; }
+@keyframes v3-b-in { from { transform: scale(0); } }
+@keyframes v3-b-ring { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+/* Refund: slide to confirm, then three steps (catalog · Dangerous actions + Data · steps) */
+.v3-slide { position: relative; height: 56px; border-radius: 999px; background: #fdecea; overflow: hidden; user-select: none; touch-action: none; }
+.v3-slide.is-off { background: #f1f3f6; }
+.v3-slide-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: #e5533d; transition: width .3s cubic-bezier(.2, .9, .25, 1); }
+.v3-slide.is-drag .v3-slide-fill { transition: none; }
+.v3-slide.is-off .v3-slide-fill { background: #c9ced8; }
+.v3-slide.is-ok .v3-slide-fill { background: #00B24B; width: 100% !important; }
+.v3-slide-lbl { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 60px; color: #a8321f; font: 600 14px Inter, sans-serif; pointer-events: none; }
+.v3-slide.is-off .v3-slide-lbl { color: #8a93a2; }
+.v3-slide.is-ok .v3-slide-lbl { color: #fff; opacity: 1 !important; }
+.v3-slide-knob { position: absolute; left: 4px; top: 4px; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #e5533d; font: 700 18px Inter, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); cursor: grab; transition: transform .3s cubic-bezier(.2, .9, .25, 1); }
+.v3-slide.is-drag .v3-slide-knob { transition: none; cursor: grabbing; }
+.v3-slide.is-off .v3-slide-knob { color: #a0a8b6; cursor: not-allowed; }
+.v3-slide.is-ok .v3-slide-knob { color: #00B24B; }
+.v3-rsteps { position: relative; display: flex; justify-content: space-between; padding: 10px 4px 0; }
+.v3-rsteps-line { position: absolute; left: 38px; right: 38px; top: 26px; height: 3px; border-radius: 2px; background: #e5e8ee; }
+.v3-rsteps-line i { display: block; height: 100%; border-radius: 2px; background: #00B24B; transition: width .6s cubic-bezier(.2, .9, .25, 1); }
+.v3-rstep { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 104px; text-align: center; font-size: 12px; color: #5f6878; }
+.v3-rstep-c { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 2px solid #e5e8ee; font: 700 12px Inter, sans-serif; transition: background-color .3s, border-color .3s, color .3s, transform .4s cubic-bezier(.3, 1.6, .5, 1); }
+.v3-rstep.is-on { color: #11151c; font-weight: 600; }
+.v3-rstep.is-on .v3-rstep-c { border-color: #3a6df0; color: #3a6df0; transform: scale(1.08); box-shadow: 0 0 0 5px rgba(58, 109, 240, .14); }
+.v3-rstep.is-done .v3-rstep-c { background: #00B24B; border-color: #00B24B; color: #fff; }
+.v3-rstep.is-done .v3-rstep-c svg { animation: v3-ok-in .4s cubic-bezier(.2, .9, .25, 1.6) both; }
+@media (prefers-reduced-motion: reduce) { .v3-swap, .v3-burst, .v3-burst::after, .v3-rstep-c svg { animation: none !important; } .v3-wz i::after, .v3-rsteps-line i, .v3-slide-fill, .v3-slide-knob { transition: none; } }
+/* Eye «show password» in the password dialog (catalog · Forms 01; the eye styles live with the login) */
+.v3-eyeb { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; padding: 0; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .2); background: transparent; color: #e7eaf0; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
+.v3-eyeb:active { transform: scale(.96); }
+@media (hover: hover) { .v3-eyeb:hover { background: rgba(255, 255, 255, .08); } }
+.v3-pass-box > div { gap: 8px; }
+.v3-pass-box code:not(.is-shown) { letter-spacing: .12em; }
+/* Unsaved changes: a blinking dot and a check before closing (catalog · Forms · unsaved changes) */
+.v3-dirty { display: inline-flex; align-items: center; gap: 8px; color: #8a5a00; font-size: 12px; font-weight: 600; }
+.v3-dirty i { width: 8px; height: 8px; border-radius: 50%; background: #f0a03c; animation: v3-blink 1.2s ease-in-out infinite; }
+@keyframes v3-blink { 50% { opacity: .25; } }
+.v3-guard { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 16px; background: #fff4dc; color: #6b4500; font-size: 13px; animation: v3-swap .25s cubic-bezier(.2, .9, .25, 1) both; }
+.v3-guard strong { font-size: 14px; color: #3d2a00; }
+.v3-guard div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .v3-dirty i, .v3-guard { animation: none; } }
+/* Date field with a calendar (catalog · Inputs · list and calendar) */
+.v3-date { position: relative; }
+.v3-date-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; padding: 0 14px; border-radius: 14px; border: 1px solid #dde1e7; background: #fff; color: #11151c; font: 500 14px Inter, sans-serif; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.v3-date-btn.is-on { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .18); }
+.v3-date-btn svg { transition: transform .35s cubic-bezier(.2, .9, .25, 1.3); }
+.v3-date-btn.is-on svg { transform: rotate(180deg); }
+.v3-date-pop { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 280px; padding: 10px; border-radius: 16px; background: #fff; color: #11151c; box-shadow: 0 18px 40px rgba(17, 21, 28, .22); transform-origin: top center; overflow: hidden; animation: v3-menu-in .28s cubic-bezier(.2, .9, .25, 1.2) both; }
+@keyframes v3-menu-in { from { opacity: 0; transform: scale(.95) translateY(-6px); } }
+.v3-date-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.v3-date-head button { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #f1f4f9; color: #11151c; cursor: pointer; transition: transform .15s ease-out, background-color .2s; }
+.v3-date-head button:active { transform: scale(.9); }
+.v3-date-m { font-size: 13px; }
+.v3-date-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; font-size: 12px; }
+.v3-date-wd { color: #5f6878; margin-bottom: 2px; }
+.v3-date-grid span, .v3-date-grid button { display: grid; place-items: center; height: 32px; border-radius: 8px; }
+.v3-date-grid button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; animation: v3-opt-in .3s cubic-bezier(.2, .9, .25, 1) both; }
+.v3-date-grid button.is-on { background: #3a6df0; color: #fff; font-weight: 600; }
+.v3-date-grid button:disabled { color: #c3c9d4; cursor: default; }
+@keyframes v3-opt-in { from { opacity: 0; transform: translateY(-4px); } }
+.v3-date-m.is-r, .v3-date-grid.is-r, .v3-date-m.is-r2, .v3-date-grid.is-r2 { animation: v3-m-r .35s cubic-bezier(.2, .9, .25, 1) both; }
+.v3-date-m.is-l, .v3-date-grid.is-l, .v3-date-m.is-l2, .v3-date-grid.is-l2 { animation: v3-m-l .35s cubic-bezier(.2, .9, .25, 1) both; }
+@keyframes v3-m-r { from { opacity: 0; transform: translateX(30px); } }
+@keyframes v3-m-l { from { opacity: 0; transform: translateX(-30px); } }
+@media (hover: hover) { .v3-date-grid button:not(.is-on):not(:disabled):hover { background: #f1f4f9; } .v3-date-head button:hover { background: #e6ebf3; } }
+@media (prefers-reduced-motion: reduce) { .v3-date-pop, .v3-date-grid button, .v3-date-m, .v3-date-grid { animation: none !important; } .v3-date-btn svg { transition: none; } }

@@ -20,6 +20,7 @@ import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, telegramLink, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
 import type { AdminUser, AdminUserOverview, AppSettings } from "@/types";
+import UndoRing from "@/components/UndoRing";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -247,7 +248,7 @@ export default function Dashboard() {
         description: done.map((d) => `@${d.name}`).join(", "),
         duration: Infinity,
         action: {
-          label: "Скасувати",
+          label: <UndoRing />,
           onClick: async () => {
             const failed = (await Promise.allSettled(done.map((d) => authService.updateUser(d.id, { endDate: d.prev })))).filter((r) => r.status === "rejected").length;
             await load();

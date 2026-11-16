@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
 import UserAvatar from "@/components/UserAvatar";
+import UndoRing from "@/components/UndoRing";
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import UserFormDialog, { type UserForm } from "@/components/users/UserFormDialog";
 import SelfLimitationsTab from "@/components/users/SelfLimitationsTab";
@@ -171,7 +172,7 @@ export default function Admin() {
       await load();
       toast.success(`Підписку продовжено до ${next.split("-").reverse().slice(0, 2).join(".")}`, {
         description: `@${u.username} · +${extendDays} днів`, duration: 10_000, className: "v3-toast-10s",
-        action: { label: "Скасувати", onClick: async () => { try { await authService.updateUser(u.id, { endDate: prev }); toast.info("Продовження скасовано", { description: "Дата повернулась як була" }); } catch (e) { toast.error((e as Error).message); } load(); } },
+        action: { label: <UndoRing />, onClick: async () => { try { await authService.updateUser(u.id, { endDate: prev }); toast.info("Продовження скасовано", { description: "Дата повернулась як була" }); } catch (e) { toast.error((e as Error).message); } load(); } },
       });
     } catch (e) {
       toast.error("Продовження не збережено", { description: navigator.onLine ? `@${u.username}: ${(e as Error).message}` : "Немає з’єднання. Спробуйте ще раз.", action: { label: "Повторити", onClick: () => extend(u) } });
@@ -271,7 +272,7 @@ export default function Admin() {
     setBulkBusy(false); setPicked(new Set()); await load();
     toast.success(`Продовжено ${ok} ${plural(ok, "підписку", "підписки", "підписок")} на ${extendDays} днів`, {
       description: ok < targets.length ? `Не вдалося: ${targets.length - ok}` : targets.map((u) => `@${u.username}`).join(", "), duration: 10_000, className: "v3-toast-10s",
-      action: { label: "Скасувати", onClick: async () => { for (const x of prev) { try { await authService.updateUser(x.id, { endDate: x.endDate }); } catch { /* ignore */ } } await load(); toast.info("Продовження скасовано", { description: "Дати повернулись як були" }); } },
+      action: { label: <UndoRing />, onClick: async () => { for (const x of prev) { try { await authService.updateUser(x.id, { endDate: x.endDate }); } catch { /* ignore */ } } await load(); toast.info("Продовження скасовано", { description: "Дати повернулись як були" }); } },
     });
   }
   const sortHead = (label: string, key: "name" | "end") => {

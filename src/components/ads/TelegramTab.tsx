@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AdLabel, EditorPanel, Highlighted } from "@/components/ads/AdsShared";
 import { PR_STATUS, colorOf, deletePromo, entityStats, initials, nf, placeLabel, promoStatus, savePromo, subsText, textIssues, type AdStats, type Promo, type PromoInput } from "@/lib/adsModel";
 import { periodText } from "@/lib/bannersModel";
+import UndoRing from "@/components/UndoRing";
 
 const EMPTY: PromoInput = { name: "", handle: "", subscribers: null, description: "", placement: "telegram-top", game: "", startsOn: null, endsOn: null, active: true, reviewStatus: "pending", rejectReason: "", priceNote: "" };
 
@@ -65,7 +66,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   async function remove(p: Promo) {
     try {
       await deletePromo(p.id); setList((l) => l.filter((x) => x.id !== p.id)); setSelId(null);
-      toast.success("Розміщення видалено", { description: p.name, duration: 10_000, className: "v3-toast-10s", action: { label: "Повернути", onClick: async () => { try { await savePromo(null, { ...p }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
+      toast.success("Розміщення видалено", { description: p.name, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: async () => { try { await savePromo(null, { ...p }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
     } catch (e) { toast.error("Не вдалося видалити", { description: (e as Error).message }); }
   }
 

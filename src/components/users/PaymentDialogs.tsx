@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Download, Send } from "lucide-react";
 import { toast } from "sonner";
+import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/lib/apiClient";
 import { fetchSettings } from "@/lib/adminSettingsApi";
@@ -61,9 +62,9 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
         <form onSubmit={save} className="v3-form">
           <fieldset disabled={busy} className="v3-form-grid">
             <div className="v3-field"><label htmlFor="pay-amount">Сума, ₴</label><input id="pay-amount" required inputMode="decimal" pattern="[0-9]{1,9}([.,][0-9]{1,2})?" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="300" /></div>
-            <div className="v3-field"><label htmlFor="pay-date">Дата оплати</label><input id="pay-date" required type="date" max={today()} value={form.paidOn} onChange={(e) => setForm({ ...form, paidOn: e.target.value })} /></div>
-            <div className="v3-field"><label htmlFor="pay-from">Період: від</label><input id="pay-from" required type="date" max={form.periodEnd} value={form.periodStart} onChange={(e) => setForm({ ...form, periodStart: e.target.value })} /></div>
-            <div className="v3-field"><label htmlFor="pay-to">До включно</label><input id="pay-to" required type="date" min={form.periodStart} value={form.periodEnd} onChange={(e) => setForm({ ...form, periodEnd: e.target.value })} /></div>
+            <div className="v3-field"><label id="pay-date-l">Дата оплати</label><DateField id="pay-date" labelledBy="pay-date-l" required max={today()} value={form.paidOn} onChange={(v) => setForm({ ...form, paidOn: v })} /></div>
+            <div className="v3-field"><label id="pay-from-l">Період: від</label><DateField id="pay-from" labelledBy="pay-from-l" required max={form.periodEnd} value={form.periodStart} onChange={(v) => setForm({ ...form, periodStart: v })} /></div>
+            <div className="v3-field"><label id="pay-to-l">До включно</label><DateField id="pay-to" labelledBy="pay-to-l" required min={form.periodStart} value={form.periodEnd} onChange={(v) => setForm({ ...form, periodEnd: v })} /></div>
             <div className="v3-field v3-span2"><label htmlFor="pay-note">Примітка</label><textarea id="pay-note" rows={2} maxLength={1000} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Необов’язково" /></div>
           </fieldset>
           <label className={`v3-agree${form.extendSubscription ? " is-on" : ""}`}>

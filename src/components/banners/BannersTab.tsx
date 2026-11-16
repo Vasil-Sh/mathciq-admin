@@ -6,6 +6,7 @@ import BannerEditor from "@/components/banners/BannerEditor";
 import { createBanner, deleteBanner, updateBanner, updateBannerSlot } from "@/lib/adminBannersApi";
 import { SCREENS, STATUS, kyivToday, periodText, screenOf, shortDay, slotName, slotState, slotWhere, statusOf, timeline, type BStatus } from "@/lib/bannersModel";
 import type { Banner, BannerSlotState } from "@/types";
+import UndoRing from "@/components/UndoRing";
 
 type Props = {
   banners: Banner[] | null;
@@ -59,7 +60,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     try {
       await deleteBanner(b.id);
       setBanners((x) => x.filter((y) => y.id !== b.id)); setDeleting(null); setEditor({ open: false, banner: null });
-      toast.success("Банер видалено", { description: `«${b.title}» прибрано з кампаній`, duration: 10_000, className: "v3-toast-10s", action: { label: "Повернути", onClick: async () => { try { await createBanner({ active: b.active, screen: b.screen, startsOn: b.startsOn ?? null, endsOn: b.endsOn ?? null, slot: b.slot, title: b.title, description: b.description, imageUrl: b.imageUrl, href: b.href }); toast.info("Банер повернуто", { description: `«${b.title}»` }); reload(); } catch (e) { toast.error("Не вдалося повернути банер", { description: (e as Error).message }); } } } });
+      toast.success("Банер видалено", { description: `«${b.title}» прибрано з кампаній`, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: async () => { try { await createBanner({ active: b.active, screen: b.screen, startsOn: b.startsOn ?? null, endsOn: b.endsOn ?? null, slot: b.slot, title: b.title, description: b.description, imageUrl: b.imageUrl, href: b.href }); toast.info("Банер повернуто", { description: `«${b.title}»` }); reload(); } catch (e) { toast.error("Не вдалося повернути банер", { description: (e as Error).message }); } } } });
     } catch (e) { toast.error("Не вдалося видалити банер", { description: (e as Error).message }); }
     finally { setBusyDel(false); }
   }
