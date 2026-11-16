@@ -8,6 +8,7 @@ import { useMedia } from "@/hooks/useMediaOnline";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { plural } from "@/lib/dashboardInsights";
 import { KIND_UI, RESULT_UI, dayKey, dayLabel, describe, exactTime, timeLabel, type Change, type Entry, type View } from "@/lib/auditModel";
+import PillTrack from "@/components/PillTrack";
 
 type Summary = { today: number; week: number; failed7: number; security7: number; lastFailed: Entry | null; lastSecurity: Entry | null; topActor: { name: string; week: number } | null };
 type Actor = { name: string; telegram: string | null; week: number; total: number };
@@ -192,6 +193,7 @@ export default function AuditLog() {
       <label className={wide ? "v3-search v3-au-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" placeholder="Логін, банер або № оплати" aria-label="Пошук: логін, назва банера, номер оплати" value={draft} onChange={(e) => setDraft(e.target.value)} />{draft && <button type="button" aria-label="Очистити пошук" onClick={() => setDraft("")}><X size={14} /></button>}</label>
       {wide ? (
         <div className="v3-seg v3-seg-soft" role="group" aria-label="Тип записів">
+        <PillTrack active={cat} />
           {CATS.filter(([k]) => k === "all" || (counts[k] || 0) > 0 || k === cat).map(([k, l]) => <button key={k} type="button" className={cat === k ? "is-on" : ""} aria-pressed={cat === k} onClick={() => { setCat(k); setPage(1); }}>{l} <span className="v3-seg-n">{k === "all" ? allCount : counts[k] || 0}</span></button>)}
         </div>
       ) : (

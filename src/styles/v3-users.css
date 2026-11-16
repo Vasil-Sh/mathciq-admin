@@ -681,3 +681,10 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
   .v3-search:not(:focus-within):hover { border-color: #c3cad6; }
 }
 @media (prefers-reduced-motion: reduce) { .v3-sum { transition: border-color .15s; } .v3-sum:hover { translate: none; } }
+
+/* Section tabs: the white pill slides to the chosen tab (same pill as the Dashboard switches) */
+.v3-ptabs { position: relative; }
+.v3-ptabs > .v3-ptab { position: relative; z-index: 1; transition: color .3s, border-color .3s, background-color .2s; }
+.v3-ptabs.has-pill > .v3-ptab.is-on { background: transparent; }
+.v3-ptabs > .v3-pill { top: 0; bottom: 0; background: #fff; box-shadow: none; }
+@media (max-width: 767px) { .v3-ptabs > .v3-pill { top: 4px; bottom: 4px; } }

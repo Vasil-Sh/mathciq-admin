@@ -5,6 +5,7 @@ import { downloadCsv } from "@/lib/csv";
 import { ctr, dmy, fetchAdStats, licenseState, nf, pctChange, placeLabel, type AdStats, type Bookmaker, type Promo } from "@/lib/adsModel";
 import { screenOf, shortDay } from "@/lib/bannersModel";
 import type { Banner } from "@/types";
+import PillTrack from "@/components/PillTrack";
 
 type Range = { days: number } | { from: string; to: string };
 type Props = { banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void };
@@ -66,6 +67,7 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef 
 
   const seg = (
     <div className="v3-seg v3-ad-seg" role="group" aria-label="Період">
+        <PillTrack active={`${JSON.stringify(range)}-${showCustom}`} />
       {[7, 14, 30].map((d) => <button key={d} type="button" className={"days" in range && range.days === d && !showCustom ? "is-on" : ""} onClick={() => { setShowCustom(false); setRange({ days: d }); }}>{d} днів</button>)}
       <button type="button" className={showCustom ? "is-on" : ""} onClick={() => setShowCustom(true)}>Свій</button>
     </div>

@@ -13,6 +13,7 @@ import { bookmakerStatus, fetchAdStats, fetchBookmakers, fetchPromos, promoStatu
 import { nf } from "@/lib/adsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AppSettings, Banner, BannerSlotState } from "@/types";
+import PillTrack from "@/components/PillTrack";
 
 type Tab = "banners" | "telegram" | "bookmakers" | "stats";
 const TABS: { id: Tab; label: string }[] = [{ id: "banners", label: "Банери" }, { id: "telegram", label: "Telegram-групи" }, { id: "bookmakers", label: "Букмекери" }, { id: "stats", label: "Статистика" }];
@@ -91,6 +92,7 @@ export default function Banners() {
       </section>
 
       <div className="v3-ptabs v3-ads-tabs" role="tablist" aria-label="Розділи реклами">
+        <PillTrack active={tab} />
         {TABS.map((t) => {
           const n = t.id === "banners" ? (banners ? `${occupied}/2` : "") : t.id === "telegram" ? (promos ? String(promos.filter((p) => !["rejected", "done"].includes(promoStatus(p, today))).length) : "") : t.id === "bookmakers" ? (bms ? String(bmLive.length) : "") : "";
           return <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`v3-ptab${tab === t.id ? " is-on" : ""}`} onClick={() => setParams(t.id === "banners" ? {} : { tab: t.id })}>{t.label}{n ? <span>{n}</span> : null}</button>;

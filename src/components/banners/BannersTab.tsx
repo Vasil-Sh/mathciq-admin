@@ -7,6 +7,7 @@ import { createBanner, deleteBanner, updateBanner, updateBannerSlot } from "@/li
 import { SCREENS, STATUS, kyivToday, periodText, screenOf, shortDay, slotName, slotState, slotWhere, statusOf, timeline, type BStatus } from "@/lib/bannersModel";
 import type { Banner, BannerSlotState } from "@/types";
 import UndoRing from "@/components/UndoRing";
+import PillTrack from "@/components/PillTrack";
 
 type Props = {
   banners: Banner[] | null;
@@ -183,6 +184,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
               <div className="v3-bn-camp-h">
                 <div><h2>Усі кампанії</h2><p>Клік по рядку відкриває редактор банера. Завершені й вимкнені зберігаються — їх можна змінити й запустити знову</p></div>
                 <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр кампаній">
+        <PillTrack active={cf} />
                   {([["all", "Усі", list.length], ["live", "Показуються", counts.live], ["sched", "Заплановані", counts.sched], ["done", "Завершені", counts.done], ["off", "Вимкнені", counts.off]] as [CFilter, string, number][]).filter(([k, , n]) => k === "all" || k === "live" || n > 0 || k === cf).map(([k, l, n]) => <button key={k} type="button" className={cf === k ? "is-on" : ""} aria-pressed={cf === k} onClick={() => setCf(k)}>{l} · {n}</button>)}
                 </div>
               </div>

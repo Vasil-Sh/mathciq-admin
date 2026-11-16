@@ -26,6 +26,7 @@ import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
 import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
+import PillTrack from "@/components/PillTrack";
 
 const PAGE_SIZE = 10;
 type Sort = "end-asc" | "end-desc" | "new" | "name";
@@ -408,6 +409,7 @@ export default function Admin() {
       </section>
 
       {!(emptyPlatform && !exclCount) && <div className="v3-ptabs" role="tablist" aria-label="Розділи">
+        <PillTrack active={tab} />
         <button type="button" role="tab" aria-selected={tab === "users"} className={`v3-ptab${tab === "users" ? " is-on" : ""}`} onClick={() => setTab("users")}>Усі користувачі</button>
         <button type="button" role="tab" aria-selected={tab === "excl"} className={`v3-ptab${tab === "excl" ? " is-on" : ""}`} onClick={() => setTab("excl")}>Самообмеження{exclCount ? <span>{exclCount}</span> : null}</button>
       </div>}
@@ -464,6 +466,7 @@ export default function Admin() {
                 <div className="v3-ulist-tools">
                   <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Знайти за логіном або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
                   <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр за статусом">
+        <PillTrack active={filter} />
                     {segs.map((s) => <button key={s.key} type="button" className={filter === s.key ? "is-on" : ""} aria-pressed={filter === s.key} onClick={() => setFilter(s.key)}>{s.label} <span className="v3-seg-n">{counts[s.key]}</span></button>)}
                   </div>
                   {noAge > 0 && <button type="button" className={`v3-agechip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік не підтверджено · {noAge}{ageOnly && <X size={13} aria-hidden="true" />}</button>}

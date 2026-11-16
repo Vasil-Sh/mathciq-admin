@@ -4,6 +4,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { api } from "@/lib/apiClient";
 import { plural, periodLabel } from "@/lib/dashboardInsights";
 import { longDate, planName } from "@/lib/usersModel";
+import PillTrack from "@/components/PillTrack";
 
 interface Req { id: string; userId: number; username: string; periodDays: number; status: string; createdAt: string; until: string | null; plan?: string; telegram?: string }
 
@@ -36,6 +37,7 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
         <div className="v3-excl-head">
           <div><h2 className="v3-h2">Запити на самообмеження</h2><p className="v3-note-dark">Користувач сам блокує свій акаунт на обраний термін. Блок застосовується одразу.</p></div>
           <div className="v3-seg v3-seg-soft" role="group" aria-label="Стан">
+        <PillTrack active={tab} />
             <button type="button" className={tab === "active" ? "is-on" : ""} aria-pressed={tab === "active"} onClick={() => setTab("active")}>Активні · {active.length}</button>
             <button type="button" className={tab === "done" ? "is-on" : ""} aria-pressed={tab === "done"} onClick={() => setTab("done")}>Завершені · {done.length}</button>
           </div>

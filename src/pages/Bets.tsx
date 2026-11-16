@@ -9,6 +9,7 @@ import { plural } from "@/lib/dashboardInsights";
 import { betView, gameLabel, money, signedMoney, signedPct, statsFor, userGames, type Sort, type Stats } from "@/lib/betsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AdminUserBet, AdminUserOverview } from "@/types";
+import PillTrack from "@/components/PillTrack";
 
 const isAdminU = (u: AdminUserOverview) => u.role === "admin" || u.role === "owner" || !!u.isOwner;
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
@@ -109,6 +110,7 @@ export default function Bets() {
   /* ── pieces ── */
   const gamesSeg = (cls: string) => (
     <div className={cls} role="group" aria-label="Фільтр за грою">
+        <PillTrack active={game} />
       <button type="button" className={game === "all" ? "is-on" : ""} aria-pressed={game === "all"} onClick={() => setGame("all")}>Усі <span className="v3-seg-n">{playing.length}</span></button>
       {gameCounts.map(([g, n]) => <button key={g} type="button" className={game === g ? "is-on" : ""} aria-pressed={game === g} onClick={() => setGame(g)}>{g} <span className="v3-seg-n">{n}</span></button>)}
     </div>
@@ -219,6 +221,7 @@ export default function Bets() {
         <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів за ставками" placeholder="Знайти за логіном або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
         {gamesSeg("v3-seg v3-seg-soft")}
         <div className="v3-seg v3-seg-soft v3-bt-sort" role="group" aria-label="Сортування ставок">
+        <PillTrack active={sort} />
           <span className="v3-bt-sort-l">Сортування:</span>
           {SORTS.map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
         </div>
