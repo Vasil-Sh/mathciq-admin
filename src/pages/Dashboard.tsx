@@ -669,16 +669,16 @@ export default function Dashboard() {
         </section>
       )}
 
-      {!isEmpty && <section className="v3-wcard">
+      {!isEmpty && <section className="v3-dcard v3-report">
         <div className="v3-card-head">
           <div><h2 className="v3-h2">Помісячний звіт</h2><p className="v3-note-dark">Оплати, вартість підписок і нові реєстрації</p></div>
           <div className="v3-head-actions v3-hide-mobile">
-            <div className="v3-seg v3-seg-light" role="group" aria-label="Місяці у звіті">
+            <div className="v3-seg" role="group" aria-label="Місяці у звіті">
               <PillTrack active={activeOnly} />
               <button type="button" className={!activeOnly ? "is-on" : ""} aria-pressed={!activeOnly} onClick={() => setActiveOnly(false)}>Усі місяці <span>{view.report.length}</span></button>
               <button type="button" className={activeOnly ? "is-on" : ""} aria-pressed={activeOnly} onClick={() => setActiveOnly(true)}>З активністю <span>{view.report.filter((r) => r.paid || r.users).length}</span></button>
             </div>
-            <button type="button" className="v3-btn v3-btn-outline v3-export" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
+            <button type="button" className="v3-btn v3-btn-ghost-dark v3-export" onClick={exportCsv}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
           </div>
         </div>
 

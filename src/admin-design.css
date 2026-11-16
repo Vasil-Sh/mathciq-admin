@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 /* Shared visual language with the public site; blue remains the admin accent. */
 /* Page-specific layouts: people, records and content management. */
@@ -262,7 +261,7 @@
  .directory-filters .directory-sort { width:100%; }
  .detail-panels { gap:16px; }
 }
-body { font-family:Manrope,Arial,sans-serif; background:#fafafa; color:#191c22; }
+body { font-family:Inter,system-ui,sans-serif; background:#fafafa; color:#191c22; }
 button, input, select, textarea { font-family:inherit; }
 .desktop-sidebar, .mobile-sidebar-dialog[data-state] { background:#111419; }
 .brand { font-weight:700; letter-spacing:-.06em; }

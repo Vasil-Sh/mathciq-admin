@@ -4,7 +4,7 @@
 
 @layer base {
   * { @apply border-hairline; }
-  body { @apply bg-canvas text-ink antialiased; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+  body { @apply bg-canvas text-ink antialiased; font-family: Inter, system-ui, -apple-system, sans-serif; }
   button, a, input, select { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #93b4ff; outline-offset: 3px; }
   ::selection { background: #dbe7ff; color: #15244a; }
