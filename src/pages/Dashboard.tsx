@@ -191,7 +191,11 @@ export default function Dashboard() {
       return { m, name: MONTHS_FULL[monthIdx(m)], paid: cur, est: est[m] || 0, users: reg[m] || 0, delta, current };
     }).reverse();
     // Active users by plan from /admin/users; fallback — all users by plan from /admin/stats.
-    const plans = overview ? activePlans(overview) : (stats.planDistribution || []).filter((p) => p.count > 0).map((p) => ({ plan: p.plan, label: p.label, count: p.count }));
+    const plansRaw = overview ? activePlans(overview) : (stats.planDistribution || []).map((p) => ({ plan: p.plan, label: p.label, count: p.count }));
+    // Завжди всі три тарифи (Pro, Базова, Пробний) — порожній тариф показуємо доріжкою без дуги
+    const priceFor = (k: string) => (k === "pro" ? settings?.proPrice : k === "basic" ? settings?.basicPrice : undefined);
+    const plans = (["pro", "basic", "trial"] as const).map((k) => plansRaw.find((p) => p.plan === k) || { plan: k, label: priceFor(k) ? `${PLAN_NAMES[k]} · ${Number(priceFor(k)).toLocaleString("uk-UA")} ₴` : PLAN_NAMES[k], count: 0 })
+      .concat(plansRaw.filter((p) => !["pro", "basic", "trial"].includes(p.plan) && p.count > 0));
     const planTotal = plans.reduce((s, p) => s + p.count, 0);
     const sel = <T extends { month: string }>(rows?: T[]) => (rows || []).filter((r) => selected.includes(r.month));
     const prevSel = <T extends { month: string }>(rows?: T[]) => (period === "year" ? [] : (rows || []).filter((r) => r.month === prevKey(period)));
@@ -204,7 +208,7 @@ export default function Dashboard() {
     const aiCalls = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + (r.calls || 0), 0);
     const prevReg = reg[prevKey(now.key)] || 0;
     return { pay, est, reg, series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
-  }, [stats, overview, mode, period, now.key, now.month, now.year]);
+  }, [stats, overview, mode, period, now.key, now.month, now.year, settings]);
   const view = viewMemo;
 
   const firstChip = Math.max(0, now.month - 3);

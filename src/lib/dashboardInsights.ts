@@ -50,7 +50,7 @@ export function activePlans(overview: AdminUserOverview[]): PlanRow[] {
     list.forEach((u) => { const p = Number(u.priceMonth) || 0; if (p) prices.set(p, (prices.get(p) || 0) + 1); });
     const price = [...prices.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
     return { plan, label: plan === "trial" || !price ? PLAN_NAMES[plan] : `${PLAN_NAMES[plan]} · ${price.toLocaleString("uk-UA")} ₴`, count: list.length };
-  }).filter((p) => p.count > 0);
+  }); // усі тарифи, навіть з 0 — щоб на кільці було видно всі три кола
 }
 
 /** "сьогодні" / "вчора" / "8 лист." for a YYYY-MM-DD date. */
