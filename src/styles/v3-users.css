@@ -431,7 +431,7 @@
 .v3-ue-side small { color: #8c95a6; font-size: 13px; line-height: 1.6; }
 
 /* ══ Наведення лише для миші ══ */
-@media (hover:hover){.v3-sum:hover{ border-color: rgba(255, 255, 255, .2); }.v3-urow:hover{ background: #f6f8fc; }.v3-ext:hover{ background: #eef3ff; }.v3-btn-red:hover{ background: #bd3322; }.v3-colbtn:hover{ border-color: rgba(255, 255, 255, .3); color: #fff; }.v3-pg:hover{ background: #f1f4f9; }.v3-urow.is-skel:hover{ background: transparent; }.v3-btn-white:hover{ background: #eef2fb; }.v3-btn-outline-white:hover{ border-color: #fff; }.v3-mini:hover:not(:disabled){ border-color: rgba(255, 255, 255, .3); }.v3-opt:hover:not(:disabled){ border-color: #b9c6e6; }.v3-sum.is-static:hover{ border-color: var(--v3-line-dark); }}
+@media (hover:hover){.v3-sum:not(.is-on):hover{ border-color: rgba(255, 255, 255, .2); }.v3-urow:not(.is-sel):hover{ background: #f6f8fc; }.v3-ext:hover{ background: #eef3ff; }.v3-btn-red:hover{ background: #bd3322; }.v3-colbtn:hover{ border-color: rgba(255, 255, 255, .3); color: #fff; }.v3-pg:not(.is-on):hover{ background: #f1f4f9; }.v3-urow.is-skel:hover{ background: transparent; }.v3-btn-white:hover{ background: #eef2fb; }.v3-btn-outline-white:hover{ border-color: #fff; }.v3-mini:hover:not(:disabled){ border-color: rgba(255, 255, 255, .3); }.v3-opt:hover:not(:disabled){ border-color: #b9c6e6; }.v3-sum.is-static:hover{ border-color: var(--v3-line-dark); }}
 
 /* Row: the whole row opens the card through a stretched button; the name stays the keyboard target */
 .v3-urow { position: relative; }

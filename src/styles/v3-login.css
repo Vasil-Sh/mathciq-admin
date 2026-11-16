@@ -200,4 +200,4 @@
 .v3-field input:autofill { background: #f8fafc; }
 
 /* ══ Наведення лише для миші ══ */
-@media (hover:hover){.v3-input-action:hover{ background: #eef3ff; color: #2450c4; }.v3-login-tiles li:hover{ transform: translateY(-4px); background: #222937; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); }.v3-login-tiles li.is-blue:hover{ background: #4a7af2; box-shadow: 0 14px 30px rgba(58, 109, 240, .35); }.v3-login-submit:hover .v3-login-arrow{ transform: translateX(4px); }.v3-login-submit.is-blocked:hover{ background: #e4e7ec; }}
+@media (hover:hover){.v3-input-action:hover{ background: #eef3ff; color: #2450c4; }.v3-login-tiles li:not(.is-blue):hover{ transform: translateY(-4px); background: #222937; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); }.v3-login-tiles li.is-blue:hover{ background: #4a7af2; box-shadow: 0 14px 30px rgba(58, 109, 240, .35); }.v3-login-submit:hover .v3-login-arrow{ transform: translateX(4px); }.v3-login-submit.is-blocked:hover{ background: #e4e7ec; }}
