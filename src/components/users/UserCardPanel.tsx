@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Check, ChevronDown, Lock, Send, User as UserIcon, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import UserAvatar from "@/components/UserAvatar";
@@ -59,6 +60,8 @@ interface Props {
 /** Right-hand user card (design «Користувачі v3 · список + картка»). */
 export default function UserCardPanel({ user, settings, extendDays, online, deleteReason, resetReason, onEdit, onDelete, onResetPassword, onExtend, onConfirmAge, onChanged, onClose }: Props) {
   const [wr, setWr] = useState<"idle" | "fly" | "done">("idle");
+  const [more, setMore] = useState(false);
+  const mobile = !!onClose;
   useEffect(() => { setWr("idle"); }, [user.id]);
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
@@ -124,23 +127,31 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const write = () => { if (!tgHandle || wr !== "idle") return; setWr("fly"); window.open(`https://t.me/${tgHandle}`, "_blank", "noopener"); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); };
 
   return (
-    <aside className="v3-ucard" aria-label={`Картка ${user.username}`}>
+    <aside className={`v3-ucard${mobile ? " is-m" : ""}`} aria-label={`Картка ${user.username}`}>
+      {mobile && (
+        <div className="v3-uc-mbar">
+          <button type="button" className="v3-uc-back" onClick={onClose}><ChevronLeft size={18} aria-hidden="true" />Користувачі</button>
+          <button type="button" className="v3-icon-btn v3-uc-more" aria-label="Більше дій" aria-haspopup="dialog" onClick={() => setMore(true)}><MoreHorizontal size={18} aria-hidden="true" /></button>
+        </div>
+      )}
       <div className="v3-uc-top">
         <UserAvatar username={user.username} telegram={user.telegram} className="v3-av-lg" />
         <div className="v3-uc-id">
           <h2>@{user.username}</h2>
           <p>{tg || "Telegram не вказано"} · {role}</p>
-          {!admin && (
+          {(mobile || !admin) && (
             <div className="v3-bdgs">
+              {mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
+              {!admin && <>
               {user.ageConfirmed
                 ? <span className="v3-bdg is-ok"><Check size={13} strokeWidth={3} className="v3-bdg-ck" aria-hidden="true" />Вік підтверджено</span>
                 : <button type="button" className="v3-bdg is-warn" disabled={!online} onClick={onConfirmAge || onEdit}>Вік не підтверджено · підтвердити</button>}
               {user.selfLimitedUntil && <span className="v3-bdg is-lock"><Lock size={12} aria-hidden="true" />Самообмеження</span>}
+              </>}
             </div>
           )}
         </div>
-        {viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>}
-        {onClose && <button type="button" className="v3-icon-btn v3-uc-close" onClick={onClose} aria-label="Закрити картку"><X size={18} /></button>}
+        {!mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
       </div>
 
       <div className="v3-uc-sub">
@@ -157,7 +168,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
             </div>
           )}
           <div className="v3-uc-sub-txt">
-            <strong className="v3-uc-sub-plan">{admin ? `${plan.plan} · безстроково` : `${plan.plan} · ${user.endDate ? `до ${longDate(user.endDate)}` : "без дати"}`}</strong>
+            <strong className="v3-uc-sub-plan">{admin ? `${plan.plan} · безстроково` : `${plan.plan} · ${user.endDate ? `до ${mobile ? shortDate(user.endDate) : longDate(user.endDate)}` : "без дати"}`}</strong>
             <span className="v3-uc-sub-meta">{admin ? "без обмежень" : [user.startDate ? `з ${longDate(user.startDate)}` : "", plan.price].filter(Boolean).join(" · ")}</span>
           </div>
         </div>
@@ -174,6 +185,18 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       )}
       {endsWithoutRenewal(user) && <p className="v3-uc-info">Підписку скасовано — доступ до {shortDate(user.endDate)}, далі без продовження.</p>}
 
+      {mobile ? (
+        <div className="v3-uc-mact">
+          <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write v3-uc-wide${wr === "done" ? " is-done" : ""}`} disabled={!tgHandle} title={tgHandle ? `Відкрити чат з @${tgHandle} у Telegram` : "Telegram не вказано"} onClick={write}>
+            {wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}
+          </button>
+          {!admin && <>
+            <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro на N днів</button>
+            <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
+            <button type="button" className="v3-btn v3-btn-ghost-dark v3-uc-wide" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
+          </>}
+        </div>
+      ) : (
       <div className="v3-uc-foot v3-uc-foot-top v3-uc-grid2">
         <button type="button" className={`v3-btn v3-btn-ghost-dark v3-btn-sm v3-write${wr === "done" ? " is-done" : ""}`} disabled={!tgHandle} title={tgHandle ? `Відкрити чат з @${tgHandle} у Telegram` : "Telegram не вказано"} onClick={write}>
           {wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати</>}
@@ -182,6 +205,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         <button type="button" className={`v3-btn v3-btn-sm ${resetReason ? "v3-btn-locked" : "v3-btn-ghost-dark"}`} disabled={!!resetReason || !online} title={resetReason || off} onClick={onResetPassword}>{resetReason && <Lock size={13} aria-hidden="true" />}Скинути пароль</button>
         <button type="button" className={`v3-btn v3-btn-sm v3-uc-del ${deleteReason ? "v3-btn-locked" : "v3-btn-danger-outline"}`} disabled={!!deleteReason || !online} title={deleteReason || off} aria-describedby={deleteReason ? "uc-lock" : undefined} onClick={onDelete}>{deleteReason && <Lock size={13} aria-hidden="true" />}Видалити</button>
       </div>
+      )}
       {selfAccount ? (
         <div id="uc-lock" className="v3-uc-self"><span className="v3-uc-self-ico" aria-hidden="true"><UserIcon size={16} /></span><span><strong>Це ваш акаунт</strong><small>Власний обліковий запис видалити не можна</small></span></div>
       ) : (deleteReason || resetReason) && (
@@ -189,6 +213,17 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       )}
 
       {error ? <div className="v3-uc-error" role="alert"><p>{error}</p><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={load}>Повторити</button></div> : <>
+        {mobile ? (
+          <dl className="v3-uc-tiles">
+            {!admin && <div><dt>Наступна оплата</dt><dd>{["ended", "cancelled"].includes(st) || !user.endDate ? "—" : `${shortDate(user.endDate)}${user.priceMonth ? ` · ${money(Number(user.priceMonth))}` : ""}`}</dd></div>}
+            {!admin && <div><dt>AI сьогодні</dt><dd>{aiLimit ? `${user.aiToday || 0} з ${aiLimit}` : user.aiToday || "—"}</dd></div>}
+            {!admin && <div><dt>Дата народження</dt><dd>{birthText(user)}<span className={`v3-tag ${user.ageConfirmed ? "v3-tag-okdark" : "v3-tag-warndark"}`}>{ageText(user)}</span></dd></div>}
+            {!admin && <div><dt>Пробний період</dt><dd>{trialText(user, settings)}</dd></div>}
+            {!admin && <div><dt>Загалом сплачено</dt><dd>{paidLine}</dd></div>}
+            <div><dt>Створено</dt><dd>{user.createdAt ? longDate(user.createdAt.slice(0, 10)) : "—"}</dd></div>
+            {admin && <div><dt>План</dt><dd>{plan.plan} · {plan.price}</dd></div>}
+          </dl>
+        ) : (
         <Section id="prof" title="Профіль" summary={`План ${plan.plan}`} open={open.prof} onToggle={() => setOpen({ ...open, prof: !open.prof })}>
           <dl className="v3-uc-dl">
             <div><dt>План</dt><dd>{plan.plan} · {plan.price}</dd></div>
@@ -201,9 +236,10 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
             {!admin && <div><dt>Остання оплата</dt><dd>{user.lastPaymentDate ? `${shortDate(user.lastPaymentDate)} · ${money(user.lastPaymentAmount || 0)}` : "—"}</dd></div>}
           </dl>
         </Section>
+        )}
 
         {!admin && (
-          <Section id="bets" title="Ставки · за весь час" summary={card ? `${bets} ставок · ${signed(profit)}` : undefined} open={open.bets} onToggle={() => setOpen({ ...open, bets: !open.bets })}
+          <Section id="bets" title={mobile ? "Статистика ставок" : "Ставки · за весь час"} summary={card ? `${bets} ставок · ${signed(profit)}` : undefined} open={open.bets} onToggle={() => setOpen({ ...open, bets: !open.bets })}
             extra={bets > 0 ? <Link to={`/bets?q=${encodeURIComponent(user.username)}`} className="v3-uc-link">Усі ставки →</Link> : undefined}>
             {!card ? <p className="v3-uc-loading" role="status">Завантаження…</p> : (
               <div className="v3-uc-stats">
@@ -251,7 +287,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
       </>}
 
-      {!admin && (
+      {!admin && !mobile && (
         <div className="v3-uc-mini v3-uc-mini-bottom">
           <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro</button>
           <button type="button" className="v3-mini" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
@@ -259,6 +295,21 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         </div>
       )}
 
+      {mobile && (
+        <Dialog open={more} onOpenChange={setMore}>
+          <DialogContent className="v3-modal v3-more-sheet sm:max-w-[420px]">
+            <DialogTitle className="v3-modal-title">Дії</DialogTitle>
+            <DialogDescription className="v3-modal-sub">@{user.username}</DialogDescription>
+            <div className="v3-lrows">
+              <button type="button" className="v3-lrow" disabled={!online} onClick={() => { setMore(false); onEdit(); }}><Pencil size={17} aria-hidden="true" />Редагувати профіль<ChevronRight size={16} aria-hidden="true" /></button>
+              <button type="button" className="v3-lrow" disabled={!!resetReason || !online} title={resetReason || off} onClick={() => { setMore(false); onResetPassword(); }}>{resetReason ? <Lock size={17} aria-hidden="true" /> : <KeyRound size={17} aria-hidden="true" />}Скинути пароль<ChevronRight size={16} aria-hidden="true" /></button>
+              <Link className="v3-lrow" to={`/audit?q=${encodeURIComponent(user.username)}`} onClick={() => setMore(false)}><History size={17} aria-hidden="true" />Історія змін<ChevronRight size={16} aria-hidden="true" /></Link>
+              <button type="button" className="v3-lrow is-danger" disabled={!!deleteReason || !online} title={deleteReason || off} onClick={() => { setMore(false); onDelete(); }}>{deleteReason ? <Lock size={17} aria-hidden="true" /> : <Trash2 size={17} aria-hidden="true" />}Видалити користувача<ChevronRight size={16} aria-hidden="true" /></button>
+            </div>
+            {(deleteReason || resetReason) && <p className="v3-hint">{deleteReason || resetReason}</p>}
+          </DialogContent>
+        </Dialog>
+      )}
       <AddPaymentDialog open={dlg === "pay"} onOpenChange={(o) => setDlg(o ? "pay" : null)} userId={user.id} username={user.username} endDate={user.endDate} priceMonth={String(user.priceMonth || "")} onSaved={changed}
         planLabel={plan.plan} onReceipt={async (id) => { try { const r = await api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`); const p = r.payments.find((x) => String(x.id) === String(id)); if (p) openReceipt(p); } catch (e) { toast.error((e as Error).message); } }} />
       <GrantProDialog user={user} open={dlg === "pro"} onOpenChange={(o) => setDlg(o ? "pro" : null)} onDone={changed} />

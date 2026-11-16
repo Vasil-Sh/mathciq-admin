@@ -636,3 +636,33 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 @media (prefers-reduced-motion: reduce) { .v3-ptr-sp, .v3-mcard.is-press .v3-mcard-lp, .v3-lpscrim, .v3-lpmenu, .v3-lpmenu > * { animation: none !important; } .v3-ptr, .v3-ptr-ar { transition: none; } }
 .v3-mselect-dd { flex: 1; min-width: 0; }
 .v3-mselect-dd .v3-dd-btn { min-height: 46px; }
+
+/* ── Phone card, as in the design «мобільна, картка користувача» ── */
+.v3-uc-mbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 4px; }
+.v3-uc-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px 0 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #f4f6fa; font: 600 14px Inter, sans-serif; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
+.v3-uc-back:active { transform: scale(.96); }
+.v3-uc-more { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); }
+@media (hover: hover) { .v3-uc-back:hover { background: rgba(255, 255, 255, .08); } }
+.v3-ucard.is-m .v3-uc-top { align-items: flex-start; }
+.v3-ucard.is-m .v3-bdgs { align-items: center; }
+.v3-ucard.is-m .v3-bdgs .v3-tag { min-height: 26px; display: inline-flex; align-items: center; }
+.v3-uc-mact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.v3-uc-mact .v3-btn { min-width: 0; min-height: 46px; padding: 0 12px; white-space: normal; text-align: center; line-height: 1.2; }
+.v3-uc-mact .v3-uc-wide { grid-column: 1 / -1; }
+.v3-uc-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.v3-uc-tiles > div { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: #161b24; border: 1px solid rgba(255, 255, 255, .06); }
+.v3-uc-tiles dt { color: #8c95a6; font-size: 12px; }
+.v3-uc-tiles dd { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; color: #f4f6fa; font-size: 15px; font-weight: 600; }
+.v3-ucard.is-m .v3-uc-sec { padding: 16px; border-radius: 20px; background: #161b24; border: 1px solid rgba(255, 255, 255, .06); }
+.v3-ucard.is-m .v3-uc-sec-l { color: #f4f6fa; font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+/* «Дії» sheet behind «⋯» */
+.v3-lrows { display: flex; flex-direction: column; gap: 4px; }
+.v3-lrow { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border-radius: 14px; border: 0; background: #f6f8fc; color: #11151c; font: 500 15px Inter, sans-serif; text-align: left; text-decoration: none; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
+.v3-lrow > svg:last-child { margin-left: auto; color: #8c95a6; }
+.v3-lrow:not(:disabled):active { transform: scale(.98); }
+.v3-lrow:disabled { color: #a0a8b6; cursor: not-allowed; }
+.v3-lrow.is-danger { color: #c4321f; }
+.v3-lrow.is-danger:disabled { color: #a0a8b6; }
+@media (hover: hover) { .v3-lrow:not(:disabled):hover { background: #eef2f8; } }
+.v3-uc-mact .v3-btn { font-size: 13px; white-space: nowrap; }
+.v3-ucard.is-m .v3-uc-sum { display: none; }
