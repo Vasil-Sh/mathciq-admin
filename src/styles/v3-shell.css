@@ -365,3 +365,13 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-dd.is-link.is-open .v3-dd-btn { box-shadow: none; color: #fff; }
 @media (hover: hover) { .v3-dd-btn:hover { border-color: rgba(255, 255, 255, .3); } .v3-dd.is-light .v3-dd-btn:hover { border-color: #c3cad6; } .v3-dd.is-link .v3-dd-btn:hover { color: #fff; } }
 @media (prefers-reduced-motion: reduce) { .v3-dd-list, .v3-dd-list li { animation: none !important; } .v3-dd-chev { transition: none; } }
+
+/* ── Hover everywhere, the same way (mouse only) ── */
+.v3-seg button, .v3-seg-soft button, .v3-ptab, .v3-logo, .v3-uc-link { transition: color .2s, background-color .2s, opacity .2s, text-decoration-color .2s; }
+@media (hover: hover) {
+  .v3-seg button:not(.is-on):hover { color: #fff; }
+  .v3-seg-soft button:not(.is-on):hover { color: #11151c; background: rgba(17, 21, 28, .05); }
+  .v3-ptab:not(.is-on):hover { background: rgba(255, 255, 255, .06); color: #fff; }
+  .v3-logo:hover { opacity: .85; }
+  .v3-uc-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+}

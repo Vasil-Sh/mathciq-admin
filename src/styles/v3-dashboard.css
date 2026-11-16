@@ -497,3 +497,6 @@ a.v3-kpi { transition: border-color .15s, translate .18s; }
 .v3-av-in { animation: v3-avf .6s ease both; }
 @keyframes v3-avf { from { filter: blur(6px); transform: scale(1.08); opacity: .6; } }
 @media (prefers-reduced-motion: reduce) { .v3-av-in, .v3-av-in .v3-av-img.is-on { animation: none; } }
+/* Hover on names and inline links, like the rest (mouse only) */
+.v3-pay-who a, .v3-inline-link { transition: color .2s; }
+@media (hover: hover) { .v3-pay-who a:hover strong { color: #a3c0ff; } .v3-risk-who a:hover strong { color: #2450c4; text-decoration: underline; text-underline-offset: 3px; } .v3-inline-link:hover { text-decoration: underline; text-underline-offset: 3px; } }
