@@ -94,7 +94,7 @@
 .v3-xall-ar { display: inline-block; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
 @media (hover: hover) { .v3-xall-btn:hover:not(:disabled) .v3-xall-ar { transform: translateX(4px); } }
 .v3-xall-avs { display: inline-flex; }
-.v3-xall-avs .v3-xall-av { width: 22px; height: 22px; margin-left: -7px; border: 2px solid #11151c; font-size: 8px; transition: margin .35s cubic-bezier(.3, 1.5, .5, 1); }
+.v3-xall-avs .v3-xall-av { width: 28px; height: 28px; margin-left: -8px; border: 2px solid #11151c; font-size: 12px; transition: margin .35s cubic-bezier(.3, 1.5, .5, 1); }
 .v3-xall-avs .v3-xall-av:first-child { margin-left: 0; }
 @media (hover: hover) { .v3-xall-btn:hover:not(:disabled) .v3-xall-av:not(:first-child) { margin-left: -2px; } }
 .v3-xall-ask { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; animation: v3-xall-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
@@ -166,7 +166,7 @@
 .v3-tip-wrap { position: relative; display: inline-flex; }
 .v3-tip { position: absolute; left: 50%; top: calc(100% + 10px); z-index: 50; display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 10px; background: #fff; color: #11151c; font: 500 12px Inter, sans-serif; white-space: nowrap; box-shadow: 0 10px 24px rgba(0, 0, 0, .35); opacity: 0; transform: translate(-50%, -6px) scale(.96); pointer-events: none; transition: opacity .15s, transform .15s; }
 .v3-tip kbd, .v3-cmd kbd { padding: 1px 6px; border-radius: 6px; background: #eef1f6; color: #3e4656; font: 600 12px Inter, sans-serif; border: 1px solid #dde1e7; }
-.v3-tip-wrap:hover .v3-tip, .v3-tip-wrap:focus-within .v3-tip { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity .2s .35s, transform .25s cubic-bezier(.2, .9, .25, 1.3) .35s; }
+.v3-tip-wrap:focus-within .v3-tip{ opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity .2s .35s, transform .25s cubic-bezier(.2, .9, .25, 1.3) .35s; }
 .v3-cmd-backdrop { position: fixed; inset: 0; z-index: 100; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; background: rgba(5, 7, 11, .55); backdrop-filter: blur(4px); animation: v3-fade-in .2s ease both; }
 .v3-cmd { width: min(620px, 100%); border-radius: 22px; background: #fff; color: #11151c; box-shadow: 0 40px 100px rgba(0, 0, 0, .55); overflow: hidden; animation: v3-cmd-in .28s cubic-bezier(.2, .9, .25, 1.15) both; }
 @keyframes v3-cmd-in { from { opacity: 0; transform: translateY(-10px) scale(.97); } to { opacity: 1; transform: none; } }
@@ -227,7 +227,7 @@
 .v3-bar-tip.is-r { margin-left: -132px; } .v3-bar-tip.is-r::after { left: 132px; }
 .v3-bar-tip span { display: block; font-size: var(--fs-cap); color: #5f6878; }
 .v3-bar-tip b { display: block; margin: 2px 0; font-size: var(--fs-title); font-weight: 600; }
-.v3-bar-slot:hover .v3-bar-tip, .v3-bar:focus-visible + .v3-bar-tip { opacity: 1; transform: none; }
+.v3-bar:focus-visible + .v3-bar-tip{ opacity: 1; transform: none; }
 .v3-bar { transition: filter .2s; }
 @media (hover: hover) { .v3-bar-slot:hover .v3-bar { filter: brightness(1.35); } }
 @media (hover: none), (max-width: 767px) { .v3-bar-tip { display: none; } }
@@ -247,13 +247,13 @@
 /* Утримання: стовпчики ростуть, підказка при наведенні */
 .v3-ret-col { position: relative; outline: 0; cursor: default; }
 .v3-ret-bar { transform-origin: bottom; animation: v3-grow-y .7s cubic-bezier(.2, .9, .25, 1) both; transition: filter .2s; }
-.v3-ret-col:hover .v3-ret-bar, .v3-ret-col:focus-visible .v3-ret-bar { filter: brightness(1.4); }
+.v3-ret-col:focus-visible .v3-ret-bar{ filter: brightness(1.4); }
 .v3-ret-tip { position: absolute; left: 50%; bottom: calc(100% + 6px); z-index: 6; width: max-content; max-width: 190px; padding: 8px 10px; border-radius: 10px; background: #fff; color: #5f6878 !important; font-size: var(--fs-cap) !important; text-align: left !important; box-shadow: 0 10px 24px rgba(0, 0, 0, .4); opacity: 0; transform: translate(-50%, 6px); pointer-events: none; transition: opacity .18s, transform .22s cubic-bezier(.2, .9, .25, 1.3); }
 .v3-ret-tip b { display: block; margin: 2px 0; color: #11151c; font-size: var(--fs-body); }
 .v3-ret-tip em { display: block; margin-top: 2px; font-style: normal; color: #2450c4; }
-.v3-ret-col:hover .v3-ret-tip, .v3-ret-col:focus-visible .v3-ret-tip { opacity: 1; transform: translate(-50%, 0); }
-.v3-ret-col:first-child .v3-ret-tip { left: 0; transform: translate(0, 6px); } .v3-ret-col:first-child:hover .v3-ret-tip { transform: none; }
-.v3-ret-col:last-child .v3-ret-tip { left: auto; right: 0; transform: translate(0, 6px); } .v3-ret-col:last-child:hover .v3-ret-tip { transform: none; }
+.v3-ret-col:focus-visible .v3-ret-tip{ opacity: 1; transform: translate(-50%, 0); }
+.v3-ret-col:first-child .v3-ret-tip { left: 0; transform: translate(0, 6px); } 
+.v3-ret-col:last-child .v3-ret-tip { left: auto; right: 0; transform: translate(0, 6px); } 
 
 /* «Написати»: літачок нахиляється, при кліку злітає → «Відкриваємо…» → «✓ Відкрито» */
 .v3-write { gap: 6px; overflow: hidden; }
@@ -501,3 +501,9 @@ html { color-scheme: dark; }
 @keyframes v3-halo { 0% { transform: scale(.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 .v3-feed-blank .v3-empty-halo { margin: 10px 0 6px; }
 @media (prefers-reduced-motion: reduce) { .v3-empty-float, .v3-empty-halo::before, .v3-empty-halo::after { animation: none; } .v3-empty-halo::before, .v3-empty-halo::after { opacity: 0; } }
+
+/* ══ Наведення лише для миші ══ */
+
+
+/* ══ Наведення лише для миші ══ */
+@media (hover:hover){@media (hover:hover){.v3-tip-wrap:hover .v3-tip{ opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity .2s .35s, transform .25s cubic-bezier(.2, .9, .25, 1.3) .35s; }.v3-bar-slot:hover .v3-bar-tip{ opacity: 1; transform: none; }.v3-ret-col:hover .v3-ret-bar{ filter: brightness(1.4); }.v3-ret-col:hover .v3-ret-tip{ opacity: 1; transform: translate(-50%, 0); }.v3-ret-col:first-child:hover .v3-ret-tip{ transform: none; }.v3-ret-col:last-child:hover .v3-ret-tip{ transform: none; }}}
