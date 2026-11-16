@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, Check, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
@@ -28,6 +28,14 @@ const PAGE_SIZE = 10;
 type Sort = "end-asc" | "end-desc" | "new" | "name";
 const FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed"];
 const SORTS: Sort[] = ["end-asc", "end-desc", "new", "name"];
+
+/** The matched part of a login in yellow (catalog · Inputs · search highlight). */
+function hl(text: string, q: string): ReactNode {
+  const s = q.trim().toLowerCase().replace(/^@/, "");
+  const i = s ? text.toLowerCase().indexOf(s) : -1;
+  if (i < 0) return text;
+  return <>{text.slice(0, i)}<mark className="v3-hl">{text.slice(i, i + s.length)}</mark>{text.slice(i + s.length)}</>;
+}
 
 function useMedia(q: string) {
   const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
@@ -76,6 +84,13 @@ export default function Admin() {
   const [password, setPassword] = useState<{ username: string; password: string; meta: string; title?: string } | null>(null);
   const [deleting, setDeleting] = useState<AdminUserOverview | null>(null);
   const [resetting, setResetting] = useState<AdminUserOverview | null>(null);
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [newId, setNewId] = useState<number | null>(null);
+  const [leavingId, setLeavingId] = useState<number | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const rowEls = useRef(new Map<number, HTMLElement>());
+  const prevTops = useRef(new Map<number, number>());
+  const sortMoved = useRef(false);
   const extendDays = settings?.subscriptionDays || 30;
 
   const load = useCallback(async () => {
@@ -127,6 +142,20 @@ export default function Admin() {
     return [...r].sort(by[sort]);
   }, [all, filter, ageOnly, q, sort]);
   useEffect(() => { setPage(1); setMobileShown(PAGE_SIZE); }, [filter, ageOnly, q, sort]);
+  useEffect(() => { sortMoved.current = true; }, [sort]);
+  // Rows glide to their new place when the order changes (catalog · Data · sorting).
+  useLayoutEffect(() => {
+    const still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const next = new Map<number, number>();
+    rowEls.current.forEach((el, id) => {
+      if (!el.isConnected) return;
+      const top = el.getBoundingClientRect().top;
+      const prev = prevTops.current.get(id);
+      if (sortMoved.current && !still && prev !== undefined && Math.abs(prev - top) > 1) el.animate([{ transform: `translateY(${prev - top}px)` }, { transform: "none" }], { duration: 450, easing: "cubic-bezier(.2,.9,.25,1)" });
+      next.set(id, top);
+    });
+    prevTops.current = next; sortMoved.current = false;
+  });
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
   const paged = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -161,6 +190,7 @@ export default function Admin() {
         const r = await authService.createUser({ username: f.username, telegram: f.telegram, role: f.role === "user" ? "user" : "admin", priceMonth: f.role === "user" ? String(price) : "0", startDate: f.role === "user" ? f.startDate : "", endDate: f.role === "user" ? f.endDate : "", plan, trialEndDate: plan === "trial" ? f.endDate : undefined });
         if (f.role === "owner" && r.userId) await authService.updateUser(r.userId, { isOwner: true } as never);
         setForm(null);
+        if (r.userId) { setNewId(r.userId); window.setTimeout(() => setNewId(null), 2200); }
         setPassword({ username: r.username, password: r.password, meta: `${f.role === "owner" ? "Овнер" : f.role === "admin" ? "Адміністратор" : "Користувач"}${f.role === "user" && f.endDate ? ` · до ${shortDate(f.endDate)}` : ""}` });
         const planTxt = f.role !== "user" ? (f.role === "owner" ? "Овнер" : "Адміністратор") : plan === "trial" ? `План ${settings?.trialPlan === "basic" ? "Базова" : "Pro"} · пробний ${settings?.trialDays || 7} днів` : `План ${plan === "pro" ? "Pro" : "Базова"}`;
         toast.success(`@${r.username} створено`, {
@@ -191,7 +221,7 @@ export default function Admin() {
   async function doDelete() {
     if (!deleting) return;
     setBusyDelete(true);
-    try { await authService.deleteUser(deleting.id); toast.success(`@${deleting.username} видалено`, { description: "Ставки й оплати залишились у журналі дій." }); setDeleting(null); setSelectedId(null); setSheetOpen(false); await load(); }
+    try { await authService.deleteUser(deleting.id); toast.success(`@${deleting.username} видалено`, { description: "Ставки й оплати залишились у журналі дій." }); const gone = deleting.id; setDeleting(null); setSheetOpen(false); setLeavingId(gone); await new Promise((r) => window.setTimeout(r, 360)); setLeavingId(null); setSelectedId(null); await load(); }
     catch (e) { toast.error((e as Error).message); } finally { setBusyDelete(false); }
   }
   async function doReset() {
@@ -226,17 +256,47 @@ export default function Admin() {
       onExtend={() => setExtendFor(selected)} onChanged={load} onClose={wide ? undefined : () => setSheetOpen(false)} />
   );
 
+  const pickable = paged.filter((u) => !isAdmin(u));
+  const allPicked = pickable.length > 0 && pickable.every((u) => picked.has(u.id));
+  const togglePick = (id: number) => setPicked((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleAll = () => setPicked(allPicked ? new Set() : new Set(pickable.map((u) => u.id)));
+  const pickedUsers = all.filter((u) => picked.has(u.id));
+  async function extendPicked() {
+    const targets = pickedUsers.filter((u) => canQuickExtend(u));
+    if (!targets.length) { toast.info("Немає кого продовжувати", { description: "Серед вибраних немає активних підписок." }); return; }
+    setBulkBusy(true);
+    const prev = targets.map((u) => ({ id: u.id, endDate: u.endDate }));
+    let ok = 0;
+    for (const u of targets) { try { await authService.updateUser(u.id, { endDate: extendedEndDate(u.endDate, extendDays) }); ok++; } catch { /* counted below */ } }
+    setBulkBusy(false); setPicked(new Set()); await load();
+    toast.success(`Продовжено ${ok} ${plural(ok, "підписку", "підписки", "підписок")} на ${extendDays} днів`, {
+      description: ok < targets.length ? `Не вдалося: ${targets.length - ok}` : targets.map((u) => `@${u.username}`).join(", "), duration: 10_000, className: "v3-toast-10s",
+      action: { label: "Скасувати", onClick: async () => { for (const x of prev) { try { await authService.updateUser(x.id, { endDate: x.endDate }); } catch { /* ignore */ } } await load(); toast.info("Продовження скасовано", { description: "Дати повернулись як були" }); } },
+    });
+  }
+  const sortHead = (label: string, key: "name" | "end") => {
+    const on = key === "name" ? sort === "name" : sort === "end-asc" || sort === "end-desc";
+    const desc = key === "end" && sort === "end-desc";
+    return (
+      <span role="columnheader" aria-sort={on ? (desc ? "descending" : "ascending") : "none"}>
+        <button type="button" className={`v3-sorth${on ? " is-on" : ""}`} onClick={() => setSort(key === "name" ? (sort === "name" ? "end-asc" : "name") : sort === "end-asc" ? "end-desc" : "end-asc")}>
+          {label}<ArrowDown size={13} strokeWidth={2.4} className={`v3-sorth-ar${desc ? " is-up" : ""}`} aria-hidden="true" />
+        </button>
+      </span>
+    );
+  };
+
   const rows = (
     <div className={`v3-urows${xwide ? " is-xwide" : ""}`} role="table" aria-label="Користувачі">
-      <div className="v3-uth" role="row"><span role="columnheader">Користувач</span><span role="columnheader">План</span><span role="columnheader">Наступна оплата</span>{xwide && <><span role="columnheader">Сплачено</span><span role="columnheader">AI сьогодні</span></>}<span role="columnheader">Статус</span><span role="columnheader" className="v3-r">Швидка дія</span></div>
+      <div className="v3-uth" role="row"><span role="columnheader" className="v3-uth-who" aria-sort={sort === "name" ? "ascending" : "none"}><button type="button" role="checkbox" aria-checked={allPicked} aria-label="Вибрати всіх на сторінці" className={`v3-ckb${allPicked ? " is-on" : ""}`} disabled={!pickable.length} onClick={toggleAll}><Check size={12} strokeWidth={3.4} aria-hidden="true" /></button>{sortHead("Користувач", "name").props.children}</span><span role="columnheader">План</span>{sortHead("Наступна оплата", "end")}{xwide && <><span role="columnheader">Сплачено</span><span role="columnheader">AI сьогодні</span></>}<span role="columnheader">Статус</span><span role="columnheader" className="v3-r">Швидка дія</span></div>
       {users === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-urow is-skel" aria-hidden="true"><span className="v3-uwho"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: 140 }} /></span><span className="v3-skel v3-skel-light" style={{ width: 70 }} /><span className="v3-skel v3-skel-light" style={{ width: 110 }} /><span className="v3-skel v3-skel-light" style={{ width: 80 }} /><span /></div>)
         : paged.length ? paged.map((u) => {
           const st = statusOf(u), ui = STATUS_UI[st], p = planCell(u, settings), n = nextCell(u), sel = wide && selected?.id === u.id;
           return (
             <div key={u.id} className="v3-urow-wrap">
-              <div role="row" className={`v3-urow${sel ? " is-sel" : ""}`}>
+              <div role="row" ref={(el) => { if (el) rowEls.current.set(u.id, el); else rowEls.current.delete(u.id); }} className={`v3-urow${sel ? " is-sel" : ""}${picked.has(u.id) ? " is-picked" : ""}${newId === u.id ? " is-new" : ""}${leavingId === u.id ? " is-leaving" : ""}`}>
                 <button type="button" className="v3-urow-open" tabIndex={-1} aria-hidden="true" onClick={() => openCard(u)} />
-                <span role="cell" className="v3-uwho"><UserAvatar username={u.username} telegram={u.telegram} /><span className="v3-uname"><button type="button" onClick={(e) => { e.stopPropagation(); openCard(u); }}>@{u.username}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</button><small>{u.telegram ? `t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}` : "Telegram не вказано"}{u.isOwner ? " · Овнер" : ""}</small></span></span>
+                <span role="cell" className="v3-uwho">{isAdmin(u) ? <span className="v3-ckb-gap" aria-hidden="true" /> : <button type="button" role="checkbox" aria-checked={picked.has(u.id)} aria-label={`Вибрати @${u.username}`} className={`v3-ckb${picked.has(u.id) ? " is-on" : ""}`} onClick={() => togglePick(u.id)}><Check size={12} strokeWidth={3.4} aria-hidden="true" /></button>}<UserAvatar username={u.username} telegram={u.telegram} /><span className="v3-uname"><button type="button" onClick={(e) => { e.stopPropagation(); openCard(u); }}>@{hl(u.username, q)}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</button><small>{u.telegram ? `t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}` : "Telegram не вказано"}{u.isOwner ? " · Овнер" : ""}</small></span></span>
                 <span role="cell" className="v3-uplan"><strong>{p.plan}</strong><small>{p.price}</small></span>
                 <span role="cell" className={`v3-unext ${n.cls}`}>{n.text}</span>
                 {xwide && <><span role="cell" className="v3-upaid">{isAdmin(u) ? "—" : `${(u.paidTotal || 0).toLocaleString("uk-UA")} ₴`}</span><span role="cell" className="v3-muted">{isAdmin(u) ? "—" : settings?.aiDailyLimit ? `${u.aiToday || 0} з ${settings.aiDailyLimit}` : u.aiToday || 0}</span></>}
@@ -280,7 +340,7 @@ export default function Admin() {
             return (
               <li key={u.id}><button type="button" className="v3-mcard" onClick={() => openCard(u)}>
                 <UserAvatar username={u.username} telegram={u.telegram} />
-                <span className="v3-mcard-who"><strong>@{u.username}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</strong><small>{line}</small></span>
+                <span className="v3-mcard-who"><strong>@{hl(u.username, q)}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</strong><small>{line}</small></span>
                 <span className={`v3-tag ${ui.cls}`}>{tag}</span>
               </button></li>
             );
@@ -367,6 +427,14 @@ export default function Admin() {
                   <select className="v3-select" aria-label="Сортування" value={sort} onChange={(e) => setSort(e.target.value as Sort)}><option value="end-asc">Найближче завершення</option><option value="end-desc">Найпізніше завершення</option><option value="new">Нові спочатку</option><option value="name">За логіном</option></select>
                 </div>
                 {rows}
+                {picked.size > 0 && (
+                  <div className="v3-bulk" role="region" aria-label="Дії з вибраними">
+                    <span className="v3-bulk-n">Вибрано <b key={picked.size}>{picked.size}</b></span>
+                    <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" disabled={!online || bulkBusy} onClick={extendPicked}>{bulkBusy ? "Продовжуємо…" : `+${extendDays} днів`}</button>
+                    <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={() => downloadCsv(`users-selected-${new Date().toISOString().slice(0, 10)}.csv`, ["Логін", "Telegram", "План", "До"], pickedUsers.map((u) => [u.username, u.telegram || "", planCell(u, settings).plan, u.endDate || ""]))}><Download size={14} aria-hidden="true" />CSV</button>
+                    <button type="button" className="v3-icon-btn v3-bulk-x" aria-label="Зняти вибір" onClick={() => setPicked(new Set())}><X size={16} /></button>
+                  </div>
+                )}
                 {list.length > 0 && (
                   <div className="v3-pager">
                     <span>Показано <b>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, list.length)}</b> із <b>{list.length}</b>{filtered && list.length !== all.length ? ` · усього ${all.length}` : ""}{updatedAt && ` · оновлено о ${updatedAt}`}</span>

@@ -478,3 +478,39 @@
 .v3-write.is-done { background: #1f7a3d !important; border-color: #1f7a3d !important; color: #fff !important; }
 @media (hover: hover) { .v3-write:not(:disabled):hover .v3-plane { transform: translate(2px, -2px) rotate(-8deg); } }
 @media (prefers-reduced-motion: reduce) { .v3-plane.is-fly, .v3-bdg, .v3-bdg-ck, .v3-dring-in strong { animation: none !important; } .v3-dring-p { transition: none; } }
+
+/* ── Table, as in the design ── */
+/* Search: field lights up while typing; the match is yellow (catalog · Inputs) */
+.v3-search { transition: border-color .2s, box-shadow .2s, background-color .2s; }
+.v3-search:focus-within { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .18); }
+mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0 1px; }
+/* Sort by a column header: the arrow turns (catalog · Data · sorting) */
+.v3-sorth { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.v3-sorth-ar { opacity: 0; transition: transform .3s cubic-bezier(.3, 1.4, .5, 1), opacity .2s; }
+.v3-sorth.is-on { color: var(--v3-ink); font-weight: 600; }
+.v3-sorth.is-on .v3-sorth-ar { opacity: 1; }
+.v3-sorth-ar.is-up { transform: rotate(180deg); }
+@media (hover: hover) { .v3-sorth:hover .v3-sorth-ar { opacity: .6; } .v3-sorth.is-on:hover .v3-sorth-ar { opacity: 1; } }
+.v3-uth-who { display: inline-flex; align-items: center; gap: 12px; }
+/* Pick several: checkboxes and a bar that slides up (catalog · Data · selection) */
+.v3-ckb { display: grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; padding: 0; border-radius: 6px; border: 1.5px solid #c3cad6; background: #fff; color: transparent; cursor: pointer; transition: background-color .2s, border-color .2s, color .2s, transform .15s ease-out; }
+.v3-ckb.is-on { background: #3a6df0; border-color: #3a6df0; color: #fff; }
+.v3-ckb.is-on svg { animation: v3-ok-in .3s cubic-bezier(.2, .9, .25, 1.6) both; }
+.v3-ckb:not(:disabled):active { transform: scale(.9); }
+.v3-ckb:disabled { opacity: .4; cursor: default; }
+.v3-ckb-gap { width: 20px; flex-shrink: 0; }
+.v3-uwho { gap: 12px; }
+.v3-urow.is-picked:not(.is-sel) { background: #f3f7ff; }
+.v3-search input:focus, .v3-search input:focus-visible { outline: none; }
+.v3-bulk { position: sticky; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 10px; width: fit-content; margin: 12px auto 0; padding: 8px 8px 8px 16px; border-radius: 999px; background: #11151c; color: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, .35); animation: v3-bulk-in .35s cubic-bezier(.2, .9, .25, 1.2) both; }
+.v3-bulk-n { font-size: 13px; color: #c3c9d4; }
+.v3-bulk-n b { display: inline-block; color: #fff; animation: v3-rn .35s cubic-bezier(.2, .9, .25, 1.3) both; }
+.v3-bulk-x { color: #c3c9d4; }
+@keyframes v3-bulk-in { from { opacity: 0; transform: translateY(20px); } }
+/* New row glows; a deleted row slides out (catalog · Lists · new records) */
+.v3-urow.is-new { animation: v3-row-in .5s cubic-bezier(.2, .9, .25, 1.1) both, v3-row-glow 1.8s ease-out both; }
+.v3-urow.is-leaving { animation: v3-row-out .36s cubic-bezier(.4, 0, .6, 1) both; }
+@keyframes v3-row-in { from { opacity: 0; translate: 0 -10px; } }
+@keyframes v3-row-glow { 0%, 30% { box-shadow: inset 0 0 0 2px rgba(0, 178, 75, .55); background: #ecfbf2; } 100% { box-shadow: none; } }
+@keyframes v3-row-out { to { opacity: 0; translate: 40px 0; } }
+@media (prefers-reduced-motion: reduce) { .v3-bulk, .v3-bulk-n b, .v3-urow.is-new, .v3-urow.is-leaving, .v3-ckb.is-on svg { animation: none !important; } .v3-sorth-ar { transition: none; } }
