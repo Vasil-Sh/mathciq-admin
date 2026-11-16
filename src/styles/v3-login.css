@@ -173,3 +173,17 @@
 /* Відступи під статус-бар і жест «додому» (застосунок на головному екрані iPhone) */
 .v3-login { padding-top: calc(40px + env(safe-area-inset-top, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 767px) { .v3-login { padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
+
+/* Автозаповнення браузера: поле лишається світлим, як у дизайні (без сірої заливки Chrome/Safari) */
+.v3-login-form { color-scheme: light; }
+.v3-field input:-webkit-autofill,
+.v3-field input:-webkit-autofill:hover,
+.v3-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #11151c;
+  caret-color: #11151c;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset;
+  box-shadow: 0 0 0 1000px #f8fafc inset;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+.v3-field input:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px #fff inset, 0 0 0 3px rgba(58, 109, 240, .18); box-shadow: 0 0 0 1000px #fff inset, 0 0 0 3px rgba(58, 109, 240, .18); }
+.v3-field input:autofill { background: #f8fafc; }
