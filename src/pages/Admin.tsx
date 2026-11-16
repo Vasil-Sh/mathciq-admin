@@ -27,6 +27,7 @@ import { plural } from "@/lib/dashboardInsights";
 import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
+import ExportCsvButton from "@/components/ExportCsvButton";
 
 const PAGE_SIZE = 10;
 type Sort = "end-asc" | "end-desc" | "new" | "name";
@@ -402,7 +403,7 @@ export default function Admin() {
           <p className="v3-subtitle"><span className="v3-hide-mobile">Облікові записи, підписки, оплати й доступ до MatchIQ.</span><span className="v3-only-mobile">{all.length} {plural(all.length, "запис", "записи", "записів")} · {counts.paid} платних · {counts.trial} на пробному</span></p>
         </div>
         <div className="v3-chips">
-          {!emptyPlatform && <button type="button" className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length}><Download size={15} aria-hidden="true" />Експорт CSV</button>}
+          {!emptyPlatform && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length} />}
           <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online} onClick={() => setForm({ mode: "create" })}><Plus size={17} aria-hidden="true" />Створити користувача</button>
           <button type="button" className="v3-fab v3-only-mobile" aria-label="Створити користувача" disabled={!online} onClick={() => setForm({ mode: "create" })}><Plus size={20} strokeWidth={2.4} aria-hidden="true" /></button>
         </div>
@@ -477,7 +478,7 @@ export default function Admin() {
                   <div className="v3-bulk" role="region" aria-label="Дії з вибраними">
                     <span className="v3-bulk-n">Вибрано <b key={picked.size}>{picked.size}</b></span>
                     <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" disabled={!online || bulkBusy} onClick={extendPicked}>{bulkBusy ? "Продовжуємо…" : `+${extendDays} днів`}</button>
-                    <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={() => downloadCsv(`users-selected-${new Date().toISOString().slice(0, 10)}.csv`, ["Логін", "Telegram", "План", "До"], pickedUsers.map((u) => [u.username, u.telegram || "", planCell(u, settings).plan, u.endDate || ""]))}><Download size={14} aria-hidden="true" />CSV</button>
+                    <ExportCsvButton className="v3-btn v3-btn-ghost-dark v3-btn-sm" size={14} label="CSV" onClick={() => downloadCsv(`users-selected-${new Date().toISOString().slice(0, 10)}.csv`, ["Логін", "Telegram", "План", "До"], pickedUsers.map((u) => [u.username, u.telegram || "", planCell(u, settings).plan, u.endDate || ""]))} />
                     <button type="button" className="v3-icon-btn v3-bulk-x" aria-label="Зняти вибір" onClick={() => setPicked(new Set())}><X size={16} /></button>
                   </div>
                 )}

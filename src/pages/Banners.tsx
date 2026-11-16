@@ -14,6 +14,7 @@ import { nf } from "@/lib/adsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AppSettings, Banner, BannerSlotState } from "@/types";
 import PillTrack from "@/components/PillTrack";
+import ExportCsvButton from "@/components/ExportCsvButton";
 
 type Tab = "banners" | "telegram" | "bookmakers" | "stats";
 const TABS: { id: Tab; label: string }[] = [{ id: "banners", label: "Банери" }, { id: "telegram", label: "Telegram-групи" }, { id: "bookmakers", label: "Букмекери" }, { id: "stats", label: "Статистика" }];
@@ -82,7 +83,7 @@ export default function Banners() {
         <div className="v3-chips">
           {tab === "stats" && <>
             <button type="button" className="v3-chip v3-hide-mobile" onClick={() => statsActions.current.rep?.()}>Звіт для партнера · CSV</button>
-            <button type="button" className="v3-btn v3-btn-primary" onClick={() => statsActions.current.exp?.()}><Download size={15} aria-hidden="true" />Експорт CSV</button>
+            <ExportCsvButton className="v3-btn v3-btn-primary" onClick={() => statsActions.current.exp?.()} />
           </>}
           {newAction && <>
             <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={17} aria-hidden="true" />{newAction.label}</button>

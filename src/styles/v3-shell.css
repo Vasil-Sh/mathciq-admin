@@ -375,3 +375,16 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   .v3-logo:hover { opacity: .85; }
   .v3-uc-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
+
+/* Export button (catalog · Buttons 05): arrow dips on hover, drops into the tray on click, then a tick */
+.v3-ic-dl-arr, .v3-ic-dl-tray { transform-box: fill-box; transform-origin: center; transition: transform .35s cubic-bezier(.2, .9, .25, 1.4); }
+@media (hover: hover) { .v3-xbtn:not(:disabled):hover .v3-ic-dl-arr { transform: translateY(2px); } .v3-xbtn:not(:disabled):hover .v3-ic-dl-tray { transform: scaleX(1.15); } }
+.v3-xbtn.is-drop .v3-ic-dl-arr { animation: v3-dl-drop .45s cubic-bezier(.5, 0, .75, 0) both; }
+@keyframes v3-dl-drop { 0% { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } 70% { transform: translateY(3px); } 100% { transform: translateY(3px); opacity: 0; } }
+.v3-xbtn-ok { animation: v3-ok-pop .4s cubic-bezier(.2, .9, .25, 1.6) both; color: #4cd98a; }
+.v3-wcard .v3-xbtn-ok, .v3-btn-primary .v3-xbtn-ok { color: currentColor; }
+@keyframes v3-ok-pop { from { transform: scale(0) rotate(-30deg); } }
+/* «+» in create buttons turns a quarter on hover (catalog · Buttons) */
+.v3-btn .lucide-plus, .v3-fab .lucide-plus { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+@media (hover: hover) { .v3-btn:not(:disabled):hover .lucide-plus, .v3-fab:not(:disabled):hover .lucide-plus { transform: rotate(90deg) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .v3-xbtn.is-drop .v3-ic-dl-arr, .v3-xbtn-ok { animation: none; } .v3-ic-dl-arr, .v3-ic-dl-tray, .v3-btn .lucide-plus, .v3-fab .lucide-plus { transition: none; } }

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { plural } from "@/lib/dashboardInsights";
 import { KIND_UI, RESULT_UI, dayKey, dayLabel, describe, exactTime, timeLabel, type Change, type Entry, type View } from "@/lib/auditModel";
 import PillTrack from "@/components/PillTrack";
+import ExportCsvButton from "@/components/ExportCsvButton";
 
 type Summary = { today: number; week: number; failed7: number; security7: number; lastFailed: Entry | null; lastSecurity: Entry | null; topActor: { name: string; week: number } | null };
 type Actor = { name: string; telegram: string | null; week: number; total: number };
@@ -218,8 +219,8 @@ export default function AuditLog() {
         </div>
         <div className="v3-chips">
           {owner && <button type="button" className="v3-chip v3-hide-mobile" onClick={() => setCleanOpen(true)}>Очистити старі записи</button>}
-          <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!total} onClick={exportCsv}><Download size={15} aria-hidden="true" />Експорт CSV</button>
-          <button type="button" className="v3-au-mexp v3-only-mobile" aria-label="Експорт CSV" disabled={!total} onClick={exportCsv}><Download size={18} aria-hidden="true" /></button>
+          <ExportCsvButton className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!total} onClick={exportCsv} />
+          <ExportCsvButton className="v3-au-mexp v3-only-mobile" iconOnly size={18} disabled={!total} onClick={exportCsv} />
         </div>
       </section>
 

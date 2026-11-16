@@ -21,6 +21,7 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, telegramLink, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
 import type { AdminUser, AdminUserOverview, AppSettings } from "@/types";
 import UndoRing from "@/components/UndoRing";
+import ExportCsvButton from "@/components/ExportCsvButton";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -580,7 +581,7 @@ export default function Dashboard() {
             </div>
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
-            <button type="button" className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv} disabled={isEmpty} title={isEmpty ? "Експорт з’явиться після першої оплати" : undefined}><Download size={15} className="v3-export-ic" aria-hidden="true" />Експорт CSV</button>
+            <ExportCsvButton className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv} disabled={isEmpty} title={isEmpty ? "Експорт з’явиться після першої оплати" : undefined} />
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <PillTrack active={mode} />
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
