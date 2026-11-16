@@ -43,7 +43,7 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   display: flex;
   flex-direction: column;
 }
-.v3-shell :focus-visible { outline: 2px solid var(--v3-link); outline-offset: 2px; }
+.v3-shell :focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
 
 /* ── Header ── */
 .v3-header {
@@ -177,15 +177,19 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   min-height: 46px; padding: 0 20px; border-radius: 999px; border: 1px solid transparent;
   font: 600 14px Inter, sans-serif; text-decoration: none; cursor: pointer; white-space: nowrap;
 }
+.v3-btn { transition: transform .15s ease-out, background-color .2s, border-color .2s, box-shadow .2s, color .2s; }
+.v3-btn:not(:disabled):not([aria-disabled="true"]):active { transform: scale(.96); }
 .v3-btn-primary { background: var(--v3-action); color: #fff; }
-.v3-btn-primary:hover { background: var(--v3-action-hover); }
-.v3-btn-primary:active { background: var(--v3-action-press); }
 .v3-btn-dark { background: var(--v3-ink); color: #fff; }
-.v3-btn-dark:hover { background: #262c38; }
 .v3-btn-ghost-dark { background: transparent; color: var(--v3-text); border-color: rgba(255, 255, 255, .18); }
-.v3-btn-ghost-dark:hover { border-color: rgba(255, 255, 255, .35); }
 .v3-btn-danger-outline { background: transparent; color: #ff9a88; border-color: rgba(229, 83, 63, .5); }
-.v3-btn-danger-outline:hover { background: rgba(229, 83, 63, .12); }
+/* Same as the design: hover only for a mouse; the green button darkens and lifts with a shadow */
+@media (hover: hover) {
+  .v3-btn-primary:not(:disabled):not([aria-disabled="true"]):hover { background: #00a043; box-shadow: 0 6px 16px rgba(0, 0, 0, .25); }
+  .v3-btn-dark:not(:disabled):hover { background: #262c38; box-shadow: 0 6px 16px rgba(0, 0, 0, .25); }
+  .v3-btn-ghost-dark:not(:disabled):hover { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .35); }
+  .v3-btn-danger-outline:not(:disabled):hover { background: rgba(229, 83, 63, .12); }
+}
 .v3-mobile-account-actions .v3-btn { min-height: 44px; padding: 0 12px; font-size: 13px; }
 
 /* ── Page blocks ── */

@@ -307,7 +307,7 @@ button, input, select, textarea { font-family:inherit; }
 .user-summary-value, .kpi-value { font-weight:600; letter-spacing:-.055em; }
 .workspace-footer { color:#777e88; }
 .app-shell button, .app-shell a { transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease; }
-.app-shell button:focus-visible, .app-shell a:focus-visible { outline:2px solid #4278f5; outline-offset:3px; transition:none; }
+.app-shell button:focus-visible, .app-shell a:focus-visible { outline:2px solid #5b8cff; outline-offset:2px; transition:none; }
 .app-shell input:not([type=checkbox]):not([type=radio]) { border-radius:12px; }
 .app-shell button:not(:disabled):active:not(:focus-visible) { opacity:.85; }
 

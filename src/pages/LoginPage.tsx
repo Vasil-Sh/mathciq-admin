@@ -137,7 +137,7 @@ export default function LoginPage() {
               <label htmlFor="login-password">Пароль</label>
               <div className={"v3-input-wrap" + (emptyPass || errorKind === "auth" ? shakeCls : "")}>
                 <input id="login-password" name="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" placeholder="Введіть пароль" disabled={locked} aria-invalid={emptyPass || errorKind === "auth"} aria-describedby={error ? "login-error" : undefined} />
-                <button type="button" className="v3-input-action" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword}>{showPassword ? "Сховати" : "Показати"}</button>
+                <button type="button" className="v3-input-action" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword} aria-label={showPassword ? "Сховати пароль" : "Показати пароль"}><svg className={"v3-eye" + (showPassword ? "" : " is-shut")} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle className="v3-eye-lid" cx="12" cy="12" r="3" /><path className="v3-eye-slash" d="M4 4l16 16" /></svg></button>
               </div>
               {error && errorKind !== "empty" && !locked && <p id="login-error" role="alert" className="v3-field-error">{error}</p>}
             </div>
