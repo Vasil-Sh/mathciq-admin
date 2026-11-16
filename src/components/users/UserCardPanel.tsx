@@ -227,7 +227,8 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
                   <li key={p.id}>
                     <strong className={cancelled ? "v3-strike" : ""}>{refunded ? `−${money(Math.abs(amount))}` : money(amount)}</strong>
                     <span className={`v3-tag ${refunded ? "v3-tag-refund" : cancelled ? "v3-tag-cancel" : "v3-tag-okdark"}`}>{refunded ? "Повернено" : cancelled ? "Скасовано" : "Записано"}</span>
-                    <small>{shortDate(p.paidOn)} · {refunded ? "повернення" : planName(user.proUntil ? user.proBasePlan : user.plan)} · №{p.id}</small>
+                    {(() => { const meta = `${shortDate(p.paidOn)} · ${refunded ? "повернення" : planName(user.proUntil ? user.proBasePlan : user.plan)} · №${p.id}${p.note ? ` · ${p.note}` : ""}${cancelled && p.cancelReason ? ` · ${p.cancelReason}` : ""}`; const long = meta.length > 42;
+                      return <small className={long ? "v3-tt" : undefined} tabIndex={long ? 0 : undefined} aria-label={long ? meta : undefined}><span className="v3-tt-clip">{meta}</span>{long && <span className="v3-tt-tip" role="tooltip" aria-hidden="true">{meta}</span>}</small>; })()}
                     <span className="v3-uc-pay-tools">
                       {!cancelled && <button type="button" className="v3-link-sm" disabled={receiptBusy !== null} onClick={() => openReceipt(p)}>{receiptBusy === p.id ? "Чек…" : "Чек"}</button>}
                       {p.status === "recorded" && <button type="button" className="v3-link-sm v3-link-danger" disabled={!online} onClick={() => setCancelling(p)}>Скасувати запис</button>}
