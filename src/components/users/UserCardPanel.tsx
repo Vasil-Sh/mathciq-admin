@@ -67,9 +67,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<PayWithRefund[]>([]);
   const [open, setOpen] = useState({ prof: false, bets: false, pay: false });
-  const [editingNote, setEditingNote] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [savingNote, setSavingNote] = useState(false);
   const [dlg, setDlg] = useState<null | "pay" | "pro" | "refund" | "cancel">(null);
   const [cancelling, setCancelling] = useState<Payment | null>(null);
   const [receipt, setReceipt] = useState<{ image: string; payment: Payment } | null>(null);
@@ -81,20 +78,12 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       api.get<Card>(`/admin/users/${user.id}/card`),
       api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`),
     ]);
-    if (c.status === "fulfilled") { setCard(c.value); setDraft(c.value.note?.content || ""); } else setError((c.reason as Error)?.message || "Не вдалося завантажити картку");
+    if (c.status === "fulfilled") { setCard(c.value); } else setError((c.reason as Error)?.message || "Не вдалося завантажити картку");
     if (p.status === "fulfilled") setPayments(p.value.payments || []);
   }, [user.id]);
-  useEffect(() => { setCard(null); setPayments([]); setEditingNote(false); load(); }, [load]);
+  useEffect(() => { setCard(null); setPayments([]); load(); }, [load]);
 
-  async function saveNote() {
-    if (!card) return;
-    setSavingNote(true);
-    try {
-      const note = await api.put<Note>(`/admin/users/${user.id}/note`, { content: draft, version: card.note.version });
-      setCard({ ...card, note }); setEditingNote(false);
-      toast.success("Нотатку збережено");
-    } catch (e) { toast.error((e as Error).message); } finally { setSavingNote(false); }
-  }
+
   async function openReceipt(p: Payment) {
     setReceiptBusy(p.id);
     try { setReceipt({ image: await createPaymentReceipt(p, { username: user.username, telegram: user.telegram }), payment: p }); }
@@ -275,14 +264,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           </Section>
         )}
 
-        {!mobile && <section className="v3-uc-note">
-          <div className="v3-uc-note-head"><strong>Внутрішня нотатка</strong>{!editingNote && card && <button type="button" onClick={() => { setDraft(card.note?.content || ""); setEditingNote(true); }}>Редагувати</button>}</div>
-          {editingNote ? <>
-            <textarea aria-label="Внутрішня нотатка" autoFocus value={draft} maxLength={5000} rows={3} onChange={(e) => setDraft(e.target.value)} placeholder="Напишіть, що варто знати іншим адмінам" />
-            <div className="v3-uc-note-foot"><span>{draft.length}/5000</span><span><button type="button" className="v3-link-sm v3-link-dark" onClick={() => setEditingNote(false)} disabled={savingNote}>Скасувати</button><button type="button" className="v3-btn v3-btn-dark v3-btn-sm" disabled={savingNote || draft === (card?.note?.content || "")} onClick={saveNote}>{savingNote ? "Збереження…" : "Зберегти"}</button></span></div>
-          </> : <p>{card ? card.note?.content || "Нотаток ще немає." : "…"}</p>}
-          <small>Бачать лише адміністратори{card?.note?.updatedBy ? ` · @${card.note.updatedBy}, ${shortDate((card.note.updatedAt || "").slice(0, 10))}` : ""}</small>
-        </section>}
+
 
       </>}
 
