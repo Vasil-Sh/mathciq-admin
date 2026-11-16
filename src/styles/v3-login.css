@@ -91,7 +91,7 @@
 @keyframes v3-login-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
 /* Слово, що змінюється: «Керуйте підписками / рекламою / матчами» */
-.v3-rot-word { display: inline-block; position: relative; overflow: hidden; vertical-align: bottom; height: 1.7em; line-height: 1.7; }
+.v3-rot-word { display: inline-block; position: relative; overflow: hidden; vertical-align: top; line-height: inherit; height: 1.7em; height: 1lh; }
 .v3-rot-word-in { display: inline-block; color: #a3c0ff; font-weight: 600; animation: v3-rot-in .5s cubic-bezier(.2, .9, .25, 1.2) both; }
 @keyframes v3-rot-in { from { opacity: 0; transform: translateY(70%); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 
