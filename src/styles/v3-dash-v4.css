@@ -370,7 +370,9 @@ html { color-scheme: dark; }
 @media (max-width: 767px) {
   .v3-swipe-more { position: absolute; top: 50%; right: 2px; margin-top: -16px; z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 10px; background: transparent; color: var(--v3-ink-muted); cursor: pointer; transition: transform .35s cubic-bezier(.3, 1.2, .4, 1), background .15s; }
   .v3-swipe-more[aria-expanded="true"] { visibility: hidden; }
-  .v3-swipe-face .v3-exp-row { padding-right: 30px !important; }
+  .v3-swipe-face .v3-exp-row { padding-right: 0 !important; }
+  /* No visible «…»: the row is swiped; the button stays for keyboard and screen readers and shows only when focused */
+  .v3-swipe-more:not(:focus-visible) { opacity: 0; pointer-events: none; }
 }
 @media (prefers-reduced-motion: reduce) { .v3-swipe-more { transition: none; } }
 

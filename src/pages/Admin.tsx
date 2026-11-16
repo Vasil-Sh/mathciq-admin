@@ -11,6 +11,7 @@ import UserFormDialog, { type UserForm } from "@/components/users/UserFormDialog
 import SelfLimitationsTab from "@/components/users/SelfLimitationsTab";
 import { DeleteUserDialog, PasswordDialog } from "@/components/users/UserActionDialogs";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dropdown } from "@/components/ui/dropdown";
 import { extendedEndDate, shortDate } from "@/lib/subscriptions";
 import { canResetPassword, deleteBlockReason, roleLockReason } from "@/lib/permissions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -351,10 +352,10 @@ export default function Admin() {
     <div className="v3-umobile">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
       <div className="v3-mfilters">
-        <label className="v3-mselect"><span className="v3-dim">План:</span><select aria-label="План" value={filter} onChange={(e) => setFilter(e.target.value as UFilter)}>{segs.map((s) => <option key={s.key} value={s.key}>{s.label} · {counts[s.key]}</option>)}{filter === "paid" && <option value="paid">Платні · {counts.paid}</option>}{filter === "closed" && <option value="closed">Закінчилась або скасована · {counts.closed}</option>}</select></label>
+        <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : [])]} />
         {noAge > 0 && <button type="button" className={`v3-mage${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік ? · {noAge}</button>}
       </div>
-      <div className="v3-mmeta"><label><span className="sr-only">Сортування</span><select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Сортування"><option value="end-asc">Найближча оплата ↓</option><option value="end-desc">Найпізніша оплата</option><option value="new">Нові спочатку</option><option value="name">За логіном</option></select></label>{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
+      <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближча оплата" }, { value: "end-desc", label: "Найпізніша оплата" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
       <div className={`v3-ptr${pulling ? " is-drag" : ""}${pull >= 60 && !refreshing ? " is-ready" : ""}`} style={{ height: pull }} role="status" aria-live="polite">
         {refreshing ? <span className="v3-ptr-sp" aria-hidden="true" /> : <span className="v3-ptr-ar" aria-hidden="true">↓</span>}
         <span>{refreshing ? "Оновлюємо…" : pull >= 60 ? "Відпустіть, щоб оновити" : pull > 0 ? "Потягніть, щоб оновити" : ""}</span>
@@ -465,7 +466,7 @@ export default function Admin() {
                     {segs.map((s) => <button key={s.key} type="button" className={filter === s.key ? "is-on" : ""} aria-pressed={filter === s.key} onClick={() => setFilter(s.key)}>{s.label} <span className="v3-seg-n">{counts[s.key]}</span></button>)}
                   </div>
                   {noAge > 0 && <button type="button" className={`v3-agechip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} onClick={() => setAgeOnly(!ageOnly)}>Вік не підтверджено · {noAge}{ageOnly && <X size={13} aria-hidden="true" />}</button>}
-                  <select className="v3-select" aria-label="Сортування" value={sort} onChange={(e) => setSort(e.target.value as Sort)}><option value="end-asc">Найближче завершення</option><option value="end-desc">Найпізніше завершення</option><option value="new">Нові спочатку</option><option value="name">За логіном</option></select>
+                  <Dropdown className="is-light v3-sort-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближче завершення" }, { value: "end-desc", label: "Найпізніше завершення" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />
                 </div>
                 {rows}
                 {picked.size > 0 && (

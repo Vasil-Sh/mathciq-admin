@@ -35,6 +35,24 @@ function useIsPhone() {
   return phone;
 }
 
+/**
+ * On a touch screen a tap leaves the notifications «hovered» (there is no pointer to leave),
+ * so their timers would stay paused for good. When the finger lifts, they run again.
+ */
+function useTouchUnpauseToasts() {
+  useEffect(() => {
+    const onTouch = () => {
+      document.querySelectorAll("[data-sonner-toaster]").forEach((ol) => {
+        ol.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));
+        ol.dispatchEvent(new MouseEvent("mouseleave", { bubbles: false, relatedTarget: document.body }));
+      });
+    };
+    const later = () => window.setTimeout(onTouch, 50);
+    document.addEventListener("touchend", later, { passive: true });
+    return () => document.removeEventListener("touchend", later);
+  }, []);
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isVerifying } = useAuth();
   if (isVerifying) return <div className="flex items-center justify-center min-h-screen bg-canvas"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
@@ -66,6 +84,7 @@ function AppRoutes() {
 
 export default function App() {
   const phone = useIsPhone();
+  useTouchUnpauseToasts();
   return (
     <AuthProvider>
       <Router>

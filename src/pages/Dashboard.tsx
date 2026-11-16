@@ -134,7 +134,7 @@ export default function Dashboard() {
       const go = pullRef.current.d >= PULL_GO;
       pullRef.current.on = false;
       setPulling(false);
-      if (go) { setPull(56); load(true).then(() => { setPull(0); toast.success("Дані оновлено", { description: `станом на ${hhmm()}` }); }); }
+      if (go) { setPull(56); load(true).then(() => { setPull(0); toast.success("Дані оновлено", { id: "data-refreshed", description: `станом на ${hhmm()}` }); }); }
       else setPull(0);
     };
     window.addEventListener("touchstart", start, { passive: true });

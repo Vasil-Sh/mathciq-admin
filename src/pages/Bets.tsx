@@ -47,7 +47,7 @@ export default function Bets() {
       if (manual) {
         const after = list.reduce((a, u) => a + (u.betCount || 0), 0);
         const diff = before === null ? 0 : after - before;
-        toast.success("Дані оновлено", { description: diff > 0 ? `Нових ставок: ${diff}` : "Нових ставок немає" });
+        toast.success("Дані оновлено", { id: "data-refreshed", description: diff > 0 ? `Нових ставок: ${diff}` : "Нових ставок немає" });
       }
     } catch (e) {
       const msg = (e as Error).message || "Сервер не відповідає";

@@ -12,11 +12,29 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
   return <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />;
 }
 
+/** Phone sheets: drag the grab bar down to close (or tap it). Hidden on wider screens by CSS. */
+function GrabBar({ contentRef, closeRef }: { contentRef: React.RefObject<HTMLDivElement | null>; closeRef: React.RefObject<HTMLButtonElement | null> }) {
+  const st = React.useRef({ y0: 0, dy: 0, on: false });
+  const set = (dy: number, anim: boolean) => { const el = contentRef.current; if (!el) return; el.style.transition = anim ? "transform .3s cubic-bezier(.2,.9,.25,1)" : "none"; el.style.transform = dy ? `translateY(${dy}px)` : ""; };
+  return (
+    <button type="button" className="v3-grab" aria-label="Закрити"
+      onPointerDown={(e) => { st.current = { y0: e.clientY, dy: 0, on: true }; e.currentTarget.setPointerCapture(e.pointerId); }}
+      onPointerMove={(e) => { if (!st.current.on) return; st.current.dy = Math.max(0, e.clientY - st.current.y0); set(st.current.dy, false); }}
+      onPointerUp={() => { if (!st.current.on) return; st.current.on = false; const dy = st.current.dy; if (dy > 90 || dy < 6) { set(window.innerHeight, true); window.setTimeout(() => closeRef.current?.click(), 180); } else set(0, true); }}
+      onPointerCancel={() => { st.current.on = false; set(0, true); }}>
+      <span aria-hidden="true" />
+    </button>
+  );
+}
+
 function DialogContent({ className, children, onInteractOutside, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { onInteractOutside?: (e: Event) => void }) {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const closeRef = React.useRef<HTMLButtonElement>(null);
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
+        ref={contentRef}
         onInteractOutside={onInteractOutside}
         className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4",
@@ -28,8 +46,9 @@ function DialogContent({ className, children, onInteractOutside, ...props }: Rea
         )}
         {...props}
       >
+        <GrabBar contentRef={contentRef} closeRef={closeRef} />
         {children}
-        <DialogPrimitive.Close className="v3-modal-x absolute right-4 top-4 rounded-btn text-subtle hover:text-ink transition-colors focus:outline-none">
+        <DialogPrimitive.Close ref={closeRef} className="v3-modal-x absolute right-4 top-4 rounded-btn text-subtle hover:text-ink transition-colors focus:outline-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

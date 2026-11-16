@@ -632,3 +632,5 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-lpmenu > button:disabled { color: #a0a8b6; }
 @media (hover: hover) { .v3-lpmenu > button:not(:disabled):hover, .v3-lpmenu > a:hover { background: #f1f4f9; } }
 @media (prefers-reduced-motion: reduce) { .v3-ptr-sp, .v3-mcard.is-press .v3-mcard-lp, .v3-lpscrim, .v3-lpmenu, .v3-lpmenu > * { animation: none !important; } .v3-ptr, .v3-ptr-ar { transition: none; } }
+.v3-mselect-dd { flex: 1; min-width: 0; }
+.v3-mselect-dd .v3-dd-btn { min-height: 46px; }
