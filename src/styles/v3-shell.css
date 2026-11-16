@@ -66,15 +66,19 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   display: none; align-items: center; gap: 2px;
   padding: 5px; border-radius: 999px;
   background: #ffffff; border: 2px solid #253150;
+  position: relative;
 }
 .v3-navlink {
   display: inline-flex; align-items: center; gap: 6px;
   min-height: 38px; padding: 0 14px; border-radius: 999px;
   color: var(--v3-ink); font-size: 13px; font-weight: 500; text-decoration: none; white-space: nowrap;
-  transition: background .15s, color .15s;
+  transition: color .3s;
+  position: relative; z-index: 1;
 }
 .v3-navlink:hover { background: #eef2fa; }
 .v3-navlink.is-active { background: var(--v3-nav); color: #fff; font-weight: 600; }
+.v3-nav.has-pill .v3-navlink.is-active { background: transparent; }
+.v3-nav .v3-pill { top: 5px; bottom: 5px; box-shadow: none; }
 
 .v3-count {
   display: inline-grid; place-items: center;

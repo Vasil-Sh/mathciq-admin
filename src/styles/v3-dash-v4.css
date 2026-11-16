@@ -467,7 +467,7 @@ html { color-scheme: dark; }
 /* Порожній дашборд — та сама розкладка: праворуч «Усе спокійно», тарифи (порожні кільця) і стрічка */
 .v3-empty-side { display: none; }
 .v3-feed-empty .v3-seg.is-dim { opacity: .55; pointer-events: none; }
-.v3-feed-blank { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 8px 8px; text-align: center; border-top: 1px solid rgba(255, 255, 255, .06); }
+.v3-feed-blank { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 auto; gap: 8px; padding: 18px 8px 8px; text-align: center; border-top: 1px solid rgba(255, 255, 255, .06); }
 .v3-feed-blank .v3-chart-empty-ico { width: 40px; height: 40px; min-height: 40px; border-radius: 12px; }
 .v3-feed-blank strong { font-size: var(--fs-body); font-weight: 600; }
 .v3-feed-blank small { max-width: 260px; color: var(--v3-muted); font-size: var(--fs-cap); line-height: 1.5; }

@@ -12,6 +12,7 @@ import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import StarField from "./StarField";
+import PillTrack from "@/components/PillTrack";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -123,8 +124,9 @@ export default function AdminLayout() {
         <Logo />
         <div className="v3-nav-group">
         <nav aria-label="Основна навігація" className="v3-nav">
+          <PillTrack active={pathname} />
           {navigation.map(({ label, href, badge }) => (
-            <NavLink key={href} to={href} className={({ isActive }) => `v3-navlink${isActive ? " is-active" : ""}`}>
+            <NavLink key={href} to={href} className={({ isActive }) => `v3-navlink${isActive ? " is-active is-on" : ""}`}>
               {label}{badgeFor(badge)}
             </NavLink>
           ))}
