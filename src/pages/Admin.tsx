@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, Check, Send, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowRight, Check, Send, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
@@ -138,6 +138,20 @@ export default function Admin() {
   const cancelledThisMonth = all.filter((u) => (u.subscriptionCancelledAt || u.cancelledAt || "").slice(0, 7) === month).length;
   const paidBasic = all.filter((u) => matches(u, "paid") && u.plan === "basic").length;
   const paidPro = counts.paid - paidBasic;
+  // «Зміна до попереднього періоду» (каталог · Метрики 06): this month vs the previous one
+  const prevMonth = (() => { const [y, m] = month.split("-").map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`; })();
+  const monthStart = `${month}-01`;
+  const mk = (v?: string) => (v || "").slice(0, 7);
+  const users0 = all.filter((u) => !isAdmin(u));
+  const isTrialStart = (u: AdminUserOverview) => u.plan === "trial" || !!u.trialEndDate;
+  const pctOf = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 1000) / 10 : null);
+  const deltas: Partial<Record<UFilter, { d: number | null; inverse?: boolean }>> = {
+    all: { d: pctOf(all.length, all.filter((u) => (u.createdAt || "") < monthStart).length) },
+    paid: { d: pctOf(counts.paid, users0.filter((u) => (u.plan === "basic" || u.plan === "pro") && (u.createdAt || "") < monthStart && (u.endDate || "") >= monthStart).length) },
+    trial: { d: pctOf(users0.filter((u) => isTrialStart(u) && mk(u.createdAt) === month).length, users0.filter((u) => isTrialStart(u) && mk(u.createdAt) === prevMonth).length) },
+    closed: { d: pctOf(cancelledThisMonth, all.filter((u) => mk(u.subscriptionCancelledAt || u.cancelledAt) === prevMonth).length), inverse: true },
+  };
+  const prevMonthGen = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"][Number(prevMonth.slice(5)) - 1];
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase().replace(/^@/, "");
@@ -459,7 +473,7 @@ export default function Admin() {
           </>
         ) : <>
           <section className="v3-sums v3-hide-mobile" aria-label="Підсумки">
-            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : <RollingNumber key={`${x.key}-${x.value}`} text={String(x.value)} />}</strong><span className="v3-sum-n">{x.note}</span></button>)}
+            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : <RollingNumber key={`${x.key}-${x.value}`} text={String(x.value)} />}</strong><span className="v3-sum-n">{(() => { const dd = deltas[x.key]; if (!dd || dd.d === null || users === null) return null; const d = dd.d; const good = dd.inverse ? d <= 0 : d >= 0; return <><span className={`v3-dl ${filter === x.key ? "is-onblue " : ""}${d === 0 ? "is-flat" : good ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${prevMonthGen}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {prevMonthGen} </span></>; })()}{x.note}</span></button>)}
           </section>
 
           {!wide ? mobileList : (
