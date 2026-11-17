@@ -680,7 +680,7 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
   .v3-urow.is-sel .v3-uname button:hover { color: #c9d8ff; }
   .v3-search:not(:focus-within):hover { border-color: #c3cad6; }
 }
-@media (prefers-reduced-motion: reduce) { .v3-sum { transition: border-color .15s; } .v3-sum:hover { translate: none; } }
+@media (prefers-reduced-motion: reduce) { .v3-sum { transition: border-color .15s; translate: none !important; } }
 
 /* Section tabs: the white pill slides to the chosen tab (same pill as the Dashboard switches) */
 .v3-ptabs { position: relative; }
