@@ -689,11 +689,25 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-ptabs > .v3-pill { top: 0; bottom: 0; background: #fff; box-shadow: none; }
 @media (max-width: 767px) { .v3-ptabs > .v3-pill { top: 4px; bottom: 4px; } }
 
-/* «Закінчуються» chip — same orange counter as the badge in the menu, so the link from the menu lands on a visible, matching filter */
-.v3-expchip { display: inline-flex; align-items: center; gap: 6px; padding-inline-start: 5px; }
-.v3-expchip-n { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #f0a03c; color: #fff; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.v3-expchip.is-on .v3-expchip-n { background: #fff; color: #b56b00; }
-@media (hover: hover) { .v3-mage.v3-expchip:not(.is-on):hover { background: rgba(240, 160, 60, .2); border-color: rgba(240, 160, 60, .6); } }
 .v3-mfilters.has-exp { display: flex; flex-wrap: wrap; }
 .v3-mfilters.has-exp > :first-child { flex: 1 1 100%; }
 .v3-mfilters.has-exp > button { flex: 0 0 auto; }
+
+/* Filter chips «Закінчуються» / «Вік не підтверджено» — same shape, height and border as the dropdown next to them;
+   colour lives only in the counter, active = the blue of the status pill */
+.v3-fchip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #f4f6fa; font: 600 14px Inter, sans-serif; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .15s ease-out; }
+.v3-fchip.is-light { border-color: #dde1e7; background: #fff; color: #11151c; }
+.v3-fchip-n { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 999px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; transition: background-color .2s, color .2s; }
+.v3-fchip-n.is-exp { background: #f0a03c; color: #fff; }
+.v3-fchip-n.is-age { background: #ffe7a3; color: #6b4a00; }
+.v3-fchip.is-on { border-color: #3a6df0; background: #3a6df0; color: #fff; box-shadow: 0 6px 16px rgba(58, 109, 240, .35); }
+.v3-fchip.is-on .v3-fchip-n { background: #fff; color: #2a55c8; }
+.v3-fchip-x { margin-inline-start: -2px; opacity: .85; }
+.v3-fchip:not(:disabled):active { transform: scale(.96); }
+@media (hover: hover) {
+  .v3-fchip:not(.is-on):hover { border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .08); }
+  .v3-fchip.is-light:not(.is-on):hover { border-color: #c3cad6; background: #f7f9fc; }
+  .v3-fchip.is-on:hover { background: #2f5fdc; }
+}
+.v3-mfilters .v3-fchip { min-height: 46px; }
+@media (prefers-reduced-motion: reduce) { .v3-fchip { transition: none; } .v3-fchip:active { transform: none; } }
