@@ -1,7 +1,10 @@
 // ── API Client — same as main app, JWT-based ──
 
 const BASE =
-  import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? "https://cs-backend-production-f9e8.up.railway.app/api"
+    : "http://localhost:3001/api");
 
 let authToken: string | null = localStorage.getItem("authToken");
 let refreshToken: string | null = localStorage.getItem("refreshToken");
