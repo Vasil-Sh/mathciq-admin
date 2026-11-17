@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -18,7 +18,7 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { daysLeft, endsWithoutRenewal, expiringDays, isAdmin, planCell, statusOf, STATUS_UI, tagOf } from "@/lib/usersModel";
+import { endsWithoutRenewal, isAdmin, planCell, statusOf, STATUS_UI } from "@/lib/usersModel";
 import {
   dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
   PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode,
@@ -155,8 +155,6 @@ export default function Payments() {
   const whoUser = who ? users.find((u) => (u.username || "").toLowerCase() === who.toLowerCase()) : undefined;
   const lastRecorded = who ? all.filter((p) => p.status === "recorded").sort((a, b) => Number(b.id) - Number(a.id))[0] : undefined;
   const clearWho = () => { const n = new URLSearchParams(params); n.delete("user"); setParams(n, { replace: true }); setSelId(null); setRk((x) => x + 1); };
-  // «Очікуються оплати»: підписки й пробні, що закінчуються за 7 днів (найближчі — першими)
-  const due = useMemo(() => users.filter((u) => expiringDays(u) !== null && !endsWithoutRenewal(u)).sort((a, b) => daysLeft(a) - daysLeft(b)), [users]);
 
   function exportCsv() {
     downloadCsv(`matchiq-payments-${month}.csv`, ["№", "Користувач", "Сума, ₴", "Дата оплати", "Період з", "Період до", "Статус", "Спосіб", "Промокод", "Записав", "Повернено, ₴", "Причина"],
@@ -229,32 +227,6 @@ export default function Payments() {
     );
   };
 
-  const dueAmount = (u: AdminUserOverview) => { if (u.plan === "trial" && !u.proUntil) { const tp = settings?.trialPlan; const v = tp === "pro" ? settings?.proPrice : settings?.basicPrice; return v ? money(Number(v)) : ""; } const v = Number(u.priceMonth) || (u.plan === "pro" ? settings?.proPrice : settings?.basicPrice); return v ? money(Number(v)) : ""; };
-  const dueWhen = (d: number) => (d <= 0 ? "сьогодні" : d === 1 ? "завтра" : `через ${d} ${plural(d, "день", "дні", "днів")}`);
-  const [dueAll, setDueAll] = useState(false);
-  const dueBlock = due.length > 0 && (
-    <section className="v3-dcard v3-pay-due" aria-label="Очікуються оплати">
-      <div className="v3-pay-due-h">
-        <span className="v3-pay-due-ic" aria-hidden="true"><CalendarClock size={18} /></span>
-        <div><strong>Очікуються оплати</strong><span>Підписка або пробний закінчуються за 7 днів — запишіть оплату, коли гроші прийдуть.</span></div>
-        <span className="v3-pay-due-n">{due.length}</span>
-      </div>
-      <ul className="v3-pay-due-list">
-        {due.slice(0, dueAll ? due.length : wide ? 6 : 3).map((u, i) => {
-          const d = daysLeft(u); const tag = tagOf(u);
-          return (
-            <li key={u.id} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
-              <UserAvatar username={u.username} telegram={u.telegram} />
-              <span className="v3-pay-due-who"><strong>@{u.username}</strong><small>{planCell(u, settings).plan} · {dShort(u.endDate)}{dueAmount(u) ? ` · ${dueAmount(u)}` : ""}</small></span>
-              <span className={`v3-tag ${tag.cls}`}>{dueWhen(d)}</span>
-              <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" disabled={!online} onClick={() => setPayFor(u)} aria-label={`Записати оплату для @${u.username}`}><Plus size={14} aria-hidden="true" />Записати</button>
-            </li>
-          );
-        })}
-      </ul>
-      {due.length > (wide ? 6 : 3) && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm v3-pay-due-more" onClick={() => setDueAll(!dueAll)}>{dueAll ? "Згорнути" : `Показати всіх ${due.length}`}</button>}
-    </section>
-  );
   const userPanel = who && (
     <section className="v3-dcard v3-pay-user" aria-label={`Оплати @${who}`}>
       <div className="v3-pay-user-id">
@@ -415,7 +387,7 @@ export default function Payments() {
           ))}
         </section>
 
-        {who ? userPanel : dueBlock}
+        {who && userPanel}
 
         <div className="v3-pay-tabs" role="tablist" aria-label="Розділи оплат">
           <PillTrack active={tab} />

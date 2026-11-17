@@ -280,24 +280,6 @@ button.v3-pay-row { cursor: pointer; }
 @media (max-width: 380px) { .v3-pay-tab { padding-right: 9px; letter-spacing: -.01em; } }
 @media (prefers-reduced-motion: reduce) { .v3-pay-gen svg { transition: none; } }
 
-/* «Очікуються оплати» (Списки 04: рядки по черзі; Кнопки: плюс повертається) */
-.v3-pay-due { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
-.v3-pay-due-h { display: flex; align-items: flex-start; gap: 12px; }
-.v3-pay-due-h > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.v3-pay-due-h strong { font-size: 17px; font-weight: 600; }
-.v3-pay-due-h span { color: var(--v3-muted); font-size: 13px; line-height: 1.45; }
-.v3-pay-due-ic { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; background: rgba(240, 160, 60, .14); color: #f0a03c; }
-.v3-pay-due-n { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; box-sizing: border-box; border-radius: 999px; background: #f0a03c; color: #11151c !important; font-size: 13px !important; font-weight: 700; font-variant-numeric: tabular-nums; }
-.v3-pay-due-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.v3-pay-due-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av who tag" "av who btn"; align-items: center; gap: 6px 10px; padding: 12px; border-radius: 16px; background: var(--v3-card2); animation: v3-pay-in .36s cubic-bezier(.2, .8, .2, 1) backwards; }
-.v3-pay-due-list .v3-av { grid-area: av; flex: none; }
-.v3-pay-due-who { grid-area: who; min-width: 0; }
-.v3-pay-due-who strong { display: block; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v3-pay-due-who small { display: block; color: var(--v3-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v3-pay-due-list .v3-tag { grid-area: tag; justify-self: end; white-space: nowrap; }
-.v3-pay-due-list .v3-btn { grid-area: btn; justify-self: end; }
-.v3-pay-due-list .v3-btn svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
-.v3-pay-due-more { align-self: flex-start; }
 /* Оплати одного користувача: картка з діями (перенесено з картки користувача) */
 .v3-pay-user { display: flex; flex-direction: column; gap: 16px; padding: 18px; animation: v3-pay-in .4s cubic-bezier(.2, .8, .2, 1) both; }
 .v3-pay-user-id { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -311,24 +293,13 @@ button.v3-pay-row { cursor: pointer; }
 .v3-pay-user-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .v3-pay-mf.is-one { grid-template-columns: 1fr; }
 @media (hover: hover) {
-  .v3-pay-due-list .v3-btn:not(:disabled):hover svg { transform: rotate(90deg); }
   .v3-pay-user-x:hover { background: rgba(255, 255, 255, .06); color: #fff; }
   .v3-pay-user-x:hover svg { transform: rotate(90deg); }
 }
-@media (max-width: 1179px) { .v3-pay-due-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3-pay-user-acts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1179px) { .v3-pay-user-acts { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) {
-  .v3-pay-due { padding: 16px; }
-  .v3-pay-due-list { grid-template-columns: 1fr; }
   .v3-pay-user-acts { grid-template-columns: 1fr; }
   .v3-pay-user-acts .v3-btn-primary { order: -1; }
 }
-@media (prefers-reduced-motion: reduce) { .v3-pay-due-list li, .v3-pay-user { animation: none; } }
-@media (max-width: 720px) {
-  .v3-pay-due { gap: 12px; }
-  .v3-pay-due-h span:not(.v3-pay-due-n) { display: none; }
-  .v3-pay-due-h > div { align-self: center; }
-  .v3-pay-due-list li { grid-template-areas: "av who btn" "av tag btn"; gap: 4px 10px; padding: 10px 10px 10px 12px; }
-  .v3-pay-due-list .v3-tag { justify-self: start; }
-  .v3-pay-due-list .v3-btn { align-self: center; }
-}
+@media (prefers-reduced-motion: reduce) { .v3-pay-user { animation: none; } }
 @media (max-width: 720px) { .v3-pay .v3-hero-row { flex-wrap: nowrap; align-items: flex-end; } .v3-pay .v3-hero-row > div:first-child { min-width: 0; } }
