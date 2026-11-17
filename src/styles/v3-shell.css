@@ -388,3 +388,11 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-btn .lucide-plus, .v3-fab .lucide-plus { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
 @media (hover: hover) { .v3-btn:not(:disabled):hover .lucide-plus, .v3-fab:not(:disabled):hover .lucide-plus { transform: rotate(90deg) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .v3-xbtn.is-drop .v3-ic-dl-arr, .v3-xbtn-ok { animation: none; } .v3-ic-dl-arr, .v3-ic-dl-tray, .v3-btn .lucide-plus, .v3-fab .lucide-plus { transition: none; } }
+
+/* Списки вибору: без смуги прокрутки (прокрутка колесом/пальцем лишається) */
+.v3-dd-list { scrollbar-width: none; }
+.v3-dd-list::-webkit-scrollbar { display: none; }
+/* Пошук: лише наш хрестик, без системного */
+input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+/* Телефон: сповіщення без кнопки «Скасувати» з кільцем — лише текст і хрестик */
+@media (max-width: 720px) { .v3-toast-act:has(.v3-undo) { display: none !important; } }

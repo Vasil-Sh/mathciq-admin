@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import PageErrorBoundary from "@/components/PageErrorBoundary";
 import {
   BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
   LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X,
@@ -190,7 +191,7 @@ export default function AdminLayout() {
         </DialogContent>
       </Dialog>
 
-      <main id="main-content" className="v3-main"><Outlet /></main>
+      <main id="main-content" className="v3-main"><PageErrorBoundary resetKey={pathname}><Outlet /></PageErrorBoundary></main>
       <footer className="v3-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
 
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>

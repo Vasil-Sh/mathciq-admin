@@ -30,9 +30,9 @@ import PillTrack from "@/components/PillTrack";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 const PAGE_SIZE = 10;
-type Sort = "end-asc" | "end-desc" | "new" | "name";
+type Sort = "new" | "name";
 const FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed", "expiring"];
-const SORTS: Sort[] = ["end-asc", "end-desc", "new", "name"];
+const SORTS: Sort[] = ["new", "name"];
 
 /** The matched part of a login in yellow (catalog · Inputs · search highlight). */
 function hl(text: string, q: string): ReactNode {
@@ -52,13 +52,6 @@ function useOnline() {
   useEffect(() => { const a = () => setOn(true), b = () => setOn(false); window.addEventListener("online", a); window.addEventListener("offline", b); return () => { window.removeEventListener("online", a); window.removeEventListener("offline", b); }; }, []);
   return on;
 }
-// «Найближче завершення»: running subscriptions by end date first, then ended/cancelled/blocked, admins last.
-const sortEnd = (u: AdminUserOverview) => {
-  if (isAdmin(u)) return 9e15;
-  const t = u.endDate ? Date.parse(`${u.endDate}T12:00:00Z`) : 0;
-  const st = statusOf(u);
-  return st === "ended" || st === "cancelled" || st === "blocked" ? 5e15 - t : t || 8e15;
-};
 
 export default function Admin() {
   const [urlParams, setUrlParams] = useSearchParams();
@@ -77,7 +70,7 @@ export default function Admin() {
   const [filter, setFilter] = useSessionFilter<UFilter>("users.filter", "all", FILTERS);
   const [ageOnly, setAgeOnly] = useState(false);
   const [q, setQ] = useSessionFilter<string>("users.search", "");
-  const [sort, setSort] = useSessionFilter<Sort>("users.sort2", "end-asc", SORTS);
+  const [sort, setSort] = useSessionFilter<Sort>("users.sort3", "new", SORTS);
   const [page, setPage] = useState(1);
   const [mobileShown, setMobileShown] = useState(PAGE_SIZE);
   const [showErr, setShowErr] = useState(false);
@@ -159,8 +152,6 @@ export default function Admin() {
     if (ageOnly) r = r.filter((u) => !isAdmin(u) && !u.ageConfirmed);
     if (s) r = r.filter((u) => u.username.toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s));
     const by: Record<Sort, (a: AdminUserOverview, b: AdminUserOverview) => number> = {
-      "end-asc": (a, b) => sortEnd(a) - sortEnd(b),
-      "end-desc": (a, b) => (isAdmin(a) ? 1 : 0) - (isAdmin(b) ? 1 : 0) || sortEnd(b) - sortEnd(a),
       new: (a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""),
       name: (a, b) => a.username.localeCompare(b.username),
     };
@@ -299,12 +290,13 @@ export default function Admin() {
       action: { label: <UndoRing />, onClick: async () => { for (const x of prev) { try { await authService.updateUser(x.id, { endDate: x.endDate }); } catch { /* ignore */ } } await load(); toast.info("Продовження скасовано", { description: "Дати повернулись як були" }); } },
     });
   }
-  const sortHead = (label: string, key: "name" | "end") => {
-    const on = key === "name" ? sort === "name" : sort === "end-asc" || sort === "end-desc";
-    const desc = key === "end" && sort === "end-desc";
+  // «Найближча оплата» живе в Оплатах (блок «Очікуються оплати»); тут — лише за логіном або нові спочатку.
+  const sortHead = (label: string, key: "name") => {
+    const on = sort === key;
+    const desc = false;
     return (
       <span role="columnheader" aria-sort={on ? (desc ? "descending" : "ascending") : "none"}>
-        <button type="button" className={`v3-sorth${on ? " is-on" : ""}`} onClick={() => setSort(key === "name" ? (sort === "name" ? "end-asc" : "name") : sort === "end-asc" ? "end-desc" : "end-asc")}>
+        <button type="button" className={`v3-sorth${on ? " is-on" : ""}`} onClick={() => setSort(sort === "name" ? "new" : "name")}>
           {label}<ArrowDown size={13} strokeWidth={2.4} className={`v3-sorth-ar${desc ? " is-up" : ""}`} aria-hidden="true" />
         </button>
       </span>
@@ -313,7 +305,7 @@ export default function Admin() {
 
   const rows = (
     <div className={`v3-urows${xwide ? " is-xwide" : ""}`} role="table" aria-label="Користувачі">
-      <div className="v3-uth" role="row"><span role="columnheader" className="v3-uth-who" aria-sort={sort === "name" ? "ascending" : "none"}><button type="button" role="checkbox" aria-checked={allPicked} aria-label="Вибрати всіх на сторінці" className={`v3-ckb${allPicked ? " is-on" : ""}`} disabled={!pickable.length} onClick={toggleAll}><Check size={12} strokeWidth={3.4} aria-hidden="true" /></button>{sortHead("Користувач", "name").props.children}</span><span role="columnheader">План</span>{sortHead("Наступна оплата", "end")}{xwide && <><span role="columnheader">Сплачено</span><span role="columnheader">AI сьогодні</span></>}<span role="columnheader">Статус</span><span role="columnheader" className="v3-r">Швидка дія</span></div>
+      <div className="v3-uth" role="row"><span role="columnheader" className="v3-uth-who" aria-sort={sort === "name" ? "ascending" : "none"}><button type="button" role="checkbox" aria-checked={allPicked} aria-label="Вибрати всіх на сторінці" className={`v3-ckb${allPicked ? " is-on" : ""}`} disabled={!pickable.length} onClick={toggleAll}><Check size={12} strokeWidth={3.4} aria-hidden="true" /></button>{sortHead("Користувач", "name").props.children}</span><span role="columnheader">План</span><span role="columnheader">Наступна оплата</span>{xwide && <><span role="columnheader">Сплачено</span><span role="columnheader">AI сьогодні</span></>}<span role="columnheader">Статус</span><span role="columnheader" className="v3-r">Швидка дія</span></div>
       {users === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-urow is-skel" aria-hidden="true"><span className="v3-uwho"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: 140 }} /></span><span className="v3-skel v3-skel-light" style={{ width: 70 }} /><span className="v3-skel v3-skel-light" style={{ width: 110 }} /><span className="v3-skel v3-skel-light" style={{ width: 80 }} /><span /></div>)
         : paged.length ? paged.map((u) => {
           const st = statusOf(u), ui = tagOf(u), p = planCell(u, settings), n = nextCell(u), sel = wide && selected?.id === u.id;
@@ -373,7 +365,7 @@ export default function Admin() {
         {counts.expiring > 0 && <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-fchip-n is-exp">{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
         {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
       </div>
-      <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближча оплата" }, { value: "end-desc", label: "Найпізніша оплата" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
+      <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
       <div className={`v3-ptr${pulling ? " is-drag" : ""}${pull >= 60 && !refreshing ? " is-ready" : ""}`} style={{ height: pull }} role="status" aria-live="polite">
         {refreshing ? <span className="v3-ptr-sp" aria-hidden="true" /> : <span className="v3-ptr-ar" aria-hidden="true">↓</span>}
         <span>{refreshing ? "Оновлюємо…" : pull >= 60 ? "Відпустіть, щоб оновити" : pull > 0 ? "Потягніть, щоб оновити" : ""}</span>
@@ -487,7 +479,7 @@ export default function Admin() {
                   </div>
                   {counts.expiring > 0 && <button type="button" className={`v3-fchip is-light${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-fchip-n is-exp">{counts.expiring}</span>Закінчуються за 7 днів{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
                   {noAge > 0 && <button type="button" className={`v3-fchip is-light${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік не підтверджено{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
-                  <Dropdown className="is-light v3-sort-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "end-asc", label: "Найближче завершення" }, { value: "end-desc", label: "Найпізніше завершення" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />
+                  <Dropdown className="is-light v3-sort-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />
                 </div>
                 {rows}
                 {picked.size > 0 && (

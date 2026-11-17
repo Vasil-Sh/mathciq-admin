@@ -711,3 +711,27 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 }
 .v3-mfilters .v3-fchip { min-height: 46px; }
 @media (prefers-reduced-motion: reduce) { .v3-fchip { transition: none; } .v3-fchip:active { transform: none; } }
+
+/* Календар на телефоні — вікно по центру над затемненою сторінкою (каталог · Екрани · модальні вікна) */
+.v3-date-scrim { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: rgba(5, 8, 13, .62); animation: v3-date-scrim .2s ease both; }
+.v3-date-scrim.is-closing { animation: v3-date-scrim-out .18s ease both; }
+@keyframes v3-date-scrim { from { opacity: 0; } }
+@keyframes v3-date-scrim-out { to { opacity: 0; } }
+.v3-date-pop.is-win { position: relative; inset: auto; top: auto; width: min(360px, 100%); min-width: 0; padding: 16px; border-radius: 24px; animation: v3-date-win .28s cubic-bezier(.2, .9, .25, 1.15) both; }
+.v3-date-pop.is-win.is-closing { animation: v3-date-win-out .18s ease both; }
+@keyframes v3-date-win { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+@keyframes v3-date-win-out { to { opacity: 0; transform: translateY(8px) scale(.97); } }
+.v3-date-pop.is-win .v3-date-head { gap: 8px; margin-bottom: 12px; }
+.v3-date-pop.is-win .v3-date-m { flex: 1; text-align: center; font-size: 16px; }
+.v3-date-pop.is-win .v3-date-head button { width: 40px; height: 40px; }
+.v3-date-pop.is-win .v3-date-grid { gap: 4px; font-size: 15px; }
+.v3-date-pop.is-win .v3-date-grid span, .v3-date-pop.is-win .v3-date-grid button { height: 42px; border-radius: 12px; }
+.v3-date-pop.is-win .v3-date-wd span { height: 28px; font-size: 12px; }
+.v3-date-clear { width: 100%; min-height: 44px; margin-top: 10px; border: 0; border-radius: 999px; background: #f1f4f9; color: #11151c; font: 600 14px Inter, sans-serif; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
+.v3-date-clear:active, .v3-date-pop.is-win .v3-date-head button:active { transform: scale(.96); }
+@media (hover: hover) { .v3-date-clear:hover { background: #e6ebf3; } }
+@media (prefers-reduced-motion: reduce) { .v3-date-scrim, .v3-date-pop.is-win { animation: none !important; } }
+/* «Оплати →» у блоці підписки: дії з грошима живуть на екрані Оплати */
+.v3-uc-paylink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.v3-uc-paylink svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+@media (hover: hover) { .v3-uc-paylink:hover svg { transform: translateX(4px); } }

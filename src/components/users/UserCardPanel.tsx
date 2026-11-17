@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
@@ -10,8 +10,7 @@ import { shortDate } from "@/lib/subscriptions";
 import { plural } from "@/lib/dashboardInsights";
 import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, planName, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
-import { AddPaymentDialog, CancelPaymentDialog, ReceiptDialog, type Payment } from "./PaymentDialogs";
-import { CancelSubscriptionDialog, GrantProDialog, RefundDialog } from "./UserActionDialogs";
+import { CancelPaymentDialog, ReceiptDialog, type Payment } from "./PaymentDialogs";
 
 type Note = { content: string; version: number; updatedBy: string | null; updatedAt: string | null };
 type Card = { note: Note; stats: { bets: number; wins: number; losses: number; profit: string }[] };
@@ -67,7 +66,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<PayWithRefund[]>([]);
   const [open, setOpen] = useState({ prof: false, bets: false, pay: false });
-  const [dlg, setDlg] = useState<null | "pay" | "pro" | "refund" | "cancel">(null);
   const [cancelling, setCancelling] = useState<Payment | null>(null);
   const [receipt, setReceipt] = useState<{ image: string; payment: Payment } | null>(null);
   const [receiptBusy, setReceiptBusy] = useState<string | null>(null);
@@ -102,12 +100,10 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const losses = (card?.stats || []).reduce((s, x) => s + Number(x.losses || 0), 0);
   const profit = (card?.stats || []).reduce((s, x) => s + Number(x.profit || 0), 0);
   const winRate = wins + losses ? Math.round((wins / (wins + losses)) * 100) : null;
-  const lastRecorded = payments.find((p) => p.status === "recorded") || null;
   const paidLine = user.paidCount ? `${money(user.paidTotal || 0)} · ${user.paidCount} ${plural(user.paidCount, "оплата", "оплати", "оплат")}` : user.refundedAmount ? "0 ₴ · повернення" : "0 ₴";
   const aiLimit = settings?.aiDailyLimit;
   const tg = telegramUrl(user.telegram);
   const role = user.isOwner ? "Овнер" : admin ? "Адміністратор" : "Користувач";
-  const canCancelSub = !admin && ["active", "soon", "urgent", "trial"].includes(st) && !endsWithoutRenewal(user);
   const off = online ? undefined : "Запрацює після відновлення зв’язку";
   const dl = user.endDate ? daysLeft(user) : null;
   const ringC = dl !== null && dl < 3 ? "#e5533d" : dl !== null && dl < 7 ? "#f0a03c" : "#00B24B";
@@ -162,7 +158,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         </div>
         {!admin && (
           <div className="v3-uc-sub-actions">
-            <button type="button" className="v3-btn v3-btn-white" disabled={!online} title={off} onClick={() => setDlg("pay")}>Додати оплату</button>
+            <Link className="v3-btn v3-btn-white v3-uc-paylink" to={`/payments?user=${encodeURIComponent(user.username)}`}>Оплати<ArrowRight size={15} aria-hidden="true" /></Link>
             <button type="button" className="v3-btn v3-btn-outline-white" disabled={!online || st === "blocked"} title={st === "blocked" ? "Під час самообмеження продовжувати не можна" : off} onClick={onExtend}>+{extendDays} днів</button>
           </div>
         )}
@@ -178,11 +174,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write v3-uc-wide${wr === "done" ? " is-done" : ""}`} disabled={!tgHandle} title={tgHandle ? `Відкрити чат з @${tgHandle} у Telegram` : "Telegram не вказано"} onClick={write}>
             {wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}
           </button>
-          {!admin && <>
-            <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro на N днів</button>
-            <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
-            <button type="button" className="v3-btn v3-btn-ghost-dark v3-uc-wide" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
-          </>}
         </div>
       ) : (
       <div className="v3-uc-foot v3-uc-foot-top v3-uc-grid2">
@@ -241,7 +232,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
         {!admin && (
           <Section id="pay" title="Оплати" summary={paidLine} open={open.pay} onToggle={() => setOpen({ ...open, pay: !open.pay })}
-            extra={<Link to={`/payments?q=${encodeURIComponent(user.username)}`} className="v3-uc-link">Уся історія →</Link>}>
+            extra={<Link to={`/payments?user=${encodeURIComponent(user.username)}`} className="v3-uc-link">Уся історія →</Link>}>
             {payments.length ? <ul className="v3-uc-pays">
               {payments.slice(0, 5).map((p) => {
                 const refunded = p.status === "refunded";
@@ -268,13 +259,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
       </>}
 
-      {!admin && !mobile && (
-        <div className="v3-uc-mini v3-uc-mini-bottom">
-          <button type="button" className="v3-mini" disabled={!online || st === "blocked"} title={off} onClick={() => setDlg("pro")}>Видати Pro</button>
-          <button type="button" className="v3-mini" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : off} onClick={() => setDlg("refund")}>Повернути гроші</button>
-          <button type="button" className="v3-mini is-danger" disabled={!online || !canCancelSub} title={!canCancelSub ? "Активної підписки немає" : off} onClick={() => setDlg("cancel")}>Скасувати підписку</button>
-        </div>
-      )}
 
       {mobile && (
         <Dialog open={more} onOpenChange={setMore}>
@@ -291,11 +275,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           </DialogContent>
         </Dialog>
       )}
-      <AddPaymentDialog open={dlg === "pay"} onOpenChange={(o) => setDlg(o ? "pay" : null)} userId={user.id} username={user.username} endDate={user.endDate} priceMonth={String(user.priceMonth || "")} onSaved={changed}
-        planLabel={plan.plan} onReceipt={async (id) => { try { const r = await api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`); const p = r.payments.find((x) => String(x.id) === String(id)); if (p) openReceipt(p); } catch (e) { toast.error((e as Error).message); } }} />
-      <GrantProDialog user={user} open={dlg === "pro"} onOpenChange={(o) => setDlg(o ? "pro" : null)} onDone={changed} />
-      <RefundDialog user={user} payment={lastRecorded} open={dlg === "refund"} onOpenChange={(o) => setDlg(o ? "refund" : null)} onDone={changed} />
-      <CancelSubscriptionDialog user={user} open={dlg === "cancel"} onOpenChange={(o) => setDlg(o ? "cancel" : null)} onDone={changed} />
       <CancelPaymentDialog payment={cancelling} onOpenChange={(o) => { if (!o) setCancelling(null); }} onDone={changed} />
       <ReceiptDialog data={receipt} username={user.username} onOpenChange={(o) => { if (!o) setReceipt(null); }} />
     </aside>

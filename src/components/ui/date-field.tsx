@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 const MONTHS_G = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
@@ -19,6 +20,8 @@ interface Props {
 /**
  * Date field with a calendar that grows out of the field (catalog · Inputs · list and calendar):
  * the chevron turns, days come in one after another, the month slides the way of the arrow.
+ * On a phone the calendar opens as a centred window over a dimmed page (catalog · Screens · modal windows),
+ * so it never hangs off the edge of a narrow field.
  */
 export function DateField({ id, value, onChange, min, max, required, labelledBy }: Props) {
   const [open, setOpen] = useState(false);
@@ -27,41 +30,52 @@ export function DateField({ id, value, onChange, min, max, required, labelledBy 
   const [dir, setDir] = useState(1);
   const [run, setRun] = useState(0);
   const box = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  const [asWin, setAsWin] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const close = () => { if (!asWin) { setOpen(false); return; } setClosing(true); window.setTimeout(() => { setClosing(false); setOpen(false); }, 180); };
+  const toggle = () => { if (open) { close(); return; } setAsWin(window.matchMedia("(max-width: 720px)").matches); setOpen(true); };
   useEffect(() => { if (open) { const b = value || min || new Date().toISOString().slice(0, 10); setView({ y: +b.slice(0, 4), m: +b.slice(5, 7) - 1 }); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
-    const off = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setOpen(false); } };
+    const off = (e: MouseEvent) => { const t = e.target as Node; if (box.current?.contains(t) || pop.current?.contains(t)) return; if (!asWin) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
     document.addEventListener("mousedown", off); document.addEventListener("keydown", esc, true);
     return () => { document.removeEventListener("mousedown", off); document.removeEventListener("keydown", esc, true); };
-  }, [open]);
+  }, [open, asWin]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open && asWin) { const o = document.body.style.overflow; document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = o; }; } }, [open, asWin]);
   const move = (d: number) => { setDir(d); setRun((r) => r + 1); setView((v) => { const m = v.m + d; return { y: v.y + Math.floor(m / 12), m: ((m % 12) + 12) % 12 }; }); };
   const first = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
   const days = new Date(view.y, view.m + 1, 0).getDate();
   const shown = value ? value.split("-").reverse().join(".") : "Оберіть дату";
   const anim = `${dir > 0 ? "is-r" : "is-l"}${run % 2 ? "2" : ""}`;
+  const cal = (win: boolean) => (
+    <div ref={pop} className={`v3-date-pop${win ? " is-win" : ""}${win && closing ? " is-closing" : ""}`} role="dialog" aria-modal={win || undefined} aria-label="Вибір дати">
+      <div className="v3-date-head">
+        <button type="button" aria-label="Попередній місяць" onClick={() => move(-1)}><ChevronLeft size={win ? 16 : 14} /></button>
+        <strong key={`h${run}`} className={`v3-date-m ${anim}`}>{MONTHS[view.m]} {view.y}</strong>
+        <button type="button" aria-label="Наступний місяць" onClick={() => move(1)}><ChevronRight size={win ? 16 : 14} /></button>
+        {win && <button type="button" className="v3-date-x" aria-label="Закрити" onClick={close}><X size={16} /></button>}
+      </div>
+      <div className="v3-date-grid v3-date-wd" aria-hidden="true">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d) => <span key={d}>{d}</span>)}</div>
+      <div key={`g${run}`} className={`v3-date-grid ${anim}`}>
+        {Array.from({ length: first }, (_, i) => <span key={`b${i}`} />)}
+        {Array.from({ length: days }, (_, k) => {
+          const d = k + 1, v = iso(view.y, view.m, d), off = (!!min && v < min) || (!!max && v > max), on = v === value;
+          return <button key={v} type="button" className={on ? "is-on" : ""} disabled={off} aria-pressed={on} aria-label={`${d} ${MONTHS_G[view.m]} ${view.y}`} style={{ animationDelay: `${Math.min(k, 20) * 10}ms` }} onClick={() => { onChange(v); close(); }}>{d}</button>;
+        })}
+      </div>
+      {win && value && <button type="button" className="v3-date-clear" onClick={() => { onChange(""); close(); }}>Очистити дату</button>}
+    </div>
+  );
   return (
     <div className="v3-date" ref={box}>
-      <button type="button" id={id} className={`v3-date-btn${open ? " is-on" : ""}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy} aria-required={required} onClick={() => setOpen(!open)}>
+      <button type="button" id={id} className={`v3-date-btn${open ? " is-on" : ""}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy} aria-required={required} onClick={toggle}>
         <span>{shown}</span><ChevronDown size={14} strokeWidth={2.4} aria-hidden="true" />
       </button>
-      {open && (
-        <div className="v3-date-pop" role="dialog" aria-label="Вибір дати">
-          <div className="v3-date-head">
-            <button type="button" aria-label="Попередній місяць" onClick={() => move(-1)}><ChevronLeft size={14} /></button>
-            <strong key={`h${run}`} className={`v3-date-m ${anim}`}>{MONTHS[view.m]} {view.y}</strong>
-            <button type="button" aria-label="Наступний місяць" onClick={() => move(1)}><ChevronRight size={14} /></button>
-          </div>
-          <div className="v3-date-grid v3-date-wd" aria-hidden="true">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d) => <span key={d}>{d}</span>)}</div>
-          <div key={`g${run}`} className={`v3-date-grid ${anim}`}>
-            {Array.from({ length: first }, (_, i) => <span key={`b${i}`} />)}
-            {Array.from({ length: days }, (_, k) => {
-              const d = k + 1, v = iso(view.y, view.m, d), off = (!!min && v < min) || (!!max && v > max), on = v === value;
-              return <button key={v} type="button" className={on ? "is-on" : ""} disabled={off} aria-pressed={on} aria-label={`${d} ${MONTHS_G[view.m]} ${view.y}`} style={{ animationDelay: `${Math.min(k, 20) * 10}ms` }} onClick={() => { onChange(v); setOpen(false); }}>{d}</button>;
-            })}
-          </div>
-        </div>
-      )}
+      {open && (asWin
+        ? createPortal(<div className={`v3-date-scrim${closing ? " is-closing" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>{cal(true)}</div>, (box.current?.closest("[role=\"dialog\"]") as HTMLElement | null) || document.body)
+        : cal(false))}
     </div>
   );
 }

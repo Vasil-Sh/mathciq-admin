@@ -160,7 +160,8 @@ button.v3-pay-row { cursor: pointer; }
 .v3-pick-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow: auto; overscroll-behavior: contain; }
 .v3-pick-list li { animation: v3-pay-in .3s cubic-bezier(.2, .8, .2, 1) backwards; }
 .v3-pick-list button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border: 0; border-radius: 14px; background: transparent; color: var(--v3-ink); text-align: left; font: 400 14px Inter, sans-serif; cursor: pointer; transition: background-color .15s; }
-.v3-pick-list button > span { flex: 1; min-width: 0; }
+.v3-pick-list button > span:not(.v3-av) { flex: 1; min-width: 0; }
+.v3-pick-list .v3-av { flex: none; }
 .v3-pick-list strong { display: block; font-weight: 600; }
 .v3-pick-list small { color: var(--v3-ink-muted); font-size: 12px; }
 .v3-pick-list svg { color: #8a93a2; transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
@@ -207,6 +208,7 @@ button.v3-pay-row { cursor: pointer; }
   .v3-pay-tab { min-width: 0; padding: 0 10px 0 6px; font-size: 13px; }
   .v3-pay-main { flex-direction: column; align-items: stretch; }
   .v3-pay-aside { position: static; }
+  .v3-pay-list, .v3-pay-aside { flex: none; }
   .v3-pay-zero { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
@@ -246,3 +248,87 @@ button.v3-pay-row { cursor: pointer; }
 }
 .v3-pay-sheet { padding: 10px 20px 28px !important; }
 @media (max-width: 720px) { .v3-pay-note { display: none; } }
+
+/* Поля в темній панелі «Новий промокод»: без білого фону й чужих відступів при фокусі */
+.v3-pay-new .v3-pay-inp input, .v3-pay-new .v3-pay-inp input:focus { min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; color: var(--v3-text) !important; }
+.v3-pay-new .v3-pay-inp input::placeholder { color: #6f7889; }
+.v3-pay-new .v3-date-btn { background: var(--v3-card2); border-color: rgba(255, 255, 255, .12); color: var(--v3-text); }
+.v3-pay-new .v3-date-btn.is-on { border-color: var(--v3-nav); }
+/* «Згенерувати» в полі коду (Typing Text, каталог · Решта) */
+.v3-pay-gen { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; min-height: 32px; margin-right: -8px; padding: 0 10px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .08); color: #c3c9d4; font: 600 12px Inter, sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .2s, color .2s, transform .15s ease-out; }
+.v3-pay-gen svg { transition: transform .45s cubic-bezier(.2, .9, .25, 1.3); }
+.v3-pay-gen.is-run svg { transform: rotate(180deg); }
+.v3-pay-gen:active { transform: scale(.96); }
+/* «Відкрити оплати»: текст і стрілка в один рядок */
+.v3-pay-go { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.v3-pay-go svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+/* Порожній стан на темному тлі (телефон: список без білої картки) */
+.v3-pay-m .v3-pay-empty strong { color: var(--v3-text); }
+.v3-pay-m .v3-pay-empty { color: var(--v3-muted); }
+@media (hover: hover) {
+  .v3-pay-gen:hover { background: rgba(255, 255, 255, .14); color: #fff; }
+  .v3-pay-gen:hover svg { transform: rotate(180deg); }
+  .v3-pay-go:hover svg { transform: translateX(4px); }
+}
+@media (max-width: 720px) {
+  /* вкладки: ширина за вмістом, щоб «Повернення» не обрізалось */
+  .v3-pay-tabs { grid-template-columns: auto auto auto; justify-content: stretch; gap: 6px; }
+  .v3-pay-tab { gap: 6px; padding: 0 12px 0 5px; font-size: 13px; }
+  .v3-pay-tab-n { min-width: 22px; height: 22px; padding: 0 5px; font-size: 12px; }
+  .v3-pay-empty { padding: 28px 12px; }
+}
+@media (max-width: 380px) { .v3-pay-tab { padding-right: 9px; letter-spacing: -.01em; } }
+@media (prefers-reduced-motion: reduce) { .v3-pay-gen svg { transition: none; } }
+
+/* «Очікуються оплати» (Списки 04: рядки по черзі; Кнопки: плюс повертається) */
+.v3-pay-due { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
+.v3-pay-due-h { display: flex; align-items: flex-start; gap: 12px; }
+.v3-pay-due-h > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.v3-pay-due-h strong { font-size: 17px; font-weight: 600; }
+.v3-pay-due-h span { color: var(--v3-muted); font-size: 13px; line-height: 1.45; }
+.v3-pay-due-ic { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; background: rgba(240, 160, 60, .14); color: #f0a03c; }
+.v3-pay-due-n { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; box-sizing: border-box; border-radius: 999px; background: #f0a03c; color: #11151c !important; font-size: 13px !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.v3-pay-due-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.v3-pay-due-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av who tag" "av who btn"; align-items: center; gap: 6px 10px; padding: 12px; border-radius: 16px; background: var(--v3-card2); animation: v3-pay-in .36s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-pay-due-list .v3-av { grid-area: av; flex: none; }
+.v3-pay-due-who { grid-area: who; min-width: 0; }
+.v3-pay-due-who strong { display: block; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-pay-due-who small { display: block; color: var(--v3-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-pay-due-list .v3-tag { grid-area: tag; justify-self: end; white-space: nowrap; }
+.v3-pay-due-list .v3-btn { grid-area: btn; justify-self: end; }
+.v3-pay-due-list .v3-btn svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+.v3-pay-due-more { align-self: flex-start; }
+/* Оплати одного користувача: картка з діями (перенесено з картки користувача) */
+.v3-pay-user { display: flex; flex-direction: column; gap: 16px; padding: 18px; animation: v3-pay-in .4s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-pay-user-id { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.v3-pay-user-id > div { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 2px; }
+.v3-pay-user-id > div > strong { font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+.v3-pay-user-id > div > span { color: var(--v3-muted); font-size: 13px; }
+
+.v3-pay-user-x { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: #c3c9d4; font: 600 13px Inter, sans-serif; cursor: pointer; transition: background-color .2s, color .2s, transform .15s ease-out; }
+.v3-pay-user-x svg { transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.v3-pay-user-x:active { transform: scale(.96); }
+.v3-pay-user-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.v3-pay-mf.is-one { grid-template-columns: 1fr; }
+@media (hover: hover) {
+  .v3-pay-due-list .v3-btn:not(:disabled):hover svg { transform: rotate(90deg); }
+  .v3-pay-user-x:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+  .v3-pay-user-x:hover svg { transform: rotate(90deg); }
+}
+@media (max-width: 1179px) { .v3-pay-due-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3-pay-user-acts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) {
+  .v3-pay-due { padding: 16px; }
+  .v3-pay-due-list { grid-template-columns: 1fr; }
+  .v3-pay-user-acts { grid-template-columns: 1fr; }
+  .v3-pay-user-acts .v3-btn-primary { order: -1; }
+}
+@media (prefers-reduced-motion: reduce) { .v3-pay-due-list li, .v3-pay-user { animation: none; } }
+@media (max-width: 720px) {
+  .v3-pay-due { gap: 12px; }
+  .v3-pay-due-h span:not(.v3-pay-due-n) { display: none; }
+  .v3-pay-due-h > div { align-self: center; }
+  .v3-pay-due-list li { grid-template-areas: "av who btn" "av tag btn"; gap: 4px 10px; padding: 10px 10px 10px 12px; }
+  .v3-pay-due-list .v3-tag { justify-self: start; }
+  .v3-pay-due-list .v3-btn { align-self: center; }
+}
+@media (max-width: 720px) { .v3-pay .v3-hero-row { flex-wrap: nowrap; align-items: flex-end; } .v3-pay .v3-hero-row > div:first-child { min-width: 0; } }

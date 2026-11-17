@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Plus, Receipt, RotateCcw, Search, SearchX, Tag, WifiOff, X } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -11,14 +11,14 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AddPaymentDialog, ReceiptDialog, type Payment } from "@/components/users/PaymentDialogs";
-import { RefundDialog } from "@/components/users/UserActionDialogs";
+import { CancelSubscriptionDialog, GrantProDialog, RefundDialog } from "@/components/users/UserActionDialogs";
 import { api } from "@/lib/apiClient";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { isAdmin, planCell } from "@/lib/usersModel";
+import { daysLeft, endsWithoutRenewal, expiringDays, isAdmin, planCell, statusOf, STATUS_UI, tagOf } from "@/lib/usersModel";
 import {
   dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
   PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode,
@@ -75,14 +75,22 @@ export default function Payments() {
   const [receiptBusy, setReceiptBusy] = useState("");
   const [shown, setShown] = useState(12);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [params, setParams] = useSearchParams();
+  const who = (params.get("user") || "").replace(/^@/, "");
+  const [userDlg, setUserDlg] = useState<null | "pro" | "refund" | "cancel">(null);
 
   const load = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setLoading(true);
     try {
-      const [cur, prev] = await Promise.all([fetchPayments(month), fetchPayments(shiftMonth(month, -1))]);
-      setRows(cur.payments); setPrevRows(prev.payments); setError("");
+      if (who) {
+        const all = await fetchPayments("");
+        setRows(all.payments.filter((p) => (p.username || "").toLowerCase() === who.toLowerCase())); setPrevRows([]); setError("");
+      } else {
+        const [cur, prev] = await Promise.all([fetchPayments(month), fetchPayments(shiftMonth(month, -1))]);
+        setRows(cur.payments); setPrevRows(prev.payments); setError("");
+      }
     } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
-  }, [month]);
+  }, [month, who]);
   const loadSide = useCallback(() => {
     fetchPayments("", "refunded").then((r) => setRefunds(r.payments)).catch(() => setRefunds([]));
     fetchPromoCodes().then(setPromos).catch(() => setPromos([]));
@@ -103,7 +111,7 @@ export default function Payments() {
   const cnt = (f: Filt) => all.filter((p) => f === "all" || p.status === f).length;
   const list = useMemo(() => {
     const s = q.trim().toLowerCase().replace(/^[@№#]/, "");
-    let r = all.filter((p) => (filt === "all" || p.status === filt) && (!s || p.id.includes(s) || p.username.toLowerCase().includes(s) || (p.promoCode || "").toLowerCase().includes(s)));
+    let r = all.filter((p) => (filt === "all" || p.status === filt) && (!s || String(p.id).includes(s) || (p.username || "").toLowerCase().includes(s) || (p.promoCode || "").toLowerCase().includes(s)));
     const by: Record<Sort, (a: PaymentRow, b: PaymentRow) => number> = {
       "no-desc": (a, b) => Number(b.id) - Number(a.id), "no-asc": (a, b) => Number(a.id) - Number(b.id),
       "sum-desc": (a, b) => num(b) - num(a) || Number(b.id) - Number(a.id), "sum-asc": (a, b) => num(a) - num(b) || Number(b.id) - Number(a.id),
@@ -133,6 +141,7 @@ export default function Payments() {
     { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", d: avg && prevAvg ? pct(avg, prevAvg) : null, note: plans, go: undefined },
     { k: "promo", label: "За промокодами", value: String(withPromo.length), d: pct(withPromo.length, prevPromo), note: withPromo.length ? `${plural(withPromo.length, "використання", "використання", "використань")}${topPromo ? ` · ${topPromo}` : ""}` : "промокоди не застосовували", go: () => setTab("promo") },
   ];
+  if (who) { sums.forEach((x) => { x.d = null; }); sums[0].label = "Сплачено загалом"; }
   const sumOn = tab === "promo" ? "promo" : filt === "refunded" ? "ref" : filt === "all" ? "recv" : "";
 
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(kyivMonth(), -i));
@@ -142,7 +151,12 @@ export default function Payments() {
     { key: "ref", label: "Повернення", n: refunds ? refunds.length : null },
     { key: "promo", label: "Промокоди", n: promos ? promos.length : null },
   ];
-  const emptyPlatform = rows !== null && !error && !all.length && !prevRows.length && month === kyivMonth() && (refunds?.length ?? 0) === 0;
+  const emptyPlatform = !who && rows !== null && !error && !all.length && !prevRows.length && month === kyivMonth() && (refunds?.length ?? 0) === 0;
+  const whoUser = who ? users.find((u) => (u.username || "").toLowerCase() === who.toLowerCase()) : undefined;
+  const lastRecorded = who ? all.filter((p) => p.status === "recorded").sort((a, b) => Number(b.id) - Number(a.id))[0] : undefined;
+  const clearWho = () => { const n = new URLSearchParams(params); n.delete("user"); setParams(n, { replace: true }); setSelId(null); setRk((x) => x + 1); };
+  // «Очікуються оплати»: підписки й пробні, що закінчуються за 7 днів (найближчі — першими)
+  const due = useMemo(() => users.filter((u) => expiringDays(u) !== null && !endsWithoutRenewal(u)).sort((a, b) => daysLeft(a) - daysLeft(b)), [users]);
 
   function exportCsv() {
     downloadCsv(`matchiq-payments-${month}.csv`, ["№", "Користувач", "Сума, ₴", "Дата оплати", "Період з", "Період до", "Статус", "Спосіб", "Промокод", "Записав", "Повернено, ₴", "Причина"],
@@ -215,6 +229,51 @@ export default function Payments() {
     );
   };
 
+  const dueAmount = (u: AdminUserOverview) => { if (u.plan === "trial" && !u.proUntil) { const tp = settings?.trialPlan; const v = tp === "pro" ? settings?.proPrice : settings?.basicPrice; return v ? money(Number(v)) : ""; } const v = Number(u.priceMonth) || (u.plan === "pro" ? settings?.proPrice : settings?.basicPrice); return v ? money(Number(v)) : ""; };
+  const dueWhen = (d: number) => (d <= 0 ? "сьогодні" : d === 1 ? "завтра" : `через ${d} ${plural(d, "день", "дні", "днів")}`);
+  const [dueAll, setDueAll] = useState(false);
+  const dueBlock = due.length > 0 && (
+    <section className="v3-dcard v3-pay-due" aria-label="Очікуються оплати">
+      <div className="v3-pay-due-h">
+        <span className="v3-pay-due-ic" aria-hidden="true"><CalendarClock size={18} /></span>
+        <div><strong>Очікуються оплати</strong><span>Підписка або пробний закінчуються за 7 днів — запишіть оплату, коли гроші прийдуть.</span></div>
+        <span className="v3-pay-due-n">{due.length}</span>
+      </div>
+      <ul className="v3-pay-due-list">
+        {due.slice(0, dueAll ? due.length : wide ? 6 : 3).map((u, i) => {
+          const d = daysLeft(u); const tag = tagOf(u);
+          return (
+            <li key={u.id} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
+              <UserAvatar username={u.username} telegram={u.telegram} />
+              <span className="v3-pay-due-who"><strong>@{u.username}</strong><small>{planCell(u, settings).plan} · {dShort(u.endDate)}{dueAmount(u) ? ` · ${dueAmount(u)}` : ""}</small></span>
+              <span className={`v3-tag ${tag.cls}`}>{dueWhen(d)}</span>
+              <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" disabled={!online} onClick={() => setPayFor(u)} aria-label={`Записати оплату для @${u.username}`}><Plus size={14} aria-hidden="true" />Записати</button>
+            </li>
+          );
+        })}
+      </ul>
+      {due.length > (wide ? 6 : 3) && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm v3-pay-due-more" onClick={() => setDueAll(!dueAll)}>{dueAll ? "Згорнути" : `Показати всіх ${due.length}`}</button>}
+    </section>
+  );
+  const userPanel = who && (
+    <section className="v3-dcard v3-pay-user" aria-label={`Оплати @${who}`}>
+      <div className="v3-pay-user-id">
+        <UserAvatar username={who} telegram={whoUser?.telegram} className="v3-av-lg" />
+        <div><strong>@{who}</strong><span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span></div>
+        {whoUser && <span className={`v3-tag ${STATUS_UI[statusOf(whoUser)].cls}`}>{STATUS_UI[statusOf(whoUser)].label}</span>}
+        <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Показати оплати всіх користувачів"><X size={14} aria-hidden="true" />Усі оплати</button>
+      </div>
+      {whoUser && !isAdmin(whoUser) && (
+        <div className="v3-pay-user-acts">
+          <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => setPayFor(whoUser)}><Plus size={16} aria-hidden="true" />Записати оплату</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || statusOf(whoUser) === "blocked"} onClick={() => setUserDlg("pro")}><Crown size={15} aria-hidden="true" />Видати Pro на N днів</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : undefined} onClick={() => setUserDlg("refund")}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-cx" disabled={!online || !["active", "soon", "urgent", "trial"].includes(statusOf(whoUser)) || endsWithoutRenewal(whoUser)} onClick={() => setUserDlg("cancel")}>Скасувати підписку</button>
+        </div>
+      )}
+    </section>
+  );
+
   const emptyFiltered = (
     <div className="v3-pay-empty">
       <span className="v3-empty-ic v3-float" aria-hidden="true"><SearchX size={22} /></span>
@@ -228,7 +287,7 @@ export default function Payments() {
     <div className="v3-wcard v3-pay-list" aria-busy={loading}>
       <div className="v3-pay-tools">
         <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№ оплати, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-        <Dropdown className="is-light" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setSelId(null); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />
+        {!who && <Dropdown className="is-light" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setSelId(null); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
         <div className="v3-seg v3-seg-soft" role="group" aria-label="Статус">
           <PillTrack active={filt} />
           {segs.map((s) => <button key={s.key} type="button" className={filt === s.key ? "is-on" : ""} aria-pressed={filt === s.key} onClick={() => { setFilt(s.key); setRk((x) => x + 1); }}>{s.label} <span className="v3-seg-n">{cnt(s.key)}</span></button>)}
@@ -254,7 +313,7 @@ export default function Payments() {
             </button>
           );
         })}</div> : emptyFiltered}
-      <div className="v3-pay-foot"><span>Показано <b>{list.length}</b> із <b>{all.length}</b> за {monthShort(month)}</span><span>Разом: <b><RollingNumber key={`t-${recSum}`} text={money(recSum)} /></b> · повернено {money(refSum)}</span></div>
+      <div className="v3-pay-foot"><span>Показано <b>{list.length}</b> із <b>{all.length}</b> {who ? "за весь час" : `за ${monthShort(month)}`}</span><span>Разом: <b><RollingNumber key={`t-${recSum}`} text={money(recSum)} /></b> · повернено {money(refSum)}</span></div>
     </div>
   );
 
@@ -262,8 +321,8 @@ export default function Payments() {
   const mobileList = (
     <div className="v3-pay-m">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-      <div className="v3-pay-mf">
-        <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />
+      <div className={`v3-pay-mf${who ? " is-one" : ""}`}>
+        {!who && <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
         <Dropdown className="v3-mselect-dd" ariaLabel="Статус" value={filt} onChange={(v) => { setFilt(v as Filt); setRk((x) => x + 1); }} options={segs.map((s) => ({ value: s.key, label: `${s.key === "all" ? "Усі статуси" : s.label} · ${cnt(s.key)}` }))} />
       </div>
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
@@ -300,7 +359,7 @@ export default function Payments() {
         <strong className="v3-pay-aside-t">Як записати повернення</strong>
         <ol className="v3-pay-steps"><li>Поверніть гроші людині (картка, переказ).</li><li>Відкрийте оплату → «Повернути гроші».</li><li>Повністю або частково, причина обов’язкова.</li></ol>
         <div className="v3-pay-box">Повернення за {monthShort(month)}: <b>{money(refSum)}</b> · {monthShort(shiftMonth(month, -1))} {money(prevRef)}. Кожне потрапляє в журнал дій.</div>
-        <button type="button" className="v3-btn v3-btn-ghost-dark v3-uc-link" onClick={() => setTab("pay")}>Відкрити оплати <ArrowRight size={14} aria-hidden="true" /></button>
+        <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-go" onClick={() => setTab("pay")}>Відкрити оплати<ArrowRight size={14} aria-hidden="true" /></button>
       </aside>
     </section>
   );
@@ -310,7 +369,7 @@ export default function Payments() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Оплати</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Ручний облік: записи, повернення й промокоди. Гроші приймаєте й повертаєте поза адмінкою. Час — київський.</span><span className="v3-only-mobile">{monthName(month).split(" ")[0]} · {money(recSum)} · {rec.length} {plural(rec.length, "оплата", "оплати", "оплат")}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">{who ? `Усі оплати @${who} за весь час: запис, Pro на N днів, повернення й скасування підписки — тут.` : "Ручний облік: записи, повернення й промокоди. Гроші приймаєте й повертаєте поза адмінкою. Час — київський."}</span><span className="v3-only-mobile">{who ? `@${who}` : monthName(month).split(" ")[0]} · {money(recSum)} · {rec.length} {plural(rec.length, "оплата", "оплати", "оплат")}</span></p>
         </div>
         <div className="v3-chips">
           {!emptyPlatform && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length} />}
@@ -356,6 +415,8 @@ export default function Payments() {
           ))}
         </section>
 
+        {who ? userPanel : dueBlock}
+
         <div className="v3-pay-tabs" role="tablist" aria-label="Розділи оплат">
           <PillTrack active={tab} />
           {tabs.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{t.n ?? "…"}</span>{t.label}</button>)}
@@ -377,8 +438,11 @@ export default function Payments() {
 
       <PickUserDialog open={pick} users={users} onOpenChange={setPick} onPick={(u) => { setPick(false); setPayFor(u); }} />
       {payFor && <AddPaymentDialog open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} userId={payFor.id} username={payFor.username} endDate={payFor.endDate} priceMonth={String(payFor.priceMonth || "")} planLabel={planCell(payFor, null).plan}
-        onSaved={async () => { const before = new Set(all.map((p) => p.id)); setMonth(kyivMonth()); const r = await fetchPayments(kyivMonth()).catch(() => null); if (r) { setRows(r.payments); const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
+        onSaved={async () => { const before = new Set(all.map((p) => p.id)); if (!who) setMonth(kyivMonth()); const r = await fetchPayments(who ? "" : kyivMonth()).catch(() => null); if (r) { const got = who ? r.payments.filter((p) => (p.username || "").toLowerCase() === who.toLowerCase()) : r.payments; setRows(got); r.payments = got; const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
       {refundFor && userOf(refundFor) && <RefundDialog user={userOf(refundFor)!} payment={asPayment(refundFor)} open={!!refundFor} onOpenChange={(o) => { if (!o) setRefundFor(null); }} onDone={() => { load({ quiet: true }); loadSide(); }} />}
+      {whoUser && <GrantProDialog user={whoUser} open={userDlg === "pro"} onOpenChange={(o) => setUserDlg(o ? "pro" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
+      {whoUser && <RefundDialog user={whoUser} payment={lastRecorded ? asPayment(lastRecorded) : null} open={userDlg === "refund"} onOpenChange={(o) => setUserDlg(o ? "refund" : null)} onDone={() => { load({ quiet: true }); loadSide(); fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
+      {whoUser && <CancelSubscriptionDialog user={whoUser} open={userDlg === "cancel"} onOpenChange={(o) => setUserDlg(o ? "cancel" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
       <ReceiptDialog data={receipt} username={receipt?.username || ""} onOpenChange={(o) => { if (!o) setReceipt(null); }} />
     </div>
   );
@@ -389,7 +453,7 @@ function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; 
   const [q, setQ] = useState("");
   useEffect(() => { if (open) setQ(""); }, [open]);
   const s = q.trim().toLowerCase().replace(/^@/, "");
-  const list = users.filter((u) => !isAdmin(u) && (!s || u.username.toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s))).slice(0, 8);
+  const list = users.filter((u) => !isAdmin(u) && (!s || (u.username || "").toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s))).slice(0, 8);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="v3-modal sm:max-w-[480px]">
@@ -412,7 +476,7 @@ function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; 
 
 /** Промокоди: список із заповненням смужок, увімкнення з «Скасувати», створення нового. */
 function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void }) {
-  const [code, setCode] = useState("NEWYEAR27");
+  const [code, setCode] = useState("");
   const [pctV, setPctV] = useState("25");
   const [plan, setPlan] = useState<"basic" | "pro">("pro");
   const [from, setFrom] = useState("");
@@ -421,7 +485,21 @@ function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoC
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<{ msg: string; n: number } | null>(null);
   const [fresh, setFresh] = useState("");
+  const [typing, setTyping] = useState(false);
   const today = kyivToday();
+  // «Згенерувати»: код друкується по літері (каталог · Решта · Typing Text)
+  function generate() {
+    if (typing) return;
+    const taken = new Set((promos || []).map((p) => p.code.toUpperCase()));
+    const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let c = "";
+    do { c = "MIQ" + Array.from({ length: 5 }, () => abc[Math.floor(Math.random() * abc.length)]).join(""); } while (taken.has(c));
+    setErr(null);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setCode(c); return; }
+    setTyping(true); setCode("");
+    let i = 0;
+    const t = window.setInterval(() => { i += 1; setCode(c.slice(0, i)); if (i >= c.length) { window.clearInterval(t); setTyping(false); } }, 45);
+  }
   const exists = (promos || []).some((p) => p.code.toUpperCase() === code.trim().toUpperCase());
   async function create() {
     const c = code.trim().toUpperCase();
@@ -459,7 +537,7 @@ function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoC
       </div>
       <aside className="v3-dcard v3-pay-aside v3-pay-new">
         <strong className="v3-pay-aside-t">Новий промокод</strong>
-        <div className="v3-field"><label htmlFor="pc-code">Код</label><span key={err?.n || 0} className={`v3-pay-inp${err ? " is-bad" : ""}`}><input id="pc-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/\s/g, "")); setErr(null); }} maxLength={100} autoComplete="off" aria-invalid={!!err} aria-describedby="pc-err" /></span>{err && <span id="pc-err" className="v3-field-error" role="alert">{err.msg}</span>}</div>
+        <div className="v3-field"><label htmlFor="pc-code">Код</label><span key={err?.n || 0} className={`v3-pay-inp${err ? " is-bad" : ""}${typing ? " is-typing" : ""}`}><input id="pc-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/\s/g, "")); setErr(null); }} maxLength={100} autoComplete="off" placeholder="Напр. NEWYEAR27" aria-invalid={!!err} aria-describedby="pc-err" /><button type="button" className={`v3-pay-gen${typing ? " is-run" : ""}`} onClick={generate} aria-label="Згенерувати код"><Shuffle size={14} aria-hidden="true" />Згенерувати</button></span>{err && <span id="pc-err" className="v3-field-error" role="alert">{err.msg}</span>}</div>
         <div className="v3-field"><label htmlFor="pc-pct">Знижка, %</label><span className="v3-pay-inp"><input id="pc-pct" inputMode="numeric" value={pctV} onChange={(e) => setPctV(e.target.value.replace(/\D/g, "").slice(0, 3))} /><small>{Number(pctV) > 0 && Number(pctV) <= 100 ? `600 → ${Math.round(600 * (100 - Number(pctV)) / 100)} ₴` : ""}</small></span></div>
         <div className="v3-field"><span className="v3-label" id="pc-plan">План</span><div className="v3-seg v3-pay-dseg" role="group" aria-labelledby="pc-plan"><PillTrack active={plan} />{(["basic", "pro"] as const).map((k) => <button key={k} type="button" className={plan === k ? "is-on" : ""} aria-pressed={plan === k} onClick={() => setPlan(k)}>{PLAN_LABEL[k]}</button>)}</div></div>
         <div className="v3-pay-2"><div className="v3-field"><label id="pc-from">Діє з</label><DateField id="pc-from-i" labelledBy="pc-from" value={from} onChange={setFrom} /></div><div className="v3-field"><label id="pc-to">До</label><DateField id="pc-to-i" labelledBy="pc-to" value={to} min={from || undefined} onChange={setTo} /></div></div>
