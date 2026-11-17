@@ -231,9 +231,11 @@ export default function Payments() {
     <section className="v3-dcard v3-pay-user" aria-label={`Оплати @${who}`}>
       <div className="v3-pay-user-id">
         <UserAvatar username={who} telegram={whoUser?.telegram} className="v3-av-lg" />
-        <div><strong>@{who}</strong><span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span></div>
-        {whoUser && <span className={`v3-tag ${STATUS_UI[statusOf(whoUser)].cls}`}>{STATUS_UI[statusOf(whoUser)].label}</span>}
-        <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Показати оплати всіх користувачів"><X size={14} aria-hidden="true" />Усі оплати</button>
+        <div>
+          <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && <span className={`v3-tag ${STATUS_UI[statusOf(whoUser)].cls}`}>{STATUS_UI[statusOf(whoUser)].label}</span>}</span>
+          <span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
+        </div>
+        <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Закрити — показати оплати всіх" title="Оплати всіх"><X size={16} aria-hidden="true" /></button>
       </div>
       {whoUser && !isAdmin(whoUser) && (
         <div className="v3-pay-user-acts">

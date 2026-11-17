@@ -1,23 +1,15 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { api } from "@/lib/apiClient";
 import UserAvatar from "@/components/UserAvatar";
-import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { shortDate } from "@/lib/subscriptions";
 import { plural } from "@/lib/dashboardInsights";
-import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, planName, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
+import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
-import { CancelPaymentDialog, ReceiptDialog, type Payment } from "./PaymentDialogs";
 
-type Note = { content: string; version: number; updatedBy: string | null; updatedAt: string | null };
-type Card = { note: Note; stats: { bets: number; wins: number; losses: number; profit: string }[] };
-type PayWithRefund = Payment & { refundedAmount?: string | null };
 
 const money = (n: number) => `${Math.round(n).toLocaleString("uk-UA")} ₴`;
-const signed = (n: number) => `${n >= 0 ? "+" : "−"}${money(Math.abs(n))}`;
 const telegramUrl = (t?: string) => { const h = (t || "").replace(/^https?:\/\/t\.me\//, "").replace(/^@/, "").trim(); return h ? `t.me/${h}` : ""; };
 
 function Section({ id, title, summary, open, onToggle, extra, children }: { id: string; title: string; summary?: string; open: boolean; onToggle: () => void; extra?: ReactNode; children: ReactNode }) {
@@ -62,32 +54,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const [more, setMore] = useState(false);
   const mobile = !!onClose;
   useEffect(() => { setWr("idle"); }, [user.id]);
-  const [card, setCard] = useState<Card | null>(null);
-  const [error, setError] = useState("");
-  const [payments, setPayments] = useState<PayWithRefund[]>([]);
-  const [open, setOpen] = useState({ prof: false, bets: false, pay: false });
-  const [cancelling, setCancelling] = useState<Payment | null>(null);
-  const [receipt, setReceipt] = useState<{ image: string; payment: Payment } | null>(null);
-  const [receiptBusy, setReceiptBusy] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setError("");
-    const [c, p] = await Promise.allSettled([
-      api.get<Card>(`/admin/users/${user.id}/card`),
-      api.get<{ payments: PayWithRefund[] }>(`/admin/users/${user.id}/payments?page=1`),
-    ]);
-    if (c.status === "fulfilled") { setCard(c.value); } else setError((c.reason as Error)?.message || "Не вдалося завантажити картку");
-    if (p.status === "fulfilled") setPayments(p.value.payments || []);
-  }, [user.id]);
-  useEffect(() => { setCard(null); setPayments([]); load(); }, [load]);
-
-
-  async function openReceipt(p: Payment) {
-    setReceiptBusy(p.id);
-    try { setReceipt({ image: await createPaymentReceipt(p, { username: user.username, telegram: user.telegram }), payment: p }); }
-    catch (e) { toast.error((e as Error).message); } finally { setReceiptBusy(null); }
-  }
-  const changed = () => { load(); onChanged(); };
+  const [open, setOpen] = useState({ prof: false });
 
   const admin = isAdmin(user);
   const st = statusOf(user);
@@ -95,11 +62,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const selfAccount = !!deleteReason && deleteReason.startsWith("Власний");
   const viewOnly = !selfAccount && !!deleteReason && !!resetReason;
   const plan = planCell(user, settings);
-  const bets = (card?.stats || []).reduce((s, x) => s + Number(x.bets || 0), 0);
-  const wins = (card?.stats || []).reduce((s, x) => s + Number(x.wins || 0), 0);
-  const losses = (card?.stats || []).reduce((s, x) => s + Number(x.losses || 0), 0);
-  const profit = (card?.stats || []).reduce((s, x) => s + Number(x.profit || 0), 0);
-  const winRate = wins + losses ? Math.round((wins / (wins + losses)) * 100) : null;
   const paidLine = user.paidCount ? `${money(user.paidTotal || 0)} · ${user.paidCount} ${plural(user.paidCount, "оплата", "оплати", "оплат")}` : user.refundedAmount ? "0 ₴ · повернення" : "0 ₴";
   const aiLimit = settings?.aiDailyLimit;
   const tg = telegramUrl(user.telegram);
@@ -191,7 +153,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         <div id="uc-lock" className="v3-uc-lockbox"><Lock size={16} aria-hidden="true" /><span>{viewOnly ? "Змінювати роль, скидати пароль і видаляти адміністраторів може лише овнер." : `${deleteReason || resetReason}.`}</span></div>
       )}
 
-      {error ? <div className="v3-uc-error" role="alert"><p>{error}</p><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={load}>Повторити</button></div> : <>
+      <>
         {mobile ? (
           <dl className="v3-uc-tiles">
             {!admin && <div><dt>Наступна оплата</dt><dd>{["ended", "cancelled"].includes(st) || !user.endDate ? "—" : `${shortDate(user.endDate)}${user.priceMonth ? ` · ${money(Number(user.priceMonth))}` : ""}`}</dd></div>}
@@ -217,47 +179,10 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         </Section>
         )}
 
-        {!admin && (
-          <Section id="bets" title={mobile ? "Статистика ставок" : "Ставки · за весь час"} summary={card ? `${bets} ставок · ${signed(profit)}` : undefined} open={open.bets} onToggle={() => setOpen({ ...open, bets: !open.bets })}
-            extra={bets > 0 ? <Link to={`/bets?q=${encodeURIComponent(user.username)}`} className="v3-uc-link">Усі ставки →</Link> : undefined}>
-            {!card ? <p className="v3-uc-loading" role="status">Завантаження…</p> : (
-              <div className="v3-uc-stats">
-                <div><span>Ставок</span><strong>{bets}</strong></div>
-                <div><span>Вінрейт</span><strong>{winRate === null ? "—" : `${winRate}%`}</strong></div>
-                <div><span>Профіт</span><strong className={profit >= 0 ? "v3-gain" : "v3-loss"}>{bets ? signed(profit) : "—"}</strong></div>
-              </div>
-            )}
-          </Section>
-        )}
-
-        {!admin && (
-          <Section id="pay" title="Оплати" summary={paidLine} open={open.pay} onToggle={() => setOpen({ ...open, pay: !open.pay })}
-            extra={<Link to={`/payments?user=${encodeURIComponent(user.username)}`} className="v3-uc-link">Уся історія →</Link>}>
-            {payments.length ? <ul className="v3-uc-pays">
-              {payments.slice(0, 5).map((p) => {
-                const refunded = p.status === "refunded";
-                const cancelled = p.status === "cancelled";
-                const amount = refunded ? -Number(p.refundedAmount || p.amount) : Number(p.amount);
-                return (
-                  <li key={p.id}>
-                    <strong className={cancelled ? "v3-strike" : ""}>{refunded ? `−${money(Math.abs(amount))}` : money(amount)}</strong>
-                    <span className={`v3-tag ${refunded ? "v3-tag-refund" : cancelled ? "v3-tag-cancel" : "v3-tag-okdark"}`}>{refunded ? "Повернено" : cancelled ? "Скасовано" : "Записано"}</span>
-                    {(() => { const meta = `${shortDate(p.paidOn)} · ${refunded ? "повернення" : planName(user.proUntil ? user.proBasePlan : user.plan)} · №${p.id}${p.note ? ` · ${p.note}` : ""}${cancelled && p.cancelReason ? ` · ${p.cancelReason}` : ""}`; const long = meta.length > 42;
-                      return <small className={long ? "v3-tt" : undefined} tabIndex={long ? 0 : undefined} aria-label={long ? meta : undefined}><span className="v3-tt-clip">{meta}</span>{long && <span className="v3-tt-tip" role="tooltip" aria-hidden="true">{meta}</span>}</small>; })()}
-                    <span className="v3-uc-pay-tools">
-                      {!cancelled && <button type="button" className="v3-link-sm" disabled={receiptBusy !== null} onClick={() => openReceipt(p)}>{receiptBusy === p.id ? "Чек…" : "Чек"}</button>}
-                      {p.status === "recorded" && <button type="button" className="v3-link-sm v3-link-danger" disabled={!online} onClick={() => setCancelling(p)}>Скасувати запис</button>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul> : <p className="v3-uc-empty">Оплат ще не записано.</p>}
-          </Section>
-        )}
 
 
 
-      </>}
+      </>
 
 
       {mobile && (
@@ -275,8 +200,6 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           </DialogContent>
         </Dialog>
       )}
-      <CancelPaymentDialog payment={cancelling} onOpenChange={(o) => { if (!o) setCancelling(null); }} onDone={changed} />
-      <ReceiptDialog data={receipt} username={user.username} onOpenChange={(o) => { if (!o) setReceipt(null); }} />
     </aside>
   );
 }
