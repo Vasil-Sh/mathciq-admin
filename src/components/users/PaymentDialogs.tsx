@@ -25,7 +25,10 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
   planLabel?: string; onReceipt?: (paymentId: string) => void;
 }) {
   const [days, setDays] = useState(30);
-  const [form, setForm] = useState({ requestId: "", amount: "", paidOn: "", periodStart: "", periodEnd: "", note: "", extendSubscription: true });
+  const [form, setForm] = useState({ requestId: "", amount: "", paidOn: "", periodStart: "", periodEnd: "", note: "", extendSubscription: true, paymentMethod: "Монобанк", promoCode: "" });
+  // Промокод (каталог · Форми 11): правильний — рамка зеленіє, стара ціна перекреслюється; ні — поле хитається.
+  const [code, setCode] = useState("");
+  const [promo, setPromo] = useState<{ state: "idle" | "busy" | "ok" | "bad"; base?: number; pct?: number; msg?: string; shake: number }>({ state: "idle", shake: 0 });
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
 
@@ -35,8 +38,27 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
     const endParsed = parseDate(endDate);
     const end = endParsed ? isoDate(endParsed) : "";
     const start = end && end >= today() ? addDays(end, 1) : today();
-    setForm({ requestId: uuid(), amount: Number(priceMonth) > 0 ? String(Number(priceMonth)) : "", paidOn: today(), periodStart: start, periodEnd: addDays(start, days - 1), note: "", extendSubscription: true });
+    setForm({ requestId: uuid(), amount: Number(priceMonth) > 0 ? String(Number(priceMonth)) : "", paidOn: today(), periodStart: start, periodEnd: addDays(start, days - 1), note: "", extendSubscription: true, paymentMethod: "Монобанк", promoCode: "" });
+    setCode(""); setPromo({ state: "idle", shake: 0 });
   }, [open, endDate, priceMonth, days]);
+
+  async function applyPromo() {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    const base = promo.state === "ok" && promo.base ? promo.base : Number(String(form.amount).replace(",", ".")) || Number(priceMonth) || 0;
+    setPromo((p) => ({ ...p, state: "busy" }));
+    try {
+      const r = await api.post<{ valid: boolean; promoCode: { code: string; discountPercent: number } }>("/admin/promo-codes/validate", { code: c });
+      const pct = Number(r.promoCode?.discountPercent) || 0;
+      const due = Math.round(base * (100 - pct)) / 100;
+      setForm((f) => ({ ...f, amount: String(due), promoCode: r.promoCode?.code || c }));
+      setPromo((p) => ({ state: "ok", base, pct, shake: p.shake }));
+    } catch (err) {
+      setForm((f) => ({ ...f, promoCode: "", amount: promo.base ? String(promo.base) : f.amount }));
+      setPromo((p) => ({ state: "bad", msg: (err as Error).message || "Код не підходить або закінчився", shake: p.shake + 1 }));
+    }
+  }
+  const METHODS = ["Монобанк", "Переказ на картку", "Готівка"];
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +88,11 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
             <div className="v3-field"><label id="pay-from-l">Період: від</label><DateField id="pay-from" labelledBy="pay-from-l" required max={form.periodEnd} value={form.periodStart} onChange={(v) => setForm({ ...form, periodStart: v })} /></div>
             <div className="v3-field"><label id="pay-to-l">До включно</label><DateField id="pay-to" labelledBy="pay-to-l" required min={form.periodStart} value={form.periodEnd} onChange={(v) => setForm({ ...form, periodEnd: v })} /></div>
             <div className="v3-field v3-span2"><label htmlFor="pay-note">Примітка</label><textarea id="pay-note" rows={2} maxLength={1000} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Необов’язково" /></div>
+            <div className="v3-field v3-span2"><span className="v3-label" id="pay-m-l">Спосіб</span><div className="v3-chipset" role="group" aria-labelledby="pay-m-l">{METHODS.map((m) => <button key={m} type="button" className={form.paymentMethod === m ? "is-on" : ""} aria-pressed={form.paymentMethod === m} onClick={() => setForm({ ...form, paymentMethod: m })}>{m}</button>)}</div></div>
+            <div className="v3-field v3-span2"><label htmlFor="pay-promo">Промокод</label>
+              <div className="v3-promo-row"><span key={promo.shake} className={`v3-promo-in${promo.state === "ok" ? " is-ok" : ""}${promo.state === "bad" ? " is-bad" : ""}`}><input id="pay-promo" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (promo.state !== "idle") { setPromo((p) => ({ state: "idle", shake: p.shake })); if (promo.base) setForm((f) => ({ ...f, amount: String(promo.base), promoCode: "" })); } }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }} placeholder="Напр., MATCHIQ20" autoComplete="off" aria-invalid={promo.state === "bad"} aria-describedby="pay-promo-m" /></span><button type="button" className={`v3-btn v3-btn-dark${promo.state === "busy" ? " is-busy" : ""}`} onClick={applyPromo} disabled={!code.trim() || promo.state === "busy"}>{promo.state === "busy" ? "Перевіряємо…" : "Застосувати"}</button></div>
+              <span id="pay-promo-m" role="status" aria-live="polite">{promo.state === "bad" && <span className="v3-field-error">{promo.msg}</span>}{promo.state === "ok" && <span className="v3-promo-price"><span className="v3-promo-old">{(promo.base || 0).toLocaleString("uk-UA")} ₴</span><span className="v3-promo-new">{Number(form.amount).toLocaleString("uk-UA")} ₴</span><span className="v3-promo-pct">−{promo.pct}%</span></span>}</span>
+            </div>
           </fieldset>
           <label className={`v3-agree${form.extendSubscription ? " is-on" : ""}`}>
             <input type="checkbox" className="sr-only" checked={form.extendSubscription} onChange={(e) => setForm({ ...form, extendSubscription: e.target.checked })} />

@@ -1,0 +1,471 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Plus, Receipt, RotateCcw, Search, SearchX, Tag, WifiOff, X } from "lucide-react";
+import { toast } from "sonner";
+import PillTrack from "@/components/PillTrack";
+import RollingNumber from "@/components/RollingNumber";
+import UndoRing from "@/components/UndoRing";
+import ExportCsvButton from "@/components/ExportCsvButton";
+import UserAvatar from "@/components/UserAvatar";
+import { Dropdown } from "@/components/ui/dropdown";
+import { DateField } from "@/components/ui/date-field";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AddPaymentDialog, ReceiptDialog, type Payment } from "@/components/users/PaymentDialogs";
+import { RefundDialog } from "@/components/users/UserActionDialogs";
+import { api } from "@/lib/apiClient";
+import { fetchUsersOverview } from "@/lib/adminBetsApi";
+import { fetchSettings } from "@/lib/adminSettingsApi";
+import { createPaymentReceipt } from "@/lib/paymentReceipt";
+import { downloadCsv } from "@/lib/csv";
+import { plural } from "@/lib/dashboardInsights";
+import { isAdmin, planCell } from "@/lib/usersModel";
+import {
+  dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
+  PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode,
+} from "@/lib/paymentsModel";
+import type { AdminUserOverview, AppSettings } from "@/types";
+
+type Tab = "pay" | "ref" | "promo";
+type Filt = "all" | PayStatus;
+type Sort = "no-desc" | "no-asc" | "sum-desc" | "sum-asc";
+
+function useMedia(q: string) {
+  const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => { const mm = window.matchMedia(q); const f = () => setM(mm.matches); mm.addEventListener("change", f); return () => mm.removeEventListener("change", f); }, [q]);
+  return m;
+}
+function useOnline() {
+  const [on, setOn] = useState(() => navigator.onLine);
+  useEffect(() => { const a = () => setOn(true), b = () => setOn(false); window.addEventListener("online", a); window.addEventListener("offline", b); return () => { window.removeEventListener("online", a); window.removeEventListener("offline", b); }; }, []);
+  return on;
+}
+const num = (p: PaymentRow) => Number(p.amount) || 0;
+const asPayment = (p: PaymentRow): Payment => ({ id: p.id, amount: p.amount, paidOn: p.paidOn, periodStart: p.periodStart, periodEnd: p.periodEnd, note: p.note, createdBy: p.createdBy, status: p.status, cancelReason: p.cancelReason, cancelledBy: p.cancelledBy, extendSubscription: p.extendSubscription, username: p.username });
+
+/** «Зміна до попереднього періоду» (каталог · Метрики 06): колір за знаком. */
+function Delta({ d, on, vs }: { d: number | null; on?: boolean; vs: string }) {
+  if (d === null) return null;
+  return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : d > 0 ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs} </span></>;
+}
+
+export default function Payments() {
+  const wide = useMedia("(min-width: 1180px)");
+  const online = useOnline();
+  const [tab, setTab] = useState<Tab>("pay");
+  const [month, setMonth] = useState(kyivMonth);
+  const [rows, setRows] = useState<PaymentRow[] | null>(null);
+  const [prevRows, setPrevRows] = useState<PaymentRow[]>([]);
+  const [refunds, setRefunds] = useState<PaymentRow[] | null>(null);
+  const [promos, setPromos] = useState<PromoCode[] | null>(null);
+  const [users, setUsers] = useState<AdminUserOverview[]>([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [rk, setRk] = useState(0); // re-run the list entrance
+  const [q, setQ] = useState("");
+  const [filt, setFilt] = useState<Filt>("all");
+  const [sort, setSort] = useState<Sort>("no-desc");
+  const [selId, setSelId] = useState<string | null>(null);
+  const [sheet, setSheet] = useState(false);
+  const [fresh, setFresh] = useState<string | null>(null);
+  const [cx, setCx] = useState<"" | "ask" | "busy">("");
+  const [pick, setPick] = useState(false);
+  const [payFor, setPayFor] = useState<AdminUserOverview | null>(null);
+  const [refundFor, setRefundFor] = useState<PaymentRow | null>(null);
+  const [receipt, setReceipt] = useState<{ image: string; payment: Payment; username: string } | null>(null);
+  const [receiptBusy, setReceiptBusy] = useState("");
+  const [shown, setShown] = useState(12);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
+    try {
+      const [cur, prev] = await Promise.all([fetchPayments(month), fetchPayments(shiftMonth(month, -1))]);
+      setRows(cur.payments); setPrevRows(prev.payments); setError("");
+    } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+  }, [month]);
+  const loadSide = useCallback(() => {
+    fetchPayments("", "refunded").then((r) => setRefunds(r.payments)).catch(() => setRefunds([]));
+    fetchPromoCodes().then(setPromos).catch(() => setPromos([]));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSide(); fetchUsersOverview().then(setUsers).catch(() => {}); fetchSettings().then(setSettings).catch(() => {}); }, [loadSide]);
+
+  // План оплати: за сумою (з урахуванням знижки промокоду) — найближча ціна з Налаштувань.
+  const planOf = useCallback((p: PaymentRow, u?: AdminUserOverview) => {
+    const pc = (promos || []).find((x) => x.code.toUpperCase() === (p.promoCode || "").toUpperCase());
+    const base = pc ? num(p) / (1 - pc.discountPercent / 100) : num(p);
+    const b = settings?.basicPrice, pr = settings?.proPrice;
+    if (b && pr) return Math.abs(base - pr) < Math.abs(base - b) ? "Pro" : "Базова";
+    return u && !isAdmin(u) && u.plan !== "trial" ? planCell(u, null).plan : "—";
+  }, [promos, settings]);
+  const userOf = useCallback((p: PaymentRow) => (p.userId ? users.find((u) => u.id === p.userId && u.username === p.username) : undefined) || users.find((u) => u.username === p.username) || (p.userId ? users.find((u) => u.id === p.userId) : undefined), [users]);
+  const all = rows || [];
+  const cnt = (f: Filt) => all.filter((p) => f === "all" || p.status === f).length;
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase().replace(/^[@№#]/, "");
+    let r = all.filter((p) => (filt === "all" || p.status === filt) && (!s || p.id.includes(s) || p.username.toLowerCase().includes(s) || (p.promoCode || "").toLowerCase().includes(s)));
+    const by: Record<Sort, (a: PaymentRow, b: PaymentRow) => number> = {
+      "no-desc": (a, b) => Number(b.id) - Number(a.id), "no-asc": (a, b) => Number(a.id) - Number(b.id),
+      "sum-desc": (a, b) => num(b) - num(a) || Number(b.id) - Number(a.id), "sum-asc": (a, b) => num(a) - num(b) || Number(b.id) - Number(a.id),
+    };
+    r = r.slice().sort(by[sort]);
+    return r;
+  }, [all, q, filt, sort]);
+  useEffect(() => { setShown(12); }, [q, filt, month]);
+  const sel = useMemo(() => list.find((p) => p.id === selId) || (wide ? list[0] : undefined) || null, [list, selId, wide]);
+
+  // Підсумки
+  const recorded = (a: PaymentRow[]) => a.filter((p) => p.status === "recorded");
+  const sumOf = (a: PaymentRow[]) => a.reduce((x, p) => x + num(p), 0);
+  const refOf = (a: PaymentRow[]) => a.reduce((x, p) => x + (Number(p.refundedAmount) || 0), 0);
+  const rec = recorded(all), prec = recorded(prevRows);
+  const recSum = sumOf(rec), prevSum = sumOf(prec);
+  const refSum = refOf(all), prevRef = refOf(prevRows);
+  const avg = rec.length ? recSum / rec.length : 0, prevAvg = prec.length ? prevSum / prec.length : 0;
+  const withPromo = rec.filter((p) => p.promoCode);
+  const prevPromo = prec.filter((p) => p.promoCode).length;
+  const plans = (() => { const pro = rec.filter((p) => planOf(p, userOf(p)) === "Pro").length; return rec.length ? `Pro ${Math.round((pro / rec.length) * 100)}% · Базова ${100 - Math.round((pro / rec.length) * 100)}%` : "—"; })();
+  const topPromo = (() => { const m: Record<string, number> = {}; withPromo.forEach((p) => { m[p.promoCode] = (m[p.promoCode] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || ""; })();
+  const vs = monthGen(shiftMonth(month, -1));
+  const sums = [
+    { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), d: pct(recSum, prevSum), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
+    { k: "ref", label: "Повернено", value: money(refSum), d: pct(refSum, prevRef), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
+    { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", d: avg && prevAvg ? pct(avg, prevAvg) : null, note: plans, go: undefined },
+    { k: "promo", label: "За промокодами", value: String(withPromo.length), d: pct(withPromo.length, prevPromo), note: withPromo.length ? `${plural(withPromo.length, "використання", "використання", "використань")}${topPromo ? ` · ${topPromo}` : ""}` : "промокоди не застосовували", go: () => setTab("promo") },
+  ];
+  const sumOn = tab === "promo" ? "promo" : filt === "refunded" ? "ref" : filt === "all" ? "recv" : "";
+
+  const months = Array.from({ length: 12 }, (_, i) => shiftMonth(kyivMonth(), -i));
+  const segs: { key: Filt; label: string }[] = [{ key: "all", label: "Усі" }, { key: "recorded", label: "Записано" }, { key: "cancelled", label: "Скасовано" }, { key: "refunded", label: "Повернено" }];
+  const tabs: { key: Tab; label: string; n: number | null }[] = [
+    { key: "pay", label: "Оплати", n: rows ? all.length : null },
+    { key: "ref", label: "Повернення", n: refunds ? refunds.length : null },
+    { key: "promo", label: "Промокоди", n: promos ? promos.length : null },
+  ];
+  const emptyPlatform = rows !== null && !error && !all.length && !prevRows.length && month === kyivMonth() && (refunds?.length ?? 0) === 0;
+
+  function exportCsv() {
+    downloadCsv(`matchiq-payments-${month}.csv`, ["№", "Користувач", "Сума, ₴", "Дата оплати", "Період з", "Період до", "Статус", "Спосіб", "Промокод", "Записав", "Повернено, ₴", "Причина"],
+      list.map((p) => [p.id, p.username, num(p), p.paidOn, p.periodStart, p.periodEnd, STATUS[p.status].label, p.paymentMethod, p.promoCode, p.createdBy, p.refundedAmount || "", p.refundReason || p.cancelReason || ""]));
+    toast.success("CSV завантажено", { id: "pay-csv", description: `matchiq-payments-${month}.csv · ${list.length} ${plural(list.length, "рядок", "рядки", "рядків")}` });
+  }
+
+  async function openReceipt(p: PaymentRow) {
+    const u = userOf(p);
+    setReceiptBusy(p.id);
+    try { setReceipt({ image: await createPaymentReceipt(asPayment(p), { username: p.username, telegram: u?.telegram || "" }), payment: asPayment(p), username: p.username }); }
+    catch (e) { toast.error((e as Error).message); } finally { setReceiptBusy(""); }
+  }
+  // «Скасувати запис»: підтвердження в самій кнопці (як у Користувачах).
+  async function cancelRecord(p: PaymentRow) {
+    if (!cx) { setCx("ask"); window.setTimeout(() => setCx((v) => (v === "ask" ? "" : v)), 3000); return; }
+    if (cx !== "ask") return;
+    setCx("busy");
+    try {
+      await api.post(`/admin/payments/${p.id}/cancel`, { reason: "Помилковий запис — скасовано в Оплатах" });
+      setRows((r) => (r || []).map((x) => (x.id === p.id ? { ...x, status: "cancelled", cancelReason: "Помилковий запис — скасовано в Оплатах" } : x)));
+      toast.success(`Запис №${p.id} скасовано`, { id: `cx-${p.id}`, description: `@${p.username} · ${money(num(p))} не рахуються в оплатах` });
+      setSheet(false);
+    } catch (e) { toast.error((e as Error).message); } finally { setCx(""); }
+  }
+  useEffect(() => { setCx(""); }, [sel?.id]);
+
+  const promoMax = (p: PromoCode) => (p.usageLimit ? Math.min(100, Math.round((p.usedCount / p.usageLimit) * 100)) : Math.min(100, p.usedCount * 2));
+  async function togglePromo(p: PromoCode) {
+    const next = !p.active;
+    setPromos((l) => (l || []).map((x) => (x.id === p.id ? { ...x, active: next } : x)));
+    try {
+      await api.put(`/admin/promo-codes/${p.id}`, { active: next });
+      toast.success(next ? `Промокод ${p.code} увімкнено` : `Промокод ${p.code} вимкнено`, {
+        id: `promo-${p.id}`, description: next ? "Його знову можна застосувати в оплаті" : "Більше не застосовується до нових оплат",
+        action: { label: <UndoRing />, onClick: async () => { setPromos((l) => (l || []).map((x) => (x.id === p.id ? { ...x, active: !next } : x))); try { await api.put(`/admin/promo-codes/${p.id}`, { active: !next }); } catch (e) { toast.error((e as Error).message); } } },
+      });
+    } catch (e) { setPromos((l) => (l || []).map((x) => (x.id === p.id ? { ...x, active: !next } : x))); toast.error((e as Error).message); }
+  }
+
+  const detail = (p: PaymentRow, mobile = false) => {
+    const u = userOf(p);
+    const st = STATUS[p.status];
+    return (
+      <div key={`${p.id}-${p.status}`} className={`v3-pay-card${mobile ? " is-m" : ""}`} aria-live="polite">
+        <div className="v3-pay-card-h">
+          <div><span className="v3-pay-card-k">Оплата №{p.id}</span><strong className="v3-pay-card-sum"><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong></div>
+          <span className={`v3-tag ${st.cls}`}>{st.label}</span>
+        </div>
+        <dl className="v3-pay-dl">
+          <div><dt>Користувач</dt><dd><Link className="v3-pay-link" to={`/users?q=${encodeURIComponent(p.username)}`}>@{p.username} <ArrowRight size={13} aria-hidden="true" /></Link></dd></div>
+          <div><dt>План</dt><dd>{planOf(p, u)}</dd></div>
+          <div><dt>Період</dt><dd>{period(p.periodStart, p.periodEnd)}</dd></div>
+          <div><dt>Промокод</dt><dd>{p.promoCode || "без промокоду"}</dd></div>
+          <div><dt>Спосіб</dt><dd>{p.paymentMethod || "—"}</dd></div>
+          <div><dt>Записав</dt><dd>@{p.createdBy} · {dShort(p.paidOn)}</dd></div>
+        </dl>
+        {p.status === "refunded" && <div className="v3-pay-why"><strong>Повернено {money(Number(p.refundedAmount) || num(p))}:</strong> {p.refundReason || "—"}{p.refundedBy ? ` · @${p.refundedBy}` : ""}</div>}
+        {p.status === "cancelled" && <div className="v3-pay-why"><strong>Причина:</strong> {p.cancelReason || "—"}{p.cancelledBy ? ` · @${p.cancelledBy}` : ""}</div>}
+        {p.note && <div className="v3-pay-why"><strong>Примітка:</strong> {p.note}</div>}
+        {p.status === "recorded" ? <>
+          <div className="v3-pay-acts">
+            <button type="button" className="v3-btn v3-btn-light" onClick={() => openReceipt(p)} disabled={receiptBusy === p.id}><Receipt size={15} aria-hidden="true" />{receiptBusy === p.id ? "Готуємо…" : "Чек"}</button>
+            <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !u} onClick={() => setRefundFor(p)} title={!u ? "Користувача вже немає" : undefined}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
+          </div>
+          <button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "ask" ? " is-ask" : ""}${cx === "busy" ? " is-busy" : ""}`} disabled={!online} onClick={() => cancelRecord(p)}>{cx === "ask" ? "Натисніть ще раз — скасувати" : cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button>
+          <p className="v3-pay-hint">«Скасувати запис» — помилкова оплата (дубль). «Повернути гроші» — коли ви повернули кошти людині.</p>
+        </> : <p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p>}
+      </div>
+    );
+  };
+
+  const emptyFiltered = (
+    <div className="v3-pay-empty">
+      <span className="v3-empty-ic v3-float" aria-hidden="true"><SearchX size={22} /></span>
+      <strong>{q.trim() ? `Нічого не знайдено за «${q.trim()}»` : "Немає оплат із таким статусом"}</strong>
+      <span>Спробуйте інший запит або скиньте фільтри.</span>
+      <button type="button" className="v3-btn v3-btn-dark" onClick={() => { setQ(""); setFilt("all"); setRk((x) => x + 1); }}>Скинути фільтри</button>
+    </div>
+  );
+
+  const table = (
+    <div className="v3-wcard v3-pay-list" aria-busy={loading}>
+      <div className="v3-pay-tools">
+        <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№ оплати, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
+        <Dropdown className="is-light" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setSelId(null); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />
+        <div className="v3-seg v3-seg-soft" role="group" aria-label="Статус">
+          <PillTrack active={filt} />
+          {segs.map((s) => <button key={s.key} type="button" className={filt === s.key ? "is-on" : ""} aria-pressed={filt === s.key} onClick={() => { setFilt(s.key); setRk((x) => x + 1); }}>{s.label} <span className="v3-seg-n">{cnt(s.key)}</span></button>)}
+        </div>
+      </div>
+      <div className="v3-pay-th" role="row">
+        <span role="columnheader" aria-sort={sort.startsWith("no") ? (sort === "no-asc" ? "ascending" : "descending") : "none"}><button type="button" className={sort.startsWith("no") ? "is-on" : ""} onClick={() => setSort(sort === "no-desc" ? "no-asc" : "no-desc")}>№<ArrowDown size={12} aria-hidden="true" style={{ transform: sort === "no-asc" ? "rotate(180deg)" : undefined, opacity: sort.startsWith("no") ? 1 : .35 }} /></button></span>
+        <span role="columnheader">Користувач</span><span role="columnheader">План · період</span>
+        <span role="columnheader" aria-sort={sort.startsWith("sum") ? (sort === "sum-asc" ? "ascending" : "descending") : "none"}><button type="button" className={sort.startsWith("sum") ? "is-on" : ""} onClick={() => setSort(sort === "sum-desc" ? "sum-asc" : "sum-desc")}>Сума<ArrowDown size={12} aria-hidden="true" style={{ transform: sort === "sum-asc" ? "rotate(180deg)" : undefined, opacity: sort.startsWith("sum") ? 1 : .35 }} /></button></span>
+        <span role="columnheader">Записав</span><span role="columnheader" className="v3-pay-r">Статус</span>
+      </div>
+      {rows === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-pay-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ height: 22, borderRadius: 999 }} /></div>)
+        : list.length ? <div className={`v3-pay-rows ${rk % 2 ? "a" : "b"}`}>{list.map((p, i) => {
+          const st = STATUS[p.status]; const on = sel?.id === p.id; const u = userOf(p);
+          return (
+            <button key={p.id} type="button" className={`v3-pay-row${on ? " is-sel" : ""}${fresh === p.id ? " is-new" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} aria-pressed={on} onClick={() => setSelId(p.id)}>
+              <span className="v3-pay-no">№{p.id}</span>
+              <span className="v3-pay-who"><UserAvatar username={p.username} telegram={u?.telegram} /><span><strong>@{p.username}</strong><small>{dShort(p.paidOn)}</small></span></span>
+              <span className="v3-pay-plan"><strong>{planOf(p, u)}</strong><small>{period(p.periodStart, p.periodEnd)}</small></span>
+              <span className="v3-pay-sum"><strong><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong>{p.promoCode && <small>{p.promoCode}</small>}</span>
+              <span className="v3-pay-by">@{p.createdBy}</span>
+              <span className="v3-pay-r"><span className={`v3-tag ${st.cls}`}>{st.label}</span></span>
+            </button>
+          );
+        })}</div> : emptyFiltered}
+      <div className="v3-pay-foot"><span>Показано <b>{list.length}</b> із <b>{all.length}</b> за {monthShort(month)}</span><span>Разом: <b><RollingNumber key={`t-${recSum}`} text={money(recSum)} /></b> · повернено {money(refSum)}</span></div>
+    </div>
+  );
+
+  // Мобільний список: групи за днями, «Показати ще» (каталог · Списки 12)
+  const mobileList = (
+    <div className="v3-pay-m">
+      <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
+      <div className="v3-pay-mf">
+        <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />
+        <Dropdown className="v3-mselect-dd" ariaLabel="Статус" value={filt} onChange={(v) => { setFilt(v as Filt); setRk((x) => x + 1); }} options={segs.map((s) => ({ value: s.key, label: `${s.key === "all" ? "Усі статуси" : s.label} · ${cnt(s.key)}` }))} />
+      </div>
+      <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
+        {rows === null && loading ? Array.from({ length: 5 }, (_, i) => <li key={i} className="v3-pay-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "55%" }} /><span className="v3-skel v3-skel-light" style={{ width: 60 }} /></li>)
+          : list.length ? list.slice(0, shown).map((p, i, arr) => {
+            const st = STATUS[p.status]; const head = i === 0 || arr[i - 1].paidOn !== p.paidOn;
+            return [head && <li key={`d-${p.paidOn}`} className="v3-pay-day" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{dayLabel(p.paidOn)}</li>,
+              <li key={p.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className={`v3-pay-mcard${fresh === p.id ? " is-new" : ""}`} onClick={() => { setSelId(p.id); setSheet(true); }}>
+                <span className="v3-pay-mcard-who"><strong>@{p.username}</strong><small>№{p.id} · {p.status === "recorded" ? (p.promoCode || p.paymentMethod || "оплата") : p.status === "cancelled" ? (p.cancelReason || "скасовано") : `повернено ${money(Number(p.refundedAmount) || num(p))}`}</small></span>
+                <span className="v3-pay-mcard-r"><strong><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong><span className={`v3-tag ${st.cls}`}>{st.label}</span></span>
+              </button></li>];
+          }) : <li>{emptyFiltered}</li>}
+      </ul>
+      {list.length > shown && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setShown(shown + 12)}>Показати ще {Math.min(12, list.length - shown)}</button>}
+    </div>
+  );
+
+  const refundsTab = (
+    <section className="v3-pay-main">
+      <div className="v3-wcard v3-pay-list">
+        <div className="v3-pay-sec-h"><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>
+        {refunds === null ? <div className="v3-pay-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
+          : refunds.length ? <div className="v3-pay-rows a">{refunds.map((p, i) => (
+            <div key={p.id} className="v3-pay-row is-ref" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
+              <span className="v3-pay-no">№{p.id}</span>
+              <span className="v3-pay-plan"><strong>@{p.username}</strong><small>{dShort(p.refundedAt || p.paidOn)}</small></span>
+              <span className="v3-pay-sum"><strong className="v3-pay-neg">−{money(Number(p.refundedAmount) || num(p))}</strong><small>{Number(p.refundedAmount) < num(p) ? "частково" : "повністю"}</small></span>
+              <span className="v3-pay-reason">{p.refundReason || "—"}</span>
+              <span className="v3-pay-by">@{p.refundedBy || p.createdBy}</span>
+            </div>))}</div>
+          : <div className="v3-pay-empty"><span className="v3-empty-ic v3-float" aria-hidden="true"><RotateCcw size={22} /></span><strong>Повернень ще немає</strong><span>Повернення записується з оплати: «Повернути гроші» — повністю або частково, з причиною.</span></div>}
+      </div>
+      <aside className="v3-dcard v3-pay-aside">
+        <strong className="v3-pay-aside-t">Як записати повернення</strong>
+        <ol className="v3-pay-steps"><li>Поверніть гроші людині (картка, переказ).</li><li>Відкрийте оплату → «Повернути гроші».</li><li>Повністю або частково, причина обов’язкова.</li></ol>
+        <div className="v3-pay-box">Повернення за {monthShort(month)}: <b>{money(refSum)}</b> · {monthShort(shiftMonth(month, -1))} {money(prevRef)}. Кожне потрапляє в журнал дій.</div>
+        <button type="button" className="v3-btn v3-btn-ghost-dark v3-uc-link" onClick={() => setTab("pay")}>Відкрити оплати <ArrowRight size={14} aria-hidden="true" /></button>
+      </aside>
+    </section>
+  );
+
+  return (
+    <div className="v3-page v3-pay">
+      <section className="v3-hero v3-hero-row">
+        <div>
+          <h1 className="v3-title">Оплати</h1>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Ручний облік: записи, повернення й промокоди. Гроші приймаєте й повертаєте поза адмінкою. Час — київський.</span><span className="v3-only-mobile">{monthName(month).split(" ")[0]} · {money(recSum)} · {rec.length} {plural(rec.length, "оплата", "оплати", "оплат")}</span></p>
+        </div>
+        <div className="v3-chips">
+          {!emptyPlatform && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length} />}
+          <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online} onClick={() => setPick(true)}><Plus size={17} aria-hidden="true" />Записати оплату</button>
+          <button type="button" className="v3-fab v3-only-mobile" aria-label="Записати оплату" disabled={!online} onClick={() => setPick(true)}><Plus size={20} strokeWidth={2.4} aria-hidden="true" /></button>
+        </div>
+      </section>
+
+      {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Оплати станом на останнє оновлення — записи, повернення й промокоди після відновлення зв’язку.</span></div>}
+      {error && rows !== null && <div className="v3-stale" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>Не вдалося оновити: {error}.</span><button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => load()}>Спробувати ще раз</button></div>}
+
+      {error && rows === null ? (
+        <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити оплати</strong><span>Сервер не відповів.</span><code className="v3-uerror-det">{error}</code><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => load()}>Спробувати ще раз</button></div></div>
+      ) : emptyPlatform ? (
+        <>
+          <section className="v3-sums" aria-label="Підсумки">
+            <div className="v3-sum is-static"><span className="v3-sum-l">Отримано за {monthShort(month)}</span><strong className="v3-sum-v">0 ₴</strong><span className="v3-sum-n">—</span></div>
+            <div className="v3-sum is-static"><span className="v3-sum-l">Повернено</span><strong className="v3-sum-v">0 ₴</strong><span className="v3-sum-n">—</span></div>
+            <div className="v3-sum is-static v3-hide-mobile"><span className="v3-sum-l">Середня оплата</span><strong className="v3-sum-v">—</strong><span className="v3-sum-n">—</span></div>
+            <div className="v3-sum is-static v3-hide-mobile"><span className="v3-sum-l">Промокоди</span><strong className="v3-sum-v">{promos?.length || 0}</strong><span className="v3-sum-n">{promos?.length ? "створено" : "ще не створено"}</span></div>
+          </section>
+          <section className="v3-pay-zero">
+            <div className="v3-wcard v3-pay-zero-card">
+              <span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><CreditCard size={22} /></span>
+              <strong>Оплат ще немає</strong>
+              <p>Коли людина оплатить Базову чи Pro, запишіть оплату тут або в картці користувача — підписка продовжиться, а чек можна буде надіслати в Telegram.</p>
+              <div className="v3-pay-zero-acts"><button type="button" className="v3-btn v3-btn-primary" onClick={() => setPick(true)} disabled={!online}><Plus size={16} aria-hidden="true" />Записати першу оплату</button><Link className="v3-btn v3-btn-light" to="/settings">Перевірити тарифи</Link></div>
+            </div>
+            <div className="v3-dcard v3-pay-zero-steps">
+              <strong>Що з’явиться тут</strong>
+              {[["Оплати", "Хто, скільки, за який план і період, хто записав"], ["Повернення", "Записи про повернені гроші з причиною"], ["Промокоди", "Знижки, ліміти й скільки разів використали"]].map((s, i) => <div key={s[0]} className="v3-pay-zero-step"><b>{i + 1}</b><span><strong>{s[0]}</strong><small>{s[1]}</small></span></div>)}
+            </div>
+          </section>
+        </>
+      ) : <>
+        <section className="v3-sums v3-pay-sums" aria-label="Підсумки">
+          {sums.map((s) => (
+            <button key={s.k} type="button" className={`v3-sum${sumOn === s.k ? " is-on" : ""}${s.go ? "" : " is-static"}`} aria-pressed={sumOn === s.k} onClick={s.go} disabled={!s.go}>
+              <span className="v3-sum-l">{s.k === "recv" ? <><span className="v3-hide-mobile">{s.label}</span><span className="v3-only-mobile">Отримано</span></> : s.label}</span>
+              <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`${s.k}-${s.value}`} text={s.value} />}</strong>
+              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={sumOn === s.k} vs={vs} />}<span className="v3-pay-note">{s.note}</span></span>
+            </button>
+          ))}
+        </section>
+
+        <div className="v3-pay-tabs" role="tablist" aria-label="Розділи оплат">
+          <PillTrack active={tab} />
+          {tabs.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{t.n ?? "…"}</span>{t.label}</button>)}
+        </div>
+
+        <div key={tab} className="v3-pay-pane">
+          {tab === "pay" && (wide ? (
+            <section className="v3-pay-main">
+              {table}
+              <aside className="v3-dcard v3-pay-aside">{sel ? detail(sel) : <div className="v3-pay-empty is-dark"><span>Оберіть оплату, щоб побачити деталі.</span></div>}</aside>
+            </section>
+          ) : mobileList)}
+          {tab === "ref" && refundsTab}
+          {tab === "promo" && <PromoTab promos={promos} online={online} onToggle={togglePromo} max={promoMax} onCreated={(p) => { setPromos((l) => [p, ...(l || [])]); }} />}
+        </div>
+      </>}
+
+      {!wide && <Dialog open={sheet && !!sel} onOpenChange={setSheet}><DialogContent className="v3-sheet v3-pay-sheet"><DialogTitle className="sr-only">Оплата №{sel?.id}</DialogTitle><DialogDescription className="sr-only">Деталі оплати</DialogDescription>{sel && detail(sel, true)}</DialogContent></Dialog>}
+
+      <PickUserDialog open={pick} users={users} onOpenChange={setPick} onPick={(u) => { setPick(false); setPayFor(u); }} />
+      {payFor && <AddPaymentDialog open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} userId={payFor.id} username={payFor.username} endDate={payFor.endDate} priceMonth={String(payFor.priceMonth || "")} planLabel={planCell(payFor, null).plan}
+        onSaved={async () => { const before = new Set(all.map((p) => p.id)); setMonth(kyivMonth()); const r = await fetchPayments(kyivMonth()).catch(() => null); if (r) { setRows(r.payments); const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
+      {refundFor && userOf(refundFor) && <RefundDialog user={userOf(refundFor)!} payment={asPayment(refundFor)} open={!!refundFor} onOpenChange={(o) => { if (!o) setRefundFor(null); }} onDone={() => { load({ quiet: true }); loadSide(); }} />}
+      <ReceiptDialog data={receipt} username={receipt?.username || ""} onOpenChange={(o) => { if (!o) setReceipt(null); }} />
+    </div>
+  );
+}
+
+/** Крок перед «Записати оплату»: кому. Пошук за логіном або Telegram. */
+function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; users: AdminUserOverview[]; onOpenChange: (o: boolean) => void; onPick: (u: AdminUserOverview) => void }) {
+  const [q, setQ] = useState("");
+  useEffect(() => { if (open) setQ(""); }, [open]);
+  const s = q.trim().toLowerCase().replace(/^@/, "");
+  const list = users.filter((u) => !isAdmin(u) && (!s || u.username.toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s))).slice(0, 8);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="v3-modal sm:max-w-[480px]">
+        <DialogTitle className="v3-modal-title">Записати оплату</DialogTitle>
+        <DialogDescription className="v3-modal-sub">Кому записати оплату? Гроші вже отримано поза адмінкою — тут лише запис.</DialogDescription>
+        <label className="v3-search v3-pick-search"><Search size={16} aria-hidden="true" /><input autoFocus type="search" aria-label="Пошук користувача" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} /></label>
+        <ul className="v3-pick-list" role="listbox" aria-label="Користувачі">
+          {list.length ? list.map((u, i) => (
+            <li key={u.id} style={{ animationDelay: `${i * 30}ms` }}><button type="button" role="option" aria-selected="false" onClick={() => onPick(u)}>
+              <UserAvatar username={u.username} telegram={u.telegram} />
+              <span><strong>@{u.username}</strong><small>{planCell(u, null).plan} · до {dShort(u.endDate)}</small></span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </button></li>
+          )) : <li className="v3-pick-empty">Нікого не знайдено</li>}
+        </ul>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Промокоди: список із заповненням смужок, увімкнення з «Скасувати», створення нового. */
+function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void }) {
+  const [code, setCode] = useState("NEWYEAR27");
+  const [pctV, setPctV] = useState("25");
+  const [plan, setPlan] = useState<"basic" | "pro">("pro");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [limit, setLimit] = useState("100");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<{ msg: string; n: number } | null>(null);
+  const [fresh, setFresh] = useState("");
+  const today = kyivToday();
+  const exists = (promos || []).some((p) => p.code.toUpperCase() === code.trim().toUpperCase());
+  async function create() {
+    const c = code.trim().toUpperCase();
+    const v = Number(pctV);
+    const bad = c.length < 4 ? "Мінімум 4 символи" : exists ? "Такий код уже є" : !(Number.isInteger(v) && v > 0 && v <= 100) ? "Знижка — ціле число від 1 до 100" : to && from && to < from ? "Кінець раніше за початок" : "";
+    if (bad) { setErr({ msg: bad, n: (err?.n || 0) + 1 }); return; }
+    setBusy(true);
+    try {
+      const r = await api.post<{ id: string }>("/admin/promo-codes", { code: c, discountPercent: v, plan, startsOn: from || null, endsOn: to || null, usageLimit: limit ? Number(limit) : null });
+      const p: PromoCode = { id: r.id, code: c, discountPercent: v, plan, startsOn: from || null, endsOn: to || null, usageLimit: limit ? Number(limit) : null, usedCount: 0, active: true, createdAt: new Date().toISOString() };
+      onCreated(p); setFresh(c); window.setTimeout(() => setFresh(""), 2000); setCode(""); setErr(null);
+      toast.success(`Промокод ${c} створено`, { id: `promo-new-${c}`, description: `−${v}% · ${PLAN_LABEL[plan]}${from ? ` · з ${dShort(from)}` : ""}` });
+    } catch (e) { setErr({ msg: (e as Error).message, n: (err?.n || 0) + 1 }); } finally { setBusy(false); }
+  }
+  return (
+    <section className="v3-pay-main">
+      <div className="v3-wcard v3-pay-list">
+        <div className="v3-pay-sec-h"><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>
+        <div className="v3-pay-th is-promo" role="row"><span>Код</span><span>Знижка</span><span>План</span><span>Використано</span><span>Діє</span><span className="v3-pay-r">Стан</span></div>
+        {promos === null ? <div className="v3-pay-row is-skel is-promo" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
+          : promos.length ? <div className="v3-pay-rows a">{promos.map((p, i) => {
+            const st = promoState(p, today); const ui = PROMO_UI[st];
+            return (
+              <div key={p.id} className={`v3-pay-row is-promo${st === "ended" || st === "off" ? " is-dim" : ""}${fresh === p.code ? " is-new" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
+                <span className="v3-pay-code"><strong>{p.code}</strong><small>{p.usageLimit ? `ліміт ${p.usageLimit}` : "без ліміту"}</small></span>
+                <strong>−{p.discountPercent}%</strong>
+                <span>{PLAN_LABEL[p.plan] || p.plan}</span>
+                <span className="v3-pay-use"><span className="v3-pay-bar"><i style={{ width: `${max(p)}%` }} /></span>{p.usedCount} / {p.usageLimit ?? "∞"}</span>
+                <span className="v3-pay-by">{p.startsOn || p.endsOn ? `${p.startsOn ? dShort(p.startsOn) : "…"} — ${p.endsOn ? dShort(p.endsOn) : "…"}` : "безстроково"}</span>
+                <span className="v3-pay-r v3-pay-promo-st"><span className={`v3-tag ${ui.cls}`}>{ui.label}</span><button type="button" role="switch" aria-checked={p.active} aria-label={`${p.code}: ${p.active ? "вимкнути" : "увімкнути"}`} className={`v3-pswitch${p.active ? " is-on" : ""}`} disabled={!online} onClick={() => onToggle(p)}><span /></button></span>
+              </div>
+            );
+          })}</div>
+          : <div className="v3-pay-empty"><span className="v3-empty-ic v3-float" aria-hidden="true"><Tag size={22} /></span><strong>Промокодів ще немає</strong><span>Створіть перший — праворуч.</span></div>}
+      </div>
+      <aside className="v3-dcard v3-pay-aside v3-pay-new">
+        <strong className="v3-pay-aside-t">Новий промокод</strong>
+        <div className="v3-field"><label htmlFor="pc-code">Код</label><span key={err?.n || 0} className={`v3-pay-inp${err ? " is-bad" : ""}`}><input id="pc-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/\s/g, "")); setErr(null); }} maxLength={100} autoComplete="off" aria-invalid={!!err} aria-describedby="pc-err" /></span>{err && <span id="pc-err" className="v3-field-error" role="alert">{err.msg}</span>}</div>
+        <div className="v3-field"><label htmlFor="pc-pct">Знижка, %</label><span className="v3-pay-inp"><input id="pc-pct" inputMode="numeric" value={pctV} onChange={(e) => setPctV(e.target.value.replace(/\D/g, "").slice(0, 3))} /><small>{Number(pctV) > 0 && Number(pctV) <= 100 ? `600 → ${Math.round(600 * (100 - Number(pctV)) / 100)} ₴` : ""}</small></span></div>
+        <div className="v3-field"><span className="v3-label" id="pc-plan">План</span><div className="v3-seg v3-pay-dseg" role="group" aria-labelledby="pc-plan"><PillTrack active={plan} />{(["basic", "pro"] as const).map((k) => <button key={k} type="button" className={plan === k ? "is-on" : ""} aria-pressed={plan === k} onClick={() => setPlan(k)}>{PLAN_LABEL[k]}</button>)}</div></div>
+        <div className="v3-pay-2"><div className="v3-field"><label id="pc-from">Діє з</label><DateField id="pc-from-i" labelledBy="pc-from" value={from} onChange={setFrom} /></div><div className="v3-field"><label id="pc-to">До</label><DateField id="pc-to-i" labelledBy="pc-to" value={to} min={from || undefined} onChange={setTo} /></div></div>
+        <div className="v3-field"><label htmlFor="pc-lim">Ліміт використань</label><span className="v3-pay-inp"><input id="pc-lim" inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="без ліміту" /></span></div>
+        <button type="button" className={`v3-btn v3-btn-primary${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={create}>{busy ? "Створюємо…" : <><Check size={16} aria-hidden="true" />Створити промокод</>}</button>
+      </aside>
+    </section>
+  );
+}
