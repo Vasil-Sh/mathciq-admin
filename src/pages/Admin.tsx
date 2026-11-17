@@ -145,11 +145,11 @@ export default function Admin() {
   const users0 = all.filter((u) => !isAdmin(u));
   const isTrialStart = (u: AdminUserOverview) => u.plan === "trial" || !!u.trialEndDate;
   const pctOf = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 1000) / 10 : null);
-  const deltas: Partial<Record<UFilter, { d: number | null; inverse?: boolean }>> = {
+  const deltas: Partial<Record<UFilter, { d: number | null }>> = {
     all: { d: pctOf(all.length, all.filter((u) => (u.createdAt || "") < monthStart).length) },
     paid: { d: pctOf(counts.paid, users0.filter((u) => (u.plan === "basic" || u.plan === "pro") && (u.createdAt || "") < monthStart && (u.endDate || "") >= monthStart).length) },
     trial: { d: pctOf(users0.filter((u) => isTrialStart(u) && mk(u.createdAt) === month).length, users0.filter((u) => isTrialStart(u) && mk(u.createdAt) === prevMonth).length) },
-    closed: { d: pctOf(cancelledThisMonth, all.filter((u) => mk(u.subscriptionCancelledAt || u.cancelledAt) === prevMonth).length), inverse: true },
+    closed: { d: pctOf(cancelledThisMonth, all.filter((u) => mk(u.subscriptionCancelledAt || u.cancelledAt) === prevMonth).length) },
   };
   const prevMonthGen = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"][Number(prevMonth.slice(5)) - 1];
 
@@ -473,7 +473,7 @@ export default function Admin() {
           </>
         ) : <>
           <section className="v3-sums v3-hide-mobile" aria-label="Підсумки">
-            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : <RollingNumber key={`${x.key}-${x.value}`} text={String(x.value)} />}</strong><span className="v3-sum-n">{(() => { const dd = deltas[x.key]; if (!dd || dd.d === null || users === null) return null; const d = dd.d; const good = dd.inverse ? d <= 0 : d >= 0; return <><span className={`v3-dl ${filter === x.key ? "is-onblue " : ""}${d === 0 ? "is-flat" : good ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${prevMonthGen}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {prevMonthGen} </span></>; })()}{x.note}</span></button>)}
+            {sums.map((x) => <button key={x.key} type="button" className={`v3-sum${filter === x.key ? " is-on" : ""}`} aria-pressed={filter === x.key} onClick={() => setFilter(x.key)}><span className="v3-sum-l">{x.label}</span><strong className="v3-sum-v">{users === null ? "—" : <RollingNumber key={`${x.key}-${x.value}`} text={String(x.value)} />}</strong><span className="v3-sum-n">{(() => { const dd = deltas[x.key]; if (!dd || dd.d === null || users === null) return null; const d = dd.d; const good = d >= 0; return <><span className={`v3-dl ${filter === x.key ? "is-onblue " : ""}${d === 0 ? "is-flat" : good ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${prevMonthGen}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {prevMonthGen} </span></>; })()}{x.note}</span></button>)}
           </section>
 
           {!wide ? mobileList : (
