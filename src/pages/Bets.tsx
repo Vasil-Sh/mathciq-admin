@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowDownUp, BarChart3, ChevronDown, Clock, ListFilter, RefreshCw, Search, WifiOff } from "lucide-react";
+import { BarChart3, Check, ChevronDown, Clock, ListFilter, RefreshCw, Search, Send, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -10,11 +10,24 @@ import { betView, gameLabel, money, signedMoney, signedPct, statsFor, userGames,
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AdminUserBet, AdminUserOverview } from "@/types";
 import PillTrack from "@/components/PillTrack";
+import RollingNumber from "@/components/RollingNumber";
+import ExportCsvButton from "@/components/ExportCsvButton";
+import { Dropdown } from "@/components/ui/dropdown";
+import AllBetsDialog, { legMark } from "@/components/bets/AllBetsDialog";
 
 const isAdminU = (u: AdminUserOverview) => u.role === "admin" || u.role === "owner" || !!u.isOwner;
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 const SORTS: [Sort, string][] = [["bets", "Ставки"], ["staked", "Сума"], ["profit", "Профіт"], ["wr", "Вінрейт"]];
 const PAGE = 20;
+const SORT_M: Record<Sort, string> = { bets: "за кількістю ставок", staked: "за сумою ставок", profit: "за профітом", wr: "за вінрейтом" };
+
+/** The matched part of a login in yellow (catalog · Inputs · search highlight, as in Users). */
+function hl(text: string, q: string): ReactNode {
+  const s = q.trim().toLowerCase().replace(/^@/, "");
+  const i = s ? text.toLowerCase().indexOf(s) : -1;
+  if (i < 0) return text;
+  return <>{text.slice(0, i)}<mark className="v3-hl">{text.slice(i, i + s.length)}</mark>{text.slice(i + s.length)}</>;
+}
 const STREAK_ALERT = 5;
 
 type Detail = { status: "loading" | "ok" | "err"; bets: AdminUserBet[]; error?: string };
@@ -36,7 +49,15 @@ export default function Bets() {
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, Detail>>({});
-  const [fullList, setFullList] = useState<Record<number, boolean>>({});
+  const [allFor, setAllFor] = useState<AdminUserOverview | null>(null);
+  const [allOpen, setAllOpen] = useState(false);
+  const [done, setDone] = useState(false);
+  const [rk, setRk] = useState(0);
+  const [copyGo, setCopyGo] = useState(false);
+  const [wr, setWr] = useState<"idle" | "fly" | "done">("idle");
+  const [offTry, setOffTry] = useState(0);
+  const [offBusy, setOffBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
   const firstOpen = useRef(true);
 
   const load = useCallback(async (manual = false) => {
@@ -49,6 +70,7 @@ export default function Bets() {
         const after = list.reduce((a, u) => a + (u.betCount || 0), 0);
         const diff = before === null ? 0 : after - before;
         toast.success("Дані оновлено", { id: "data-refreshed", description: diff > 0 ? `Нових ставок: ${diff}` : "Нових ставок немає" });
+        setDone(true); window.setTimeout(() => setDone(false), 1400);
       }
     } catch (e) {
       const msg = (e as Error).message || "Сервер не відповідає";
@@ -78,6 +100,8 @@ export default function Bets() {
       .sort((a, b) => (sort === "bets" ? b.s.bets - a.s.bets : sort === "staked" ? b.s.staked - a.s.staked : sort === "profit" ? b.s.profit - a.s.profit : b.s.wr - a.s.wr) || a.u.username.localeCompare(b.u.username));
   }, [people, playing, showAll, game, q, sort]);
 
+  useEffect(() => { setRk((x) => x + 1); }, [game, sort, showAll, includeStaff]);
+
   // Desktop opens the first player's bets, like the design; later the admin decides.
   useEffect(() => {
     if (!wide || !firstOpen.current || !rows.length) return;
@@ -96,13 +120,22 @@ export default function Bets() {
     const d = details[u.id];
     if (!d || d.status === "err") { if (online) loadDetail(u); else setDetails((x) => ({ ...x, [u.id]: { status: "err", bets: [], error: "offline" } })); }
   }
-  function exportUser(u: AdminUserOverview, bets: AdminUserBet[]) {
-    const file = `bets-${u.username}.csv`;
-    downloadCsv(file, ["Дата", "Гра", "Подія", "Ставка", "Коефіцієнт", "Сума", "Валюта", "Результат", "Профіт"],
-      bets.map((b) => { const v = betView(b); return [b.date, v.game, v.title, b.betType, b.odds, b.amount, b.currency || "UAH", v.status, b.result === "Pending" ? "" : b.profit]; }));
-    toast.success("Файл готовий", { description: `${file} · ${bets.length} ${plural(bets.length, "рядок", "рядки", "рядків")}` });
-  }
   const resetFilters = () => { setQ(""); setGame("all"); };
+  function exportTable() {
+    const file = "bets-users.csv";
+    downloadCsv(file, ["Логін", "Telegram", "Ігри", "Ставок", "Виграші", "Програші", "Очікує", "Сума ставок", "Профіт", "ROI %", "Вінрейт %", "Банк зараз", "Серія програшів"],
+      rows.map(({ u, s }) => [u.username, u.telegram || "", userGames(u).join(", "), s.bets, s.wins, s.losses, s.pending, Math.round(s.staked), Math.round(s.profit), s.roi.toFixed(1), Math.round(s.wr), Math.round(u.currentBank), u.lossStreak || 0]));
+    toast.success("Файл готовий", { description: `${file} · ${rows.length} ${plural(rows.length, "рядок", "рядки", "рядків")}` });
+  }
+  async function copyHowTo() {
+    if (copyGo || copied) return;
+    const text = "Як додати ставку в MatchIQ: відкрийте журнал ставок у застосунку MatchIQ і додайте запис — матч, тип ставки, коефіцієнт і суму. Після матчу результат і профіт порахуються автоматично.";
+    setCopyGo(true);
+    try { await navigator.clipboard.writeText(text); } catch { setCopyGo(false); toast.error("Не вдалося скопіювати", { description: "Браузер не дав доступу до буфера обміну" }); return; }
+    window.setTimeout(() => { setCopyGo(false); setCopied(true); toast.success("Інструкцію скопійовано", { description: "Надішліть її користувачам у Telegram" }); }, 350);
+    window.setTimeout(() => setCopied(false), 2400);
+  }
+  const openAll = (u: AdminUserOverview) => { setAllFor(u); setAllOpen(true); };
 
   const loading = users === null && !error;
   const noBetsAtAll = users !== null && playing.length === 0;
@@ -144,32 +177,33 @@ export default function Bets() {
           <span className="v3-bt-ico is-info" aria-hidden="true"><Clock size={18} /></span>
           <strong>Ще жодної ставки</strong>
           <span>{days !== null ? `Користувач підключився ${days === 0 ? "сьогодні" : `${days} ${plural(days, "день", "дні", "днів")} тому`}. ` : ""}Можна нагадати, як додати перший запис.</span>
-          {tg && <a className="v3-btn v3-btn-ghost-dark" href={`https://t.me/${tg}`} target="_blank" rel="noreferrer">Написати в Telegram</a>}
+          {tg && <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write${wr === "done" ? " is-done" : ""}`} onClick={() => { if (wr !== "idle") return; setWr("fly"); window.open(`https://t.me/${tg}`, "_blank", "noopener"); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); }}>{wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}</button>}
         </div>
       );
     }
     const list = game === "all" ? d.bets : d.bets.filter((b) => betView(b).game === game);
-    const all = !!fullList[u.id];
-    const shown = list.slice(0, all ? list.length : mobile ? 3 : 5);
+    const shown = list.slice(0, mobile ? 3 : 5);
     const streak = u.lossStreak || 0;
     const games = (u.games || []).filter((g) => g.bets > 0);
+    const legs = (v: ReturnType<typeof betView>, cls: string, j: number) => v.legs.length > 0 && (
+      <div className={cls}>{v.legs.map((l, q) => { const m = legMark(v.res); return <div key={q} style={{ animationDelay: `${200 + j * 50 + q * 50}ms` }}><b className={`v3-bt-mark ${m.cls}`}>{m.mark}</b><span>{l.match}</span><span className="v3-dim">{mobile ? [l.pick, l.odds].filter(Boolean).join(" · ") : l.pick}</span>{!mobile && <span className="v3-r">{l.odds}</span>}</div>; })}</div>
+    );
     if (mobile) return (
       <div className="v3-bt-mxp">
         <div className="v3-bt-mtiles">
           <div className="v3-bt-tile"><div className="k">Банк: старт → зараз</div><div className="v">{money(u.initialBank).replace(" ₴", "")} → {money(u.currentBank)}</div></div>
           <div className="v3-bt-tile"><div className="k">Обіг · ROI</div><div className="v">{money(s.staked)} · <span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</span></div></div>
         </div>
-        {streak >= STREAK_ALERT && <p className="v3-bt-mstreak">{streak} {plural(streak, "програш", "програші", "програшів")} поспіль</p>}
-        <div className="v3-bt-mcap">{all ? `Усі ставки · ${list.length}` : "Останні ставки"}</div>
-        {shown.map((b) => { const v = betView(b); return (
-          <div key={b.id} className="v3-bt-mbet">
-            <div className="v3-bt-mbet-h"><strong>{v.title}</strong><span className={`v3-bt-tag is-${v.res}`}>{v.status}</span></div>
+        <div className="v3-bt-mcap">Останні ставки</div>
+        {shown.map((b, j) => { const v = betView(b); return (
+          <div key={b.id} className="v3-bt-mbet" style={{ animationDelay: `${120 + j * 50}ms` }}>
+            <div className="v3-bt-mbet-h"><strong>{v.title}</strong><span className={`v3-bt-tag v3-bt-res is-${v.res}`} style={{ animationDelay: `${250 + j * 50}ms` }}><i />{v.status}</span></div>
             <div className="v3-bt-mbet-m"><span className="v3-bt-g">{v.game}</span>{v.day} · {v.pick} · {v.odds}</div>
-            {v.legs.length > 0 && <div className="v3-bt-mlegs">{v.legs.map((l, i) => <div key={i}><span className="v3-bt-mark">·</span><span>{l.match}{l.pick ? ` · ${l.pick}` : ""}</span><span>{l.odds}</span></div>)}</div>}
+            {legs(v, "v3-bt-mlegs", j)}
             <div className="v3-bt-mbet-f"><span>{v.amount}</span><strong className={v.res === "win" ? "is-pos" : v.res === "loss" ? "is-neg" : "is-dim"}>{v.profit}</strong></div>
           </div>
         ); })}
-        {list.length > shown.length && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setFullList((f) => ({ ...f, [u.id]: true }))}>Усі {list.length} {plural(list.length, "ставка", "ставки", "ставок")} →</button>}
+        {list.length > shown.length && <button type="button" className="v3-bt-allbtn" onClick={() => openAll(u)} aria-haspopup="dialog">Усі {list.length.toLocaleString("uk-UA")} {plural(list.length, "ставка", "ставки", "ставок")} <span className="v3-bt-ar" aria-hidden="true">→</span></button>}
       </div>
     );
     return (
@@ -185,24 +219,27 @@ export default function Bets() {
         <div className="v3-bt-table">
           <div className="v3-bt-bcols v3-bt-bh"><span>Дата</span><span>Подія</span><span className="v3-r">Коеф.</span><span className="v3-r">Сума</span><span>Результат</span><span className="v3-r">Профіт</span></div>
           {shown.length === 0 && <p className="v3-bt-none">У {game} ставок немає.</p>}
-          {shown.map((b) => { const v = betView(b); return (
-            <div key={b.id} className="v3-bt-bcols v3-bt-br">
+          {shown.map((b, j) => { const v = betView(b); return (
+            <div key={b.id} className="v3-bt-bcols v3-bt-br" style={{ animationDelay: `${150 + j * 50}ms` }}>
               <span className="v3-bt-when"><strong>{v.day}</strong><span>{v.time}</span></span>
               <span className="v3-bt-ev">
                 <strong>{v.title}</strong>
                 <span className="v3-bt-pick"><span className="v3-bt-chip">{v.game}</span>{v.pick}</span>
-                {v.legs.length > 0 && <div className="v3-bt-legs">{v.legs.map((l, i) => <div key={i} className="v3-bt-leg"><span className="v3-bt-mark">·</span><span>{l.match}</span><span className="v3-dim">{l.pick}</span><span className="v3-r">{l.odds}</span></div>)}</div>}
+                {legs(v, "v3-bt-legs", j)}
               </span>
               <span className="v3-r v3-bt-odds">{v.odds}</span>
               <span className="v3-r">{v.amount}</span>
-              <span><span className={`v3-bt-pill is-${v.res}`}><i />{v.status}</span></span>
+              <span><span className={`v3-bt-pill v3-bt-res is-${v.res}`} style={{ animationDelay: `${250 + j * 50}ms` }}><i />{v.status}</span></span>
               <span className={`v3-r v3-bt-pf ${v.res === "win" ? "is-pos" : v.res === "loss" ? "is-neg" : "is-dim"}`}>{v.profit}</span>
             </div>
           ); })}
         </div>
         <div className="v3-bt-xp-foot">
-          <span>{all || list.length <= 5 ? `Показано ${list.length} ${plural(list.length, "ставку", "ставки", "ставок")}` : `Показано 5 останніх із ${list.length} ${plural(list.length, "ставки", "ставок", "ставок")}`}{list.length > 5 && <button type="button" className="v3-bt-link" onClick={() => setFullList((f) => ({ ...f, [u.id]: !all }))}>{all ? "Лише останні" : "Показати всі"}</button>}</span>
-          <span className="v3-bt-xp-acts"><button type="button" className="v3-bt-link" onClick={() => exportUser(u, list)}>Експорт CSV</button><Link to={`/users?q=${encodeURIComponent(u.username)}`}>Відкрити картку користувача →</Link></span>
+          <span>{list.length <= 5 ? `Показано ${list.length} ${plural(list.length, "ставку", "ставки", "ставок")}` : `Показано 5 останніх із ${list.length.toLocaleString("uk-UA")} ${plural(list.length, "ставки", "ставок", "ставок")}`}</span>
+          <span className="v3-bt-xp-acts">
+            {list.length > 5 && <button type="button" className="v3-bt-lnk" onClick={() => openAll(u)} aria-haspopup="dialog">Усі {list.length.toLocaleString("uk-UA")} {plural(list.length, "ставка", "ставки", "ставок")} <span className="v3-bt-ar" aria-hidden="true">→</span></button>}
+            <Link className="v3-bt-lnk" to={`/users?q=${encodeURIComponent(u.username)}`}>Відкрити картку користувача <span className="v3-bt-ar" aria-hidden="true">→</span></Link>
+          </span>
         </div>
       </>
     );
@@ -210,10 +247,14 @@ export default function Bets() {
 
   const sub = (u: AdminUserOverview) => {
     const role = isAdminU(u) ? `${u.isOwner || u.role === "owner" ? "Овнер" : "Адмін"} · ` : "";
-    const g = userGames(u).join(" · ") || (u.betCount ? "—" : "ще не грає");
-    return role + ((u.lossStreak || 0) >= STREAK_ALERT ? `${g} · ${u.lossStreak} поспіль програшів` : g);
+    return role + (userGames(u).join(" · ") || (u.betCount ? "—" : "ще не грає"));
   };
+  const streakTag = (u: AdminUserOverview, short = false) => (u.lossStreak || 0) >= STREAK_ALERT && <span className="v3-bt-stk">{u.lossStreak} поспіль{short ? "" : " програшів"}</span>;
   const wlText = (s: Stats) => `${s.wins} / ${s.losses}${s.pending ? ` · ${s.pending} очік.` : ""}`;
+  const wrBar = (s: Stats) => <span className="v3-bt-wl"><span style={{ width: `${Math.min(100, Math.max(0, s.wr))}%` }} /></span>;
+  const moreAll = people.length > playing.length && (
+    <button type="button" className={`v3-bt-morebtn${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? "Лише ті, хто грає" : "Показати всіх"}<ChevronDown size={15} aria-hidden="true" /></button>
+  );
 
   const desktopTable = (
     <section className="v3-wcard v3-bt-card" aria-busy={busy}>
@@ -221,34 +262,34 @@ export default function Bets() {
         <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів за ставками" placeholder="Знайти за логіном або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
         {gamesSeg("v3-seg v3-seg-soft")}
         <div className="v3-seg v3-seg-soft v3-bt-sort" role="group" aria-label="Сортування ставок">
-        <PillTrack active={sort} />
           <span className="v3-bt-sort-l">Сортування:</span>
+          <PillTrack active={sort} />
           {SORTS.map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
         </div>
       </div>
       <div className={`v3-bt-cols v3-bt-th${xwide ? " is-x" : ""}`} role="row"><span>Користувач</span><span>Ставок</span><span>Сума ставок</span><span>Профіт</span>{xwide && <><span>ROI</span><span>Банк зараз</span></>}<span>Вінрейт · В / П</span><span /></div>
-      {rows.length === 0 ? filteredEmpty : rows.slice(0, limit).map(({ u, s }) => {
+      {rows.length === 0 ? filteredEmpty : <div key={rk} className="v3-bt-rows">{rows.slice(0, limit).map(({ u, s }, i) => {
         const open = openId === u.id;
         return (
-          <div key={u.id} className={`v3-bt-item${open ? " is-open" : ""}`}>
+          <div key={u.id} className={`v3-bt-item${open ? " is-open" : ""}`} style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}>
             <button type="button" className={`v3-bt-tr v3-bt-cols${xwide ? " is-x" : ""}`} aria-expanded={open} onClick={() => toggle(u)}>
-              <span className="v3-bt-who"><UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" /><span><strong>@{u.username}</strong><span className={`v3-bt-sub${(u.lossStreak || 0) >= STREAK_ALERT ? " is-alert" : ""}`}>{sub(u)}</span></span></span>
+              <span className="v3-bt-who"><UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" /><span><strong>@{hl(u.username, q)}</strong><span className="v3-bt-sub">{sub(u)}{streakTag(u)}</span></span></span>
               <span className="v3-bt-n">{s.bets.toLocaleString("uk-UA")}</span>
               <span>{money(s.staked)}</span>
               <span className={`v3-bt-n ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(s.profit)}</span>
               {xwide && <><span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</span><span>{money(u.currentBank)}</span></>}
-              <span><span className="v3-bt-wr">{Math.round(s.wr)}%</span> <span className="v3-bt-dim">· {wlText(s)}</span><span className="v3-bt-wl"><span style={{ width: `${Math.min(100, Math.max(0, s.wr))}%` }} /></span></span>
+              <span><span className="v3-bt-wr">{Math.round(s.wr)}%</span> <span className="v3-bt-dim">· {wlText(s)}</span>{wrBar(s)}</span>
               <span className="v3-bt-chev" aria-hidden="true"><ChevronDown size={14} /></span>
             </button>
             {open && <div className="v3-bt-xp">{detailBody(u, s, false)}</div>}
           </div>
         );
-      })}
+      })}</div>}
       <div className="v3-bt-foot">
         <span>Натисніть на рядок, щоб переглянути ставки · <b>{Math.min(limit, rows.length)}</b> з {showAll ? `${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")}` : `${playing.length} ${plural(playing.length, "користувача", "користувачів", "користувачів")}, які грають`}{updatedAt ? ` · оновлено о ${updatedAt}` : ""}</span>
         <span className="v3-bt-xp-acts">
-          {rows.length > limit && <button type="button" className="v3-bt-link" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
-          {people.length > playing.length && <button type="button" className="v3-bt-link" onClick={() => setShowAll(!showAll)}>{showAll ? "Лише ті, хто грає" : "Показати всіх"}</button>}
+          {rows.length > limit && <button type="button" className="v3-bt-morebtn" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
+          {moreAll}
         </span>
       </div>
     </section>
@@ -256,28 +297,33 @@ export default function Bets() {
 
   const mobileList = (
     <div className="v3-bt-mobile">
-      <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
-      <div className="v3-bt-mfilters">
-        {gamesSeg("v3-bt-mseg")}
-        <button type="button" className="v3-bt-msort" aria-label={`Сортування: ${SORTS.find((x) => x[0] === sort)![1]}. Натисніть, щоб змінити`} onClick={() => setSort(SORTS[(SORTS.findIndex((x) => x[0] === sort) + 1) % SORTS.length][0])}><ArrowDownUp size={14} aria-hidden="true" />{SORTS.find((x) => x[0] === sort)![1]}</button>
+      <div className="v3-bt-mtabs" role="group" aria-label="Фільтр за грою">
+        <PillTrack active={game} />
+        <button type="button" className={`v3-bt-mtab${game === "all" ? " is-on" : ""}`} aria-pressed={game === "all"} onClick={() => setGame("all")}><span className="v3-bt-mtab-n">{playing.length}</span>Усі</button>
+        {gameCounts.map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}</button>)}
       </div>
-      {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : rows.slice(0, limit).map(({ u, s }) => {
-        const open = openId === u.id, alert = (u.lossStreak || 0) >= STREAK_ALERT;
+      <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
+      <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: `Сортування: ${SORT_M[k]}` }))} />
+      {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : <div key={rk} className="v3-bt-mrows">{rows.slice(0, limit).map(({ u, s }, i) => {
+        const open = openId === u.id;
         const head = (
           <button type="button" className="v3-bt-mcard" aria-expanded={open} onClick={() => toggle(u)}>
             <UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" />
-            <span className="v3-bt-mwho"><strong>@{u.username}</strong><span className={alert ? "is-alert" : ""}>{alert ? `${u.lossStreak} ${plural(u.lossStreak, "програш", "програші", "програшів")} поспіль` : u.betCount ? `${s.bets} ${plural(s.bets, "ставка", "ставки", "ставок")} · ${Math.round(s.wr)}%` : "ще не грає"}</span><span className="v3-bt-wl"><span style={{ width: `${Math.min(100, Math.max(0, s.wr))}%` }} /></span></span>
-            <span className="v3-bt-mright"><strong className={s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}>{signedMoney(s.profit)}</strong>{open && <small>Згорнути ▴</small>}</span>
+            <span className="v3-bt-mwho"><strong>@{hl(u.username, q)}{streakTag(u, true)}</strong><span>{u.betCount ? `${s.bets.toLocaleString("uk-UA")} ${plural(s.bets, "ставка", "ставки", "ставок")} · ${Math.round(s.wr)}% · ${userGames(u).join(" · ")}` : "ще не грає"}</span>{wrBar(s)}</span>
+            <span className="v3-bt-mright"><strong className={s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}>{signedMoney(s.profit)}</strong><small>{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></small></span>
           </button>
         );
-        return open ? <div key={u.id} className="v3-bt-mopen">{head}{detailBody(u, s, true)}</div> : <div key={u.id}>{head}</div>;
-      })}
+        return <div key={u.id} className={open ? "v3-bt-mopen" : "v3-bt-mitem"} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
+      })}</div>}
       {rows.length > limit && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
+      {moreAll && <div className="v3-bt-mmore">{moreAll}</div>}
     </div>
   );
 
+  const refreshIc = done ? <Check size={15} className="v3-bt-ok" aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" className={`v3-bt-rf${busy ? " v3-bt-rot" : ""}`} />;
+
   const offline = !online && (
-    <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Підсумки станом на {updatedAt || "—"}, нові ставки не підвантажаться.</span><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={() => { if (navigator.onLine) load(true); else toast.info("Досі немає з’єднання"); }}>Перевірити ще раз</button></div>
+    <div key={offTry} className={`v3-offline-users${offTry ? " v3-bt-shk" : ""}`} role="status"><WifiOff size={16} aria-hidden="true" /><span>{offTry ? `Досі немає інтернету (${offTry}). ` : "Немає інтернету. "}Підсумки станом на {updatedAt || "—"}, нові ставки не підвантажаться.</span><button type="button" className={`v3-btn v3-btn-ghost-dark v3-btn-sm${offBusy ? " v3-bt-busy" : ""}`} disabled={offBusy} onClick={() => { if (navigator.onLine) { load(true); return; } setOffBusy(true); window.setTimeout(() => { setOffBusy(false); setOffTry((x) => x + 1); }, 1000); }}>{offBusy ? <><RefreshCw size={13} className="v3-bt-rot" aria-hidden="true" />Перевіряємо…</> : "Перевірити ще раз"}</button></div>
   );
 
   return (
@@ -289,8 +335,10 @@ export default function Bets() {
         </div>
         <div className="v3-chips">
           <button type="button" className={`v3-chip${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
-          {!noBetsAtAll && <button type="button" className="v3-chip v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}><RefreshCw size={14} aria-hidden="true" className={busy ? "v3-bt-rot" : undefined} />Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
+          {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
+          {!noBetsAtAll && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportTable} disabled={!rows.length} />}
         </div>
+        {!noBetsAtAll && <button type="button" className="v3-bt-rfb v3-only-mobile" onClick={() => load(true)} disabled={busy || !online} aria-label={busy ? "Оновлюємо" : "Оновити"}>{refreshIc}</button>}
       </section>
 
       {offline}
@@ -311,47 +359,43 @@ export default function Bets() {
         <>
           <section className="v3-bt-kpis">
             <div className="v3-dcard v3-bt-kpi"><div className="l">Ставок всього</div><div className="v">0</div><div className="n">ще немає записів</div></div>
-            <div className="v3-dcard v3-bt-kpi"><div className="l">Обіг</div><div className="v">0 <small>₴</small></div><div className="n">сума ставок</div></div>
+            <div className="v3-dcard v3-bt-kpi v3-hide-mobile"><div className="l">Обіг</div><div className="v">0 <small>₴</small></div><div className="n">сума ставок</div></div>
             <div className="v3-dcard v3-bt-kpi"><div className="l">Загальний профіт</div><div className="v">0 <small>₴</small></div><div className="n">—</div></div>
-            <div className="v3-dcard v3-bt-kpi"><div className="l">Грають</div><div className="v">0 <small>з {people.length}</small></div><div className="n">користувачів</div></div>
+            <div className="v3-dcard v3-bt-kpi v3-hide-mobile"><div className="l">Грають</div><div className="v">0 <small>з {people.length}</small></div><div className="n">користувачів</div></div>
           </section>
-          <section className="v3-users-empty">
-            <div className="v3-wcard v3-ue-main">
-              <div className="v3-ue-ghost" aria-hidden="true">{[40, 47, 54, 61, 68, 45].map((w, i) => <div key={i} className="v3-ue-grow"><i className="is-av" /><div><i style={{ width: `${w}%`, height: 12 }} /><i style={{ width: `${25 + (i % 4) * 5}%`, height: 9, marginTop: 8 }} /></div><i style={{ height: 12 }} /><i style={{ height: 22, borderRadius: 999 }} /></div>)}</div>
-              <div className="v3-ue-over">
-                <span className="v3-ue-ico" aria-hidden="true"><BarChart3 size={28} strokeWidth={1.8} /></span>
-                <h2>Ставок ще немає</h2>
-                <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
-                <div><Link to="/users" className="v3-btn v3-btn-primary">До користувачів</Link></div>
+          <section className="v3-pay-zero v3-bt-zero">
+            <div className="v3-wcard v3-pay-zero-card">
+              <span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><BarChart3 size={24} /></span>
+              <strong>Ставок ще немає</strong>
+              <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
+              <div className="v3-pay-zero-acts">
+                <Link to="/users" className="v3-btn v3-btn-dark v3-bt-go">До користувачів <span className="v3-bt-ar" aria-hidden="true">→</span></Link>
+                <button type="button" className="v3-btn v3-btn-light v3-bt-copy" onClick={copyHowTo}>{copied ? <Check size={15} className="v3-bt-ok" aria-hidden="true" /> : <span className={`v3-bt-cpic${copyGo ? " is-go" : ""}`} aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect className="pg1" x="9" y="9" width="12" height="12" rx="2" /><path className="pg2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg></span>}{copied ? "Скопійовано" : "Скопіювати інструкцію"}</button>
               </div>
             </div>
-            <aside className="v3-dcard v3-ue-side v3-hide-mobile">
+            <div className="v3-dcard v3-pay-zero-steps">
               <strong>Як з’являються ставки</strong>
-              <ol>
-                <li><span>1</span><div><b>Користувач додає запис</b><small>У застосунку MatchIQ: матч, тип ставки, коефіцієнт і сума</small></div></li>
-                <li><span>2</span><div><b>Матч завершується</b><small>Результат і профіт рахуються автоматично</small></div></li>
-                <li><span>3</span><div><b>Ви бачите все тут</b><small>Обіг, вінрейт, серії програшів і банк кожного користувача</small></div></li>
-              </ol>
-            </aside>
+              {[["Користувач додає запис", "У застосунку MatchIQ: матч, тип ставки, коефіцієнт і сума"], ["Матч завершується", "Результат і профіт рахуються автоматично"], ["Ви бачите все тут", "Обіг, вінрейт, серії програшів і банк кожного користувача"]].map((x, i) => <div key={x[0]} className="v3-pay-zero-step"><b>{i + 1}</b><span><strong>{x[0]}</strong><small>{x[1]}</small></span></div>)}
+            </div>
           </section>
         </>
       ) : (
         <>
           {wide ? (
             <section className="v3-bt-kpis">
-              <div className="v3-bt-kpi is-blue"><div className="l">Ставок всього</div><div className="v">{tot.bets.toLocaleString("uk-UA")}</div><div className="n">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")} · {tot.pending.toLocaleString("uk-UA")} очікує</div></div>
-              <div className="v3-dcard v3-bt-kpi"><div className="l">Обіг</div><div className="v">{Math.round(tot.staked).toLocaleString("uk-UA")}<small> ₴</small></div><div className="n">сума ставок усіх користувачів</div></div>
-              <div className="v3-dcard v3-bt-kpi"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(tot.profit).replace(" ₴", "")}<small> ₴</small></div><div className="n">ROI {signedPct(roi)} · за виграшами й програшами</div></div>
+              <div className="v3-bt-kpi is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`b-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")} · {tot.pending.toLocaleString("uk-UA")} очікує</div></div>
+              <div className="v3-dcard v3-bt-kpi"><div className="l">Обіг</div><div className="v"><RollingNumber key={`s-${tot.staked}`} text={Math.round(tot.staked).toLocaleString("uk-UA")} /><small> ₴</small></div><div className="n">сума ставок усіх користувачів</div></div>
+              <div className="v3-dcard v3-bt-kpi"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`p-${tot.profit}`} text={signedMoney(tot.profit).replace(" ₴", "")} /><small> ₴</small></div><div className="n">ROI {signedPct(roi)} · за виграшами й програшами</div></div>
               <div className="v3-dcard v3-bt-kpi"><div className="l">Грають</div><div className="v">{playing.length}<small> з {people.length}</small></div><div className="v3-bt-gtags">{gameCounts.map(([g, n]) => <span key={g} className="v3-tag v3-bt-gtag">{g} · {n}</span>)}</div></div>
             </section>
           ) : (
-            <section className="v3-bt-mkpi">
-              <div className="l">Ставок всього</div>
-              <div className="v">{tot.bets.toLocaleString("uk-UA")}</div>
-              <div className="f"><span>Обіг <b>{money(tot.staked)}</b></span><span>Профіт <b className="p">{signedMoney(tot.profit)}</b></span></div>
+            <section className="v3-bt-mkpis">
+              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div></div>
+              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div></div>
             </section>
           )}
           {wide ? desktopTable : mobileList}
+          <AllBetsDialog user={allFor} bets={allFor ? details[allFor.id]?.bets || [] : []} open={allOpen} onOpenChange={setAllOpen} />
         </>
       )}
     </div>
