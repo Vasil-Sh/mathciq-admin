@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { BarChart3, Check, ChevronDown, Clock, ListFilter, RefreshCw, Search, Send, WifiOff } from "lucide-react";
+import { ArrowUp, BarChart3, Check, ChevronDown, Clock, ListFilter, RefreshCw, Search, Send, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -140,6 +140,36 @@ export default function Bets() {
 
   const loading = users === null && !error;
   const noBetsAtAll = users !== null && playing.length === 0;
+
+  // «Зміна до минулого місяця» on the totals (catalog · Metrics 06). /admin/users has only all-time sums,
+  // so this month vs last month comes from the players' bets (loaded in the background, the same lists the rows open).
+  const MAX_FOR_DELTAS = 60;
+  useEffect(() => {
+    if (!users || !online || playing.length === 0 || playing.length > MAX_FOR_DELTAS) return;
+    playing.forEach((u) => { if (!details[u.id]) loadDetail(u); });
+  }, [users, online, playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const monthly = useMemo(() => {
+    if (!playing.length || playing.length > MAX_FOR_DELTAS || playing.some((u) => details[u.id]?.status !== "ok")) return null;
+    const now = new Date();
+    const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const cur = key(now), prev = key(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const m = { [cur]: { bets: 0, staked: 0, profit: 0, users: new Set<number>() }, [prev]: { bets: 0, staked: 0, profit: 0, users: new Set<number>() } };
+    playing.forEach((u) => (details[u.id]?.bets || []).forEach((b) => {
+      const k = (b.date || "").slice(0, 7); const x = m[k]; if (!x || (game !== "all" && betView(b).game !== game)) return;
+      x.bets++; x.staked += Number(b.amount) || 0; x.profit += Number(b.profit) || 0; x.users.add(u.id);
+    }));
+    const MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
+    return { c: m[cur], p: m[prev], vs: MONTHS_GEN[(now.getMonth() + 11) % 12] };
+  }, [playing, details, game]);
+  /** Last month 0 → the difference itself («↑ +3»); both 0 → «→ 0%»; profit compares against |last month|. */
+  const chip = (cur: number, prev: number, fmt: (n: number) => string, onBlue = false) => {
+    if (!monthly) return null;
+    const d = prev !== 0 ? Math.round(((cur - prev) / Math.abs(prev)) * 1000) / 10 : cur > 0 ? 1 : cur < 0 ? -1 : 0;
+    const text = prev !== 0 ? `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%` : cur !== 0 ? `${cur > 0 ? "+" : "−"}${fmt(Math.abs(cur))}` : "0%";
+    return <><span className={`v3-dl ${onBlue ? "is-onblue " : ""}${d === 0 ? "is-flat" : d > 0 ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`цей місяць до ${monthly.vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{text}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {monthly.vs} </span></>;
+  };
+  const num = (n: number) => Math.round(n).toLocaleString("uk-UA");
+  const uah = (n: number) => `${num(n)} ₴`;
 
   /* ── pieces ── */
   const gamesSeg = (cls: string) => (
@@ -387,15 +417,15 @@ export default function Bets() {
         <>
           {wide ? (
             <section className="v3-bt-kpis">
-              <div className="v3-bt-kpi is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`b-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")} · {tot.pending.toLocaleString("uk-UA")} очікує</div></div>
-              <div className="v3-dcard v3-bt-kpi"><div className="l">Обіг</div><div className="v"><RollingNumber key={`s-${tot.staked}`} text={Math.round(tot.staked).toLocaleString("uk-UA")} /><small> ₴</small></div><div className="n">сума ставок усіх користувачів</div></div>
-              <div className="v3-dcard v3-bt-kpi"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`p-${tot.profit}`} text={signedMoney(tot.profit).replace(" ₴", "")} /><small> ₴</small></div><div className="n">ROI {signedPct(roi)} · за виграшами й програшами</div></div>
-              <div className="v3-dcard v3-bt-kpi"><div className="l">Грають</div><div className="v">{playing.length}<small> з {people.length}</small></div><div className="v3-bt-gtags">{gameCounts.map(([g, n]) => <span key={g} className="v3-tag v3-bt-gtag">{g} · {n}</span>)}</div></div>
+              <div className="v3-bt-kpi is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`b-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{monthly && chip(monthly.c.bets, monthly.p.bets, num, true)}{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")} · {tot.pending.toLocaleString("uk-UA")} очікує</div></div>
+              <div className="v3-dcard v3-bt-kpi"><div className="l">Обіг</div><div className="v"><RollingNumber key={`s-${tot.staked}`} text={Math.round(tot.staked).toLocaleString("uk-UA")} /><small> ₴</small></div><div className="n">{monthly && chip(monthly.c.staked, monthly.p.staked, uah)}сума ставок усіх користувачів</div></div>
+              <div className="v3-dcard v3-bt-kpi"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`p-${tot.profit}`} text={signedMoney(tot.profit).replace(" ₴", "")} /><small> ₴</small></div><div className="n">{monthly && chip(monthly.c.profit, monthly.p.profit, uah)}ROI {signedPct(roi)} · за виграшами й програшами</div></div>
+              <div className="v3-dcard v3-bt-kpi"><div className="l">Грають</div><div className="v">{playing.length}<small> з {people.length}</small></div>{monthly && <div className="n">{chip(monthly.c.users.size, monthly.p.users.size, num)}грали цього місяця: {monthly.c.users.size}</div>}<div className="v3-bt-gtags">{gameCounts.map(([g, n]) => <span key={g} className="v3-tag v3-bt-gtag">{g} · {n}</span>)}</div></div>
             </section>
           ) : (
             <section className="v3-bt-mkpis">
-              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div></div>
-              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div></div>
+              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div>{monthly && <div className="n">{chip(monthly.c.bets, monthly.p.bets, num, true)}</div>}</div>
+              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div>{monthly && <div className="n">{chip(monthly.c.profit, monthly.p.profit, uah)}</div>}</div>
             </section>
           )}
           {wide ? desktopTable : mobileList}

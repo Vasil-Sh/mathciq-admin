@@ -340,3 +340,4 @@
 .v3-bt-shk { animation: v3-bt-shk .45s cubic-bezier(.36, .07, .19, .97) both; }
 @keyframes v3-bt-shk { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 @media (prefers-reduced-motion: reduce) { .v3-bt-shk { animation: none; } }
+.v3-bt-mk .n { margin-top: 8px; } .v3-bt-kpi .n .v3-dl, .v3-bt-mk .n .v3-dl { margin-right: 6px; }
