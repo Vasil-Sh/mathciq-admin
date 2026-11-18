@@ -275,7 +275,8 @@ export default function Dashboard() {
       [...view.report].reverse().map((r) => [`${r.name} ${view.year}`, r.paid, r.est, r.users, r.delta ?? ""]));
   }
 
-  const emptyPlatform = !!stats && stats.totalUsers - stats.adminUsers <= 0;
+  // /admin/stats counts totalUsers with role = 'user' only (admins are not in it), so no subtraction here.
+  const emptyPlatform = !!stats && stats.totalUsers <= 0;
   const header = (
     <section className="v3-hero v3-hero-row">
       <div>
@@ -333,7 +334,7 @@ export default function Dashboard() {
     );
   }
 
-  const regularUsers = stats.totalUsers - stats.adminUsers;
+  const regularUsers = stats.totalUsers;
   const isEmpty = regularUsers <= 0;
   const byId = new Map((overview || []).map((u) => [u.id, u]));
   const byName = new Map((overview || []).map((u) => [u.username, u]));
