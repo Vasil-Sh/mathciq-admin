@@ -404,7 +404,7 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
   /* behind the on-screen keyboard and its bar the browser shows the page background: make it the sheet's white */
   html.v3-sheet-open { background: #fff; }
   /* a tall sheet stops below the status bar, so the system blur at the top edge never covers it */
-  .v3-modal[data-state] { max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 16px)); overscroll-behavior: contain; }
+  .v3-modal[data-state] { max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 48px)); overscroll-behavior: contain; }
   /* keyboard open: the sheet sits right above it (lifted by us when iOS does not), fits the visible part,
      and its white continues under the keyboard's translucent bar (two white copies of the sheet below it; the shadow is not clipped) */
   .v3-modal[data-state], .v3-sheet[data-state] { bottom: var(--v3-kb, 0px) !important; }
@@ -416,7 +416,11 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
 /* Toasts stay above dialogs and their blur, and can be read and closed while a dialog is open */
 [data-sonner-toaster] { z-index: 2147483000 !important; pointer-events: auto; transform: translateZ(0); }
 /* Phone: the toast comes below the status bar (iOS blurs everything under the clock and the island), over the header */
-@media (max-width: 767px) { [data-sonner-toaster][data-y-position="top"] { top: calc(env(safe-area-inset-top, 0px) + 8px) !important; } }
+@media (max-width: 767px) {
+  [data-sonner-toaster][data-y-position="top"] { top: calc(env(safe-area-inset-top, 0px) + 8px) !important; left: 10px !important; right: 10px !important; width: auto !important; }
+  /* the toast takes the whole width of the header block */
+  [data-sonner-toaster][data-y-position="top"] [data-sonner-toast] { left: 0 !important; right: 0 !important; width: 100% !important; max-width: none !important; }
+}
 /* Mistakes next to the field (forms validate on submit) */
 .v3-field-err { margin: 0; color: #b3321c; font-size: 13px; line-height: 1.45; animation: v3-err-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
 @media (prefers-reduced-motion: reduce) { .v3-field-err { animation: none; } }

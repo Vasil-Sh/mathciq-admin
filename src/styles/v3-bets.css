@@ -294,7 +294,7 @@
 .v3-ab-more { min-height: 46px; border-radius: 999px; border: 1px solid #dde1e7; background: #fff; color: #11151c; font: 600 14px Inter, sans-serif; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
 .v3-ab-more:active { transform: scale(.96); }
 .v3-ab-x:focus-visible, .v3-ab-f4 button:focus-visible, .v3-ab-more:focus-visible { outline: 2px solid #3a6df0; outline-offset: 2px; }
-@media (max-width: 767px) { .v3-modal.v3-ab[data-state] { width: 100%; padding: 26px 16px 28px; max-height: calc(100dvh - 56px); } }
+@media (max-width: 767px) { .v3-modal.v3-ab[data-state] { width: 100%; padding: 26px 16px 28px; max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 48px)); } }
 
 @media (hover: hover) {
   .v3-bt-tr:hover { background: #f6f8fc; }
@@ -341,3 +341,8 @@
 @keyframes v3-bt-shk { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 @media (prefers-reduced-motion: reduce) { .v3-bt-shk { animation: none; } }
 .v3-bt-mk .n { margin-top: 8px; } .v3-bt-kpi .n .v3-dl, .v3-bt-mk .n .v3-dl { margin-right: 6px; }
+/* Телефон: «Показати всіх» — кнопка на всю ширину, як «Показати ще» */
+.v3-bt-mall { animation: none; }
+.v3-bt-mall svg { transition: transform .35s cubic-bezier(.2, .9, .25, 1.3); }
+.v3-bt-mall.is-on svg { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .v3-bt-mall svg { transition: none; } }

@@ -346,8 +346,8 @@ export default function Bets() {
         );
         return <div key={u.id} className={open ? "v3-bt-mopen" : "v3-bt-mitem"} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
       })}</div>}
-      {rows.length > limit && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
-      {moreAll && <div className="v3-bt-mmore">{moreAll}</div>}
+      {rows.length > limit && <button type="button" className="v3-bt-allbtn v3-bt-mall" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
+      {people.length > playing.length && <button type="button" className={`v3-bt-allbtn v3-bt-mall${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? "Лише ті, хто грає" : `Показати всіх · ${people.length}`}<ChevronDown size={16} aria-hidden="true" /></button>}
     </div>
   );
 
