@@ -405,10 +405,18 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
   html.v3-sheet-open { background: #fff; }
   /* a tall sheet stops below the status bar, so the system blur at the top edge never covers it */
   .v3-modal[data-state] { max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 16px)); overscroll-behavior: contain; }
+  /* keyboard open: the sheet sits right above it (lifted by us when iOS does not), fits the visible part,
+     and its white continues under the keyboard's translucent bar (two white copies of the sheet below it; the shadow is not clipped) */
+  .v3-modal[data-state], .v3-sheet[data-state] { bottom: var(--v3-kb, 0px) !important; }
+  .v3-modal[data-state] { box-shadow: 0 220px 0 #fff, 0 440px 0 #fff; }
+  .v3-sheet[data-state] { box-shadow: 0 220px 0 var(--v3-card), 0 440px 0 var(--v3-card); }
+  html.v3-kb-open .v3-modal[data-state] { max-height: calc(var(--v3-vvh, 100dvh) - env(safe-area-inset-top, 0px) - 12px); }
   .v3-footer { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 }
 /* Toasts stay above dialogs and their blur, and can be read and closed while a dialog is open */
 [data-sonner-toaster] { z-index: 2147483000 !important; pointer-events: auto; transform: translateZ(0); }
+/* Phone: the toast comes below the status bar (iOS blurs everything under the clock and the island), over the header */
+@media (max-width: 767px) { [data-sonner-toaster][data-y-position="top"] { top: calc(env(safe-area-inset-top, 0px) + 8px) !important; } }
 /* Mistakes next to the field (forms validate on submit) */
 .v3-field-err { margin: 0; color: #b3321c; font-size: 13px; line-height: 1.45; animation: v3-err-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
 @media (prefers-reduced-motion: reduce) { .v3-field-err { animation: none; } }

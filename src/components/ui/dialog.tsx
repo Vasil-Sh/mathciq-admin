@@ -31,9 +31,11 @@ function GrabBar({ contentRef, closeRef }: { contentRef: React.RefObject<HTMLDiv
 const keepOpen = (e: Event) => { const t = e.target as Element | null; return !!t?.closest?.("[data-sonner-toaster], .v3-date-scrim, .v3-date-pop, [data-v3-float]"); };
 
 /**
- * Phone sheets and the on-screen keyboard (iOS): the area behind the keyboard shows the page background,
- * so while a sheet is open the page background is the sheet's white; and when the keyboard closes,
- * the page is put back where it was, so no dark gap is left under the sheet.
+ * Phone sheets and the on-screen keyboard (iOS).
+ * - When iOS does not move the sheet above the keyboard (often on the first focus, while the sheet is still sliding in),
+ *   we lift it ourselves: --v3-kb is the part of the screen the keyboard covers, --v3-vvh the visible height.
+ * - Behind the keyboard's translucent bar the sheet's white continues (CSS), not the page.
+ * - When the keyboard closes, the page is put back where it was, so no gap is left under the sheet.
  */
 function useSheetKeyboard() {
   React.useEffect(() => {
@@ -42,18 +44,30 @@ function useSheetKeyboard() {
     root.classList.add("v3-sheet-open");
     const y0 = window.scrollY;
     const vv = window.visualViewport;
-    let max = vv ? vv.height : window.innerHeight;
-    const onResize = () => {
-      if (!vv) return;
+    if (!vv) return () => root.classList.remove("v3-sheet-open");
+    let max = vv.height;
+    const apply = () => {
       if (vv.height > max) max = vv.height;
-      root.style.setProperty("--v3-kb", `${Math.max(0, Math.round(max - vv.height))}px`);
+      const layout = document.documentElement.clientHeight;
+      const kb = Math.max(0, Math.round(layout - vv.height - vv.offsetTop));
+      root.style.setProperty("--v3-kb", `${kb > 40 ? kb : 0}px`);
+      root.style.setProperty("--v3-vvh", `${Math.round(vv.height)}px`);
+      root.classList.toggle("v3-kb-open", max - vv.height > 120);
       if (vv.height >= max - 1 && window.scrollY !== y0) window.scrollTo(window.scrollX, y0);
     };
-    vv?.addEventListener("resize", onResize);
+    const later = () => { apply(); window.setTimeout(apply, 120); window.setTimeout(apply, 420); };
+    apply();
+    vv.addEventListener("resize", apply);
+    vv.addEventListener("scroll", apply);
+    document.addEventListener("focusin", later);
+    document.addEventListener("focusout", later);
     return () => {
-      vv?.removeEventListener("resize", onResize);
-      // Only the last open sheet removes the white page background.
-      window.setTimeout(() => { if (!document.querySelector(".v3-modal[data-state=\"open\"], .v3-sheet[data-state=\"open\"]")) { root.classList.remove("v3-sheet-open"); root.style.removeProperty("--v3-kb"); } }, 300);
+      vv.removeEventListener("resize", apply);
+      vv.removeEventListener("scroll", apply);
+      document.removeEventListener("focusin", later);
+      document.removeEventListener("focusout", later);
+      // Only the last open sheet removes these.
+      window.setTimeout(() => { if (!document.querySelector(".v3-modal[data-state=\"open\"], .v3-sheet[data-state=\"open\"]")) { root.classList.remove("v3-sheet-open", "v3-kb-open"); root.style.removeProperty("--v3-kb"); root.style.removeProperty("--v3-vvh"); } }, 300);
     };
   }, []);
 }
