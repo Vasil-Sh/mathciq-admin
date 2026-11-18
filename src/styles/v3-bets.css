@@ -157,8 +157,14 @@
 /* «Оновити» (Кнопки 05): стрілка крутиться → галочка */
 .v3-bt-rf { transition: transform .5s cubic-bezier(.2, .9, .25, 1.3); }
 .v3-bt-ok { color: #7fdcaa; animation: v3-ok-pop .4s cubic-bezier(.2, .9, .25, 1.6) both; }
-.v3-bt-rfb { position: absolute; top: 4px; right: 0; display: none; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: #161b24; color: #e7eaf0; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .2s, transform .15s ease-out; }
-@media (max-width: 767px) { .v3-bets .v3-bt-rfb { display: grid; } }
+.v3-bt-rfb { display: grid; flex-shrink: 0; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: #161b24; color: #e7eaf0; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .2s, transform .15s ease-out; }
+/* Телефон: «Адміни й овнери» і «Оновити» — праворуч від заголовка */
+.v3-bt-mtop { display: none; }
+@media (max-width: 767px) {
+  .v3-bt-mtop { position: absolute; top: 6px; right: 0; display: flex; align-items: center; gap: 8px; }
+  .v3-bt-mtop .v3-chip { min-height: 44px; padding: 0 14px; white-space: nowrap; }
+  .v3-bets .v3-hero-row .v3-chips:not(:has(> :not(.v3-hide-mobile))) { display: none; }
+}
 .v3-bt-rfb:active:not(:disabled) { transform: scale(.96); }
 .v3-bt-rfb:disabled { opacity: .55; cursor: default; }
 .v3-bt-rfb svg { width: 18px; height: 18px; }

@@ -335,11 +335,14 @@ export default function Bets() {
           <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час</span></p>
         </div>
         <div className="v3-chips">
-          <button type="button" className={`v3-chip${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
+          <button type="button" className={`v3-chip v3-hide-mobile${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
           {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
           {!noBetsAtAll && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportTable} disabled={!rows.length} />}
         </div>
-        {!noBetsAtAll && <button type="button" className="v3-bt-rfb v3-only-mobile" onClick={() => load(true)} disabled={busy || !online} aria-label={busy ? "Оновлюємо" : "Оновити"}>{refreshIc}</button>}
+        <div className="v3-bt-mtop">
+          <button type="button" className={`v3-chip${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>Адміни й овнери</button>
+          {!noBetsAtAll && <button type="button" className="v3-bt-rfb" onClick={() => load(true)} disabled={busy || !online} aria-label={busy ? "Оновлюємо" : "Оновити"}>{refreshIc}</button>}
+        </div>
       </section>
 
       {offline}
