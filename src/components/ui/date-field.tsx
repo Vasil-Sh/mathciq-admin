@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from "lucide-react";
 
 const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 const MONTHS_G = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
@@ -13,6 +13,10 @@ interface Props {
   onChange: (v: string) => void;
   min?: string;
   max?: string;
+  /** Month to show when the field is empty (e.g. 21 years ago for a birth date). */
+  defaultView?: string;
+  /** Extra «« »» buttons that jump a whole year (birth dates). */
+  yearNav?: boolean;
   required?: boolean;
   labelledBy?: string;
 }
@@ -23,9 +27,9 @@ interface Props {
  * On a phone the calendar opens as a centred window over a dimmed page (catalog · Screens · modal windows),
  * so it never hangs off the edge of a narrow field.
  */
-export function DateField({ id, value, onChange, min, max, required, labelledBy }: Props) {
+export function DateField({ id, value, onChange, min, max, required, labelledBy, defaultView, yearNav }: Props) {
   const [open, setOpen] = useState(false);
-  const base = value || min || new Date().toISOString().slice(0, 10);
+  const base = value || defaultView || min || new Date().toISOString().slice(0, 10);
   const [view, setView] = useState({ y: +base.slice(0, 4), m: +base.slice(5, 7) - 1 });
   const [dir, setDir] = useState(1);
   const [run, setRun] = useState(0);
@@ -35,7 +39,7 @@ export function DateField({ id, value, onChange, min, max, required, labelledBy 
   const [closing, setClosing] = useState(false);
   const close = () => { if (!asWin) { setOpen(false); return; } setClosing(true); window.setTimeout(() => { setClosing(false); setOpen(false); }, 180); };
   const toggle = () => { if (open) { close(); return; } setAsWin(window.matchMedia("(max-width: 720px)").matches); setOpen(true); };
-  useEffect(() => { if (open) { const b = value || min || new Date().toISOString().slice(0, 10); setView({ y: +b.slice(0, 4), m: +b.slice(5, 7) - 1 }); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) { const b = value || defaultView || min || new Date().toISOString().slice(0, 10); setView({ y: +b.slice(0, 4), m: +b.slice(5, 7) - 1 }); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     const off = (e: MouseEvent) => { const t = e.target as Node; if (box.current?.contains(t) || pop.current?.contains(t)) return; if (!asWin) setOpen(false); };
@@ -51,10 +55,12 @@ export function DateField({ id, value, onChange, min, max, required, labelledBy 
   const anim = `${dir > 0 ? "is-r" : "is-l"}${run % 2 ? "2" : ""}`;
   const cal = (win: boolean) => (
     <div ref={pop} className={`v3-date-pop${win ? " is-win" : ""}${win && closing ? " is-closing" : ""}`} role="dialog" aria-modal={win || undefined} aria-label="Вибір дати">
-      <div className="v3-date-head">
+      <div className={`v3-date-head${yearNav ? " has-years" : ""}`}>
+        {yearNav && <button type="button" aria-label="Попередній рік" onClick={() => move(-12)}><ChevronsLeft size={win ? 16 : 14} /></button>}
         <button type="button" aria-label="Попередній місяць" onClick={() => move(-1)}><ChevronLeft size={win ? 16 : 14} /></button>
         <strong key={`h${run}`} className={`v3-date-m ${anim}`}>{MONTHS[view.m]} {view.y}</strong>
         <button type="button" aria-label="Наступний місяць" onClick={() => move(1)}><ChevronRight size={win ? 16 : 14} /></button>
+        {yearNav && <button type="button" aria-label="Наступний рік" onClick={() => move(12)}><ChevronsRight size={win ? 16 : 14} /></button>}
         {win && <button type="button" className="v3-date-x" aria-label="Закрити" onClick={close}><X size={16} /></button>}
       </div>
       <div className="v3-date-grid v3-date-wd" aria-hidden="true">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d) => <span key={d}>{d}</span>)}</div>

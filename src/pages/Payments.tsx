@@ -308,7 +308,7 @@ export default function Payments() {
                 <span className="v3-pay-mcard-who"><strong>@{p.username}</strong><small>№{p.id} · {p.status === "recorded" ? (p.promoCode || p.paymentMethod || "оплата") : p.status === "cancelled" ? (p.cancelReason || "скасовано") : `повернено ${money(Number(p.refundedAmount) || num(p))}`}</small></span>
                 <span className="v3-pay-mcard-r"><strong><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong><span className={`v3-tag ${st.cls}`}>{st.label}</span></span>
               </button></li>];
-          }) : <li>{emptyFiltered}</li>}
+          }) : <li className="v3-wcard v3-pay-mnone">{emptyFiltered}</li>}
       </ul>
       {list.length > shown && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setShown(shown + 12)}>Показати ще {Math.min(12, list.length - shown)}</button>}
     </div>

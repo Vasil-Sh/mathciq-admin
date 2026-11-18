@@ -36,6 +36,7 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 
 .v3-shell {
   min-height: 100svh;
+  min-height: 100dvh;
   background:
     radial-gradient(1200px 520px at 15% -10%, rgba(58, 109, 240, .10), transparent 60%),
     var(--v3-bg);
@@ -309,7 +310,8 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
   .v3-grab > span { width: 40px; height: 5px; border-radius: 999px; background: #d5dae2; transition: width .2s, background-color .2s; }
   .v3-grab:active > span { width: 48px; background: #b9c0cc; }
   .v3-grab:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; border-radius: 999px; }
-  .v3-modal[data-state="open"], .v3-sheet[data-state="open"] { animation: v3-sheet-in .38s cubic-bezier(.2, .9, .25, 1) both !important; }
+  /* backwards, not both: after the slide-in the sheet keeps no transform, so a calendar window inside it is fixed to the screen, not to the sheet */
+  .v3-modal[data-state="open"], .v3-sheet[data-state="open"] { animation: v3-sheet-in .38s cubic-bezier(.2, .9, .25, 1) backwards !important; }
   .v3-modal[data-state="closed"], .v3-sheet[data-state="closed"] { animation: v3-sheet-out .24s cubic-bezier(.4, 0, 1, 1) both !important; }
 }
 @keyframes v3-sheet-in { from { transform: translateY(100%); } }
@@ -396,3 +398,17 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 /* Телефон: сповіщення без кнопки «Скасувати» з кільцем — лише текст і хрестик */
 @media (max-width: 720px) { .v3-toast-act:has(.v3-undo) { display: none !important; } }
+
+/* ══ Телефон: шторки й клавіатура (iOS) ══ */
+@media (max-width: 767px) {
+  /* behind the on-screen keyboard and its bar the browser shows the page background: make it the sheet's white */
+  html.v3-sheet-open { background: #fff; }
+  /* a tall sheet stops below the status bar, so the system blur at the top edge never covers it */
+  .v3-modal[data-state] { max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 16px)); overscroll-behavior: contain; }
+  .v3-footer { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+/* Toasts stay above dialogs and their blur, and can be read and closed while a dialog is open */
+[data-sonner-toaster] { z-index: 2147483000 !important; pointer-events: auto; transform: translateZ(0); }
+/* Mistakes next to the field (forms validate on submit) */
+.v3-field-err { margin: 0; color: #b3321c; font-size: 13px; line-height: 1.45; animation: v3-err-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
+@media (prefers-reduced-motion: reduce) { .v3-field-err { animation: none; } }

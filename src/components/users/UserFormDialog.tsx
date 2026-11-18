@@ -13,6 +13,7 @@ export interface UserForm {
 }
 
 const addDays = (v: string, n: number) => { const d = new Date(`${v}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const yearsAgo = (n: number) => { const t = isoToday(); return `${+t.slice(0, 4) - n}${t.slice(4)}`; };
 const planOf = (p?: string): Plan => (p === "basic" || p === "pro" ? p : "trial");
 
 interface Props {
@@ -37,6 +38,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
   const [touchedEnd, setTouchedEnd] = useState(false);
   const [initial, setInitial] = useState("");
   const [guard, setGuard] = useState(false);
+  const [err, setErr] = useState<{ login?: string; dates?: string }>({});
 
   useEffect(() => {
     if (!open) return;
@@ -50,13 +52,28 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
       start({ username: "", telegram: "", plan: "trial", startDate: t, endDate: addDays(t, trialDays - 1), role: "user", birthDate: "", ageConfirmed: false });
     }
     setGuard(false);
+    setErr({});
   }, [open, mode, user, trialDays]);
   const dirty = mode === "edit" && !!initial && initial !== JSON.stringify(f);
 
   // New account: the end date follows the plan until the admin edits it by hand.
   const pickPlan = (plan: Plan) => setF((x) => ({ ...x, plan, endDate: mode === "create" && !touchedEnd && x.startDate ? addDays(x.startDate, (plan === "trial" ? trialDays : subDays) - 1) : x.endDate }));
   const isAdminRole = f.role !== "user";
-  const valid = f.username.trim().length > 0 && /^[A-Za-z0-9_.-]{2,100}$/.test(f.username.trim()) && (isAdminRole || (f.startDate && f.endDate && f.endDate >= f.startDate));
+  // Validate on submit and say what to fix next to the field (the button stays enabled).
+  const check = () => {
+    const e: { login?: string; dates?: string } = {};
+    const u = f.username.trim();
+    if (!u) e.login = "Введіть логін";
+    else if (!/^[A-Za-z0-9_.-]{2,100}$/.test(u)) e.login = "Логін: від 2 символів, латиниця, цифри, крапка, _ або -";
+    if (!isAdminRole) {
+      if (!f.startDate || !f.endDate) e.dates = "Оберіть дату початку й закінчення";
+      else if (f.endDate < f.startDate) e.dates = "Дата закінчення раніше за дату початку — оберіть пізнішу";
+    }
+    setErr(e);
+    if (e.login) document.getElementById("uf-login")?.focus();
+    else if (e.dates) document.getElementById(f.endDate && f.startDate ? "uf-end" : "uf-start")?.focus();
+    return !e.login && !e.dates;
+  };
   const dlg = (o: boolean) => { if (busy) return; if (!o && dirty && !guard) { setGuard(true); return; } onOpenChange(o); };
 
   return (
@@ -64,11 +81,11 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
       <DialogContent className="v3-modal v3-modal-lg sm:max-w-[620px]">
         <DialogTitle className="v3-modal-title">{mode === "create" ? "Новий користувач" : `Редагувати @${user?.username}`}</DialogTitle>
         <DialogDescription className="v3-modal-sub">{mode === "create" ? "Створіть обліковий запис і налаштуйте доступ до MatchIQ." : "Логін, Telegram, план, дати, вік і роль."}</DialogDescription>
-        <form className="v3-form" onSubmit={(e) => { e.preventDefault(); if (valid) onSave({ ...f, username: f.username.trim(), telegram: f.telegram.trim() }); }}>
+        <form className="v3-form" noValidate onSubmit={(e) => { e.preventDefault(); if (check()) onSave({ ...f, username: f.username.trim(), telegram: f.telegram.trim() }); }}>
           <fieldset disabled={busy} className="v3-form-sec">
             <legend>Основна інформація</legend>
             <div className="v3-form-grid">
-              <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create"} required value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} placeholder="Логін без @" autoComplete="off" /><small className="v3-hint">Використовується для входу</small></div>
+              <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create"} required aria-invalid={!!err.login} aria-describedby={err.login ? "uf-login-err" : undefined} value={f.username} onChange={(e) => { setF({ ...f, username: e.target.value }); if (err.login) setErr({ ...err, login: undefined }); }} placeholder="Логін без @" autoComplete="off" />{err.login ? <small id="uf-login-err" className="v3-field-err" role="alert">{err.login}</small> : <small className="v3-hint">Використовується для входу</small>}</div>
               <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} onChange={(e) => setF({ ...f, telegram: e.target.value })} placeholder="@username або t.me/username" /><small className="v3-hint">Контакт для зв’язку</small></div>
             </div>
           </fieldset>
@@ -82,9 +99,10 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
                 ))}
               </div>
               <div className="v3-form-grid">
-                <div className="v3-field"><label id="uf-start-l">Дата початку</label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => setF({ ...f, startDate: v })} /></div>
-                <div className="v3-field"><label id="uf-end-l">Дата закінчення</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); }} /></div>
+                <div className="v3-field"><label id="uf-start-l">Дата початку</label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => { setF({ ...f, startDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
+                <div className="v3-field"><label id="uf-end-l">Дата закінчення</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
               </div>
+              {err.dates && <p className="v3-field-err" role="alert">{err.dates}</p>}
               {mode === "create" && <p className="v3-note-info">Пробний період — один на людину. Для Базової й Pro сума плану запишеться як перша оплата.</p>}
             </fieldset>
           )}
@@ -93,10 +111,10 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             <fieldset disabled={busy} className="v3-form-sec">
               <legend>Вік</legend>
               <div className="v3-form-grid">
-                <div className="v3-field"><label htmlFor="uf-dob">Дата народження</label><input id="uf-dob" type="date" max={isoToday()} value={f.birthDate} onChange={(e) => setF({ ...f, birthDate: e.target.value })} /></div>
+                <div className="v3-field"><label id="uf-dob-l">Дата народження</label><DateField id="uf-dob" labelledBy="uf-dob-l" max={isoToday()} defaultView={yearsAgo(21)} yearNav value={f.birthDate} onChange={(v) => setF({ ...f, birthDate: v })} /></div>
                 <label className="v3-switch-row" htmlFor="uf-age">
                   <span><strong>Вік 21+ підтверджено</strong><small>Після перевірки документа</small></span>
-                  <input id="uf-age" type="checkbox" role="switch" className="v3-switch" checked={f.ageConfirmed} onChange={(e) => setF({ ...f, ageConfirmed: e.target.checked })} />
+                  <input id="uf-age" type="checkbox" role="switch" className="v3-switch" checked={f.ageConfirmed} onChange={(e) => { const on = e.target.checked; setF({ ...f, ageConfirmed: on, birthDate: on && !f.birthDate ? yearsAgo(21) : f.birthDate }); }} />
                 </label>
               </div>
             </fieldset>
@@ -122,7 +140,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             {dirty ? <span className="v3-dirty" role="status"><i aria-hidden="true" />Є незбережені зміни</span> : <span className="v3-hint">{mode === "create" ? "Пароль згенерується автоматично" : "Зміни запишуться в журнал дій"}</span>}
             <div className="v3-modal-actions">
               <button type="button" className="v3-btn v3-btn-ghost" onClick={() => dlg(false)} disabled={busy}>Скасувати</button>
-              <button type="submit" className="v3-btn v3-btn-blue" disabled={busy || !valid}>{busy ? "Зберігаємо…" : mode === "create" ? "Створити" : "Зберегти"}</button>
+              <button type="submit" className="v3-btn v3-btn-blue" disabled={busy}>{busy ? "Зберігаємо…" : mode === "create" ? "Створити" : "Зберегти"}</button>
             </div>
           </div>
         </form>

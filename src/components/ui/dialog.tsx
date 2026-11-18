@@ -27,6 +27,40 @@ function GrabBar({ contentRef, closeRef }: { contentRef: React.RefObject<HTMLDiv
   );
 }
 
+/** Toasts and floating pickers live outside the dialog: tapping them must not close it. */
+const keepOpen = (e: Event) => { const t = e.target as Element | null; return !!t?.closest?.("[data-sonner-toaster], .v3-date-scrim, .v3-date-pop, [data-v3-float]"); };
+
+/**
+ * Phone sheets and the on-screen keyboard (iOS): the area behind the keyboard shows the page background,
+ * so while a sheet is open the page background is the sheet's white; and when the keyboard closes,
+ * the page is put back where it was, so no dark gap is left under the sheet.
+ */
+function useSheetKeyboard() {
+  React.useEffect(() => {
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    const root = document.documentElement;
+    root.classList.add("v3-sheet-open");
+    const y0 = window.scrollY;
+    const vv = window.visualViewport;
+    let max = vv ? vv.height : window.innerHeight;
+    const onResize = () => {
+      if (!vv) return;
+      if (vv.height > max) max = vv.height;
+      root.style.setProperty("--v3-kb", `${Math.max(0, Math.round(max - vv.height))}px`);
+      if (vv.height >= max - 1 && window.scrollY !== y0) window.scrollTo(window.scrollX, y0);
+    };
+    vv?.addEventListener("resize", onResize);
+    return () => {
+      vv?.removeEventListener("resize", onResize);
+      // Only the last open sheet removes the white page background.
+      window.setTimeout(() => { if (!document.querySelector(".v3-modal[data-state=\"open\"], .v3-sheet[data-state=\"open\"]")) { root.classList.remove("v3-sheet-open"); root.style.removeProperty("--v3-kb"); } }, 300);
+    };
+  }, []);
+}
+
+/** Mounted inside the dialog content, so it runs only while the dialog is open. */
+function SheetKeyboard() { useSheetKeyboard(); return null; }
+
 function DialogContent({ className, children, onInteractOutside, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { onInteractOutside?: (e: Event) => void }) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
@@ -35,7 +69,7 @@ function DialogContent({ className, children, onInteractOutside, ...props }: Rea
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={contentRef}
-        onInteractOutside={onInteractOutside}
+        onInteractOutside={(e) => { if (keepOpen(e)) { e.preventDefault(); return; } onInteractOutside?.(e); }}
         className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4",
           "adm-dialog border border-hairline bg-surface p-6 shadow-lg rounded-card",
@@ -46,6 +80,7 @@ function DialogContent({ className, children, onInteractOutside, ...props }: Rea
         )}
         {...props}
       >
+        <SheetKeyboard />
         <GrabBar contentRef={contentRef} closeRef={closeRef} />
         {children}
         <DialogPrimitive.Close ref={closeRef} className="v3-modal-x absolute right-4 top-4 rounded-btn text-subtle hover:text-ink transition-colors focus:outline-none">

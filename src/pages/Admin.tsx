@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openTelegram } from "@/lib/telegram";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowRight, Check, Send, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
@@ -389,7 +390,7 @@ export default function Admin() {
               {menuId === u.id && (
                 <div className="v3-lpmenu" role="menu" aria-label={`Дії з @${u.username}`}>
                   {canQuickExtend(u) && <button type="button" role="menuitem" disabled={!online} onClick={() => { setMenuId(null); setExtendFor(u); }}><Plus size={16} aria-hidden="true" />Продовжити на {extendDays} днів</button>}
-                  {u.telegram && <a role="menuitem" href={`https://t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}`} target="_blank" rel="noopener noreferrer" onClick={() => setMenuId(null)}><Send size={16} aria-hidden="true" />Написати в Telegram</a>}
+                  {u.telegram && <a role="menuitem" href={`https://t.me/${u.telegram.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "")}`} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); setMenuId(null); openTelegram(u.telegram || ""); }}><Send size={16} aria-hidden="true" />Написати в Telegram</a>}
                   <button type="button" role="menuitem" onClick={() => { setMenuId(null); openCard(u); }}><ArrowRight size={16} aria-hidden="true" />Відкрити картку</button>
                 </div>
               )}

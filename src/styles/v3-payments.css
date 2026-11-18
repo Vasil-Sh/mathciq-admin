@@ -306,3 +306,8 @@ button.v3-pay-row { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { .v3-pay-user { animation: none; } }
 @media (max-width: 720px) { .v3-pay .v3-hero-row { flex-wrap: nowrap; align-items: flex-end; } .v3-pay .v3-hero-row > div:first-child { min-width: 0; } }
+
+/* Телефон: «Немає оплат із таким статусом» — біла картка, як порожні стани на інших екранах */
+.v3-pay-m li.v3-pay-mnone { list-style: none; padding: 0; border-radius: 24px; }
+.v3-pay-m .v3-pay-mnone .v3-pay-empty { color: var(--v3-ink-muted); }
+.v3-pay-m .v3-pay-mnone .v3-pay-empty strong { color: var(--v3-ink); }

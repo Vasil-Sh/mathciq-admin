@@ -500,3 +500,9 @@ a.v3-kpi { transition: border-color .15s, translate .18s; }
 /* Hover on names and inline links, like the rest (mouse only) */
 .v3-pay-who a, .v3-inline-link { transition: color .2s; }
 @media (hover: hover) { .v3-pay-who a:hover strong { color: #a3c0ff; } .v3-risk-who a:hover strong { color: #2450c4; text-decoration: underline; text-underline-offset: 3px; } .v3-inline-link:hover { text-decoration: underline; text-underline-offset: 3px; } }
+
+/* Порожній графік на телефоні: більше висоти, щоб іконка з кільцями не налазила на «0 ₴ за рік» */
+@media (max-width: 767px) {
+  .v3-chart-card > .v3-bars-wrap.is-empty > .v3-bars, .v3-bars-wrap.is-empty .v3-bars { min-height: 250px; height: 250px; }
+  .v3-bars-wrap.is-empty .v3-chart-empty { inset: 18px 0 34px; padding: 12px; gap: 10px; }
+}

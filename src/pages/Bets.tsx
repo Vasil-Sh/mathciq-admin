@@ -14,6 +14,7 @@ import RollingNumber from "@/components/RollingNumber";
 import ExportCsvButton from "@/components/ExportCsvButton";
 import { Dropdown } from "@/components/ui/dropdown";
 import AllBetsDialog, { legMark } from "@/components/bets/AllBetsDialog";
+import { openTelegram } from "@/lib/telegram";
 
 const isAdminU = (u: AdminUserOverview) => u.role === "admin" || u.role === "owner" || !!u.isOwner;
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
@@ -177,7 +178,7 @@ export default function Bets() {
           <span className="v3-bt-ico is-info" aria-hidden="true"><Clock size={18} /></span>
           <strong>Ще жодної ставки</strong>
           <span>{days !== null ? `Користувач підключився ${days === 0 ? "сьогодні" : `${days} ${plural(days, "день", "дні", "днів")} тому`}. ` : ""}Можна нагадати, як додати перший запис.</span>
-          {tg && <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write${wr === "done" ? " is-done" : ""}`} onClick={() => { if (wr !== "idle") return; setWr("fly"); window.open(`https://t.me/${tg}`, "_blank", "noopener"); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); }}>{wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}</button>}
+          {tg && <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write${wr === "done" ? " is-done" : ""}`} onClick={() => { if (wr !== "idle") return; setWr("fly"); openTelegram(tg); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); }}>{wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}</button>}
         </div>
       );
     }
@@ -367,9 +368,9 @@ export default function Bets() {
             <div className="v3-wcard v3-pay-zero-card">
               <span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><BarChart3 size={24} /></span>
               <strong>Ставок ще немає</strong>
-              <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
+              <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")}${includeStaff ? " (разом з адмінами й овнерами)" : ""} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
               <div className="v3-pay-zero-acts">
-                <Link to="/users" className="v3-btn v3-btn-dark v3-bt-go">До користувачів <span className="v3-bt-ar" aria-hidden="true">→</span></Link>
+                <Link to="/users" className="v3-btn v3-btn-primary v3-bt-go">До користувачів <span className="v3-bt-ar" aria-hidden="true">→</span></Link>
                 <button type="button" className="v3-btn v3-btn-light v3-bt-copy" onClick={copyHowTo}>{copied ? <Check size={15} className="v3-bt-ok" aria-hidden="true" /> : <span className={`v3-bt-cpic${copyGo ? " is-go" : ""}`} aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect className="pg1" x="9" y="9" width="12" height="12" rx="2" /><path className="pg2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg></span>}{copied ? "Скопійовано" : "Скопіювати інструкцію"}</button>
               </div>
             </div>
