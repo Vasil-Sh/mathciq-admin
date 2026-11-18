@@ -46,13 +46,26 @@ function useSheetKeyboard() {
     const vv = window.visualViewport;
     if (!vv) return () => root.classList.remove("v3-sheet-open");
     let max = vv.height;
+    const fill = document.createElement("div");
+    fill.setAttribute("aria-hidden", "true");
+    fill.style.cssText = "position:absolute;left:0;right:0;height:600px;z-index:2147482000;pointer-events:none;display:none";
+    document.body.appendChild(fill);
     const apply = () => {
       if (vv.height > max) max = vv.height;
       const layout = document.documentElement.clientHeight;
       const kb = Math.max(0, Math.round(layout - vv.height - vv.offsetTop));
       root.style.setProperty("--v3-kb", `${kb > 40 ? kb : 0}px`);
       root.style.setProperty("--v3-vvh", `${Math.round(vv.height)}px`);
-      root.classList.toggle("v3-kb-open", max - vv.height > 120);
+      const kbOpen = max - vv.height > 120;
+      root.classList.toggle("v3-kb-open", kbOpen);
+      // The strip under the keyboard's translucent bar shows the page below the visible area, not fixed layers:
+      // put a block of the sheet's colour right there (in page coordinates), so it reads as the sheet continuing.
+      if (kbOpen) {
+        const sheet = document.querySelector<HTMLElement>(".v3-modal[data-state=\"open\"], .v3-sheet[data-state=\"open\"]");
+        fill.style.background = sheet ? getComputedStyle(sheet).backgroundColor : "#fff";
+        fill.style.top = `${Math.round(vv.pageTop + vv.height) - 2}px`;
+        fill.style.display = "block";
+      } else fill.style.display = "none";
       if (vv.height >= max - 1 && window.scrollY !== y0) window.scrollTo(window.scrollX, y0);
     };
     const later = () => { apply(); window.setTimeout(apply, 120); window.setTimeout(apply, 420); };
@@ -66,6 +79,7 @@ function useSheetKeyboard() {
       vv.removeEventListener("scroll", apply);
       document.removeEventListener("focusin", later);
       document.removeEventListener("focusout", later);
+      fill.remove();
       // Only the last open sheet removes these.
       window.setTimeout(() => { if (!document.querySelector(".v3-modal[data-state=\"open\"], .v3-sheet[data-state=\"open\"]")) { root.classList.remove("v3-sheet-open", "v3-kb-open"); root.style.removeProperty("--v3-kb"); root.style.removeProperty("--v3-vvh"); } }, 300);
     };
