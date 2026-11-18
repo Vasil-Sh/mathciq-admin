@@ -181,9 +181,12 @@ export default function Dashboard() {
     const paid = selected.reduce((s, m) => s + (pay[m]?.amount || 0), 0);
     const paidCount = selected.reduce((s, m) => s + (pay[m]?.count || 0), 0);
     let paidDelta: number | null = null;
+    let paidAbs = "";
     if (period !== "year") {
       const prev = pay[prevKey(period)]?.amount || 0;
-      paidDelta = prev ? Math.round(((paid - prev) / prev) * 1000) / 10 : null;
+      // Last month had nothing: a % cannot be counted, so the chip shows the amount itself («↑ +210 ₴»).
+      paidDelta = prev ? Math.round(((paid - prev) / prev) * 1000) / 10 : paid > 0 ? 1 : 0;
+      if (!prev) paidAbs = paid > 0 ? `+${money(paid)}` : "0%";
     }
     const report = months.map((m, i) => {
       const prev = i > 0 ? pay[months[i - 1]]?.amount || 0 : null;
@@ -209,7 +212,7 @@ export default function Dashboard() {
     const ai = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + r.costUsd, 0);
     const aiCalls = sel(stats.aiUsage?.byMonth).reduce((s, r) => s + (r.calls || 0), 0);
     const prevReg = reg[prevKey(now.key)] || 0;
-    return { pay, est, reg, series, max, paid, paidCount, paidDelta, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
+    return { pay, est, reg, series, max, paid, paidCount, paidDelta, paidAbs, report, plans, planTotal, prevReg, cancels: cancelled + refundCount, refundCount, refundAmount, prevCancelled, ai, aiCalls, total: months.reduce((s, m) => s + (mode === "pay" ? pay[m]?.amount || 0 : est[m] || 0), 0), year };
   }, [stats, overview, mode, period, now.key, now.month, now.year, settings]);
   const view = viewMemo;
 
@@ -386,7 +389,7 @@ export default function Dashboard() {
   const retTotal = (stats.retention?.retained || 0) + (stats.retention?.churned || 0);
   const prevMonthIdx = monthIdx(prevKey(now.key));
   const kpis = [
-    { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/users", hero: !isEmpty },
+    { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaAbs: view.paidAbs, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/users", hero: !isEmpty },
     { icon: TrendingUp, label: "Вартість підписок / міс.", short: "Підписки / міс.", value: money(stats.mrr), note: isEmpty ? "немає активних підписок" : "розрахунок за тарифами", to: "/users?role=user&status=active" },
     { icon: Users, label: "Активні користувачі", short: "Активні", value: String(stats.activeUsers), note: isEmpty ? "без адміністраторів" : `з ${regularUsers}`, to: "/users?role=user&status=active" },
     { icon: UserPlus, label: "Нові цього місяця", short: "Нові цього місяця", value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?role=user&status=all&new=month" },
@@ -514,11 +517,11 @@ export default function Dashboard() {
 
       <div className={`v3-dash-top${isEmpty ? " is-empty" : ""}`}>
       <section className="v3-kpis">
-        {kpis.map(({ icon: Icon, label, short, value, note, delta, deltaNote, to, hero }) => (
+        {kpis.map(({ icon: Icon, label, short, value, note, delta, deltaAbs, deltaNote, to, hero }) => (
           <Link key={label} to={to} className={`v3-kpi${hero ? " is-hero" : ""}`}>
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Icon size={16} aria-hidden="true" /></span><span className="v3-hide-mobile">{label}</span><span className="v3-only-mobile">{short}</span></span>
             <strong className="v3-kpi-v"><RollingNumber key={`${value}-${period}`} text={value} /></strong>
-            <span className="v3-kpi-n">{delta != null && <><span className={`v3-dl ${hero ? "is-onblue " : ""}${delta >= 0 ? "is-up" : "is-down"}${delta < 0 ? " is-neg" : ""}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{pct(Math.abs(delta)).replace("+", "")}</span><span className="sr-only">{delta >= 0 ? "зростання" : "падіння"} </span>{deltaNote} · </>}{note}</span>
+            <span className="v3-kpi-n">{delta != null && <><span className={`v3-dl ${hero ? "is-onblue " : ""}${delta === 0 ? "is-flat" : delta > 0 ? "is-up" : "is-down"}${delta < 0 ? " is-neg" : ""}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{deltaAbs || pct(Math.abs(delta)).replace("+", "")}</span><span className="sr-only">{delta >= 0 ? "зростання" : "падіння"} </span>{deltaNote} · </>}{note}</span>
           </Link>
         ))}
       </section>

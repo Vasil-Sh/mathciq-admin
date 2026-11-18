@@ -43,9 +43,13 @@ const num = (p: PaymentRow) => Number(p.amount) || 0;
 const asPayment = (p: PaymentRow): Payment => ({ id: p.id, amount: p.amount, paidOn: p.paidOn, periodStart: p.periodStart, periodEnd: p.periodEnd, note: p.note, createdBy: p.createdBy, status: p.status, cancelReason: p.cancelReason, cancelledBy: p.cancelledBy, extendSubscription: p.extendSubscription, username: p.username });
 
 /** «Зміна до попереднього періоду» (каталог · Метрики 06): колір за знаком. */
-function Delta({ d, on, vs }: { d: number | null; on?: boolean; vs: string }) {
+/** When last month was 0 a % cannot be counted: the chip shows the difference itself («↑ +225 ₴», «↑ +1»), or «→ 0%» when both are 0. */
+export const deltaVs = (cur: number, prev: number, fmt: (n: number) => string = (n) => String(n)): { d: number | null; abs?: string } =>
+  prev > 0 ? { d: Math.round(((cur - prev) / prev) * 1000) / 10 } : cur > 0 ? { d: 1, abs: `+${fmt(cur)}` } : { d: 0 };
+
+function Delta({ d, on, vs, abs }: { d: number | null; on?: boolean; vs: string; abs?: string }) {
   if (d === null) return null;
-  return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : d > 0 ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs} </span></>;
+  return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : d > 0 ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{abs || `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs} </span></>;
 }
 
 export default function Payments() {
@@ -136,10 +140,10 @@ export default function Payments() {
   const topPromo = (() => { const m: Record<string, number> = {}; withPromo.forEach((p) => { m[p.promoCode] = (m[p.promoCode] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || ""; })();
   const vs = monthGen(shiftMonth(month, -1));
   const sums = [
-    { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), d: pct(recSum, prevSum), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
-    { k: "ref", label: "Повернено", value: money(refSum), d: pct(refSum, prevRef), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
-    { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", d: avg && prevAvg ? pct(avg, prevAvg) : null, note: plans, go: undefined },
-    { k: "promo", label: "За промокодами", value: String(withPromo.length), d: pct(withPromo.length, prevPromo), note: withPromo.length ? `${plural(withPromo.length, "використання", "використання", "використань")}${topPromo ? ` · ${topPromo}` : ""}` : "промокоди не застосовували", go: () => setTab("promo") },
+    { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), ...deltaVs(recSum, prevSum, money), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
+    { k: "ref", label: "Повернено", value: money(refSum), ...deltaVs(refSum, prevRef, money), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
+    { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", ...(avg ? deltaVs(avg, prevAvg, (n) => money(Math.round(n))) : { d: null }), note: plans, go: undefined },
+    { k: "promo", label: "За промокодами", value: String(withPromo.length), ...deltaVs(withPromo.length, prevPromo), note: withPromo.length ? `${plural(withPromo.length, "використання", "використання", "використань")}${topPromo ? ` · ${topPromo}` : ""}` : "промокоди не застосовували", go: () => setTab("promo") },
   ];
   if (who) { sums.forEach((x) => { x.d = null; }); sums[0].label = "Сплачено загалом"; }
   const sumOn = tab === "promo" ? "promo" : filt === "refunded" ? "ref" : filt === "all" ? "recv" : "";
@@ -384,7 +388,7 @@ export default function Payments() {
             <button key={s.k} type="button" className={`v3-sum${sumOn === s.k ? " is-on" : ""}${s.go ? "" : " is-static"}`} aria-pressed={sumOn === s.k} onClick={s.go} disabled={!s.go}>
               <span className="v3-sum-l">{s.k === "recv" ? <><span className="v3-hide-mobile">{s.label}</span><span className="v3-only-mobile">Отримано</span></> : s.label}</span>
               <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`${s.k}-${s.value}`} text={s.value} />}</strong>
-              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={sumOn === s.k} vs={vs} />}<span className="v3-pay-note">{s.note}</span></span>
+              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} abs={s.abs} on={sumOn === s.k} vs={vs} />}<span className="v3-pay-note">{s.note}</span></span>
             </button>
           ))}
         </section>
