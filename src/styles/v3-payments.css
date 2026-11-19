@@ -133,8 +133,7 @@ button.v3-pay-row { cursor: pointer; }
 
 /* повернення / промокоди */
 .v3-pay-sec-h { margin: 4px 4px 14px; }
-.v3-pay-sec-h.has-search { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.v3-pay-hsearch { flex: 0 1 340px; }
+.v3-pay-tools .v3-pay-hsearch { flex: 0 1 380px; }
 .v3-pay-sec-h h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .v3-pay-sec-h p { margin: 6px 0 0; color: var(--v3-ink-muted); font-size: 13px; }
 .v3-pay-aside-t { font-size: 17px; font-weight: 600; }
