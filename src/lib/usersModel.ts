@@ -19,6 +19,10 @@ export const STATUS_UI: Record<UStatus, { label: string; cls: string }> = {
   active: { label: "Активна", cls: "v3-st-active" },
 };
 
+/** Owner gets its own red badge instead of «Адмін». */
+export const OWNER_UI = { label: "Овнер", cls: "v3-st-owner" };
+export const statusUi = (u: AdminUserOverview) => (u.isOwner ? OWNER_UI : STATUS_UI[statusOf(u)]);
+
 const PLAN_NAME: Record<string, string> = { trial: "Пробний", basic: "Базова", pro: "Pro" };
 export const planName = (p?: string) => PLAN_NAME[p || ""] || "Пробний";
 const fullDate = (v?: string) => { const d = v ? parseDate(v) : null; return d ? d.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }).replace(" р.", "") : ""; };
@@ -58,6 +62,7 @@ export function expiringDays(u: AdminUserOverview): number | null {
 export const isExpiring = (u: AdminUserOverview) => expiringDays(u) !== null;
 /** Status tag; a trial that ends within 7 days is coloured like any other ending subscription. */
 export function tagOf(u: AdminUserOverview): { label: string; cls: string } {
+  if (u.isOwner) return OWNER_UI;
   const s = statusOf(u), d = expiringDays(u);
   if (s === "trial" && d !== null) return { label: "Закінчується", cls: d <= 2 ? STATUS_UI.urgent.cls : STATUS_UI.soon.cls };
   return STATUS_UI[s];

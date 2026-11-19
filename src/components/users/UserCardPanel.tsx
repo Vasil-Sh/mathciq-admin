@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import UserAvatar from "@/components/UserAvatar";
 import { shortDate } from "@/lib/subscriptions";
 import { plural } from "@/lib/dashboardInsights";
-import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, STATUS_UI, statusOf, trialText, endsWithoutRenewal } from "@/lib/usersModel";
+import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, statusOf, statusUi, trialText, endsWithoutRenewal } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 
 
@@ -59,7 +59,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
   const admin = isAdmin(user);
   const st = statusOf(user);
-  const ui = STATUS_UI[st];
+  const ui = statusUi(user);
   const selfAccount = !!deleteReason && deleteReason.startsWith("Власний");
   const viewOnly = !selfAccount && !!deleteReason && !!resetReason;
   const plan = planCell(user, settings);

@@ -190,6 +190,7 @@
 .v3-st-cancelled { background: #f1f3f6; color: #9a2a17; }
 .v3-st-admin { background: #11151c; color: #fff; }
 .v3-urow.is-sel .v3-st-admin, .v3-ucard .v3-st-admin { background: #fff; color: #11151c; }
+.v3-st-owner, .v3-urow.is-sel .v3-st-owner, .v3-ucard .v3-st-owner { background: #e5484d; color: #fff; }
 
 /* Pager with numbers */
 .v3-pager nav { gap: 6px; }

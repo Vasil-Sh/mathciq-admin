@@ -254,7 +254,7 @@ export default function Admin() {
   }
 
   const exportCsv = () => downloadCsv("users.csv", ["Логін", "Telegram", "Роль", "План", "Ціна", "Підписка з", "Підписка до", "Статус", "Сплачено", "Вік підтверджено"],
-    list.map((u) => { const p = planCell(u, settings); return [u.username, u.telegram || "", u.isOwner ? "Овнер" : isAdmin(u) ? "Адміністратор" : "Користувач", p.plan, p.price, u.startDate || "", u.endDate || "", STATUS_UI[statusOf(u)].label, String(u.paidTotal || 0), u.ageConfirmed ? "так" : "ні"]; }));
+    list.map((u) => { const p = planCell(u, settings); return [u.username, u.telegram || "", u.isOwner ? "Овнер" : isAdmin(u) ? "Адміністратор" : "Користувач", p.plan, p.price, u.startDate || "", u.endDate || "", (u.isOwner ? "Овнер" : STATUS_UI[statusOf(u)].label), String(u.paidTotal || 0), u.ageConfirmed ? "так" : "ні"]; }));
 
   const sums: { key: UFilter; label: string; value: number; note: string }[] = [
     { key: "all", label: "Усі облікові записи", value: all.length, note: `з них ${admins} ${plural(admins, "адміністратор", "адміністратори", "адміністраторів")}` },

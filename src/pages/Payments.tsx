@@ -18,7 +18,7 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { endsWithoutRenewal, isAdmin, planCell, statusOf, STATUS_UI } from "@/lib/usersModel";
+import { endsWithoutRenewal, isAdmin, planCell, statusOf, statusUi } from "@/lib/usersModel";
 import {
   dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
   PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode,
@@ -268,7 +268,7 @@ export default function Payments() {
       <div className="v3-pay-user-id">
         <UserAvatar username={who} telegram={whoUser?.telegram} className="v3-av-lg" />
         <div>
-          <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && <span className={`v3-tag ${STATUS_UI[statusOf(whoUser)].cls}`}>{STATUS_UI[statusOf(whoUser)].label}</span>}</span>
+          <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && <span className={`v3-tag ${statusUi(whoUser).cls}`}>{statusUi(whoUser).label}</span>}</span>
           <span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
         </div>
         <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Закрити — показати оплати всіх" title="Оплати всіх"><X size={16} aria-hidden="true" /></button>
