@@ -297,12 +297,12 @@ export default function Payments() {
   const table = (
     <div className="v3-wcard v3-pay-list" aria-busy={loading}>
       <div className="v3-pay-tools">
-        <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№ оплати, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-        {!who && <Dropdown className="is-light" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setSelId(null); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
         <div className="v3-seg v3-seg-soft" role="group" aria-label="Статус">
           <PillTrack active={filt} />
           {segs.map((s) => <button key={s.key} type="button" className={filt === s.key ? "is-on" : ""} aria-pressed={filt === s.key} onClick={() => { setFilt(s.key); setRk((x) => x + 1); }}>{s.label} <span className="v3-seg-n">{cnt(s.key)}</span></button>)}
         </div>
+        {!who && <Dropdown className="is-light" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setSelId(null); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
+        <label className="v3-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
       </div>
       <div className="v3-pay-th" role="row">
         <span role="columnheader" aria-sort={sort.startsWith("no") ? (sort === "no-asc" ? "ascending" : "descending") : "none"}><button type="button" className={sort.startsWith("no") ? "is-on" : ""} onClick={() => setSort(sort === "no-desc" ? "no-asc" : "no-desc")}>№<ArrowDown size={12} aria-hidden="true" style={{ transform: sort === "no-asc" ? "rotate(180deg)" : undefined, opacity: sort.startsWith("no") ? 1 : .35 }} /></button></span>

@@ -20,7 +20,8 @@
 .v3-pay-list { flex: 2 1 640px; min-width: 0; padding: 18px; position: relative; }
 .v3-pay-aside { flex: 1 1 360px; min-width: 0; padding: 22px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 96px; }
 .v3-pay-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 2px 14px; }
-.v3-pay-tools .v3-search { flex: 1 1 220px; }
+.v3-pay-tools .v3-search { flex: 1 1 180px; min-width: 0; }
+.v3-pay-tools .v3-search input { min-width: 0; }
 .v3-pay-tools .v3-seg-soft { flex-wrap: nowrap; }
 
 /* таблиця */
