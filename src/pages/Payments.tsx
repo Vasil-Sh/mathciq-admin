@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
@@ -56,8 +56,9 @@ function Delta({ d, on, vs, bad = false }: { d: number | null; on?: boolean; vs:
 }
 
 /** Search field on the «Повернення» and «Промокоди» tabs (same look as on the payments list). */
-function PaneSearch({ value, onChange, label, placeholder }: { value: string; onChange: (v: string) => void; label: string; placeholder: string }) {
-  return <label className="v3-msearch v3-pay-psearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label={label} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />{value && <button type="button" onClick={() => onChange("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
+/** Phone: a dark search above the card. Wide screen (inline): a compact light search in the card header, like «Оплати». */
+function PaneSearch({ value, onChange, label, placeholder, inline = false }: { value: string; onChange: (v: string) => void; label: string; placeholder: string; inline?: boolean }) {
+  return <label className={inline ? "v3-search v3-pay-hsearch" : "v3-msearch v3-pay-psearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label={label} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />{value && <button type="button" onClick={() => onChange("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
 }
 
 export default function Payments() {
@@ -355,10 +356,10 @@ export default function Payments() {
   const refundsShown = (refunds || []).filter((p) => !refNeedle || String(p.id) === refNeedle || (p.username || "").toLowerCase().includes(refNeedle) || (p.refundReason || "").toLowerCase().includes(refNeedle));
   const refundsTab = (
     <>
-    <PaneSearch value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />
+    {!wide && <PaneSearch value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />}
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
-        <div className="v3-pay-sec-h"><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>
+        <div className={`v3-pay-sec-h${wide ? " has-search" : ""}`}><div><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>{wide && <PaneSearch inline value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />}</div>
         {refunds === null ? <div className="v3-pay-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
           : refNeedle && !refundsShown.length && refunds.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>За запитом «{qRef.trim()}» повернень немає.</span></div>
           : refundsShown.length ? <div className="v3-pay-rows a">{refundsShown.map((p, i) => (
@@ -447,7 +448,7 @@ export default function Payments() {
             </section>
           ) : mobileList)}
           {tab === "ref" && refundsTab}
-          {tab === "promo" && <><PaneSearch value={qPromo} onChange={setQPromo} label="Пошук промокодів" placeholder="Код промокоду" /><PromoTab query={qPromo} promos={promos} online={online} onToggle={togglePromo} max={promoMax} onCreated={(p) => { setPromos((l) => [p, ...(l || [])]); }} /></>}
+          {tab === "promo" && <>{!wide && <PaneSearch value={qPromo} onChange={setQPromo} label="Пошук промокодів" placeholder="Код промокоду" />}<PromoTab query={qPromo} search={wide ? <PaneSearch inline value={qPromo} onChange={setQPromo} label="Пошук промокодів" placeholder="Код промокоду" /> : undefined} promos={promos} online={online} onToggle={togglePromo} max={promoMax} onCreated={(p) => { setPromos((l) => [p, ...(l || [])]); }} /></>}
         </div>
       </>}
 
@@ -492,7 +493,7 @@ function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; 
 }
 
 /** Промокоди: список із заповненням смужок, увімкнення з «Скасувати», створення нового. */
-function PromoTab({ promos, online, onToggle, max, onCreated, query = "" }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void; query?: string }) {
+function PromoTab({ promos, online, onToggle, max, onCreated, query = "", search }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void; query?: string; search?: ReactNode }) {
   const needle = query.trim().toUpperCase();
   const shownPromos = (promos || []).filter((p) => !needle || p.code.toUpperCase().includes(needle));
   const [code, setCode] = useState("");
@@ -536,7 +537,7 @@ function PromoTab({ promos, online, onToggle, max, onCreated, query = "" }: { pr
   return (
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
-        <div className="v3-pay-sec-h"><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>
+        <div className={`v3-pay-sec-h${search ? " has-search" : ""}`}><div><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>{search}</div>
         <div className="v3-pay-th is-promo" role="row"><span>Код</span><span>Знижка</span><span>План</span><span>Використано</span><span>Діє</span><span className="v3-pay-r">Стан</span></div>
         {promos === null ? <div className="v3-pay-row is-skel is-promo" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
           : needle && !shownPromos.length && promos.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>Промокоду «{query.trim()}» немає.</span></div>
