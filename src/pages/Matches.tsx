@@ -35,7 +35,7 @@ const NO_API = "Потрібен ендпоінт на бекенді — пок
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 const resLabel = (r: string) => (r === "Win" ? ["Виграш", "v3-tag-green"] : r === "Loss" ? ["Програш", "v3-tag-red"] : ["Очікує", "v3-tag-amber"]);
 
-function Logo({ src, name, size = 22 }: { src: string | null; name: string; size?: number }) {
+function Logo({ src, name, size = 24 }: { src: string | null; name: string; size?: number }) {
   const [bad, setBad] = useState(false);
   if (!src || bad) return <span className="v3-mx-lg is-ini" style={{ width: size, height: size }} aria-hidden="true">{initials(name)}</span>;
   return <img className="v3-mx-lg" src={src} alt="" width={size} height={size} loading="lazy" onError={() => setBad(true)} />;

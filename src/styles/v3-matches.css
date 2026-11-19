@@ -17,7 +17,7 @@
 .v3-mx-teams > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .v3-mx-teams strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-mx-lg { flex-shrink: 0; border-radius: 50%; object-fit: contain; background: #f1f4f9; }
-.v3-mx-lg.is-ini { display: grid; place-items: center; background: #5f6878; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: -.02em; }
+.v3-mx-lg.is-ini { display: grid; place-items: center; background: #5f6878; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
 .v3-mx-score { display: flex; flex-direction: column; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
 .v3-mx-score b { font-weight: 600; line-height: 22px; }
 .v3-mx-tour { min-width: 0; }
