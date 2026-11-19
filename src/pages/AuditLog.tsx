@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { plural } from "@/lib/dashboardInsights";
 import { KIND_UI, RESULT_UI, dayKey, dayLabel, describe, exactTime, timeLabel, type Change, type Entry, type View } from "@/lib/auditModel";
 import PillTrack from "@/components/PillTrack";
+import UserAvatar from "@/components/UserAvatar";
 import { Dropdown } from "@/components/ui/dropdown";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
@@ -42,6 +43,17 @@ export default function AuditLog() {
   const { user: me } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
   const userId = params.get("userId") || "";
+  // Telegram handle of the user whose history is shown — for the photo in the «Історія @…» banner
+  const [histTg, setHistTg] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    setHistTg(undefined);
+    if (!userId) return;
+    let off = false;
+    api.get<{ users: { id: number | string; telegram?: string | null }[] }>("/admin/users")
+      .then((r) => { if (!off) setHistTg(r.users?.find((u) => String(u.id) === userId)?.telegram || undefined); })
+      .catch(() => {});
+    return () => { off = true; };
+  }, [userId]);
   const history = params.get("history") || "";
   const [draft, setDraft] = useState(params.get("q") || "");
   const [q, setQ] = useState(params.get("q") || "");
@@ -157,7 +169,7 @@ export default function AuditLog() {
               {!e.details?._changes && !n && diff.length > 0 && !["sec", "key"].includes(v.kind) && <p className="v3-au-mnone">Попередні значення для цієї дії не зберігаються</p>}
               <p className="v3-au-mmeta">{n ? `${n} дій згорнуто в одну` : v.meta}{(n || v.meta) ? " · " : ""}{exactTime(e.created_at)}</p>
               {(v.username || v.userId) && <div className="v3-au-mlinks">
-                {v.username && <Link to={`/users?q=${encodeURIComponent(v.username)}`}>Відкрити користувача</Link>}
+                {v.username && <Link to={`/users?q=${encodeURIComponent(v.username)}`}>Профіль</Link>}
                 {v.userId && <Link to={`/audit?userId=${v.userId}&username=${encodeURIComponent(v.username || "")}`} onClick={() => setPage(1)}>Уся історія →</Link>}
               </div>}
             </div>
@@ -255,7 +267,7 @@ export default function AuditLog() {
 
       {userId && (
         <div className="v3-au-hist">
-          <span className="v3-au-hist-av">{(params.get("username") || "?").slice(0, 2).toUpperCase()}</span>
+          <UserAvatar username={params.get("username") || "?"} telegram={histTg} className="v3-au-hist-av" />
           <div><strong>Історія @{params.get("username") || `користувача №${userId}`}</strong><small>з моменту підключення журналу</small><small>{total} {plural(total, "запис", "записи", "записів")}</small></div>
           <Link className="v3-au-hist-btn" to="/audit" onClick={() => { setParams({}); setPage(1); }}>Увесь журнал</Link>
         </div>
