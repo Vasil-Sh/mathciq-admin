@@ -6,7 +6,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { betView, gameLabel, money, signedMoney, signedPct, statsFor, userGames, type Sort, type Stats } from "@/lib/betsModel";
+import { betView, gameLabel, isUsd, money, signedMoney, signedPct, statsFor, userGames, type Sort, type Stats } from "@/lib/betsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AdminUserBet, AdminUserOverview } from "@/types";
 import PillTrack from "@/components/PillTrack";
@@ -146,7 +146,7 @@ export default function Bets() {
     const m = { [cur]: { bets: 0, staked: 0, profit: 0, users: new Set<number>() }, [prev]: { bets: 0, staked: 0, profit: 0, users: new Set<number>() } };
     playing.forEach((u) => (details[u.id]?.bets || []).forEach((b) => {
       const k = (b.date || "").slice(0, 7); const x = m[k]; if (!x || (game !== "all" && betView(b).game !== game)) return;
-      x.bets++; x.staked += Number(b.amount) || 0; x.profit += Number(b.profit) || 0; x.users.add(u.id);
+      x.bets++; if (!isUsd(b)) { x.staked += Number(b.amount) || 0; x.profit += Number(b.profit) || 0; } x.users.add(u.id);
     }));
     const MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
     return { c: m[cur], p: m[prev], vs: MONTHS_GEN[(now.getMonth() + 11) % 12] };

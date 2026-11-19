@@ -254,6 +254,7 @@
 .v3-ab-x { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #dde1e7; background: #fff; color: #11151c; cursor: pointer; flex-shrink: 0; transition: background-color .2s, transform .15s ease-out; }
 .v3-ab-x svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
 .v3-ab-x:active { transform: scale(.96); }
+.v3-ab-cur { margin: 2px 2px -2px; color: #5f6878; font-size: 12px; font-weight: 600; }
 .v3-ab-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .v3-ab-stats > div { padding: 10px 12px; border-radius: 14px; background: #f5f7fa; }
 .v3-ab-stats span { display: block; color: #5f6878; font-size: 12px; }

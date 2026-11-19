@@ -44,6 +44,19 @@ export function parseLegs(text: string): Leg[] {
   });
 }
 
+/** A $ bet stores ₴ in amount/profit; the dollars are in original* (or ₴ ÷ rate for old records). */
+export const isUsd = (b: AdminUserBet) => (b.currency || "").toUpperCase() === "USD";
+export function nativeAmount(b: AdminUserBet): number {
+  if (!isUsd(b)) return Number(b.amount) || 0;
+  if (b.originalAmount != null) return Number(b.originalAmount) || 0;
+  return Number(b.exchangeRate) > 0 ? (Number(b.amount) || 0) / Number(b.exchangeRate) : Number(b.amount) || 0;
+}
+export function nativeProfit(b: AdminUserBet): number {
+  if (!isUsd(b)) return Number(b.profit) || 0;
+  if (b.originalProfit != null) return Number(b.originalProfit) || 0;
+  return Number(b.exchangeRate) > 0 ? (Number(b.profit) || 0) / Number(b.exchangeRate) : Number(b.profit) || 0;
+}
+
 export function betView(b: AdminUserBet) {
   const exp = isExpress(b);
   const legs = exp ? parseLegs(b.betType) : [];
@@ -55,6 +68,6 @@ export function betView(b: AdminUserBet) {
   const time = t && !isNaN(t.getTime()) ? t.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) : "";
   const res = b.result === "Win" ? "win" : b.result === "Loss" ? "loss" : b.result === "Pending" ? "pending" : "other";
   const status = res === "win" ? "Виграш" : res === "loss" ? "Програш" : res === "pending" ? "Очікує" : b.result || "—";
-  const profit = res === "pending" ? "—" : signedMoney(b.profit, b.currency);
-  return { exp, legs, title, pick, day, year: y, time, res, status, profit, game: gameLabel(b.game), odds: odds(b.odds), amount: money(b.amount, b.currency) };
+  const profit = res === "pending" ? "—" : signedMoney(nativeProfit(b), b.currency);
+  return { exp, legs, title, pick, day, year: y, time, res, status, profit, game: gameLabel(b.game), odds: odds(b.odds), amount: money(nativeAmount(b), b.currency) };
 }

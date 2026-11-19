@@ -66,6 +66,11 @@ export interface AdminUserOverview {
   pending: number;
   totalStaked: number;
   totalProfit: number;
+  /** Dollar bets, in $ — kept apart from the ₴ totals (as in the app). */
+  usdBets?: number;
+  usdStaked?: number;
+  usdProfit?: number;
+  usdRoi?: number;
   winRate: number;
   roi: number;
   initialBank: number;
@@ -122,6 +127,10 @@ export interface AdminUserBet {
   profit: number;
   game: string;
   currency: string;
+  /** For $ bets: the stake/profit in dollars; `amount`/`profit` hold the ₴ equivalent at `exchangeRate`. */
+  originalAmount?: number | null;
+  originalProfit?: number | null;
+  exchangeRate?: number | null;
   strategy: string;
   createdAt: string;
 }

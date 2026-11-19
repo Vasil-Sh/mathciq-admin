@@ -70,11 +70,20 @@ export default function AllBetsDialog({ user, bets, open, onOpenChange }: { user
           </div>
           <DialogClose className="v3-ab-x" aria-label="Закрити"><X size={16} strokeWidth={2.2} aria-hidden="true" /></DialogClose>
         </div>
+        {(user.usdBets || 0) > 0 && <div className="v3-ab-cur">У гривнях</div>}
         <div className="v3-ab-stats">
           <div><span>Профіт</span><b className={user.totalProfit >= 0 ? "is-pos-d" : "is-neg-d"}>{signedMoney(user.totalProfit)}</b></div>
           <div><span>Обіг</span><b>{money(user.totalStaked)}</b></div>
           <div><span>ROI</span><b className={user.roi >= 0 ? "is-pos-d" : "is-neg-d"}>{signedPct(user.roi)}</b></div>
         </div>
+        {(user.usdBets || 0) > 0 && <>
+          <div className="v3-ab-cur">У доларах · {user.usdBets} {plural(user.usdBets || 0, "ставка", "ставки", "ставок")}</div>
+          <div className="v3-ab-stats">
+            <div><span>Профіт</span><b className={(user.usdProfit || 0) >= 0 ? "is-pos-d" : "is-neg-d"}>{signedMoney(user.usdProfit || 0, "USD")}</b></div>
+            <div><span>Обіг</span><b>{money(user.usdStaked || 0, "USD")}</b></div>
+            <div><span>ROI</span><b className={(user.usdRoi || 0) >= 0 ? "is-pos-d" : "is-neg-d"}>{signedPct(user.usdRoi || 0)}</b></div>
+          </div>
+        </>}
         <div className="v3-ab-f4" role="group" aria-label="Результат">
           <PillTrack active={f} />
           {FS.map(([x, l]) => <button key={x} type="button" className={f === x ? "is-on" : ""} aria-pressed={f === x} onClick={() => pick(x)}><b>{cnt(x)}</b>{l}</button>)}
