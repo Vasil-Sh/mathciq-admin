@@ -506,3 +506,19 @@ a.v3-kpi { transition: border-color .15s, translate .18s; }
   .v3-chart-card > .v3-bars-wrap.is-empty > .v3-bars, .v3-bars-wrap.is-empty .v3-bars { min-height: 250px; height: 250px; }
   .v3-bars-wrap.is-empty .v3-chart-empty { inset: 18px 0 34px; padding: 12px; gap: 10px; }
 }
+
+/* Phone refresh: the round «Ставки» button (arrows spin while loading → tick) instead of the countdown ring */
+.v3-dash .v3-bt-rfb { display: none; }
+@media (max-width: 767px) { .v3-dash .v3-bt-rfb { display: grid; width: 44px; height: 44px; } }
+
+/* Phone: each person / alert in «Потребує уваги» and «Ризик відтоку» sits in its own grey tile
+   (same grey as the tiles in «Усе спокійно»), instead of rows split by hairlines. */
+@media (max-width: 767px) {
+  .v3-attention .v3-alerts li + li, .v3-attention .v3-exp-list li + li, .v3-risk-cards li + li { margin-top: 8px; }
+  .v3-attention .v3-alert-row { margin: 0; padding: 12px 14px; border-top: 0; border-radius: 16px; background: #f3f5f8; }
+  .v3-attention .v3-swipe { margin: 0; border-radius: 16px; }
+  .v3-attention .v3-swipe-face { padding: 0 14px; background: #f3f5f8; border-radius: 16px; }
+  .v3-attention .v3-swipe .v3-exp-row { padding-top: 10px; padding-bottom: 10px; border-top: 0; }
+  .v3-risk-cards li { padding: 12px 14px; border-top: 0; border-radius: 16px; background: #f3f5f8; }
+  .v3-risk-cards { margin-top: 12px; }
+}

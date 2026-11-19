@@ -745,3 +745,15 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
 .v3-date-head.has-years .v3-date-m { font-size: 15px; }
 .v3-date-pop.is-win .v3-date-head.has-years { gap: 4px; }
 .v3-date-pop.is-win .v3-date-head.has-years button { width: 32px; height: 32px; }
+
+/* Selected section tab is blue (as the tabs on «Оплати» and «Ставки»), not white */
+.v3-ptab.is-on { background: var(--v3-nav); border-color: var(--v3-nav); color: #fff; }
+.v3-ptab.is-on span { background: #fff; color: #2a55c8; }
+.v3-ptabs > .v3-pill { background: var(--v3-nav); }
+
+/* Phone: the «+» button is centred on the page title line (not on the subtitle) */
+@media (max-width: 767px) {
+  .v3-users .v3-hero-row > .v3-chips, .v3-pay .v3-hero-row > .v3-chips { align-self: flex-start; }
+  .v3-users .v3-hero-row > .v3-chips { margin-top: -4px; } /* title line 40px, button 48px */
+  .v3-pay .v3-hero-row > .v3-chips { margin-top: -2px; }   /* title line 44px */
+}

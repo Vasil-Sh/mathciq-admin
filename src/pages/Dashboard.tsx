@@ -66,6 +66,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
+  // Phone refresh button shows a tick after a manual refresh (same as on «Ставки»).
+  const [refreshDone, setRefreshDone] = useState(false);
   const [period, setPeriod] = useState<string>(now.key);
   const [feed, setFeed] = useState<"pay" | "lost">("pay");
   const [mode, setMode] = useState<"pay" | "est">("pay");
@@ -103,7 +105,10 @@ export default function Dashboard() {
     if (p.status === "fulfilled") setParsers(p.value);
     if (t.status === "fulfilled") setTickets(t.value);
     if (st.status === "fulfilled") setSettings(st.value);
-    if (s.status === "fulfilled") { setStats(s.value); setError(""); setUpdatedAt(hhmm()); setLoadedAt(Date.now()); }
+    if (s.status === "fulfilled") {
+      setStats(s.value); setError(""); setUpdatedAt(hhmm()); setLoadedAt(Date.now());
+      if (manual) { setRefreshDone(true); window.setTimeout(() => setRefreshDone(false), 1400); }
+    }
     else setError((s.reason as Error)?.message || "Сервер не відповідає");
     if (u.status === "fulfilled") { setUsers(u.value); setUsersError(false); } else setUsersError(true);
     setLoading(false);
@@ -297,7 +302,11 @@ export default function Dashboard() {
         </div>
         {updatedAt && <span className="v3-asof v3-hide-mobile">станом на {updatedAt}</span>}
         <div className="v3-only-mobile v3-period-wrap"><PeriodMenu value={period} options={periodOptions} onChange={setPeriod} /></div>
-        <button type="button" className="v3-chip v3-refresh" onClick={() => load(true)} disabled={refreshing || !online} aria-label={`Оновити дані · автоматично раз на хвилину`} title="Автооновлення раз на хвилину">
+        {/* Phone: round button like on «Ставки» — arrows spin while loading, then a tick */}
+        <button type="button" className="v3-bt-rfb v3-only-mobile" onClick={() => load(true)} disabled={refreshing || !online} aria-label={refreshing ? "Оновлюємо" : "Оновити"}>
+          {refreshDone ? <Check size={15} className="v3-bt-ok" aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" className={`v3-bt-rf${refreshing ? " v3-bt-rot" : ""}`} />}
+        </button>
+        <button type="button" className="v3-chip v3-refresh v3-hide-mobile" onClick={() => load(true)} disabled={refreshing || !online} aria-label={`Оновити дані · автоматично раз на хвилину`} title="Автооновлення раз на хвилину">
           {/* Кільце: скільки лишилось до автооновлення; на паузі без зв'язку */}
           {loadedAt > 0 && online && !refreshing && <svg key={loadedAt} className="v3-ar-ring" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.4" /><circle className="v3-ar-p" cx="10" cy="10" r="8" fill="none" stroke="#5a8cff" strokeWidth="2.4" strokeLinecap="round" style={{ animationDuration: `${REFRESH_MS}ms` }} /></svg>}
           <RefreshCw size={14} className={`v3-ref-ic${refreshing ? " animate-spin" : ""}`} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span>
@@ -389,10 +398,10 @@ export default function Dashboard() {
   const retTotal = (stats.retention?.retained || 0) + (stats.retention?.churned || 0);
   const prevMonthIdx = monthIdx(prevKey(now.key));
   const kpis = [
-    { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaAbs: view.paidAbs, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/users", hero: !isEmpty },
-    { icon: TrendingUp, label: "Вартість підписок / міс.", short: "Підписки / міс.", value: money(stats.mrr), note: isEmpty ? "немає активних підписок" : "розрахунок за тарифами", to: "/users?role=user&status=active" },
-    { icon: Users, label: "Активні користувачі", short: "Активні", value: String(stats.activeUsers), note: isEmpty ? "без адміністраторів" : `з ${regularUsers}`, to: "/users?role=user&status=active" },
-    { icon: UserPlus, label: "Нові цього місяця", short: "Нові цього місяця", value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?role=user&status=all&new=month" },
+    { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaAbs: view.paidAbs, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/payments", hero: !isEmpty },
+    { icon: TrendingUp, label: "Вартість підписок / міс.", short: "Підписки / міс.", value: money(stats.mrr), note: isEmpty ? "немає активних підписок" : "розрахунок за тарифами", to: "/users?status=paid" },
+    { icon: Users, label: "Активні користувачі", short: "Активні", value: String(stats.activeUsers), note: isEmpty ? "без адміністраторів" : `з ${regularUsers}`, to: "/users?status=all" },
+    { icon: UserPlus, label: "Нові цього місяця", short: "Нові цього місяця", value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?status=all&sort=new" },
   ];
   const chartEmpty = view.total === 0;
   const barCmp = (i: number) => {
@@ -492,7 +501,7 @@ export default function Dashboard() {
         <div><span>Звернення</span><b>{openTickets ? `${openTickets} нових` : "0 нових"}</b></div>
         <div><span>Найближче</span><b>{nextRenewal ? shortDate(nextRenewal.endDate) : "—"}</b></div>
       </div>
-      <Link to="/users?status=active" className="v3-head-link v3-calm-mini-link">Усі підписки <span className="v3-ar" aria-hidden="true">→</span></Link>
+      <Link to="/users?status=all" className="v3-head-link v3-calm-mini-link">Усі підписки <span className="v3-ar" aria-hidden="true">→</span></Link>
     </aside>
   );
   const calmCard = (
@@ -535,13 +544,13 @@ export default function Dashboard() {
       )}
       {!isEmpty && (
         <section className="v3-kpis v3-kpis-second">
-          {conv && <Link to="/users" className="v3-kpi">
+          {conv && <Link to="/users?status=trial" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><ArrowRight size={16} aria-hidden="true" /></span>Пробний → платний</span>
             <strong className="v3-kpi-v">{convPct === null ? "—" : <><RollingNumber key={`cv-${convPct}`} text={String(convPct)} /><small className="v3-kpi-unit">%</small></>}</strong>
             <span className="v3-kpi-bar v3-hide-mobile" aria-hidden="true"><span className="v3-fill" style={{ width: `${convPct || 0}%` }} /></span>
             <span className="v3-kpi-n"><span className="v3-hide-mobile">{c30 && c30.trialEnded ? `${c30.converted} з ${c30.trialEnded} за 30 днів` : "за 30 днів пробних не закінчувалось"} · </span>{conv.trial ? `зараз на пробному ${conv.trial}` : "на пробному нікого"}</span>
           </Link>}
-          <Link to="/payments" className="v3-kpi">
+          <Link to="/payments?tab=ref" className="v3-kpi">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><MinusCircle size={16} aria-hidden="true" /></span>Скасування</span>
             <strong className={`v3-kpi-v${view.cancels ? " is-red" : ""}`}><RollingNumber key={`c-${view.cancels}-${period}`} text={String(view.cancels)} /></strong>
             <span className="v3-kpi-n">
@@ -677,7 +686,7 @@ export default function Dashboard() {
                 ))}
               </ul>
               <p className="v3-only-mobile v3-swipe-note">Потягніть рядок вліво — «Написати» або «+{EXTEND_DAYS} днів»</p>
-              {expiring.length > 3 && <Link to="/users?status=active" className="v3-only-mobile v3-more-link">Усі {expiring.length} {plural(expiring.length, "користувач", "користувачі", "користувачів")} <span className="v3-ar" aria-hidden="true">→</span></Link>}
+              {expiring.length > 3 && <Link to="/users?status=expiring" className="v3-only-mobile v3-more-link">Усі {expiring.length} {plural(expiring.length, "користувач", "користувачі", "користувачів")} <span className="v3-ar" aria-hidden="true">→</span></Link>}
               <div className="v3-xall">
                 {extPhase === "idle" && (
                   <button ref={xallBtnRef} type="button" className="v3-xall-btn" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setExtPhase("ask")}>

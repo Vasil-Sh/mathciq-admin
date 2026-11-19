@@ -54,11 +54,9 @@ export default function Bets() {
   const [allOpen, setAllOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [rk, setRk] = useState(0);
-  const [copyGo, setCopyGo] = useState(false);
   const [wr, setWr] = useState<"idle" | "fly" | "done">("idle");
   const [offTry, setOffTry] = useState(0);
   const [offBusy, setOffBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
   const firstOpen = useRef(true);
 
   const load = useCallback(async (manual = false) => {
@@ -128,14 +126,7 @@ export default function Bets() {
       rows.map(({ u, s }) => [u.username, u.telegram || "", userGames(u).join(", "), s.bets, s.wins, s.losses, s.pending, Math.round(s.staked), Math.round(s.profit), s.roi.toFixed(1), Math.round(s.wr), Math.round(u.currentBank), u.lossStreak || 0]));
     toast.success("Файл готовий", { description: `${file} · ${rows.length} ${plural(rows.length, "рядок", "рядки", "рядків")}` });
   }
-  async function copyHowTo() {
-    if (copyGo || copied) return;
-    const text = "Як додати ставку в MatchIQ: відкрийте журнал ставок у застосунку MatchIQ і додайте запис — матч, тип ставки, коефіцієнт і суму. Після матчу результат і профіт порахуються автоматично.";
-    setCopyGo(true);
-    try { await navigator.clipboard.writeText(text); } catch { setCopyGo(false); toast.error("Не вдалося скопіювати", { description: "Браузер не дав доступу до буфера обміну" }); return; }
-    window.setTimeout(() => { setCopyGo(false); setCopied(true); toast.success("Інструкцію скопійовано", { description: "Надішліть її користувачам у Telegram" }); }, 350);
-    window.setTimeout(() => setCopied(false), 2400);
-  }
+
   const openAll = (u: AdminUserOverview) => { setAllFor(u); setAllOpen(true); };
 
   const loading = users === null && !error;
@@ -340,8 +331,10 @@ export default function Bets() {
         const head = (
           <button type="button" className="v3-bt-mcard" aria-expanded={open} onClick={() => toggle(u)}>
             <UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" />
-            <span className="v3-bt-mwho"><strong>@{hl(u.username, q)}{streakTag(u, true)}</strong><span>{u.betCount ? `${s.bets.toLocaleString("uk-UA")} ${plural(s.bets, "ставка", "ставки", "ставок")} · ${Math.round(s.wr)}% · ${userGames(u).join(" · ")}` : "ще не грає"}</span>{wrBar(s)}</span>
-            <span className="v3-bt-mright"><strong className={s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}>{signedMoney(s.profit)}</strong><small>{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></small></span>
+            <span className="v3-bt-mwho"><strong>@{hl(u.username, q)}{streakTag(u, true)}</strong><span>{u.betCount ? `${s.bets.toLocaleString("uk-UA")} ${plural(s.bets, "ставка", "ставки", "ставок")} · ${Math.round(s.wr)}% · ${userGames(u).join(" · ")}` : "ще не грає"}</span></span>
+            <strong className={`v3-bt-mamt ${s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}`}>{signedMoney(s.profit)}</strong>
+            <span className="v3-bt-mbar">{wrBar(s)}</span>
+            <span className="v3-bt-mpill">{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></span>
           </button>
         );
         return <div key={u.id} className={open ? "v3-bt-mopen" : "v3-bt-mitem"} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
@@ -402,10 +395,6 @@ export default function Bets() {
               <span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><BarChart3 size={24} /></span>
               <strong>Ставок ще немає</strong>
               <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")}${includeStaff ? " (разом з адмінами й овнерами)" : ""} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
-              <div className="v3-pay-zero-acts">
-                <Link to="/users" className="v3-btn v3-btn-primary v3-bt-go">До користувачів <span className="v3-bt-ar" aria-hidden="true">→</span></Link>
-                <button type="button" className="v3-btn v3-btn-light v3-bt-copy" onClick={copyHowTo}>{copied ? <Check size={15} className="v3-bt-ok" aria-hidden="true" /> : <span className={`v3-bt-cpic${copyGo ? " is-go" : ""}`} aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect className="pg1" x="9" y="9" width="12" height="12" rx="2" /><path className="pg2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg></span>}{copied ? "Скопійовано" : "Скопіювати інструкцію"}</button>
-              </div>
             </div>
             <div className="v3-dcard v3-pay-zero-steps">
               <strong>Як з’являються ставки</strong>
@@ -424,8 +413,8 @@ export default function Bets() {
             </section>
           ) : (
             <section className="v3-bt-mkpis">
-              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div>{monthly && <div className="n">{chip(monthly.c.bets, monthly.p.bets, num, true)}</div>}</div>
-              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div>{monthly && <div className="n">{chip(monthly.c.profit, monthly.p.profit, uah)}</div>}</div>
+              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{monthly && <>{chip(monthly.c.bets, monthly.p.bets, num, true)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")}{tot.pending ? ` · ${tot.pending.toLocaleString("uk-UA")} очікує` : ""}</span></div></div>
+              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div><div className="n">{monthly && <>{chip(monthly.c.profit, monthly.p.profit, uah)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">ROI {signedPct(roi)} · за весь час</span></div></div>
             </section>
           )}
           {wide ? desktopTable : mobileList}

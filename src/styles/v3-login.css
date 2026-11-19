@@ -201,3 +201,10 @@
 
 /* ══ Наведення лише для миші ══ */
 @media (hover:hover){.v3-input-action:hover{ background: #eef3ff; color: #2450c4; }.v3-login-tiles li:not(.is-blue):hover{ transform: translateY(-4px); background: #222937; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); }.v3-login-tiles li.is-blue:hover{ background: #4a7af2; box-shadow: 0 14px 30px rgba(58, 109, 240, .35); }.v3-login-submit:hover .v3-login-arrow{ transform: translateX(4px); }.v3-login-submit.is-blocked:hover{ background: #e4e7ec; }}
+
+/* Phone: cards start at the top, level with the app header (14px like .v3-header), instead of
+   floating in the middle of the screen — after sign-in the screen doesn't jump. */
+@media (max-width: 767px) {
+  .v3-login { align-items: flex-start; padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+  .v3-login-grid { gap: 12px; }
+}

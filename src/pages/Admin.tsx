@@ -117,7 +117,11 @@ export default function Admin() {
   // Links from other screens: ?q=, ?status=expired|active
   useEffect(() => {
     const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); }
-    const s = urlParams.get("status"); if (s === "expiring") { setFilter("expiring"); setTab("users"); } else if (s === "expired") setFilter("closed"); else if (s === "active") setFilter("paid");
+    // ?status= is any list filter (all, paid, trial, basic, pro, ended, cancelled, closed, expiring); older links: active → paid, expired → closed
+    const s = urlParams.get("status");
+    const f = s === "active" ? "paid" : s === "expired" ? "closed" : s;
+    if (f && (FILTERS as string[]).includes(f)) { setFilter(f as UFilter); setAgeOnly(false); setTab("users"); if (!qq) setQ(""); }
+    const so = urlParams.get("sort"); if (so && (SORTS as string[]).includes(so)) setSort(so as Sort);
   }, [urlParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const all = users || [];

@@ -44,18 +44,22 @@ const asPayment = (p: PaymentRow): Payment => ({ id: p.id, amount: p.amount, pai
 
 /** «Зміна до попереднього періоду» (каталог · Метрики 06): колір за знаком. */
 /** When last month was 0 a % cannot be counted: the chip shows the difference itself («↑ +225 ₴», «↑ +1»), or «→ 0%» when both are 0. */
-export const deltaVs = (cur: number, prev: number, fmt: (n: number) => string = (n) => String(n)): { d: number | null; abs?: string } =>
-  prev > 0 ? { d: Math.round(((cur - prev) / prev) * 1000) / 10 } : cur > 0 ? { d: 1, abs: `+${fmt(cur)}` } : { d: 0 };
+/** Month-over-month change, always in % (from 0 to something = +100%, 0 → 0 = 0%). */
+export const deltaVs = (cur: number, prev: number): { d: number | null } =>
+  prev > 0 ? { d: Math.round(((cur - prev) / prev) * 1000) / 10 } : cur > 0 ? { d: 100 } : { d: 0 };
 
-function Delta({ d, on, vs, abs }: { d: number | null; on?: boolean; vs: string; abs?: string }) {
+/** `bad`: growth is a loss for us (refunds) — up is red, down is green. The arrow still shows the direction. */
+function Delta({ d, on, vs, bad = false }: { d: number | null; on?: boolean; vs: string; bad?: boolean }) {
   if (d === null) return null;
-  return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : d > 0 ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{abs || `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs} </span></>;
+  const good = bad ? d < 0 : d > 0;
+  return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : good ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs}{bad && d > 0 ? " (погано)" : ""} </span></>;
 }
 
 export default function Payments() {
   const wide = useMedia("(min-width: 1180px)");
   const online = useOnline();
-  const [tab, setTab] = useState<Tab>("pay");
+  // ?tab=ref|promo opens that tab (Dashboard «Скасування» → refunds)
+  const [tab, setTab] = useState<Tab>(() => { const t = new URLSearchParams(window.location.search).get("tab"); return t === "ref" || t === "promo" ? t : "pay"; });
   const [month, setMonth] = useState(kyivMonth);
   const [rows, setRows] = useState<PaymentRow[] | null>(null);
   const [prevRows, setPrevRows] = useState<PaymentRow[]>([]);
@@ -140,13 +144,13 @@ export default function Payments() {
   const topPromo = (() => { const m: Record<string, number> = {}; withPromo.forEach((p) => { m[p.promoCode] = (m[p.promoCode] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || ""; })();
   const vs = monthGen(shiftMonth(month, -1));
   const sums = [
-    { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), ...deltaVs(recSum, prevSum, money), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
-    { k: "ref", label: "Повернено", value: money(refSum), ...deltaVs(refSum, prevRef, money), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
-    { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", ...(avg ? deltaVs(avg, prevAvg, (n) => money(Math.round(n))) : { d: null }), note: plans, go: undefined },
+    { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), ...deltaVs(recSum, prevSum), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
+    { k: "ref", label: "Повернено", value: money(refSum), ...deltaVs(refSum, prevRef), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
+    { k: "avg", label: "Середня оплата", value: avg ? money(Math.round(avg)) : "—", ...(avg ? deltaVs(avg, prevAvg) : { d: null }), note: plans, go: undefined },
     { k: "promo", label: "За промокодами", value: String(withPromo.length), ...deltaVs(withPromo.length, prevPromo), note: withPromo.length ? `${plural(withPromo.length, "використання", "використання", "використань")}${topPromo ? ` · ${topPromo}` : ""}` : "промокоди не застосовували", go: () => setTab("promo") },
   ];
   if (who) { sums.forEach((x) => { x.d = null; }); sums[0].label = "Сплачено загалом"; }
-  const sumOn = tab === "promo" ? "promo" : filt === "refunded" ? "ref" : filt === "all" ? "recv" : "";
+  const sumOn = tab === "promo" ? "promo" : tab === "ref" || filt === "refunded" ? "ref" : filt === "all" ? "recv" : "";
 
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(kyivMonth(), -i));
   const segs: { key: Filt; label: string }[] = [{ key: "all", label: "Усі" }, { key: "recorded", label: "Записано" }, { key: "cancelled", label: "Скасовано" }, { key: "refunded", label: "Повернено" }];
@@ -309,6 +313,7 @@ export default function Payments() {
             const st = STATUS[p.status]; const head = i === 0 || arr[i - 1].paidOn !== p.paidOn;
             return [head && <li key={`d-${p.paidOn}`} className="v3-pay-day" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{dayLabel(p.paidOn)}</li>,
               <li key={p.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className={`v3-pay-mcard${fresh === p.id ? " is-new" : ""}`} onClick={() => { setSelId(p.id); setSheet(true); }}>
+                <UserAvatar username={p.username} telegram={userOf(p)?.telegram} className="v3-pay-mav" />
                 <span className="v3-pay-mcard-who"><strong>@{p.username}</strong><small>№{p.id} · {p.status === "recorded" ? (p.promoCode || p.paymentMethod || "оплата") : p.status === "cancelled" ? (p.cancelReason || "скасовано") : `повернено ${money(Number(p.refundedAmount) || num(p))}`}</small></span>
                 <span className="v3-pay-mcard-r"><strong><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong><span className={`v3-tag ${st.cls}`}>{st.label}</span></span>
               </button></li>];
@@ -388,7 +393,7 @@ export default function Payments() {
             <button key={s.k} type="button" className={`v3-sum${sumOn === s.k ? " is-on" : ""}${s.go ? "" : " is-static"}`} aria-pressed={sumOn === s.k} onClick={s.go} disabled={!s.go}>
               <span className="v3-sum-l">{s.k === "recv" ? <><span className="v3-hide-mobile">{s.label}</span><span className="v3-only-mobile">Отримано</span></> : s.label}</span>
               <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`${s.k}-${s.value}`} text={s.value} />}</strong>
-              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} abs={s.abs} on={sumOn === s.k} vs={vs} />}<span className="v3-pay-note">{s.note}</span></span>
+              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={sumOn === s.k} vs={vs} bad={s.k === "ref"} />}<span className="v3-pay-note">{s.note}</span></span>
             </button>
           ))}
         </section>
