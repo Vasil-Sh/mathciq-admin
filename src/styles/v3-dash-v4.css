@@ -357,6 +357,12 @@ html { color-scheme: dark; }
 /* Фон, розмиття й маска — на ::before: маска на самій шапці обрізала випадне меню акаунта до висоти шапки */
 .v3-header { background: none; }
 .v3-header::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(rgba(10, 13, 19, .72), rgba(10, 13, 19, .38) 70%, rgba(10, 13, 19, 0)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+/* Phone (iOS Safari): the blurred layer was painted over the header buttons and washed them out.
+   No blur on phones — a denser gradient hides content scrolling underneath; the buttons sit above it. */
+.v3-header > * { position: relative; z-index: 1; }
+@media (max-width: 767px) {
+  .v3-header::before { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(rgba(10, 13, 19, .94), rgba(10, 13, 19, .7) 70%, rgba(10, 13, 19, 0)); }
+}
 
 /* Телефон: без смужки прокрутки (там, де браузер дозволяє її сховати) */
 @media (max-width: 767px) {
