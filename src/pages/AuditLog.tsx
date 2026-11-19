@@ -256,8 +256,8 @@ export default function AuditLog() {
       {userId && (
         <div className="v3-au-hist">
           <span className="v3-au-hist-av">{(params.get("username") || "?").slice(0, 2).toUpperCase()}</span>
-          <div><strong>Історія @{params.get("username") || `користувача №${userId}`}</strong><small>з моменту підключення журналу · {total} {plural(total, "запис", "записи", "записів")}</small></div>
-          <Link to="/audit" onClick={() => { setParams({}); setPage(1); }}>Увесь журнал</Link>
+          <div><strong>Історія @{params.get("username") || `користувача №${userId}`}</strong><small>з моменту підключення журналу</small><small>{total} {plural(total, "запис", "записи", "записів")}</small></div>
+          <Link className="v3-au-hist-btn" to="/audit" onClick={() => { setParams({}); setPage(1); }}>Увесь журнал</Link>
         </div>
       )}
 
