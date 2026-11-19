@@ -111,6 +111,9 @@ export interface GameBreakdown {
   pending: number;
   staked: number;
   profit: number;
+  usdBets?: number;
+  usdStaked?: number;
+  usdProfit?: number;
   winRate: number;
   roi: number;
 }

@@ -87,9 +87,17 @@ export default function Bets() {
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [playing]);
   /** Dollar figures are kept per user for all games together — shown only on «Усі». */
-  const usdOn = (u: AdminUserOverview) => game === "all" && (u.usdBets || 0) > 0;
+  /** $ figures for the selected game tab (null if the user has no $ bets there). The $ bank is overall, like the ₴ one. */
+  const usdS = (u: AdminUserOverview) => {
+    const gs = game === "all" ? null : (u.games || []).filter((g) => gameLabel(g.game) === game);
+    const x = gs ? gs.reduce((a, g) => ({ bets: a.bets + (g.usdBets || 0), staked: a.staked + (g.usdStaked || 0), profit: a.profit + (g.usdProfit || 0) }), { bets: 0, staked: 0, profit: 0 })
+      : { bets: u.usdBets || 0, staked: u.usdStaked || 0, profit: u.usdProfit || 0 };
+    return x.bets > 0 ? { ...x, roi: x.staked ? (x.profit / x.staked) * 100 : 0 } : null;
+  };
+  const usdBank = (u: AdminUserOverview) => (u.usdBets || 0) > 0;
   const usd = (n: number | undefined) => signedMoney(n || 0, "USD");
-  const totUsd = useMemo(() => { if (game !== "all") return null; const x = playing.reduce((a, u) => ({ n: a.n + (u.usdBets || 0), s: a.s + (u.usdStaked || 0), p: a.p + (u.usdProfit || 0) }), { n: 0, s: 0, p: 0 }); return x.n ? { ...x, roi: x.s ? (x.p / x.s) * 100 : 0 } : null; }, [playing, game]);
+  // Top KPI is for all games (like the ₴ total next to it)
+  const totUsd = useMemo(() => { const x = playing.reduce((a, u) => ({ n: a.n + (u.usdBets || 0), s: a.s + (u.usdStaked || 0), p: a.p + (u.usdProfit || 0) }), { n: 0, s: 0, p: 0 }); return x.n ? { ...x, roi: x.s ? (x.p / x.s) * 100 : 0 } : null; }, [playing]);
   const tot = useMemo(() => playing.reduce((a, u) => ({ bets: a.bets + u.betCount, wins: a.wins + u.wins, losses: a.losses + u.losses, pending: a.pending + u.pending, staked: a.staked + u.totalStaked, profit: a.profit + u.totalProfit }), { bets: 0, wins: 0, losses: 0, pending: 0, staked: 0, profit: 0 }), [playing]);
   const roi = tot.staked ? (tot.profit / tot.staked) * 100 : 0;
 
@@ -216,8 +224,8 @@ export default function Bets() {
     if (mobile) return (
       <div className="v3-bt-mxp">
         <div className="v3-bt-mtiles">
-          <div className="v3-bt-tile"><div className="k">Банк: старт → зараз</div><div className="v">{money(u.initialBank).replace(" ₴", "")} → {money(u.currentBank)}</div>{usdOn(u) && <div className="v v3-bt-v2">{money(u.initialBankUsd || 0, "USD").replace(" $", "")} → {money(u.currentBankUsd || 0, "USD")}</div>}</div>
-          <div className="v3-bt-tile"><div className="k">Обіг · ROI</div><div className="v">{money(s.staked)} · <span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</span></div>{usdOn(u) && <div className="v v3-bt-v2">{money(u.usdStaked || 0, "USD")} · <span className={(u.usdProfit || 0) >= 0 ? "is-pos" : "is-neg"}>{signedPct(u.usdRoi || 0)}</span></div>}</div>
+          <div className="v3-bt-tile"><div className="k">Банк: старт → зараз</div><div className="v">{money(u.initialBank).replace(" ₴", "")} → {money(u.currentBank)}</div>{usdBank(u) && <div className="v v3-bt-v2">{money(u.initialBankUsd || 0, "USD").replace(" $", "")} → {money(u.currentBankUsd || 0, "USD")}</div>}</div>
+          <div className="v3-bt-tile"><div className="k">Обіг · ROI</div><div className="v">{money(s.staked)} · <span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</span></div>{usdS(u) && <div className="v v3-bt-v2">{money(usdS(u)!.staked, "USD")} · <span className={usdS(u)!.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(usdS(u)!.roi)}</span></div>}</div>
         </div>
         <div className="v3-bt-mcap">Останні ставки</div>
         {shown.map((b, j) => { const v = betView(b); return (
@@ -234,10 +242,10 @@ export default function Bets() {
     return (
       <>
         <div className="v3-bt-tiles">
-          <div className="v3-bt-tile"><div className="k">Стартовий банк</div><div className="v">{money(u.initialBank)}</div>{usdOn(u) && <div className="v v3-bt-v2">{money(u.initialBankUsd || 0, "USD")}</div>}</div>
-          <div className="v3-bt-tile"><div className="k">Поточний банк</div><div className="v">{money(u.currentBank)}</div>{usdOn(u) && <div className="v v3-bt-v2">{money(u.currentBankUsd || 0, "USD")}</div>}</div>
-          <div className="v3-bt-tile"><div className="k">Обіг</div><div className="v">{money(s.staked)}</div>{usdOn(u) && <div className="v v3-bt-v2">{money(u.usdStaked || 0, "USD")}</div>}</div>
-          <div className="v3-bt-tile"><div className="k">Профіт · ROI</div><div className={`v ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(s.roi)}</div>{usdOn(u) && <div className={`v v3-bt-v2 ${(u.usdProfit || 0) >= 0 ? "is-pos" : "is-neg"}`}>{usd(u.usdProfit)} · {signedPct(u.usdRoi || 0)}</div>}</div>
+          <div className="v3-bt-tile"><div className="k">Стартовий банк</div><div className="v">{money(u.initialBank)}</div>{usdBank(u) && <div className="v v3-bt-v2">{money(u.initialBankUsd || 0, "USD")}</div>}</div>
+          <div className="v3-bt-tile"><div className="k">Поточний банк</div><div className="v">{money(u.currentBank)}</div>{usdBank(u) && <div className="v v3-bt-v2">{money(u.currentBankUsd || 0, "USD")}</div>}</div>
+          <div className="v3-bt-tile"><div className="k">Обіг</div><div className="v">{money(s.staked)}</div>{usdS(u) && <div className="v v3-bt-v2">{money(usdS(u)!.staked, "USD")}</div>}</div>
+          <div className="v3-bt-tile"><div className="k">Профіт · ROI</div><div className={`v ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(s.roi)}</div>{usdS(u) && <div className={`v v3-bt-v2 ${usdS(u)!.profit >= 0 ? "is-pos" : "is-neg"}`}>{usd(usdS(u)!.profit)} · {signedPct(usdS(u)!.roi)}</div>}</div>
           <div className={`v3-bt-tile${streak >= STREAK_ALERT ? " is-alert" : ""}`}><div className="k">Серія програшів</div><div className="v">{streak >= STREAK_ALERT ? `${streak} поспіль` : streak}</div></div>
         </div>
         {games.length > 0 && <div className="v3-bt-games">{games.map((g) => <span key={g.game}><strong>{gameLabel(g.game)}</strong>{g.bets} {plural(g.bets, "ставка", "ставки", "ставок")} · {signedMoney(g.profit)}{g.wins + g.losses ? ` · ${Math.round((g.wins / (g.wins + g.losses)) * 100)}%` : ""}</span>)}</div>}
@@ -300,9 +308,9 @@ export default function Bets() {
             <button type="button" className={`v3-bt-tr v3-bt-cols${xwide ? " is-x" : ""}`} aria-expanded={open} onClick={() => toggle(u)}>
               <span className="v3-bt-who"><UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" /><span><strong>@{hl(u.username, q)}</strong><span className="v3-bt-sub">{sub(u)}{streakTag(u)}</span></span></span>
               <span className="v3-bt-n">{s.bets.toLocaleString("uk-UA")}</span>
-              <span>{money(s.staked)}{usdOn(u) && <small className="v3-bt-usd">{money(u.usdStaked || 0, "USD")}</small>}</span>
-              <span className={`v3-bt-n ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(s.profit)}{usdOn(u) && <small className={`v3-bt-usd ${(u.usdProfit || 0) >= 0 ? "is-pos" : "is-neg"}`}>{usd(u.usdProfit)}</small>}</span>
-              {xwide && <><span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}{usdOn(u) && <small className={`v3-bt-usd ${(u.usdProfit || 0) >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(u.usdRoi || 0)}</small>}</span><span>{money(u.currentBank)}{usdOn(u) && <small className="v3-bt-usd">{money(u.currentBankUsd || 0, "USD")}</small>}</span></>}
+              <span>{money(s.staked)}{usdS(u) && <small className="v3-bt-usd">{money(usdS(u)!.staked, "USD")}</small>}</span>
+              <span className={`v3-bt-n ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(s.profit)}{usdS(u) && <small className={`v3-bt-usd ${usdS(u)!.profit >= 0 ? "is-pos" : "is-neg"}`}>{usd(usdS(u)!.profit)}</small>}</span>
+              {xwide && <><span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}{usdS(u) && <small className={`v3-bt-usd ${usdS(u)!.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(usdS(u)!.roi)}</small>}</span><span>{money(u.currentBank)}{usdBank(u) && <small className="v3-bt-usd">{money(u.currentBankUsd || 0, "USD")}</small>}</span></>}
               <span><span className="v3-bt-wr">{Math.round(s.wr)}%</span> <span className="v3-bt-dim">· {wlText(s)}</span>{wrBar(s)}</span>
               <span className="v3-bt-chev" aria-hidden="true"><ChevronDown size={14} /></span>
             </button>
@@ -335,7 +343,7 @@ export default function Bets() {
           <button type="button" className="v3-bt-mcard" aria-expanded={open} onClick={() => toggle(u)}>
             <UserAvatar username={u.username} telegram={u.telegram} className="v3-bt-av" />
             <span className="v3-bt-mwho"><strong>@{hl(u.username, q)}{streakTag(u, true)}</strong><span>{u.betCount ? `${s.bets.toLocaleString("uk-UA")} ${plural(s.bets, "ставка", "ставки", "ставок")} · ${Math.round(s.wr)}% · ${userGames(u).join(" · ")}` : "ще не грає"}</span></span>
-            <strong className={`v3-bt-mamt ${s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}`}>{signedMoney(s.profit)}{usdOn(u) && <small className={`v3-bt-usd ${(u.usdProfit || 0) >= 0 ? "is-pos-d" : "is-neg-d"}`}>{usd(u.usdProfit)}</small>}</strong>
+            <strong className={`v3-bt-mamt ${s.profit >= 0 ? (s.profit ? "is-pos-d" : "is-dim") : "is-neg-d"}`}>{signedMoney(s.profit)}{usdS(u) && <small className={`v3-bt-usd ${usdS(u)!.profit >= 0 ? "is-pos-d" : "is-neg-d"}`}>{usd(usdS(u)!.profit)}</small>}</strong>
             <span className="v3-bt-mbar">{wrBar(s)}</span>
             <span className="v3-bt-mpill">{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></span>
           </button>
