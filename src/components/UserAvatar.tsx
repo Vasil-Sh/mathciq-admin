@@ -22,6 +22,9 @@ export default function UserAvatar({ username, telegram, className = "" }: Props
   const [state, setState] = useState<"wait" | "ok" | "none">(
     handle ? photoCache.get(handle) ?? "wait" : "none",
   );
+  // The Telegram handle can arrive after the first render (e.g. loaded separately) — check the photo again then
+  const [seen, setSeen] = useState(handle);
+  if (seen !== handle) { setSeen(handle); setState(handle ? photoCache.get(handle) ?? "wait" : "none"); }
   const initials = (username || "?").slice(0, 2).toUpperCase();
   return (
     <span className={`v3-av v3-av-in ${className}`} aria-hidden="true">
