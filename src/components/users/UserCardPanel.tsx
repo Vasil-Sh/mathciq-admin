@@ -119,7 +119,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
             <span className="v3-uc-sub-meta">{admin ? "без обмежень" : [user.startDate ? `з ${longDate(user.startDate)}` : "", plan.price].filter(Boolean).join(" · ")}</span>
           </div>
         </div>
-        {!admin && (
+        {!admin && !mobile && (
           <div className="v3-uc-sub-actions">
             <Link className="v3-btn v3-btn-white v3-uc-paylink" to={`/payments?user=${encodeURIComponent(user.username)}`}>Оплати<ArrowRight size={15} aria-hidden="true" /></Link>
             <button type="button" className="v3-btn v3-btn-outline-white" disabled={!online || st === "blocked"} title={st === "blocked" ? "Під час самообмеження продовжувати не можна" : off} onClick={onExtend}>+{extendDays} днів</button>
@@ -134,6 +134,11 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
 
       {mobile ? (
         <div className="v3-uc-mact">
+          {/* Phone: subscription actions sit under the blue card, next to «Написати в Telegram» */}
+          {!admin && <>
+            <Link className="v3-btn v3-btn-white v3-uc-paylink" to={`/payments?user=${encodeURIComponent(user.username)}`}>Оплати<ArrowRight size={15} aria-hidden="true" /></Link>
+            <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || st === "blocked"} title={st === "blocked" ? "Під час самообмеження продовжувати не можна" : off} onClick={onExtend}>+{extendDays} днів</button>
+          </>}
           <button type="button" className={`v3-btn v3-btn-ghost-dark v3-write v3-uc-wide${wr === "done" ? " is-done" : ""}`} disabled={!tgHandle} title={tgHandle ? `Відкрити чат з @${tgHandle} у Telegram` : "Telegram не вказано"} onClick={write}>
             {wr === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" />Відкрито</> : <><span className={`v3-plane${wr === "fly" ? " is-fly" : ""}`} aria-hidden="true"><Send size={14} /></span>Написати в Telegram</>}
           </button>
