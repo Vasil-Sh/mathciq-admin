@@ -359,8 +359,9 @@ export default function Payments() {
     {!wide && <PaneSearch value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />}
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
-        {wide && <div className="v3-pay-tools"><PaneSearch inline value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" /></div>}
-        <div className="v3-pay-sec-h"><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>
+        {(() => { const h = <div className="v3-pay-sec-h"><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>;
+          // Wide: search and the heading share one row (no empty space next to the search)
+          return wide ? <div className="v3-pay-tools v3-pay-hrow"><PaneSearch inline value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />{h}</div> : h; })()}
         {refunds === null ? <div className="v3-pay-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
           : refNeedle && !refundsShown.length && refunds.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>За запитом «{qRef.trim()}» повернень немає.</span></div>
           : refundsShown.length ? <div className="v3-pay-rows a">{refundsShown.map((p, i) => (
@@ -538,8 +539,8 @@ function PromoTab({ promos, online, onToggle, max, onCreated, query = "", search
   return (
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
-        {search && <div className="v3-pay-tools">{search}</div>}
-        <div className="v3-pay-sec-h"><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>
+        {(() => { const h = <div className="v3-pay-sec-h"><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>;
+          return search ? <div className="v3-pay-tools v3-pay-hrow">{search}{h}</div> : h; })()}
         <div className="v3-pay-th is-promo" role="row"><span>Код</span><span>Знижка</span><span>План</span><span>Використано</span><span>Діє</span><span className="v3-pay-r">Стан</span></div>
         {promos === null ? <div className="v3-pay-row is-skel is-promo" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
           : needle && !shownPromos.length && promos.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>Промокоду «{query.trim()}» немає.</span></div>
