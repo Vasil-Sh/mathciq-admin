@@ -68,7 +68,8 @@ export default function Admin() {
   const [updatedAt, setUpdatedAt] = useState("");
   const [tab, setTab] = useState<"users" | "excl">(urlParams.get("tab") === "excl" ? "excl" : "users");
   const [exclCount, setExclCount] = useState<number | null>(null);
-  const [filter, setFilter] = useSessionFilter<UFilter>("users.filter", "all", FILTERS);
+  // Always opens on «Усі»; links from other screens set the filter via ?status=
+  const [filter, setFilter] = useState<UFilter>("all");
   const [ageOnly, setAgeOnly] = useState(false);
   const [q, setQ] = useSessionFilter<string>("users.search", "");
   const [sort, setSort] = useSessionFilter<Sort>("users.sort3", "new", SORTS);
