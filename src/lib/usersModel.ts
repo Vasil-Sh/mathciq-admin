@@ -68,6 +68,13 @@ export function tagOf(u: AdminUserOverview): { label: string; cls: string } {
   return STATUS_UI[s];
 }
 
+export const USER_FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed", "expiring"];
+/** ?status= from links (dashboard etc.) → list filter. Older links: active → paid, expired → closed. Unknown → null. */
+export function filterFromParam(s: string | null): UFilter | null {
+  const f = s === "active" ? "paid" : s === "expired" ? "closed" : s;
+  return f && (USER_FILTERS as string[]).includes(f) ? (f as UFilter) : null;
+}
+
 export function matches(u: AdminUserOverview, f: UFilter): boolean {
   const s = statusOf(u);
   switch (f) {

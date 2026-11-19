@@ -71,3 +71,11 @@ export function betView(b: AdminUserBet) {
   const profit = res === "pending" ? "—" : signedMoney(nativeProfit(b), b.currency);
   return { exp, legs, title, pick, day, year: y, time, res, status, profit, game: gameLabel(b.game), odds: odds(b.odds), amount: money(nativeAmount(b), b.currency) };
 }
+
+/** $ totals for a game tab ("all" = every game). Null when the user has no $ bets there. */
+export function usdStatsFor(u: AdminUserOverview, game: string): { bets: number; staked: number; profit: number; roi: number } | null {
+  const gs = game === "all" ? null : (u.games || []).filter((g) => gameLabel(g.game) === game);
+  const x = gs ? gs.reduce((a, g) => ({ bets: a.bets + (g.usdBets || 0), staked: a.staked + (g.usdStaked || 0), profit: a.profit + (g.usdProfit || 0) }), { bets: 0, staked: 0, profit: 0 })
+    : { bets: u.usdBets || 0, staked: u.usdStaked || 0, profit: u.usdProfit || 0 };
+  return x.bets > 0 ? { ...x, roi: x.staked ? (x.profit / x.staked) * 100 : 0 } : null;
+}

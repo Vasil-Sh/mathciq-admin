@@ -21,7 +21,7 @@ import { plural } from "@/lib/dashboardInsights";
 import { endsWithoutRenewal, isAdmin, planCell, statusOf, statusUi } from "@/lib/usersModel";
 import {
   dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
-  PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode,
+  PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode, deltaVs,
 } from "@/lib/paymentsModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 
@@ -42,12 +42,7 @@ function useOnline() {
 const num = (p: PaymentRow) => Number(p.amount) || 0;
 const asPayment = (p: PaymentRow): Payment => ({ id: p.id, amount: p.amount, paidOn: p.paidOn, periodStart: p.periodStart, periodEnd: p.periodEnd, note: p.note, createdBy: p.createdBy, status: p.status, cancelReason: p.cancelReason, cancelledBy: p.cancelledBy, extendSubscription: p.extendSubscription, username: p.username });
 
-/** «Зміна до попереднього періоду» (каталог · Метрики 06): колір за знаком. */
-/** When last month was 0 a % cannot be counted: the chip shows the difference itself («↑ +225 ₴», «↑ +1»), or «→ 0%» when both are 0. */
-/** Month-over-month change, always in % (from 0 to something = +100%, 0 → 0 = 0%). */
-export const deltaVs = (cur: number, prev: number): { d: number | null } =>
-  prev > 0 ? { d: Math.round(((cur - prev) / prev) * 1000) / 10 } : cur > 0 ? { d: 100 } : { d: 0 };
-
+/** «Зміна до попереднього періоду» chip; the % itself comes from deltaVs (lib/paymentsModel). */
 /** `bad`: growth is a loss for us (refunds) — up is red, down is green. The arrow still shows the direction. */
 function Delta({ d, on, vs, bad = false }: { d: number | null; on?: boolean; vs: string; bad?: boolean }) {
   if (d === null) return null;

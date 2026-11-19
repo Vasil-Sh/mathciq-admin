@@ -25,14 +25,14 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { fetchAdminStats } from "@/lib/adminStatsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring } from "@/lib/usersModel";
+import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring, USER_FILTERS, filterFromParam } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 const PAGE_SIZE = 10;
 type Sort = "new" | "name";
-const FILTERS: UFilter[] = ["all", "paid", "trial", "basic", "pro", "ended", "cancelled", "closed", "expiring"];
+const FILTERS = USER_FILTERS;
 const SORTS: Sort[] = ["new", "name"];
 
 /** The matched part of a login in yellow (catalog · Inputs · search highlight). */
@@ -119,9 +119,8 @@ export default function Admin() {
   useEffect(() => {
     const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); }
     // ?status= is any list filter (all, paid, trial, basic, pro, ended, cancelled, closed, expiring); older links: active → paid, expired → closed
-    const s = urlParams.get("status");
-    const f = s === "active" ? "paid" : s === "expired" ? "closed" : s;
-    if (f && (FILTERS as string[]).includes(f)) { setFilter(f as UFilter); setAgeOnly(false); setTab("users"); if (!qq) setQ(""); }
+    const f = filterFromParam(urlParams.get("status"));
+    if (f) { setFilter(f); setAgeOnly(false); setTab("users"); if (!qq) setQ(""); }
     const so = urlParams.get("sort"); if (so && (SORTS as string[]).includes(so)) setSort(so as Sort);
   }, [urlParams]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -6,7 +6,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { betView, gameLabel, isUsd, money, signedMoney, signedPct, statsFor, userGames, type Sort, type Stats } from "@/lib/betsModel";
+import { betView, gameLabel, isUsd, usdStatsFor, money, signedMoney, signedPct, statsFor, userGames, type Sort, type Stats } from "@/lib/betsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AdminUserBet, AdminUserOverview } from "@/types";
 import PillTrack from "@/components/PillTrack";
@@ -88,12 +88,7 @@ export default function Bets() {
   }, [playing]);
   /** Dollar figures are kept per user for all games together — shown only on «Усі». */
   /** $ figures for the selected game tab (null if the user has no $ bets there). The $ bank is overall, like the ₴ one. */
-  const usdS = (u: AdminUserOverview) => {
-    const gs = game === "all" ? null : (u.games || []).filter((g) => gameLabel(g.game) === game);
-    const x = gs ? gs.reduce((a, g) => ({ bets: a.bets + (g.usdBets || 0), staked: a.staked + (g.usdStaked || 0), profit: a.profit + (g.usdProfit || 0) }), { bets: 0, staked: 0, profit: 0 })
-      : { bets: u.usdBets || 0, staked: u.usdStaked || 0, profit: u.usdProfit || 0 };
-    return x.bets > 0 ? { ...x, roi: x.staked ? (x.profit / x.staked) * 100 : 0 } : null;
-  };
+  const usdS = (u: AdminUserOverview) => usdStatsFor(u, game);
   const usdBank = (u: AdminUserOverview) => (u.usdBets || 0) > 0;
   const usd = (n: number | undefined) => signedMoney(n || 0, "USD");
   // Top KPI is for all games (like the ₴ total next to it)

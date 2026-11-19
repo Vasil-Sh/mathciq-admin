@@ -72,3 +72,7 @@ export const PROMO_UI: Record<PromoState, { label: string; cls: string }> = {
 };
 export const PLAN_LABEL: Record<string, string> = { trial: "Пробний", basic: "Базова", pro: "Pro" };
 export const pct = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 1000) / 10 : null);
+
+/** Change vs the previous period, always in %. From 0 to something = +100%, 0 → 0 = 0%. */
+export const deltaVs = (cur: number, prev: number): { d: number | null } =>
+  prev > 0 ? { d: Math.round(((cur - prev) / prev) * 1000) / 10 } : cur > 0 ? { d: 100 } : { d: 0 };

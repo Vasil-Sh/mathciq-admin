@@ -1,0 +1,1232 @@
+{
+ "recordedAt": "2026-11-19T20:42:42.780Z",
+ "responses": {
+  "GET /auth/me": {
+   "status": 200,
+   "body": {
+    "id": 2,
+    "username": "super_gus23_7482",
+    "role": "admin",
+    "isOwner": true,
+    "telegram": "super_gus",
+    "plan": "pro",
+    "trialEndDate": null,
+    "ageConfirmed": true,
+    "startDate": "2026-01-01",
+    "endDate": "2099-12-31"
+   }
+  },
+  "GET /admin/audit": {
+   "status": 200,
+   "body": {
+    "entries": [
+     {
+      "id": 7,
+      "actor_id": 7,
+      "actor_name": "test_owner",
+      "action": "POST",
+      "target": "/auth/users/2/reset-password",
+      "details": {
+       "_targetUserId": 2,
+       "targetUsername": "super_gus23_7482"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T14:42:22.173Z",
+      "actor_telegram": null,
+      "target_username": "super_gus23_7482",
+      "category": "users"
+     },
+     {
+      "id": 6,
+      "actor_id": 7,
+      "actor_name": "test_owner",
+      "action": "LOGIN_NEW_DEVICE",
+      "target": "/auth/login",
+      "details": {
+       "ip": "10.1.•••.3",
+       "device": "Браузер · інша ОС"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T14:42:22.080Z",
+      "actor_telegram": null,
+      "target_username": null,
+      "category": "security"
+     },
+     {
+      "id": 5,
+      "actor_id": 7,
+      "actor_name": "system",
+      "action": "POST",
+      "target": "/admin/users/7",
+      "details": {
+       "role": "admin",
+       "source": "bootstrap-owner",
+       "isOwner": true,
+       "_targetUserId": 7,
+       "targetUsername": "test_owner"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T14:42:15.541Z",
+      "actor_telegram": null,
+      "target_username": "test_owner",
+      "category": "users"
+     },
+     {
+      "id": 4,
+      "actor_id": 2,
+      "actor_name": "super_gus23_7482",
+      "action": "DELETE",
+      "target": "/admin/payments/1",
+      "details": {
+       "id": 1,
+       "amount": 300,
+       "paidOn": "2026-11-02",
+       "status": "refunded",
+       "username": "Ter",
+       "createdBy": "super_gus23_7482",
+       "paymentId": 1,
+       "periodEnd": "2026-12-02",
+       "promoCode": "",
+       "periodStart": "2026-11-02",
+       "_targetUserId": 6,
+       "paymentMethod": "card",
+       "targetUsername": "Ter"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T09:43:27.967Z",
+      "actor_telegram": "super_gus",
+      "target_username": "Ter",
+      "category": "payments"
+     },
+     {
+      "id": 3,
+      "actor_id": 2,
+      "actor_name": "super_gus23_7482",
+      "action": "DELETE",
+      "target": "/admin/payments/5",
+      "details": {
+       "id": 5,
+       "amount": 1,
+       "paidOn": "2026-11-19",
+       "status": "recorded",
+       "username": "test25517",
+       "createdBy": "admin",
+       "paymentId": 5,
+       "periodEnd": "2026-11-20",
+       "promoCode": "",
+       "periodStart": "2026-11-19",
+       "_targetUserId": "",
+       "paymentMethod": "",
+       "targetUsername": "test25517"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T09:36:14.872Z",
+      "actor_telegram": "super_gus",
+      "target_username": "test25517",
+      "category": "payments"
+     },
+     {
+      "id": 2,
+      "actor_id": 2,
+      "actor_name": "super_gus23_7482",
+      "action": "LOGIN_NEW_DEVICE",
+      "target": "/auth/login",
+      "details": {
+       "ip": "unknown",
+       "device": "Chrome · Linux"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T09:12:38.200Z",
+      "actor_telegram": "super_gus",
+      "target_username": null,
+      "category": "security"
+     },
+     {
+      "id": 1,
+      "actor_id": 2,
+      "actor_name": "super_gus23_7482",
+      "action": "LOGIN_NEW_DEVICE",
+      "target": "/auth/login",
+      "details": {
+       "ip": "unknown",
+       "device": "Браузер · інша ОС"
+      },
+      "status": "success",
+      "created_at": "2026-11-19T09:12:32.760Z",
+      "actor_telegram": "super_gus",
+      "target_username": null,
+      "category": "security"
+     }
+    ],
+    "hasMore": false,
+    "total": 7,
+    "limit": 25
+   }
+  },
+  "GET /admin/users": {
+   "status": 200,
+   "body": {
+    "users": [
+     {
+      "id": 1,
+      "username": "admin",
+      "role": "admin",
+      "telegram": "",
+      "telegramLinked": false,
+      "priceMonth": 0,
+      "startDate": "2026-11-19",
+      "endDate": "2099-12-31",
+      "createdAt": "2026-11-19T09:11:21.795Z",
+      "betCount": 10,
+      "wins": 5,
+      "losses": 5,
+      "pending": 0,
+      "totalStaked": 2880,
+      "totalProfit": -1116,
+      "winRate": 50,
+      "roi": -38.7,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 1,
+      "usdStaked": 100,
+      "usdProfit": 33,
+      "usdRoi": 33,
+      "currentBank": -1116,
+      "initialBankUsd": 0,
+      "currentBankUsd": 33,
+      "lossStreak": 0,
+      "plan": "pro",
+      "planLabel": "Pro",
+      "trialEndDate": "",
+      "ageConfirmed": false,
+      "lastBetDate": "2026-10-03",
+      "lastBetAt": "2026-11-19T20:34:16.027Z",
+      "extensions": 0,
+      "lastPaymentDate": "",
+      "games": [
+       {
+        "game": "CS2",
+        "bets": 6,
+        "wins": 3,
+        "losses": 3,
+        "pending": 0,
+        "staked": 1600,
+        "profit": -772,
+        "usdBets": 1,
+        "usdStaked": 100,
+        "usdProfit": 33,
+        "winRate": 50,
+        "roi": -48.2
+       },
+       {
+        "game": "Dota 2",
+        "bets": 4,
+        "wins": 2,
+        "losses": 2,
+        "pending": 0,
+        "staked": 1280,
+        "profit": -344,
+        "usdBets": 0,
+        "usdStaked": 0,
+        "usdProfit": 0,
+        "winRate": 50,
+        "roi": -26.9
+       }
+      ],
+      "isOwner": false,
+      "birthDate": "",
+      "paidTotal": 0,
+      "paidCount": 0,
+      "lastPaymentAmount": 0,
+      "cancelledAt": "",
+      "refundedAmount": 0,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     },
+     {
+      "id": 3,
+      "username": "Gerrry",
+      "role": "user",
+      "telegram": "gerrry",
+      "telegramLinked": false,
+      "priceMonth": 0,
+      "startDate": "2026-11-17",
+      "endDate": "2026-11-24",
+      "createdAt": "2026-11-16T22:00:00.000Z",
+      "betCount": 0,
+      "wins": 0,
+      "losses": 0,
+      "pending": 0,
+      "totalStaked": 0,
+      "totalProfit": 0,
+      "winRate": 0,
+      "roi": 0,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 0,
+      "usdStaked": 0,
+      "usdProfit": 0,
+      "usdRoi": 0,
+      "currentBank": 0,
+      "initialBankUsd": 0,
+      "currentBankUsd": 0,
+      "lossStreak": 0,
+      "plan": "trial",
+      "planLabel": "Пробний",
+      "trialEndDate": "2026-11-24",
+      "ageConfirmed": false,
+      "lastBetDate": "",
+      "lastBetAt": "",
+      "extensions": 0,
+      "lastPaymentDate": "",
+      "games": [],
+      "isOwner": false,
+      "birthDate": "",
+      "paidTotal": 0,
+      "paidCount": 0,
+      "lastPaymentAmount": 0,
+      "cancelledAt": "",
+      "refundedAmount": 0,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     },
+     {
+      "id": 6,
+      "username": "Ter",
+      "role": "user",
+      "telegram": "ter",
+      "telegramLinked": false,
+      "priceMonth": 300,
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-18",
+      "createdAt": "2026-11-01T22:00:00.000Z",
+      "betCount": 0,
+      "wins": 0,
+      "losses": 0,
+      "pending": 0,
+      "totalStaked": 0,
+      "totalProfit": 0,
+      "winRate": 0,
+      "roi": 0,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 0,
+      "usdStaked": 0,
+      "usdProfit": 0,
+      "usdRoi": 0,
+      "currentBank": 0,
+      "initialBankUsd": 0,
+      "currentBankUsd": 0,
+      "lossStreak": 0,
+      "plan": "pro",
+      "planLabel": "Pro",
+      "trialEndDate": "",
+      "ageConfirmed": true,
+      "lastBetDate": "",
+      "lastBetAt": "",
+      "extensions": 1,
+      "lastPaymentDate": "2026-11-03",
+      "games": [],
+      "isOwner": false,
+      "birthDate": "",
+      "paidTotal": 0,
+      "paidCount": 0,
+      "lastPaymentAmount": 300,
+      "cancelledAt": "2026-11-17T22:00:00.000Z",
+      "refundedAmount": 300,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     },
+     {
+      "id": 5,
+      "username": "test25517",
+      "role": "user",
+      "telegram": "",
+      "telegramLinked": false,
+      "priceMonth": 15,
+      "startDate": "2026-11-01",
+      "endDate": "2026-12-01",
+      "createdAt": "2026-10-19T21:00:00.000Z",
+      "betCount": 0,
+      "wins": 0,
+      "losses": 0,
+      "pending": 0,
+      "totalStaked": 0,
+      "totalProfit": 0,
+      "winRate": 0,
+      "roi": 0,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 0,
+      "usdStaked": 0,
+      "usdProfit": 0,
+      "usdRoi": 0,
+      "currentBank": 0,
+      "initialBankUsd": 0,
+      "currentBankUsd": 0,
+      "lossStreak": 0,
+      "plan": "basic",
+      "planLabel": "Базова",
+      "trialEndDate": "",
+      "ageConfirmed": true,
+      "lastBetDate": "",
+      "lastBetAt": "",
+      "extensions": 1,
+      "lastPaymentDate": "2026-11-19",
+      "games": [],
+      "isOwner": false,
+      "birthDate": "",
+      "paidTotal": 15,
+      "paidCount": 1,
+      "lastPaymentAmount": 15,
+      "cancelledAt": "",
+      "refundedAmount": 0,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     },
+     {
+      "id": 2,
+      "username": "super_gus23_7482",
+      "role": "admin",
+      "telegram": "super_gus",
+      "telegramLinked": false,
+      "priceMonth": 0,
+      "startDate": "2026-01-01",
+      "endDate": "2099-12-31",
+      "createdAt": "2026-09-30T21:00:00.000Z",
+      "betCount": 0,
+      "wins": 0,
+      "losses": 0,
+      "pending": 0,
+      "totalStaked": 0,
+      "totalProfit": 0,
+      "winRate": 0,
+      "roi": 0,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 0,
+      "usdStaked": 0,
+      "usdProfit": 0,
+      "usdRoi": 0,
+      "currentBank": 0,
+      "initialBankUsd": 0,
+      "currentBankUsd": 0,
+      "lossStreak": 0,
+      "plan": "pro",
+      "planLabel": "Pro",
+      "trialEndDate": "",
+      "ageConfirmed": true,
+      "lastBetDate": "",
+      "lastBetAt": "",
+      "extensions": 0,
+      "lastPaymentDate": "",
+      "games": [],
+      "isOwner": true,
+      "birthDate": "",
+      "paidTotal": 0,
+      "paidCount": 0,
+      "lastPaymentAmount": 0,
+      "cancelledAt": "",
+      "refundedAmount": 0,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     },
+     {
+      "id": 4,
+      "username": "test30610",
+      "role": "user",
+      "telegram": "test30610",
+      "telegramLinked": true,
+      "priceMonth": 10,
+      "startDate": "2026-06-01",
+      "endDate": "2027-01-16",
+      "createdAt": "2026-05-31T21:00:00.000Z",
+      "betCount": 0,
+      "wins": 0,
+      "losses": 0,
+      "pending": 0,
+      "totalStaked": 0,
+      "totalProfit": 0,
+      "winRate": 0,
+      "roi": 0,
+      "initialBank": 0,
+      "manualAdjustments": 0,
+      "usdBets": 0,
+      "usdStaked": 0,
+      "usdProfit": 0,
+      "usdRoi": 0,
+      "currentBank": 0,
+      "initialBankUsd": 0,
+      "currentBankUsd": 0,
+      "lossStreak": 0,
+      "plan": "basic",
+      "planLabel": "Базова",
+      "trialEndDate": "",
+      "ageConfirmed": true,
+      "lastBetDate": "",
+      "lastBetAt": "",
+      "extensions": 1,
+      "lastPaymentDate": "2026-11-19",
+      "games": [],
+      "isOwner": false,
+      "birthDate": "",
+      "paidTotal": 210,
+      "paidCount": 1,
+      "lastPaymentAmount": 210,
+      "cancelledAt": "",
+      "refundedAmount": 0,
+      "selfLimitedUntil": "",
+      "aiToday": 0,
+      "proUntil": "",
+      "proBasePlan": "",
+      "subscriptionCancelledAt": "",
+      "subscriptionCancelMode": ""
+     }
+    ]
+   }
+  },
+  "GET /admin/support-tickets": {
+   "status": 200,
+   "body": {
+    "tickets": []
+   }
+  },
+  "GET /admin/parsers": {
+   "status": 200,
+   "body": {
+    "parsers": [
+     {
+      "name": "tipsgg_fetch_cs2_matches",
+      "open": false,
+      "failures": 0,
+      "failures24h": 0,
+      "lastFailure": ""
+     },
+     {
+      "name": "tipsgg_fetch_dota2_matches",
+      "open": false,
+      "failures": 0,
+      "failures24h": 0,
+      "lastFailure": ""
+     },
+     {
+      "name": "hltv_scraper",
+      "open": false,
+      "failures": 0,
+      "failures24h": 0,
+      "lastFailure": ""
+     }
+    ]
+   }
+  },
+  "GET /auth/users": {
+   "status": 200,
+   "body": [
+    {
+     "id": 3,
+     "username": "Gerrry",
+     "role": "user",
+     "isOwner": false,
+     "telegram": "gerrry",
+     "priceMonth": 0,
+     "plan": "trial",
+     "trialEndDate": "2026-11-24",
+     "ageConfirmed": false,
+     "startDate": "2026-11-17",
+     "endDate": "2026-11-24",
+     "createdAt": "2026-11-17T00:00:00.000Z"
+    },
+    {
+     "id": 6,
+     "username": "Ter",
+     "role": "user",
+     "isOwner": false,
+     "telegram": "ter",
+     "priceMonth": 300,
+     "plan": "pro",
+     "trialEndDate": null,
+     "ageConfirmed": true,
+     "startDate": "2026-11-02",
+     "endDate": "2026-11-18",
+     "createdAt": "2026-11-02T00:00:00.000Z"
+    },
+    {
+     "id": 1,
+     "username": "admin",
+     "role": "admin",
+     "isOwner": false,
+     "telegram": "",
+     "priceMonth": 0,
+     "plan": "pro",
+     "trialEndDate": null,
+     "ageConfirmed": false,
+     "startDate": "2026-11-19",
+     "endDate": "2099-12-31",
+     "createdAt": "2026-11-19T11:11:21.795Z"
+    },
+    {
+     "id": 2,
+     "username": "super_gus23_7482",
+     "role": "admin",
+     "isOwner": true,
+     "telegram": "super_gus",
+     "priceMonth": 0,
+     "plan": "pro",
+     "trialEndDate": null,
+     "ageConfirmed": true,
+     "startDate": "2026-01-01",
+     "endDate": "2099-12-31",
+     "createdAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "id": 5,
+     "username": "test25517",
+     "role": "user",
+     "isOwner": false,
+     "telegram": "",
+     "priceMonth": 15,
+     "plan": "basic",
+     "trialEndDate": null,
+     "ageConfirmed": true,
+     "startDate": "2026-11-01",
+     "endDate": "2026-12-01",
+     "createdAt": "2026-10-20T00:00:00.000Z"
+    },
+    {
+     "id": 4,
+     "username": "test30610",
+     "role": "user",
+     "isOwner": false,
+     "telegram": "test30610",
+     "priceMonth": 10,
+     "plan": "basic",
+     "trialEndDate": null,
+     "ageConfirmed": true,
+     "startDate": "2026-06-01",
+     "endDate": "2027-01-16",
+     "createdAt": "2026-06-01T00:00:00.000Z"
+    }
+   ]
+  },
+  "GET /admin/settings": {
+   "status": 200,
+   "body": {
+    "settings": {
+     "defaultMonthlyPrice": 0,
+     "subscriptionDays": 30,
+     "bannerSpecText": "",
+     "basicPrice": 300,
+     "proPrice": 600,
+     "basicFeatures": [],
+     "proFeatures": [],
+     "trialEnabled": false,
+     "trialDays": 7,
+     "trialPlan": "basic",
+     "aiDailyLimit": 5,
+     "warningThreshold": 3,
+     "receiptFields": [],
+     "disclaimerText": "",
+     "aiUsdUah": 41.5,
+     "churnInactiveDays": 14,
+     "churnLossStreak": 5,
+     "adsOddsInList": true,
+     "adsMatchDetails": true
+    }
+   }
+  },
+  "GET /admin/stats": {
+   "status": 200,
+   "body": {
+    "paymentsByMonth": [
+     {
+      "month": "2026-11",
+      "amount": 225,
+      "count": 2
+     }
+    ],
+    "totalUsers": 4,
+    "activeUsers": 3,
+    "adminUsers": 2,
+    "inactiveUsers": 1,
+    "newThisMonth": 2,
+    "mrr": 25,
+    "revenueByMonth": [
+     {
+      "month": "2026-01",
+      "revenue": 0,
+      "paidUsers": 0
+     },
+     {
+      "month": "2026-02",
+      "revenue": 0,
+      "paidUsers": 0
+     },
+     {
+      "month": "2026-03",
+      "revenue": 0,
+      "paidUsers": 0
+     },
+     {
+      "month": "2026-04",
+      "revenue": 0,
+      "paidUsers": 0
+     },
+     {
+      "month": "2026-05",
+      "revenue": 0,
+      "paidUsers": 0
+     },
+     {
+      "month": "2026-06",
+      "revenue": 10,
+      "paidUsers": 1
+     },
+     {
+      "month": "2026-07",
+      "revenue": 10,
+      "paidUsers": 1
+     },
+     {
+      "month": "2026-08",
+      "revenue": 10,
+      "paidUsers": 1
+     },
+     {
+      "month": "2026-09",
+      "revenue": 10,
+      "paidUsers": 1
+     },
+     {
+      "month": "2026-10",
+      "revenue": 10,
+      "paidUsers": 1
+     },
+     {
+      "month": "2026-11",
+      "revenue": 325,
+      "paidUsers": 3
+     }
+    ],
+    "registrationsByMonth": [
+     {
+      "month": "2026-06",
+      "count": 1
+     },
+     {
+      "month": "2026-10",
+      "count": 1
+     },
+     {
+      "month": "2026-11",
+      "count": 2
+     }
+    ],
+    "recentRegistrations": [
+     {
+      "username": "Gerrry",
+      "date": "2026-11-16",
+      "price": 0
+     },
+     {
+      "username": "Ter",
+      "date": "2026-11-01",
+      "price": 300
+     },
+     {
+      "username": "test25517",
+      "date": "2026-10-19",
+      "price": 15
+     },
+     {
+      "username": "test30610",
+      "date": "2026-05-31",
+      "price": 10
+     }
+    ],
+    "planDistribution": [
+     {
+      "plan": "basic",
+      "label": "Базова",
+      "count": 2,
+      "price": 25
+     },
+     {
+      "plan": "pro",
+      "label": "Pro",
+      "count": 1,
+      "price": 300
+     },
+     {
+      "plan": "trial",
+      "label": "Пробний",
+      "count": 1,
+      "price": 0
+     }
+    ],
+    "conversion": {
+     "trial": 1,
+     "paid": 3,
+     "last30": {
+      "trialEnded": 0,
+      "converted": 0
+     }
+    },
+    "refunds": {
+     "total": 300,
+     "month": 300,
+     "byMonth": [
+      {
+       "month": "2026-11",
+       "amount": 300,
+       "count": 1
+      }
+     ]
+    },
+    "cancellations": {
+     "total": 0,
+     "byMonth": []
+    },
+    "recentPayments": [
+     {
+      "id": 4,
+      "username": "test30610",
+      "amount": 210,
+      "paidOn": "2026-11-19",
+      "status": "recorded",
+      "extendSubscription": true,
+      "promoCode": "",
+      "plan": "basic"
+     },
+     {
+      "id": 3,
+      "username": "test25517",
+      "amount": 15,
+      "paidOn": "2026-11-19",
+      "status": "recorded",
+      "extendSubscription": true,
+      "promoCode": "",
+      "plan": "basic"
+     },
+     {
+      "id": 2,
+      "username": "Ter",
+      "amount": 300,
+      "paidOn": "2026-11-03",
+      "status": "refunded",
+      "extendSubscription": true,
+      "promoCode": "",
+      "plan": "pro"
+     }
+    ],
+    "retention": {
+     "retained": 3,
+     "churned": 0,
+     "byMonth": [
+      {
+       "month": "2026-06",
+       "ended": 0,
+       "renewed": 0
+      },
+      {
+       "month": "2026-07",
+       "ended": 0,
+       "renewed": 0
+      },
+      {
+       "month": "2026-08",
+       "ended": 0,
+       "renewed": 0
+      },
+      {
+       "month": "2026-09",
+       "ended": 0,
+       "renewed": 0
+      },
+      {
+       "month": "2026-10",
+       "ended": 0,
+       "renewed": 0
+      },
+      {
+       "month": "2026-11",
+       "ended": 0,
+       "renewed": 0
+      }
+     ]
+    },
+    "selfLimitation": {
+     "new": 0,
+     "latest": []
+    },
+    "aiUsage": {
+     "calls": 0,
+     "costUsd": 0,
+     "tokens": 0,
+     "usdToUah": 41.5,
+     "today": {
+      "calls": 0,
+      "costUsd": 0
+     },
+     "byMonth": []
+    },
+    "parserFailures24h": 0,
+    "openSupportTickets": 0,
+    "unverifiedAge": 1,
+    "ageUnverified": [
+     {
+      "username": "Gerrry"
+     }
+    ]
+   }
+  },
+  "GET /admin/self-limitations": {
+   "status": 200,
+   "body": {
+    "requests": []
+   }
+  },
+  "GET /admin/payments": {
+   "status": 200,
+   "body": {
+    "payments": [
+     {
+      "id": 4,
+      "userId": 4,
+      "username": "test30610",
+      "amount": 210,
+      "currency": "UAH",
+      "paidOn": "2026-11-19",
+      "periodStart": "2026-11-19",
+      "periodEnd": "2026-12-19",
+      "note": "",
+      "extendSubscription": true,
+      "createdBy": "super_gus23_7482",
+      "createdAt": "2026-11-19T09:11:45.393Z",
+      "status": "recorded",
+      "cancelledBy": null,
+      "cancelledAt": null,
+      "cancelReason": null,
+      "paymentMethod": "card_transfer",
+      "refundedAmount": null,
+      "refundReason": null,
+      "refundedAt": null,
+      "refundedBy": null,
+      "promoCode": ""
+     },
+     {
+      "id": 3,
+      "userId": 5,
+      "username": "test25517",
+      "amount": 15,
+      "currency": "UAH",
+      "paidOn": "2026-11-19",
+      "periodStart": "2026-11-19",
+      "periodEnd": "2026-12-19",
+      "note": "",
+      "extendSubscription": true,
+      "createdBy": "super_gus23_7482",
+      "createdAt": "2026-11-19T09:11:45.391Z",
+      "status": "recorded",
+      "cancelledBy": null,
+      "cancelledAt": null,
+      "cancelReason": null,
+      "paymentMethod": "monobank",
+      "refundedAmount": null,
+      "refundReason": null,
+      "refundedAt": null,
+      "refundedBy": null,
+      "promoCode": ""
+     },
+     {
+      "id": 2,
+      "userId": 6,
+      "username": "Ter",
+      "amount": 300,
+      "currency": "UAH",
+      "paidOn": "2026-11-03",
+      "periodStart": "2026-11-03",
+      "periodEnd": "2026-12-03",
+      "note": "",
+      "extendSubscription": true,
+      "createdBy": "super_gus23_7482",
+      "createdAt": "2026-11-19T09:11:45.390Z",
+      "status": "refunded",
+      "cancelledBy": null,
+      "cancelledAt": null,
+      "cancelReason": null,
+      "paymentMethod": "card",
+      "refundedAmount": 300,
+      "refundReason": "Помилкова оплата",
+      "refundedAt": "2026-11-17T22:00:00.000Z",
+      "refundedBy": null,
+      "promoCode": ""
+     }
+    ],
+    "hasMore": false,
+    "summary": {
+     "recorded": 225,
+     "refunded": 300,
+     "total": 3
+    }
+   }
+  },
+  "GET /admin/promo-codes": {
+   "status": 200,
+   "body": {
+    "promoCodes": [
+     {
+      "id": 2,
+      "code": "START10",
+      "discountPercent": 10,
+      "plan": "basic",
+      "startsOn": null,
+      "endsOn": null,
+      "usageLimit": null,
+      "usedCount": 0,
+      "active": true,
+      "createdAt": "2026-11-19T09:11:50.226Z"
+     },
+     {
+      "id": 3,
+      "code": "PRO20",
+      "discountPercent": 20,
+      "plan": "pro",
+      "startsOn": null,
+      "endsOn": null,
+      "usageLimit": null,
+      "usedCount": 0,
+      "active": true,
+      "createdAt": "2026-11-19T09:11:50.226Z"
+     }
+    ]
+   }
+  },
+  "GET /admin/users/1/bets": {
+   "status": 200,
+   "body": {
+    "bets": [
+     {
+      "id": "6bad72e0-88b2-4421-9fa1-853ace0b4fcb",
+      "match": "Team Spirit vs ShindeN",
+      "team1": "Team Spirit",
+      "team2": "ShindeN",
+      "betType": "Match Winner - Team Spirit",
+      "odds": 1.33,
+      "amount": 4513,
+      "stake": null,
+      "date": "2026-10-03",
+      "result": "Win",
+      "profit": 1489.29,
+      "game": "CS2",
+      "currency": "USD",
+      "originalAmount": 100,
+      "originalProfit": 33,
+      "exchangeRate": 41.5,
+      "strategy": "",
+      "createdAt": "2026-11-19T20:34:16.027Z"
+     },
+     {
+      "id": "49eb2203-0af3-415a-93bb-d439ba3abe92",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 440,
+      "stake": null,
+      "date": "2026-07-09",
+      "result": "Loss",
+      "profit": -440,
+      "game": "CS2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-08T21:00:00.000Z"
+     },
+     {
+      "id": "94a91dba-032f-4d3d-b6e6-ea11e605e55e",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 410,
+      "stake": null,
+      "date": "2026-07-08",
+      "result": "Loss",
+      "profit": -410,
+      "game": "Dota 2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-07T21:00:00.000Z"
+     },
+     {
+      "id": "fc34cdda-6398-4d84-ac5c-dc1b51172c19",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 380,
+      "stake": null,
+      "date": "2026-07-07",
+      "result": "Loss",
+      "profit": -380,
+      "game": "CS2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-06T21:00:00.000Z"
+     },
+     {
+      "id": "abe2919f-ca7a-49a1-8906-bdd9c2a0586d",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 350,
+      "stake": null,
+      "date": "2026-07-06",
+      "result": "Loss",
+      "profit": -350,
+      "game": "Dota 2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-05T21:00:00.000Z"
+     },
+     {
+      "id": "be4c8ee0-8acb-4d39-8ea3-77c9af5229e7",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 320,
+      "stake": null,
+      "date": "2026-07-05",
+      "result": "Loss",
+      "profit": -320,
+      "game": "CS2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-04T21:00:00.000Z"
+     },
+     {
+      "id": "7411b91c-811c-4f00-9f78-f3101f1e213d",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 290,
+      "stake": null,
+      "date": "2026-07-04",
+      "result": "Win",
+      "profit": 232,
+      "game": "Dota 2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-03T21:00:00.000Z"
+     },
+     {
+      "id": "f25d7fe5-0c55-42f4-a6e2-c9fe5e407ca5",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 260,
+      "stake": null,
+      "date": "2026-07-03",
+      "result": "Win",
+      "profit": 208,
+      "game": "CS2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-02T21:00:00.000Z"
+     },
+     {
+      "id": "91b3df89-72d5-4dd3-b30c-ffac20b2f885",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 230,
+      "stake": null,
+      "date": "2026-07-02",
+      "result": "Win",
+      "profit": 184,
+      "game": "Dota 2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-07-01T21:00:00.000Z"
+     },
+     {
+      "id": "bb1195a0-4127-4f7c-985c-5fd4f061e5ff",
+      "match": "NaVi vs FaZe",
+      "team1": "NaVi",
+      "team2": "FaZe",
+      "betType": "Ординар",
+      "odds": 1.8,
+      "amount": 200,
+      "stake": null,
+      "date": "2026-07-01",
+      "result": "Win",
+      "profit": 160,
+      "game": "CS2",
+      "currency": "UAH",
+      "originalAmount": null,
+      "originalProfit": null,
+      "exchangeRate": null,
+      "strategy": "",
+      "createdAt": "2026-06-30T21:00:00.000Z"
+     }
+    ]
+   }
+  }
+ }
+}
