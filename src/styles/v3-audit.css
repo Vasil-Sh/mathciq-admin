@@ -83,7 +83,7 @@
 .v3-au-msel select { width: 100%; min-height: 44px; padding: 0 30px 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: #161b24 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f4f6fa' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; color: #f4f6fa; font: 500 13px Inter, sans-serif; appearance: none; }
 .v3-au-msel.is-full, .v3-au-mtools .v3-au-custom { grid-column: 1 / -1; }
 .v3-au-mtools .v3-au-custom { color: #c3c9d4; }
-.v3-au-mcard .v3-au-day { color: #8c95a6; padding: 10px 4px 4px; }
+.v3-au-mcard .v3-au-day { color: #8c95a6; padding: 18px 4px 12px; }
 .v3-au-mcard .v3-au-day::after { background: rgba(255, 255, 255, .08); }
 .v3-au-mev { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 14px; border-radius: 18px; background: #fff; color: var(--v3-ink); margin-bottom: 8px; }
 .v3-au-mev.is-err { outline: 2px solid #ffc2b6; } .v3-au-mev.is-warn { outline: 2px solid #f6d7a7; }
