@@ -70,7 +70,7 @@ export default function AllBetsDialog({ user, bets, open, onOpenChange }: { user
           </div>
           <DialogClose className="v3-ab-x" aria-label="Закрити"><X size={16} strokeWidth={2.2} aria-hidden="true" /></DialogClose>
         </div>
-        {(user.usdBets || 0) > 0 && <div className="v3-ab-cur">У гривнях</div>}
+        {(user.usdBets || 0) > 0 && (() => { const n = Math.max(0, (user.betCount || 0) - (user.usdBets || 0)); return <div className="v3-ab-cur">У гривнях · {n} {plural(n, "ставка", "ставки", "ставок")}</div>; })()}
         <div className="v3-ab-stats">
           <div><span>Профіт</span><b className={user.totalProfit >= 0 ? "is-pos-d" : "is-neg-d"}>{signedMoney(user.totalProfit)}</b></div>
           <div><span>Обіг</span><b>{money(user.totalStaked)}</b></div>
