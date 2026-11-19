@@ -71,6 +71,8 @@ export interface AdminUserOverview {
   usdStaked?: number;
   usdProfit?: number;
   usdRoi?: number;
+  initialBankUsd?: number;
+  currentBankUsd?: number;
   winRate: number;
   roi: number;
   initialBank: number;

@@ -374,3 +374,9 @@
 .v3-chip.v3-bt-staff { gap: 6px; background: var(--v3-nav); border-color: var(--v3-nav); color: #fff; }
 .v3-chip.v3-bt-staff.is-on { background: #2a55c8; border-color: #2a55c8; }
 @media (hover: hover) { .v3-chip.v3-bt-staff:hover { background: #2f5fdc; border-color: #2f5fdc; } }
+
+/* Dollar figures under the ₴ ones (only users with $ bets, on «Усі») */
+.v3-bt-usd { display: block; margin-top: 2px; font-size: 12px; font-weight: 600; }
+.v3-bt-mamt .v3-bt-usd { font-size: 12.5px; text-align: right; }
+.v3-bt-tile .v3-bt-v2 { margin-top: 4px; font-size: 14px; }
+.v3-bt-kusd { display: block; margin-top: 2px; }
