@@ -122,3 +122,6 @@
 .v3-au-mlinks { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .v3-au-mlinks a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 12px; border-radius: 999px; background: var(--v3-nav); color: #fff; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .v3-au-mlinks a:active { filter: brightness(.94); }
+/* Wide screen: author / result / period use the shared dropdown (same as «Нові спочатку» on «Користувачі») */
+.v3-au-wdd { flex: 0 0 auto; }
+.v3-au-wdd .v3-dd-btn { min-height: 42px; min-width: 150px; }
