@@ -63,6 +63,10 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 .v3-nav-group { margin: 0 auto; display: flex; align-items: center; gap: 12px; }
 .v3-audit-slot { display: contents; }
 .v3-audit-slot.is-desk { display: none; }
+/* Phone/tablet: Журнал дій sits in the header next to the avatar+menu pill */
+.v3-audit-slot.is-mob { display: contents; }
+.v3-header-end .v3-audit { width: 44px; height: 44px; background: var(--v3-card); color: var(--v3-text); border: 1px solid rgba(255, 255, 255, .12); }
+.v3-header-end .v3-audit.is-active { background: var(--v3-nav); color: #fff; border-color: var(--v3-nav); }
 .v3-nav {
   display: none; align-items: center; gap: 2px;
   padding: 5px; border-radius: 999px;
@@ -135,6 +139,7 @@ body { background: var(--v3-bg); font-family: Inter, system-ui, -apple-system, s
 @media (min-width: 1180px) {
   .v3-nav { display: flex; }
   .v3-audit-slot.is-desk { display: contents; }
+  .v3-audit-slot.is-mob { display: none; }
     .v3-account { display: block; }
   .v3-burger { display: none; }
 }

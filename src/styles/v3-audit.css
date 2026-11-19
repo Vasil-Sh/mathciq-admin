@@ -98,3 +98,25 @@
 .v3-au-merr { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #fff6f4; color: #8a2414; font-size: 12px; line-height: 1.5; }
 .v3-au-mlink { display: inline-flex; margin-top: 8px; color: #2450c4; font-size: 12px; font-weight: 600; text-decoration: none; }
 .v3-au-skwrap { padding: 14px 16px; }
+
+/* Phone: filters use the shared dropdown (same as «Користувачі») */
+.v3-au-mdd { min-width: 0; }
+.v3-au-mdd.is-full { grid-column: 1 / -1; }
+.v3-au-mdd .v3-dd-btn { min-height: 46px; font-size: 14px; }
+/* Phone: tap a row to open its details */
+.v3-au-mev { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: box-shadow .18s ease; }
+.v3-au-mev:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
+.v3-au-mev.is-open { box-shadow: 0 0 0 2px #5b8cff; }
+.v3-au-mxp { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef0f4; animation: v3-au-mxp-in .22s ease both; }
+@keyframes v3-au-mxp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .v3-au-mxp { animation: none; } }
+.v3-au-mdiff { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #f5f7fb; font-size: 12.5px; }
+.v3-au-mdrow { display: flex; justify-content: space-between; gap: 10px; }
+.v3-au-mdrow .k { color: #5f6878; flex-shrink: 0; }
+.v3-au-mdrow .v { text-align: right; overflow-wrap: anywhere; color: #11151c; }
+.v3-au-mdrow s { color: #8a93a2; }
+.v3-au-mnone { margin: 0; color: #5f6878; font-size: 12px; }
+.v3-au-mnone + .v3-au-mmeta, .v3-au-mdiff + .v3-au-mnone, .v3-au-mdiff + .v3-au-mmeta { margin-top: 8px; }
+.v3-au-mmeta { margin: 8px 0 0; color: #5f6878; font-size: 12px; }
+.v3-au-mlinks { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+.v3-au-mlinks a { color: #2450c4; font-size: 12.5px; font-weight: 600; text-decoration: none; }

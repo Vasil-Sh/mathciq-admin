@@ -155,6 +155,7 @@ export default function AdminLayout() {
               </div>
             )}
           </div>
+          <span className="v3-audit-slot is-mob">{auditButton}</span>
           <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-burger-av" /><Menu size={18} aria-hidden="true" /></button>
         </div>
       </header>

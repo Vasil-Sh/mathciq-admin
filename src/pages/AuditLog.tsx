@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { plural } from "@/lib/dashboardInsights";
 import { KIND_UI, RESULT_UI, dayKey, dayLabel, describe, exactTime, timeLabel, type Change, type Entry, type View } from "@/lib/auditModel";
 import PillTrack from "@/components/PillTrack";
+import { Dropdown } from "@/components/ui/dropdown";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 type Summary = { today: number; week: number; failed7: number; security7: number; lastFailed: Entry | null; lastSecurity: Entry | null; topActor: { name: string; week: number } | null };
@@ -135,7 +136,9 @@ export default function AuditLog() {
     const dm = (x: string) => x.replace(/^(\d{2}\.\d{2})\.\d{4}$/, "$1");
     const diff = n ? groupDiff : v.diff;
     if (!wide) return (
-      <div key={it.id} className={`v3-au-mev${e.status === "failed" ? " is-err" : v.security ? " is-warn" : ""}`}>
+      <div key={it.id} className={`v3-au-mev${e.status === "failed" ? " is-err" : v.security ? " is-warn" : ""}${isOpen ? " is-open" : ""}`} role="button" tabIndex={0} aria-expanded={isOpen}
+        onClick={(ev) => { if ((ev.target as HTMLElement).closest("a, button")) return; setOpen(isOpen ? null : it.id); }}
+        onKeyDown={(ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target === ev.currentTarget) { ev.preventDefault(); setOpen(isOpen ? null : it.id); } }}>
         <span className="v3-au-ico" style={{ background: e.status === "failed" ? "#ffe2dc" : ui.bg, color: e.status === "failed" ? "#9a2a17" : ui.fg }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d={ui.d} /></svg></span>
         <div className="v3-au-mbody">
           <div className="v3-au-mtop"><span title={exactTime(e.created_at)}>{timeLabel(e.created_at)} · @{e.actor_name}</span><span className={`v3-au-pill ${res.cls}`}><i />{res.label}</span></div>
@@ -144,6 +147,21 @@ export default function AuditLog() {
           {e.status === "failed" && <div className="v3-au-merr">Дію не виконано — зміни не збережено.</div>}
           {v.security && e.action === "LOGIN_NEW_DEVICE" && <span className="v3-au-mlink">{v.meta}</span>}
           {e.status === "failed" && v.userId && <Link className="v3-au-mlink" to={`/users?q=${encodeURIComponent(v.username || "")}`}>Повторити з картки →</Link>}
+          {isOpen && (
+            <div className="v3-au-mxp">
+              {diff.length > 0 ? (
+                <div className="v3-au-mdiff">
+                  {diff.map((f, i) => <div key={i} className="v3-au-mdrow"><span className="k">{f.k}</span><span className="v">{f.from !== "—" && <><s>{f.from}</s> → </>}<strong>{f.to}</strong></span></div>)}
+                </div>
+              ) : <p className="v3-au-mnone">Без зміни значень</p>}
+              {!e.details?._changes && !n && diff.length > 0 && !["sec", "key"].includes(v.kind) && <p className="v3-au-mnone">Попередні значення для цієї дії не зберігаються</p>}
+              <p className="v3-au-mmeta">{n ? `${n} дій згорнуто в одну` : v.meta}{(n || v.meta) ? " · " : ""}{exactTime(e.created_at)}</p>
+              {(v.username || v.userId) && <div className="v3-au-mlinks">
+                {v.username && <Link to={`/users?q=${encodeURIComponent(v.username)}`}>Відкрити користувача</Link>}
+                {v.userId && <Link to={`/audit?userId=${v.userId}&username=${encodeURIComponent(v.username || "")}`} onClick={() => setPage(1)}>Уся історія →</Link>}
+              </div>}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -198,11 +216,13 @@ export default function AuditLog() {
           {CATS.filter(([k]) => k === "all" || (counts[k] || 0) > 0 || k === cat).map(([k, l]) => <button key={k} type="button" className={cat === k ? "is-on" : ""} aria-pressed={cat === k} onClick={() => { setCat(k); setPage(1); }}>{l} <span className="v3-seg-n">{k === "all" ? allCount : counts[k] || 0}</span></button>)}
         </div>
       ) : (
-        <label className="v3-au-msel"><span className="sr-only">Тип</span><select value={cat} onChange={(e) => { setCat(e.target.value); setPage(1); }}>{CATS.map(([k, l]) => <option key={k} value={k}>{k === "all" ? "Усі типи" : l}{k !== "all" && counts[k] ? ` · ${counts[k]}` : ""}</option>)}</select></label>
+        <Dropdown className="v3-au-mdd" ariaLabel="Тип" value={cat} onChange={(v) => { setCat(v); setPage(1); }} options={CATS.map(([k, l]) => ({ value: k, label: `${k === "all" ? "Усі типи" : l}${k !== "all" && counts[k] ? ` · ${counts[k]}` : ""}` }))} />
       )}
-      <label className={wide ? "v3-au-field" : "v3-au-msel"}><span className="sr-only">Автор</span><select value={actor} onChange={(e) => { setActor(e.target.value); setPage(1); }}><option value="">Усі автори</option>{(data?.actors || []).map((a) => <option key={a.name} value={a.name}>@{a.name}{a.week ? ` · ${a.week} за тиждень` : ""}</option>)}</select></label>
+      {!wide && <Dropdown className="v3-au-mdd" ariaLabel="Автор" align="right" value={actor} onChange={(v) => { setActor(v); setPage(1); }} options={[{ value: "", label: "Усі автори" }, ...(data?.actors || []).map((a) => ({ value: a.name, label: `@${a.name}${a.week ? ` · ${a.week} за тиждень` : ""}` }))]} />}
+      {wide && <label className="v3-au-field"><span className="sr-only">Автор</span><select value={actor} onChange={(e) => { setActor(e.target.value); setPage(1); }}><option value="">Усі автори</option>{(data?.actors || []).map((a) => <option key={a.name} value={a.name}>@{a.name}{a.week ? ` · ${a.week} за тиждень` : ""}</option>)}</select></label>}
       {wide && <label className="v3-au-field"><span className="sr-only">Результат</span><select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="all">Усі результати</option><option value="success">Виконано</option><option value="failed">Помилка</option><option value="pending">Не підтверджено</option></select></label>}
-      <label className={wide ? "v3-au-field" : "v3-au-msel is-full"}><span className="sr-only">Період</span><select value={range} onChange={(e) => { setRange(e.target.value); setPage(1); }}>{RANGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+      {wide ? <label className="v3-au-field"><span className="sr-only">Період</span><select value={range} onChange={(e) => { setRange(e.target.value); setPage(1); }}>{RANGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        : <Dropdown className="v3-au-mdd is-full" ariaLabel="Період" value={range} onChange={(v) => { setRange(v); setPage(1); }} options={RANGES.map(([k, l]) => ({ value: k, label: l }))} />}
       {range === "custom" && <div className="v3-au-custom"><label>З <input type="date" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} /></label><label>По <input type="date" value={custom.to} min={custom.from || undefined} onChange={(e) => setCustom({ ...custom, to: e.target.value })} /></label></div>}
     </>
   );
