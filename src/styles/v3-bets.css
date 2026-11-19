@@ -368,3 +368,8 @@
 .v3-bt-mk.is-blue .n { color: #dfe7ff; }
 .v3-bt-mnote { flex-basis: 100%; }
 .v3-bt-mk .n .v3-dl { margin-right: 0; }
+
+/* «Адміни й овнери»: always the blue button; when on — a tick and a deeper blue */
+.v3-chip.v3-bt-staff { gap: 6px; background: var(--v3-nav); border-color: var(--v3-nav); color: #fff; }
+.v3-chip.v3-bt-staff.is-on { background: #2a55c8; border-color: #2a55c8; }
+@media (hover: hover) { .v3-chip.v3-bt-staff:hover { background: #2f5fdc; border-color: #2f5fdc; } }
