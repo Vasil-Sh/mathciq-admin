@@ -377,7 +377,8 @@
 
 /* Dollar figures under the ₴ ones (only users with $ bets, on «Усі») */
 .v3-bt-usd { display: block; margin-top: 2px; font-size: 12px; font-weight: 600; }
-.v3-bt-mamt .v3-bt-usd, .v3-bt-n .v3-bt-usd { font-size: inherit; font-weight: inherit; text-align: right; } /* $ profit under ₴ — same size */
+.v3-bt-mamt .v3-bt-usd, .v3-bt-n .v3-bt-usd { font-size: inherit; font-weight: inherit; } /* $ profit under ₴ — same size */
+.v3-bt-mamt .v3-bt-usd { text-align: right; } /* phone: right edge like the ₴ amount; desktop keeps the column alignment */
 .v3-bt-tile .v3-bt-v2 { margin-top: 4px; font-size: 14px; }
 .v3-bt-kusd { display: block; margin-top: 2px; }
 .v3-bt-vusd { margin-top: 2px; } /* $ total under the ₴ one, same size */
