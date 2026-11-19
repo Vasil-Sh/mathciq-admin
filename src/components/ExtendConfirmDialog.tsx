@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { extendedEndDate, shortDate, type ExpiringUser } from "@/lib/subscriptions";
 
@@ -51,7 +52,7 @@ export default function ExtendConfirmDialog({ open, onOpenChange, items, days, b
                 <label className="v3-check-row">
                   <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(user.id)} />
                   <span className={`v3-ck${on ? " is-on" : ""}`} aria-hidden="true">{on && <Check size={12} strokeWidth={3.2} />}</span>
-                  <span className="v3-av" aria-hidden="true">{user.username.slice(0, 2).toUpperCase()}</span>
+                  <UserAvatar username={user.username} telegram={user.telegram} />
                   <span className="v3-check-who"><strong>@{user.username}</strong><small>{Number(user.priceMonth) ? `${user.priceMonth} ₴` : "Без оплати"} · до {shortDate(user.endDate)}</small></span>
                   <span className="v3-check-to">→ <strong>{shortDate(extendedEndDate(user.endDate, days))}</strong></span>
                 </label>

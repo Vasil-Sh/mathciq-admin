@@ -375,7 +375,7 @@ export default function Payments() {
         <strong className="v3-pay-aside-t">Як записати повернення</strong>
         <ol className="v3-pay-steps"><li>Поверніть гроші людині (картка, переказ).</li><li>Відкрийте оплату → «Повернути гроші».</li><li>Повністю або частково, причина обов’язкова.</li></ol>
         <div className="v3-pay-box">Повернення за {monthShort(month)}: <b>{money(refSum)}</b> · {monthShort(shiftMonth(month, -1))} {money(prevRef)}. Кожне потрапляє в журнал дій.</div>
-        <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-go" onClick={() => setTab("pay")}>Відкрити оплати<ArrowRight size={14} aria-hidden="true" /></button>
+        <button type="button" className="v3-btn v3-btn-primary v3-pay-go" onClick={() => setTab("pay")}>Відкрити оплати<ArrowRight size={14} aria-hidden="true" /></button>
       </aside>
     </section>
     </>

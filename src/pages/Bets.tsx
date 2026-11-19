@@ -46,7 +46,6 @@ export default function Bets() {
   const [game, setGame] = useState("all");
   const [sort, setSort] = useState<Sort>("bets");
   const [showAll, setShowAll] = useState(false);
-  const [includeStaff, setIncludeStaff] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, Detail>>({});
@@ -80,7 +79,7 @@ export default function Bets() {
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const qq = params.get("q"); if (qq !== null) setQ(qq); }, [params]);
 
-  const people = useMemo(() => (users || []).filter((u) => includeStaff || !isAdminU(u)), [users, includeStaff]);
+  const people = useMemo(() => users || [], [users]);
   const playing = useMemo(() => people.filter((u) => u.betCount > 0), [people]);
   const gameCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -99,7 +98,7 @@ export default function Bets() {
       .sort((a, b) => (sort === "bets" ? b.s.bets - a.s.bets : sort === "staked" ? b.s.staked - a.s.staked : sort === "profit" ? b.s.profit - a.s.profit : b.s.wr - a.s.wr) || a.u.username.localeCompare(b.u.username));
   }, [people, playing, showAll, game, q, sort]);
 
-  useEffect(() => { setRk((x) => x + 1); }, [game, sort, showAll, includeStaff]);
+  useEffect(() => { setRk((x) => x + 1); }, [game, sort, showAll]);
 
   // Desktop opens the first player's bets, like the design; later the admin decides.
   useEffect(() => {
@@ -358,12 +357,10 @@ export default function Bets() {
           <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час</span></p>
         </div>
         <div className="v3-chips">
-          <button type="button" className={`v3-chip v3-hide-mobile v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>{includeStaff && <Check size={14} strokeWidth={3} aria-hidden="true" />}Адміни й овнери</button>
           {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
           {!noBetsAtAll && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportTable} disabled={!rows.length} />}
         </div>
         <div className="v3-bt-mtop">
-          <button type="button" className={`v3-chip v3-bt-staff${includeStaff ? " is-on" : ""}`} aria-pressed={includeStaff} onClick={() => setIncludeStaff((v) => !v)}>{includeStaff && <Check size={14} strokeWidth={3} aria-hidden="true" />}Адміни й овнери</button>
           {!noBetsAtAll && <button type="button" className="v3-bt-rfb" onClick={() => load(true)} disabled={busy || !online} aria-label={busy ? "Оновлюємо" : "Оновити"}>{refreshIc}</button>}
         </div>
       </section>
@@ -394,7 +391,7 @@ export default function Bets() {
             <div className="v3-wcard v3-pay-zero-card">
               <span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><BarChart3 size={24} /></span>
               <strong>Ставок ще немає</strong>
-              <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")}${includeStaff ? " (разом з адмінами й овнерами)" : ""} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
+              <p>{people.length ? `У ${people.length} ${plural(people.length, "користувача", "користувачів", "користувачів")} є акаунт, але ніхто ще не додав запис у журнал MatchIQ.` : "Користувачів ще немає."} Щойно це станеться — тут з’являться обіг, профіт і вінрейт.</p>
             </div>
             <div className="v3-dcard v3-pay-zero-steps">
               <strong>Як з’являються ставки</strong>
