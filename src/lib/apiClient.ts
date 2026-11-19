@@ -164,6 +164,8 @@ export const api = {
     request<T>("POST", path, body),
   put: <T>(path: string, body?: unknown) =>
     request<T>("PUT", path, body),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>("PATCH", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
   /** GET a file (e.g. CSV export) with the same auth + token refresh as JSON calls. */
   download: async (path: string): Promise<Blob> => (await send("GET", path)).blob(),

@@ -1,6 +1,6 @@
 import { api, getApiBase } from "./apiClient";
 const API_BASE = getApiBase();
-import { fromFeed, fromHistory, type FeedMatch, type HistoryMatch, type Match } from "./matchesModel";
+import { fromFeed, fromHistory, type FeedMatch, type Game, type HistoryMatch, type Match } from "./matchesModel";
 
 /** Стрічки на сьогодні й наперед: CS2 (tips.gg + HLTV) і Dota 2 (tips.gg). */
 export async function fetchFeeds(force = false): Promise<{ matches: Match[]; failed: ("cs2" | "dota2")[] }> {
@@ -29,3 +29,45 @@ export async function fetchHistory(days = 30): Promise<Match[]> {
 export async function rerunParser(name: string): Promise<void> {
   await api.post(`/admin/parsers/${encodeURIComponent(name)}/rerun`, {});
 }
+
+// ── Адмінські дані матчів (cs-backend: routes/adminMatches.ts) ──
+
+/** Статуси ручних правок — як у бекенді (match_overrides, manual_matches). */
+export type AdminStatus = "upcoming" | "live" | "finished" | "postponed" | "cancelled";
+export interface TeamAlias { id: number; game: string; canonical: string; alias: string; createdBy: string; createdAt: string }
+export interface ManualMatch { id: string; game: Game; team1: string; team2: string; tournament: string; bo: string; startDate: string; status: AdminStatus; score1: number | null; score2: number | null; createdBy: string; createdAt: string }
+export interface MatchOverride { id: number; game: string; matchId: string; status: AdminStatus | null; startDate: string | null; score1: number | null; score2: number | null; decidedBy: string }
+export interface MatchLink { id: number; game: string; team1: string; team2: string; matchDate: string; linkKey: string; officialId: string | null; decision: "pending" | "merged" | "different"; decidedBy: string }
+export interface ParserEvent { id: number; source: string; event: "success" | "failure" | "rerun"; message: string; createdAt: string }
+export interface HourStat { hour: string; success: number; failure: number }
+
+const notFound = (e: unknown) => (e as { status?: number })?.status === 404;
+
+export const fetchAliases = async () => (await api.get<{ aliases: TeamAlias[] }>("/admin/team-aliases")).aliases || [];
+export const createAlias = (b: { game: Game; canonical: string; alias: string }) => api.post<TeamAlias>("/admin/team-aliases", b);
+export const deleteAlias = (id: number) => api.delete(`/admin/team-aliases/${id}`);
+
+export const createManualMatch = (b: { game: Game; team1: string; team2: string; tournament?: string; bo?: string; startDate: string; status?: AdminStatus }) => api.post<ManualMatch>("/admin/manual-matches", b);
+export const deleteManualMatch = (id: string) => api.delete(`/admin/manual-matches/${encodeURIComponent(id)}`);
+
+/** id матчу в стрічці (без префікса гри). Порожні поля — без правки. */
+export const patchMatch = (game: Game, rawId: string, b: { status: AdminStatus | null; startDate: string | null; score1: number | null; score2: number | null }) =>
+  api.patch<MatchOverride>(`/admin/matches/${game}/${encodeURIComponent(rawId)}`, b);
+export const resetMatch = (game: Game, rawId: string) => api.delete(`/admin/matches/${game}/${encodeURIComponent(rawId)}`);
+
+export const linkMatch = (kind: "merge" | "unlink", b: { game: Game; team1: string; team2: string; date: string; officialId: string | null }) =>
+  api.post<MatchLink>(`/admin/matches/${kind}`, b);
+
+/**
+ * Списки ручних правок і рішень щодо об'єднання. У бекенді (поки) немає GET для них —
+ * тоді повертаємо null, і екран працює без них (рішення видно до перезавантаження).
+ */
+export async function fetchOverrides(): Promise<MatchOverride[] | null> {
+  try { return (await api.get<{ overrides: MatchOverride[] }>("/admin/match-overrides")).overrides || []; } catch (e) { if (notFound(e)) return null; throw e; }
+}
+export async function fetchLinks(): Promise<MatchLink[] | null> {
+  try { return (await api.get<{ links: MatchLink[] }>("/admin/match-links")).links || []; } catch (e) { if (notFound(e)) return null; throw e; }
+}
+
+export const fetchParserEvents = async (name: string, limit = 100) => (await api.get<{ events: ParserEvent[] }>(`/admin/parsers/${encodeURIComponent(name)}/events?limit=${limit}`)).events || [];
+export const fetchAvailability = async (name: string, hours = 24) => (await api.get<{ availability: HourStat[] }>(`/admin/parsers/${encodeURIComponent(name)}/availability?hours=${hours}`)).availability || [];

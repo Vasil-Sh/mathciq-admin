@@ -2,7 +2,7 @@
 import type { AdminUserBet } from "@/types";
 
 export type Game = "cs2" | "dota2";
-export type MStatus = "plan" | "live" | "done";
+export type MStatus = "plan" | "live" | "done" | "moved" | "off";
 
 /** Як приходить із GET /cs2-matches, /dota2-matches (TipsGgMatch). */
 export interface FeedMatch {
@@ -18,7 +18,8 @@ export interface FeedMatch {
   logoTeam2: string | null;
   tournament?: string;
   stage?: string;
-  status: "upcoming" | "live" | "finished";
+  /** postponed / cancelled — лише з ручних правок адміна. */
+  status: "upcoming" | "live" | "finished" | "postponed" | "cancelled";
   startDate?: string;
 }
 
@@ -53,12 +54,16 @@ export interface Match {
   tournament: string;
   bo: string;
   status: MStatus;
-  source: "HLTV" | "tips.gg";
+  source: "HLTV" | "tips.gg" | "Вручну";
   link: string;
+  /** id у стрічці без префікса гри — для ручних правок. */
+  raw: string;
+  /** Матч, доданий адміном (manual-…). */
+  manual: boolean;
 }
 
 export const GAME_LABEL: Record<Game, string> = { cs2: "CS2", dota2: "Dota 2" };
-export const STATUS_LABEL: Record<MStatus, string> = { plan: "Заплановано", live: "Наживо", done: "Завершено" };
+export const STATUS_LABEL: Record<MStatus, string> = { plan: "Заплановано", live: "Наживо", done: "Завершено", moved: "Перенесено", off: "Скасовано" };
 
 const KYIV = "Europe/Kyiv";
 const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: KYIV, year: "numeric", month: "2-digit", day: "2-digit" });
@@ -96,9 +101,11 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     s2: m.score2,
     tournament: String(m.tournament ?? ""),
     bo: (m.type || "").toUpperCase(),
-    status: m.status === "live" ? "live" : m.status === "finished" ? "done" : "plan",
-    source: /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
+    status: m.status === "live" ? "live" : m.status === "finished" ? "done" : m.status === "postponed" ? "moved" : m.status === "cancelled" ? "off" : "plan",
+    source: String(m.id).startsWith("manual-") ? "Вручну" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
     link: m.link || "",
+    raw: String(m.id),
+    manual: String(m.id).startsWith("manual-"),
   };
 }
 
@@ -107,15 +114,50 @@ export function fromHistory(m: HistoryMatch, apiBase: string): Match {
   return {
     id: `${game}:h:${m.id}`, game, day: String(m.date).slice(0, 10), time: "—", ts: new Date(`${String(m.date).slice(0, 10)}T00:00:00Z`).getTime(),
     t1: String(m.team1), t2: String(m.team2), logo1: absLogo(m.logoTeam1, apiBase), logo2: absLogo(m.logoTeam2, apiBase),
-    s1: m.score1, s2: m.score2, tournament: String(m.tournament ?? ""), bo: (m.matchType || "").toUpperCase(), status: "done", source: "tips.gg", link: "",
+    s1: m.score1, s2: m.score2, tournament: String(m.tournament ?? ""), bo: (m.matchType || "").toUpperCase(), status: "done", source: "tips.gg", link: "", raw: String(m.id), manual: false,
   };
 }
 
-/** Назва команди для порівняння: без регістру, пробілів, «team», «esports», «gaming». */
-export function normTeam(s: string): string {
-  return s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
+/** Назва без регістру, пробілів, «team», «esports», «gaming» — як makeLinkKey у бекенді. */
+export function baseNorm(s: string): string {
+  return String(s || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
     .replace(/\b(team|esports?|gaming|club|academy)\b/g, (w) => (w === "academy" ? "academy" : ""))
     .replace(/[^a-z0-9а-яіїєґ]+/g, "");
+}
+
+/** Псевдоніми команд з бекенду: написання → основна назва (обидва нормалізовані). */
+let ALIASES = new Map<string, string>();
+export function setAliases(list: { canonical: string; alias: string }[]): void {
+  ALIASES = new Map(list.map((a) => [baseNorm(a.alias), baseNorm(a.canonical)]));
+}
+export const isAliasName = (s: string) => ALIASES.has(baseNorm(s));
+
+/** Назва команди для порівняння — з урахуванням псевдонімів («NAVI» → «Natus Vincere»). */
+export function normTeam(s: string): string {
+  const n = baseNorm(s);
+  return ALIASES.get(n) ?? n;
+}
+
+/** Ключ матчу, введеного вручну, — той самий, що makeLinkKey у бекенді (match_links.link_key). */
+export const linkKey = (game: Game, t1: string, t2: string, day: string) => `${game}:${[baseNorm(t1), baseNorm(t2)].sort().join("|")}@${day.slice(0, 10)}`;
+
+/** Офсет Києва (хв) у момент часу. */
+function kyivOffset(at: Date): number {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: KYIV, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(at).map((x) => [x.type, x.value]));
+  return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(at.getTime() / 60000) * 60000) / 60000;
+}
+/** «2026-11-20T19:00» за Києвом → ISO UTC. */
+export function kyivToIso(local: string): string {
+  const [d, t = "00:00"] = local.split("T");
+  const guess = new Date(`${d}T${t.slice(0, 5)}:00Z`);
+  if (Number.isNaN(guess.getTime())) return "";
+  return new Date(guess.getTime() - kyivOffset(guess) * 60000).toISOString();
+}
+/** ISO → «2026-11-20T19:00» за Києвом (для input type=datetime-local). */
+export function isoToKyiv(iso: number | string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return new Date(at.getTime() + kyivOffset(at) * 60000).toISOString().slice(0, 16);
 }
 
 const pair = (a: string, b: string) => [normTeam(a), normTeam(b)].sort().join("|");
@@ -186,6 +228,8 @@ export interface Team {
   last: string;
   /** Інші написання цієї ж команди в стрічках (кандидати в дублікати). */
   variants: string[];
+  /** Написання, вже записані в псевдоніми (не дублікати). */
+  aliases: string[];
 }
 
 /** Довідник команд зі стрічок і історії: одна команда — одна нормалізована назва в межах гри. */
@@ -194,7 +238,7 @@ export function teamsFrom(matches: Match[]): Team[] {
   const add = (name: string, logo: string | null, m: Match) => {
     if (!name.trim()) return;
     const key = `${m.game}:${normTeam(name)}`;
-    const t = map.get(key) || { key, name, game: m.game, logo: null, matches: 0, last: "", variants: [], names: new Map() };
+    const t = map.get(key) || { key, name, game: m.game, logo: null, matches: 0, last: "", variants: [], aliases: [], names: new Map() };
     t.matches += 1;
     t.names.set(name, (t.names.get(name) || 0) + 1);
     if (!t.logo || (isFallbackLogo(t.logo) && !isFallbackLogo(logo))) t.logo = logo;
@@ -204,7 +248,9 @@ export function teamsFrom(matches: Match[]): Team[] {
   for (const m of matches) { add(m.t1, m.logo1, m); add(m.t2, m.logo2, m); }
   return [...map.values()].map((t) => {
     const names = [...t.names.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0]);
-    return { key: t.key, name: names[0], game: t.game, logo: t.logo, matches: t.matches, last: t.last, variants: names.slice(1) };
+    const main = names.find((n) => !isAliasName(n)) || names[0];
+    const rest = names.filter((n) => n !== main);
+    return { key: t.key, name: main, game: t.game, logo: t.logo, matches: t.matches, last: t.last, variants: rest.filter((n) => !isAliasName(n)), aliases: rest.filter(isAliasName) };
   }).sort((a, b) => b.matches - a.matches || a.name.localeCompare(b.name));
 }
 

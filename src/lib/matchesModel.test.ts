@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { absLogo, betMatches, fromFeed, manualGroups, normTeam, teamsFrom, type FeedMatch } from "./matchesModel";
+import { absLogo, betMatches, fromFeed, isoToKyiv, kyivToIso, linkKey, manualGroups, normTeam, setAliases, teamsFrom, type FeedMatch } from "./matchesModel";
 import { bet } from "@/test/factories";
 
 const feed = (o: Partial<FeedMatch> = {}): FeedMatch => ({
@@ -65,5 +65,34 @@ describe("teams", () => {
     const navi = t.find((x) => normTeam(x.name) === "navi")!;
     expect(navi.matches).toBe(2);
     expect(navi.variants).toHaveLength(1);
+  });
+});
+
+describe("admin data", () => {
+  it("converts Kyiv local time to UTC and back (winter and summer)", () => {
+    expect(kyivToIso("2026-11-20T19:00")).toBe("2026-11-20T17:00:00.000Z");
+    expect(kyivToIso("2026-07-01T19:00")).toBe("2026-07-01T16:00:00.000Z");
+    expect(isoToKyiv("2026-11-20T17:00:00.000Z")).toBe("2026-11-20T19:00");
+  });
+  it("builds the same link key as the backend", () => {
+    expect(linkKey("cs2", "Team Spirit", "G2 Esports", "2026-11-18")).toBe("cs2:g2|spirit@2026-11-18");
+  });
+  it("treats an alias as the same team", () => {
+    setAliases([{ canonical: "Natus Vincere", alias: "NAVI" }]);
+    expect(normTeam("NAVI")).toBe(normTeam("Natus Vincere"));
+    const a = fromFeed(feed({ id: "1", nameTeam1: "NAVI", nameTeam2: "FaZe" }), "cs2", "x");
+    const b = fromFeed(feed({ id: "2", nameTeam1: "Natus Vincere", nameTeam2: "G2" }), "cs2", "x");
+    const navi = teamsFrom([a, b]).find((t) => t.name === "Natus Vincere")!;
+    expect(navi.matches).toBe(2);
+    expect(navi.aliases).toEqual(["NAVI"]);
+    expect(navi.variants).toHaveLength(0);
+    setAliases([]);
+  });
+  it("maps manual matches and admin statuses", () => {
+    const m = fromFeed(feed({ id: "manual-1", status: "postponed", link: "" }), "cs2", "x");
+    expect(m.manual).toBe(true);
+    expect(m.source).toBe("Вручну");
+    expect(m.status).toBe("moved");
+    expect(m.raw).toBe("manual-1");
   });
 });

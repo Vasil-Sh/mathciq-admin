@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, Check, ExternalLink, Lock, Plus, RefreshCw, Search, Shield, WifiOff, X } from "lucide-react";
+import { AlertTriangle, Check, ExternalLink, History, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
 import UserAvatar from "@/components/UserAvatar";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { DateField } from "@/components/ui/date-field";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
-import { fetchFeeds, fetchHistory, rerunParser } from "@/lib/adminMatchesApi";
+import {
+  createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
+  fetchParserEvents, linkMatch, patchMatch, rerunParser, resetMatch, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+} from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_NAMES, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
-  addDays, ago, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, kyivDay, manualGroups, STATUS_LABEL, teamsFrom,
+  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, setAliases, STATUS_LABEL, teamsFrom,
   type Game, type ManualGroup, type Match, type MStatus, type Team,
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
@@ -24,14 +28,21 @@ type UBet = AdminUserBet & { username: string; telegram?: string | null };
 const TABS: { key: Tab; label: string }[] = [
   { key: "matches", label: "Матчі" }, { key: "parsers", label: "Парсери" }, { key: "manual", label: "Додані вручну" }, { key: "teams", label: "Команди" },
 ];
-const ST_CLS: Record<MStatus, string> = { plan: "v3-tag-blue", live: "v3-tag-red", done: "v3-tag-gray" };
+const ST_CLS: Record<MStatus, string> = { plan: "v3-tag-blue", live: "v3-tag-red", done: "v3-tag-gray", moved: "v3-tag-amber", off: "v3-tag-cancel" };
+/** Статус у ручних правках: як у дизайні — 4 сегменти. */
+const EDIT_ST: { key: AdminStatus; m: MStatus; label: string }[] = [
+  { key: "upcoming", m: "plan", label: "Заплановано" }, { key: "postponed", m: "moved", label: "Перенесено" }, { key: "cancelled", m: "off", label: "Скасовано" }, { key: "finished", m: "done", label: "Завершено" },
+];
+const TO_ADMIN: Record<MStatus, AdminStatus> = { plan: "upcoming", live: "live", done: "finished", moved: "postponed", off: "cancelled" };
+const EV_LABEL: Record<ParserEvent["event"], string> = { success: "Оновлено", failure: "Помилка", rerun: "Запуск вручну" };
+/** Поле часу: лише цифри, двокрапка ставиться сама («1930» → «19:30»). */
+const hhmmInput = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d; };
+const errText = (e: unknown, d = "Сервер не відповів") => (e instanceof Error && e.message ? e.message : d);
 const PARSER_META: Record<string, { ini: string; color: string; site: string; game: string; feed: Game | "hltv" }> = {
   hltv_scraper: { ini: "HL", color: "#2450c4", site: "hltv.org", game: "CS2", feed: "hltv" },
   tipsgg_fetch_cs2_matches: { ini: "TI", color: "#7a4fd0", site: "tips.gg", game: "CS2", feed: "cs2" },
   tipsgg_fetch_dota2_matches: { ini: "TI", color: "#c2410c", site: "tips.gg", game: "Dota 2", feed: "dota2" },
 };
-/** Що бекенд ще не вміє — дії неактивні, пояснення в підказці й у картці. */
-const NO_API = "Потрібен ендпоінт на бекенді — поки що дані лише з парсерів";
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 const resLabel = (r: string) => (r === "Win" ? ["Виграш", "v3-tag-green"] : r === "Loss" ? ["Програш", "v3-tag-red"] : ["Очікує", "v3-tag-amber"]);
 
@@ -82,6 +93,18 @@ export default function Matches() {
   const [tq, setTq] = useState("");
   const [tf, setTf] = useState<"all" | "dup" | "logo">("all");
   const [selTeam, setSelTeam] = useState<string | null>(null);
+  // Адмінські дані: псевдоніми, правки, рішення, журнал парсерів
+  const [aliases, setAliasList] = useState<TeamAlias[]>([]);
+  const [overrides, setOverrides] = useState<MatchOverride[] | null>(null);
+  const [decided, setDecided] = useState<Set<string>>(new Set());
+  const [events, setEvents] = useState<Record<string, ParserEvent[]>>({});
+  const [avail, setAvail] = useState<Record<string, HourStat[]>>({});
+  const [logFor, setLogFor] = useState<string | null>(null);
+  const [edit, setEdit] = useState<{ id: string; st: AdminStatus; date: string; time: string; s1: string; s2: string } | null>(null);
+  const [saving, setSaving] = useState<string>("");
+  const [ask, setAsk] = useState<string>("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [mergeFor, setMergeFor] = useState<Team | null>(null);
 
   const load = useCallback(async (opts: { force?: boolean } = {}) => {
     try {
@@ -95,7 +118,22 @@ export default function Matches() {
     }
   }, []);
 
-  useEffect(() => { load(); fetchHistory(30).then(setHistory).catch(() => {}); }, [load]);
+  const loadAdmin = useCallback(async () => {
+    const [al, ov, ln] = await Promise.all([fetchAliases().catch(() => null), fetchOverrides().catch(() => null), fetchLinks().catch(() => null)]);
+    if (al) { setAliases(al); setAliasList(al); }
+    setOverrides(ov);
+    if (ln) setDecided(new Set(ln.filter((l) => l.decision !== "pending").map((l) => l.linkKey)));
+  }, []);
+  useEffect(() => { load(); loadAdmin(); fetchHistory(30).then(setHistory).catch(() => {}); }, [load, loadAdmin]);
+  // Журнал і погодинна доступність кожного парсера
+  const parserNames = (parsers || []).map((p) => p.name).join(",");
+  const loadLogs = useCallback(async () => {
+    const names = parserNames ? parserNames.split(",") : [];
+    const res = await Promise.all(names.map(async (n) => [n, await fetchParserEvents(n, 100).catch(() => null), await fetchAvailability(n, 24).catch(() => null)] as const));
+    setEvents(Object.fromEntries(res.filter((x) => x[1]).map((x) => [x[0], x[1]!])));
+    setAvail(Object.fromEntries(res.filter((x) => x[2]).map((x) => [x[0], x[2]!])));
+  }, [parserNames]);
+  useEffect(() => { if (parserNames) loadLogs(); }, [parserNames, loadLogs]);
   // Телефон: рядок вкладок гортається до активної
   useEffect(() => { document.querySelector(".v3-mx-tabs .is-on")?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }, [tab]);
 
@@ -123,8 +161,9 @@ export default function Matches() {
   const recent = useMemo(() => { const from = addDays(today, -14); return (bets || []).filter((b) => String(b.date).slice(0, 10) >= from); }, [bets, today]);
   const betsFor = useCallback((m: Match) => recent.filter((b) => betMatches(b, m)), [recent]);
   const known = useMemo(() => [...all, ...history], [all, history]);
-  const groups = useMemo(() => (bets ? manualGroups(recent, known) : []), [bets, recent, known]);
-  const teams = useMemo(() => teamsFrom(known), [known]);
+  const groups = useMemo(() => (bets ? manualGroups(recent, known).filter((x) => !decided.has(linkKey(x.game, x.t1, x.t2, x.day))) : []), [bets, recent, known, decided, aliases]);
+  const teams = useMemo(() => teamsFrom(known), [known, aliases]);
+  const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
   const liveN = all.filter((m) => m.status === "live").length;
@@ -163,6 +202,89 @@ export default function Matches() {
     }
   };
 
+  // ── Ручні правки матчу ──
+  const formOf = (m: Match) => {
+    if (edit?.id === m.id) return edit;
+    const local = m.ts ? isoToKyiv(m.ts) : "";
+    return { id: m.id, st: TO_ADMIN[m.status], date: local.slice(0, 10), time: local.slice(11, 16), s1: m.s1 == null ? "" : String(m.s1), s2: m.s2 == null ? "" : String(m.s2) };
+  };
+  const setForm = (m: Match, patch: Partial<NonNullable<typeof edit>>) => setEdit({ ...formOf(m), ...patch });
+  const saveEdit = async (m: Match) => {
+    const f = formOf(m), ov = ovOf(m), cur = formOf({ ...m, id: "" });
+    const timeChanged = f.date !== cur.date || f.time !== cur.time;
+    const num = (v: string) => (v.trim() === "" ? null : Math.max(0, Math.min(99, parseInt(v, 10) || 0)));
+    const body = {
+      status: f.st !== cur.st || ov?.status ? f.st : null,
+      startDate: f.date && f.time && (timeChanged || ov?.startDate) ? kyivToIso(`${f.date}T${f.time}`) : null,
+      score1: num(f.s1), score2: num(f.s2),
+    };
+    if (!body.status && !body.startDate && body.score1 === m.s1 && body.score2 === m.s2) { toast("Змін немає", { description: "Поля збігаються з даними парсера" }); return; }
+    setSaving(m.id);
+    try {
+      await patchMatch(m.game, m.raw, body);
+      await Promise.all([load(), loadAdmin()]);
+      setEdit(null);
+      toast.success("Правку збережено", { description: `${m.t1} vs ${m.t2} · застосунок показує її замість даних ${m.source}` });
+    } catch (e) { toast.error("Не вдалося зберегти правку", { description: errText(e) }); }
+    setSaving("");
+  };
+  const resetEdit = async (m: Match) => {
+    setSaving(m.id);
+    try {
+      await resetMatch(m.game, m.raw);
+      await Promise.all([load(), loadAdmin()]);
+      setEdit(null);
+      toast.success("Правку скинуто", { description: `Знову дані з ${m.source}` });
+    } catch (e) {
+      if ((e as { status?: number })?.status === 404) { setEdit(null); toast("Ручних правок немає", { description: "Матч і так показує дані парсера" }); }
+      else toast.error("Не вдалося скинути правку", { description: errText(e) });
+    }
+    setSaving("");
+  };
+  const removeManual = async (m: Match) => {
+    if (ask !== `del:${m.id}`) { setAsk(`del:${m.id}`); window.setTimeout(() => setAsk((a) => (a === `del:${m.id}` ? "" : a)), 4000); return; }
+    setAsk(""); setSaving(m.id);
+    try {
+      await deleteManualMatch(m.raw);
+      await load();
+      setSelId(null); setSheet(false);
+      toast.success("Матч видалено", { description: `${m.t1} vs ${m.t2} більше не показується в застосунку` });
+    } catch (e) { toast.error("Не вдалося видалити матч", { description: errText(e) }); }
+    setSaving("");
+  };
+
+  // ── Додані вручну: об’єднати / це інший матч ──
+  const decide = async (x: ManualGroup, kind: "merge" | "unlink") => {
+    setSaving(`${kind}:${x.key}`);
+    try {
+      await linkMatch(kind, { game: x.game, team1: x.t1, team2: x.t2, date: x.day, officialId: kind === "merge" ? x.official?.raw ?? null : null });
+      setDecided((d) => new Set(d).add(linkKey(x.game, x.t1, x.t2, x.day)));
+      setSelGroup(null); setSheet(false);
+      toast.success(kind === "merge" ? "Об’єднано" : "Позначено як інший матч", { description: kind === "merge" && x.official ? `${x.t1} vs ${x.t2} → ${x.official.t1} vs ${x.official.t2}` : `${x.t1} vs ${x.t2} · ${x.bets.length} ${plural(x.bets.length, "запис", "записи", "записів")}` });
+    } catch (e) { toast.error("Не вдалося зберегти рішення", { description: errText(e) }); }
+    setSaving("");
+  };
+
+  // ── Команди: псевдоніми ──
+  const addAliases = async (t: Team, names: string[]) => {
+    const list = [...new Set(names.map((n) => n.trim()).filter((n) => n && baseNorm(n) !== baseNorm(t.name)))];
+    if (!list.length) return;
+    setSaving(`team:${t.key}`);
+    try {
+      for (const a of list) await createAlias({ game: t.game, canonical: t.name, alias: a });
+      await loadAdmin();
+      setMergeFor(null);
+      toast.success(list.length > 1 ? `Додано ${list.length} написання` : "Написання додано", { description: `${list.join(", ")} → ${t.name}` });
+    } catch (e) { toast.error("Не вдалося зберегти псевдонім", { description: errText(e) }); }
+    setSaving("");
+  };
+  const removeAlias = async (a: TeamAlias) => {
+    setSaving(`alias:${a.id}`);
+    try { await deleteAlias(a.id); await loadAdmin(); toast.success("Псевдонім видалено", { description: `«${a.alias}» знову окрема назва` }); }
+    catch (e) { toast.error("Не вдалося видалити псевдонім", { description: errText(e) }); }
+    setSaving("");
+  };
+
   const sums = [
     { k: "today", label: "Матчів сьогодні", v: matches ? String(todayM.length) : "—", n: matches ? `CS2 ${todayM.filter((m) => m.game === "cs2").length} · Dota 2 ${todayM.filter((m) => m.game === "dota2").length} · наживо ${liveN}` : "…", go: () => { setTab("matches"); setDay("today"); setSt("all"); }, on: tab === "matches" },
     { k: "parsers", label: "Парсери", v: parsers ? (down.length ? `${down.length} ${plural(down.length, "помилка", "помилки", "помилок")}` : "Працюють") : "—", n: parsers ? (down.length ? down.map((p) => `${PARSER_NAMES[p.name] || p.name} не відповідає`).join(" · ") : `${parsers.reduce((a, p) => a + p.failures24h, 0)} збоїв за 24 год`) : "…", bad: down.length > 0, go: () => setTab("parsers"), on: tab === "parsers" },
@@ -190,11 +312,36 @@ export default function Matches() {
             {bs.length > 6 && <span className="v3-mx-more">і ще {bs.length - 6}</span>}
           </div>
         )}
-        <fieldset className="v3-mx-edit" disabled>
-          <legend><Lock size={13} aria-hidden="true" />Ручні правки</legend>
-          <div className="v3-mx-segd" aria-hidden="true">{(["Заплановано", "Перенесено", "Скасовано", "Завершено"]).map((s) => <span key={s} className={s === "Заплановано" && m.status === "plan" || s === "Завершено" && m.status === "done" ? "is-on" : ""}>{s}</span>)}</div>
-          <p>Перенести, скасувати чи виправити рахунок можна буде, щойно бекенд отримає ендпоінт для ручних правок матчу. Зараз час, статус і рахунок приходять лише з {m.source}.</p>
-        </fieldset>
+        {m.manual ? (
+          <div className="v3-mx-edit">
+            <span className="v3-mx-elegend">Доданий вручну</span>
+            <p>Матч додав адмін — у застосунку він показується як звичайний, поруч із матчами з парсерів.</p>
+            <button type="button" className={`v3-btn v3-btn-danger-outline v3-pay-cx${ask === `del:${m.id}` ? " is-ask" : ""}`} disabled={!online || saving === m.id} onClick={() => removeManual(m)}><Trash2 size={15} aria-hidden="true" />{ask === `del:${m.id}` ? "Точно видалити?" : "Видалити матч"}</button>
+          </div>
+        ) : (() => {
+          const f = formOf(m), ov = ovOf(m), busyM = saving === m.id;
+          return (
+            <form className="v3-mx-edit" onSubmit={(e) => { e.preventDefault(); saveEdit(m); }}>
+              <span className="v3-mx-elegend">Ручні правки{ov && <span className="v3-tag v3-tag-amber">Змінено · @{ov.decidedBy}</span>}</span>
+              <fieldset disabled={!online || busyM} className="v3-mx-efs">
+                <div className="v3-mx-segd" role="group" aria-label="Статус матчу">
+                  <PillTrack active={f.st} />
+                  {EDIT_ST.map((x) => <button key={x.key} type="button" className={f.st === x.key ? "is-on" : ""} aria-pressed={f.st === x.key} onClick={() => setForm(m, { st: x.key })}>{x.label}</button>)}
+                </div>
+                <div className="v3-mx-ef">
+                  <div className="v3-field"><label id={`ed-d-${m.id}`}>Дата</label><DateField id={`ed-date-${m.id}`} labelledBy={`ed-d-${m.id}`} value={f.date} onChange={(v) => setForm(m, { date: v })} /></div>
+                  <div className="v3-field"><label htmlFor={`ed-t-${m.id}`}>Час</label><input id={`ed-t-${m.id}`} inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
+                  <div className="v3-field"><span className="v3-label" id={`ed-s-${m.id}`}>Рахунок</span><span className="v3-mx-sc" role="group" aria-labelledby={`ed-s-${m.id}`}><input inputMode="numeric" pattern="[0-9]{0,2}" aria-label={`Рахунок ${m.t1}`} value={f.s1} onChange={(e) => setForm(m, { s1: e.target.value.replace(/\D/g, "").slice(0, 2) })} placeholder="—" /><b aria-hidden="true">:</b><input inputMode="numeric" pattern="[0-9]{0,2}" aria-label={`Рахунок ${m.t2}`} value={f.s2} onChange={(e) => setForm(m, { s2: e.target.value.replace(/\D/g, "").slice(0, 2) })} placeholder="—" /></span></div>
+                </div>
+                <div className="v3-mx-acts2">
+                  <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!ov && overrides !== null && edit?.id !== m.id} onClick={() => (ov || overrides === null ? resetEdit(m) : setEdit(null))}><RotateCcw size={15} aria-hidden="true" />{ov || overrides === null ? "Скинути правку" : "Скасувати"}</button>
+                  <button type="submit" className="v3-btn v3-btn-primary">{busyM ? <span className="v3-mx-spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}{busyM ? "Зберігаємо…" : "Зберегти"}</button>
+                </div>
+              </fieldset>
+              <p>Правка накладається на дані {m.source}: застосунок показує її, доки її не скинуть. Час — київський.</p>
+            </form>
+          );
+        })()}
       </div>
     );
   };
@@ -277,16 +424,30 @@ export default function Matches() {
                 <div><span>Збоїв за 24 год</span><strong>{p.failures24h}</strong></div>
                 <div><span>Матчів сьогодні</span><strong>{matches ? cnt : "…"}</strong></div>
               </div>
+              {(() => { const ev = events[p.name]; return ev ? (
+                <div className="v3-mx-ev"><strong>Останні події</strong>{ev.length ? ev.slice(0, 4).map((e, k) => <div key={e.id} className={`v3-mx-evr is-${e.event}`} style={{ animationDelay: `${150 + k * 45}ms` }}><span>{new Date(e.createdAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>) : <p className="v3-mx-pnote">Подій ще немає — журнал почне наповнюватися з наступних запусків.</p>}</div>
+              ) : null; })()}
               <p className="v3-mx-pnote">{p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
               <div className="v3-mx-pacts">
                 <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}${r === "busy" ? " is-busy" : ""}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
                   {r === "busy" ? <span className="v3-mx-spin" aria-hidden="true" /> : r === "done" ? <Check size={15} aria-hidden="true" className="v3-mx-ok" /> : <RefreshCw size={15} aria-hidden="true" />}
                   {r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}
                 </button>
+                <button type="button" className="v3-btn v3-btn-outline" disabled={!events[p.name]} onClick={() => setLogFor(p.name)}><History size={15} aria-hidden="true" />Повний лог</button>
               </div>
             </div>
           );
         })}
+      {(() => { const focus = down[0]?.name || "hltv_scraper"; const a = avail[focus]; if (!a) return null;
+        const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
+        const hours = Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok", h }; });
+        return (
+          <div className="v3-dcard v3-mx-up">
+            <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong><span><i className="is-ok" />успішно</span><span><i className="is-mix" />із повторами</span><span><i className="is-bad" />помилка</span><span><i className="is-none" />немає даних</span></div>
+            <div className="v3-mx-bars">{hours.map((x, i) => <span key={i} className={`v3-mx-bar is-${x.s}`} style={{ animationDelay: `${i * 30}ms` }} title={`${x.hh}:00 · ${x.h ? `${x.h.success} успішно, ${x.h.failure} помилок` : "немає даних"}`} />)}</div>
+            <div className="v3-mx-axis"><span>{hours[0].hh}:00</span><span>{hours[6].hh}:00</span><span>{hours[12].hh}:00</span><span>{hours[18].hh}:00</span><span>зараз</span></div>
+          </div>
+        ); })()}
       <div className="v3-dcard v3-mx-pfoot"><Shield size={18} aria-hidden="true" /><span>Якщо парсер не відповідає, у меню біля «Матчі» з’являється «!», а на дашборді — пункт у «Потребує уваги». Поки джерело не працює, у застосунку видно останні дані з позначкою часу.</span></div>
     </section>
   );
@@ -304,8 +465,11 @@ export default function Matches() {
         {x.bets.slice(0, 6).map((b) => { const [l, c] = resLabel(b.result); return <div key={b.id} className="v3-mx-rec"><UserAvatar username={b.username} telegram={b.telegram} /><span><strong>@{b.username}</strong><small>{b.betType} · {b.odds} · {Number(b.amount).toLocaleString("uk-UA")} ₴</small></span><span className={`v3-tag ${c}`}>{l}</span></div>; })}
         {x.bets.length > 6 && <span className="v3-mx-more">і ще {x.bets.length - 6}</span>}
       </div>
-      <div className="v3-mx-acts2"><button type="button" className="v3-btn v3-btn-ghost-dark" disabled title={NO_API}>Це інший матч</button><button type="button" className="v3-btn v3-btn-primary" disabled title={NO_API}>Об’єднати</button></div>
-      <p className="v3-mx-hint"><Lock size={13} aria-hidden="true" />Об’єднання з’явиться з ендпоінтом на бекенді — тоді результат прийде в записи автоматично.</p>
+      <div className="v3-mx-acts2">
+        <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || !!saving} onClick={() => decide(x, "unlink")}>{saving === `unlink:${x.key}` && <span className="v3-mx-spin" aria-hidden="true" />}Це інший матч</button>
+        <button type="button" className="v3-btn v3-btn-primary" disabled={!online || !x.official || !!saving} onClick={() => decide(x, "merge")}>{saving === `merge:${x.key}` ? <span className="v3-mx-spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}Об’єднати</button>
+      </div>
+      <p className="v3-mx-hint">{x.official ? "«Об’єднати» зв’яже записи користувачів з офіційним матчем. «Це інший матч» — матч справжній, просто його немає в джерелах." : "Схожого офіційного матчу немає — об’єднувати нема з чим. Якщо матч справжній, позначте «Це інший матч»."}</p>
     </div>
   );
   const manualTab = bets === null ? <div className="v3-wcard v3-pay-list">{skelRows(4)}</div> : !groups.length ? (
@@ -346,9 +510,15 @@ export default function Matches() {
     <div className="v3-mx-detail">
       <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div></div>
       <div className="v3-mx-kv"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
-      <div className="v3-mx-al"><small>Інші написання в стрічках</small>{t.variants.length ? <div>{t.variants.map((v) => <span key={v} className="v3-mx-chip">{v}</span>)}</div> : <span>Лише одне написання</span>}</div>
-      <div className="v3-mx-acts2"><button type="button" className="v3-btn v3-btn-ghost-dark" disabled title={NO_API}>Об’єднати з…</button><button type="button" className="v3-btn v3-btn-primary" disabled title={NO_API}>Зберегти</button></div>
-      <p className="v3-mx-hint"><Lock size={13} aria-hidden="true" />Довідник збирається зі стрічок і історії матчів. Псевдоніми й об’єднання дублікатів — з ендпоінтом на бекенді.</p>
+      <div className="v3-mx-al"><small>Інші написання в стрічках</small>{t.variants.length ? <div>{t.variants.map((v) => <span key={v} className="v3-mx-chip">{v}</span>)}</div> : <span>Немає неперевірених написань</span>}</div>
+      {(() => { const own = aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name)); return (
+        <div className="v3-mx-al"><small>Псевдоніми</small>{own.length ? <div>{own.map((a) => <span key={a.id} className="v3-mx-chip is-alias">{a.alias}<button type="button" aria-label={`Видалити псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}</div> : <span>Ще немає</span>}</div>
+      ); })()}
+      <div className="v3-mx-acts2">
+        <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online} onClick={() => setMergeFor(t)}><Plus size={15} aria-hidden="true" />Об’єднати з…</button>
+        <button type="button" className="v3-btn v3-btn-primary" disabled={!online || !t.variants.length || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? <span className="v3-mx-spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}Це одна команда</button>
+      </div>
+      <p className="v3-mx-hint">Псевдонім — інше написання «{t.name}»: записи й матчі з будь-яким написанням рахуються як одна команда.</p>
     </div>
   );
   const tfOpts = [{ key: "all" as const, label: "Усі", n: teams.length }, { key: "dup" as const, label: "Дублікати", n: teams.filter((t) => t.variants.length).length }, { key: "logo" as const, label: "Без логотипа", n: teams.filter((t) => isFallbackLogo(t.logo)).length }];
@@ -394,7 +564,7 @@ export default function Matches() {
           <button type="button" className={`v3-chip v3-mx-rf${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={refresh} aria-label="Оновити з джерел">
             {done ? <Check size={15} className="v3-mx-ok" aria-hidden="true" /> : <RefreshCw size={15} aria-hidden="true" />}<span className="v3-hide-mobile">{busy ? "Оновлюємо…" : done ? "Оновлено" : "Оновити з джерел"}</span>
           </button>
-          <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled title={NO_API}><Plus size={17} aria-hidden="true" />Додати матч</button>
+          <button type="button" className="v3-btn v3-btn-primary v3-mx-plus" disabled={!online} onClick={() => setAddOpen(true)} aria-label="Додати матч"><Plus size={17} aria-hidden="true" /><span className="v3-hide-mobile">Додати матч</span></button>
         </div>
       </section>
 
@@ -431,7 +601,94 @@ export default function Matches() {
         </div>
       </>}
 
+      <AddMatchDialog open={addOpen} onOpenChange={setAddOpen} onDone={async (m) => { await load(); setTab("matches"); setDay(m.startDate && kyivDay(new Date(m.startDate)) === today ? "today" : "week"); setSelId(`${m.game}:${m.id}`); setRk((x) => x + 1); }} />
+
+      <Dialog open={!!logFor} onOpenChange={(o) => !o && setLogFor(null)}>
+        <DialogContent className="v3-modal sm:max-w-[560px]">
+          <DialogTitle className="v3-modal-title">Повний лог · {logFor ? PARSER_NAMES[logFor] || logFor : ""}</DialogTitle>
+          <DialogDescription className="v3-modal-sub">Останні {logFor ? (events[logFor] || []).length : 0} подій. Однакові події частіше ніж раз на хвилину зливаються в одну.</DialogDescription>
+          <div className="v3-mx-log">{logFor && (events[logFor] || []).map((e) => <div key={e.id} className={`v3-mx-evr is-${e.event}`}><span>{new Date(e.createdAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>)}{logFor && !(events[logFor] || []).length && <p className="v3-mx-pnote">Подій ще немає.</p>}</div>
+          <div className="v3-modal-foot"><span className="v3-hint">Час — київський</span><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={() => setLogFor(null)}>Закрити</button></div></div>
+        </DialogContent>
+      </Dialog>
+
+      <MergeTeamDialog team={mergeFor} teams={teams} busy={!!mergeFor && saving === `team:${mergeFor.key}`} onClose={() => setMergeFor(null)} onPick={(t, names) => addAliases(t, names)} />
+
       {!wide && <Dialog open={sheet && !!sheetBody} onOpenChange={setSheet}><DialogContent className="v3-sheet v3-pay-sheet v3-mx-sheet"><DialogTitle className="sr-only">Деталі</DialogTitle><DialogDescription className="sr-only">Деталі матчу</DialogDescription>{sheetBody}</DialogContent></Dialog>}
     </div>
+  );
+}
+
+/** «Додати матч»: матч, якого немає в джерелах, з’явиться в стрічці застосунку. */
+function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenChange: (o: boolean) => void; onDone: (m: { id: string; game: Game; startDate: string }) => void | Promise<void> }) {
+  const blank = () => ({ game: "cs2" as Game, t1: "", t2: "", tour: "", bo: "BO3", date: kyivDay(), time: "19:00" });
+  const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => { if (open) { setF(blank()); setErr(""); } }, [open]);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!f.t1.trim() || !f.t2.trim()) { setErr("Вкажіть обидві команди"); return; }
+    if (baseNorm(f.t1) === baseNorm(f.t2)) { setErr("Команди мають відрізнятися"); return; }
+    setBusy(true); setErr("");
+    try {
+      const m = await createManualMatch({ game: f.game, team1: f.t1.trim(), team2: f.t2.trim(), tournament: f.tour.trim() || undefined, bo: f.bo, startDate: kyivToIso(`${f.date}T${f.time}`) });
+      onOpenChange(false);
+      toast.success("Матч додано", { description: `${m.team1} vs ${m.team2} · ${dayShort(f.date)}, ${f.time}` });
+      await onDone(m);
+    } catch (e2) { setErr(errText(e2, "Не вдалося додати матч")); }
+    setBusy(false);
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="v3-modal sm:max-w-[520px]">
+        <DialogTitle className="v3-modal-title">Додати матч</DialogTitle>
+        <DialogDescription className="v3-modal-sub">Для матчу, якого немає в tips.gg і HLTV. Застосунок покаже його в розкладі разом з іншими.</DialogDescription>
+        <form onSubmit={save} className="v3-form">
+          <fieldset disabled={busy} className="v3-form-grid">
+            <div className="v3-field v3-span2"><span className="v3-label" id="am-g">Гра</span><div className="v3-chipset" role="group" aria-labelledby="am-g">{(["cs2", "dota2"] as Game[]).map((g) => <button key={g} type="button" className={f.game === g ? "is-on" : ""} aria-pressed={f.game === g} onClick={() => setF({ ...f, game: g })}>{GAME_LABEL[g]}</button>)}</div></div>
+            <div className="v3-field"><label htmlFor="am-t1">Команда 1</label><input id="am-t1" required maxLength={200} value={f.t1} onChange={(e) => setF({ ...f, t1: e.target.value })} placeholder="NAVI" autoComplete="off" /></div>
+            <div className="v3-field"><label htmlFor="am-t2">Команда 2</label><input id="am-t2" required maxLength={200} value={f.t2} onChange={(e) => setF({ ...f, t2: e.target.value })} placeholder="FaZe" autoComplete="off" /></div>
+            <div className="v3-field v3-span2"><label htmlFor="am-tour">Турнір</label><input id="am-tour" maxLength={500} value={f.tour} onChange={(e) => setF({ ...f, tour: e.target.value })} placeholder="Необов’язково" autoComplete="off" /></div>
+            <div className="v3-field"><label id="am-d">Дата</label><DateField id="am-date" labelledBy="am-d" required value={f.date} onChange={(v) => setF({ ...f, date: v })} /></div>
+            <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><input id="am-time" required inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setF({ ...f, time: hhmmInput(e.target.value) })} /></div>
+            <div className="v3-field v3-span2"><span className="v3-label" id="am-bo">Формат</span><div className="v3-chipset" role="group" aria-labelledby="am-bo">{["BO1", "BO2", "BO3", "BO5"].map((b) => <button key={b} type="button" className={f.bo === b ? "is-on" : ""} aria-pressed={f.bo === b} onClick={() => setF({ ...f, bo: b })}>{b}</button>)}</div></div>
+          </fieldset>
+          {err && <span className="v3-field-error" role="alert">{err}</span>}
+          <div className="v3-modal-foot">
+            <span className="v3-hint">Запишеться в журнал дій</span>
+            <div className="v3-modal-actions">
+              <button type="button" className="v3-btn v3-btn-ghost" onClick={() => onOpenChange(false)} disabled={busy}>Скасувати</button>
+              <button type="submit" className="v3-btn v3-btn-primary" disabled={busy}>{busy ? "Додаємо…" : "Додати матч"}</button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** «Об’єднати з…»: інша команда (або написання) стає псевдонімом цієї. */
+function MergeTeamDialog({ team, teams, busy, onClose, onPick }: { team: Team | null; teams: Team[]; busy: boolean; onClose: () => void; onPick: (t: Team, names: string[]) => void }) {
+  const [q, setQ] = useState("");
+  useEffect(() => { setQ(""); }, [team]);
+  if (!team) return <Dialog open={false} onOpenChange={onClose}><DialogContent className="v3-modal" /></Dialog>;
+  const n = q.trim().toLowerCase();
+  const list = teams.filter((t) => t.game === team.game && t.key !== team.key && (!n || `${t.name} ${t.variants.join(" ")}`.toLowerCase().includes(n))).slice(0, 8);
+  const free = q.trim() && !teams.some((t) => t.game === team.game && baseNorm(t.name) === baseNorm(q)) ? q.trim() : "";
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="v3-modal sm:max-w-[480px]">
+        <DialogTitle className="v3-modal-title">Об’єднати з «{team.name}»</DialogTitle>
+        <DialogDescription className="v3-modal-sub">Обрана команда стане іншим написанням «{team.name}» ({GAME_LABEL[team.game]}).</DialogDescription>
+        <label className="v3-search v3-mx-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={q} onChange={(e) => setQ(e.target.value)} autoFocus /></label>
+        <ul className="v3-mx-pick">
+          {list.map((t) => <li key={t.key}><button type="button" disabled={busy} onClick={() => onPick(team, [t.name, ...t.variants])}><Logo src={t.logo} name={t.name} size={28} /><span><strong>{t.name}</strong><small>{t.matches} {plural(t.matches, "матч", "матчі", "матчів")}{t.variants.length ? ` · також ${t.variants.join(", ")}` : ""}</small></span></button></li>)}
+          {free && <li><button type="button" disabled={busy} onClick={() => onPick(team, [free])}><span className="v3-mx-lg is-ini" style={{ width: 28, height: 28 }} aria-hidden="true"><Plus size={14} /></span><span><strong>Додати написання «{free}»</strong><small>Якого ще немає в стрічках</small></span></button></li>}
+          {!list.length && !free && <li className="v3-mx-pnote">Інших команд {GAME_LABEL[team.game]} не знайдено.</li>}
+        </ul>
+        <div className="v3-modal-foot"><span className="v3-hint">Запишеться в журнал дій</span><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={onClose} disabled={busy}>Скасувати</button></div></div>
+      </DialogContent>
+    </Dialog>
   );
 }
