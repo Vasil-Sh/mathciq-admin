@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { authService } from "@/lib/authService";
-import { clearToken } from "@/lib/apiClient";
+import { api, clearToken } from "@/lib/apiClient";
 import { toast } from "sonner";
 import type { LoginResult } from "@/types";
 
@@ -57,14 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const base = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
     (async () => {
       try {
-        const res = await fetch(`${base}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Token invalid");
-        const data = await res.json();
+        // Through the API client: an expired 15-min access token is refreshed with the 30-day one
+        // (before, any 401 here signed the admin out every time the app was reopened)
+        const data = await api.get<{ username: string; role: string; isOwner?: boolean; telegram?: string }>("/auth/me");
 
         // Kick out non-admins
         if (data.role !== "admin") {
@@ -78,9 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("username", data.username);
         localStorage.setItem("isOwner", data.isOwner ? "1" : "0");
         if (data.telegram) localStorage.setItem("telegram", data.telegram); else localStorage.removeItem("telegram");
-      } catch {
-        clearToken();
-        setUser(null);
+      } catch (e) {
+        // Session really gone (refresh failed / account removed) → sign out.
+        // No internet or the server restarting → keep the saved sign-in.
+        const st = (e as { status?: number }).status;
+        if (st === 401 || st === 403 || st === 404) {
+          clearToken();
+          setUser(null);
+        }
       } finally {
         setIsVerifying(false);
       }

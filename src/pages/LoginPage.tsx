@@ -33,7 +33,7 @@ function RotatingWord() {
 }
 
 export default function LoginPage() {
-  const { username, setUsername, password, setPassword, isLoading, error, errorKind, handleSubmit, notAdmin, resetNotAdmin, locked, lockLeft } = useLogin();
+  const { remember, setRemember, username, setUsername, password, setPassword, isLoading, error, errorKind, handleSubmit, notAdmin, resetNotAdmin, locked, lockLeft } = useLogin();
   const mmss = `${Math.floor(lockLeft / 60)}:${String(lockLeft % 60).padStart(2, "0")}`;
   const emptyUser = errorKind === "empty" && !username.trim();
   const emptyPass = errorKind === "empty" && !password.trim();
@@ -141,6 +141,11 @@ export default function LoginPage() {
               </div>
               {error && errorKind !== "empty" && !locked && <p id="login-error" role="alert" className="v3-field-error">{error}</p>}
             </div>
+            <label className="v3-login-remember">
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              <span className="v3-login-ck" aria-hidden="true"><Check size={13} strokeWidth={3.2} /></span>
+              <span>Запам’ятати мене <small>не виходити після закриття застосунку</small></span>
+            </label>
             <div className="v3-login-submit-wrap">
               {tip && blocked && <span className="v3-login-tip" role="status">{locked ? `Вхід на паузі — ще ${mmss}` : "Немає інтернету — зачекайте"}</span>}
               <button type="submit" disabled={isLoading} aria-disabled={blocked || undefined} onClick={onSubmitClick} className={"v3-btn v3-btn-primary v3-login-submit" + (blocked ? " is-blocked" : "") + (nudge ? (nudge % 2 ? " v3-shake-a" : " v3-shake-b") : "")}>

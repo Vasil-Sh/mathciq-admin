@@ -6,6 +6,19 @@ const BASE =
     ? "https://cs-backend-production-f9e8.up.railway.app/api"
     : "http://localhost:3001/api");
 
+// «Запам'ятати мене» off: the sign-in lives only while the app/tab is open.
+// sessionStorage survives reloads but not closing the app — no marker there means the app was closed.
+if (localStorage.getItem("sessionOnly") === "1" && !sessionStorage.getItem("sessionAlive")) {
+  ["authToken", "refreshToken", "username", "userRole", "isOwner", "telegram", "loginAt", "sessionOnly"].forEach((k) => localStorage.removeItem(k));
+}
+
+/** After a successful sign-in: keep it across app restarts (remember) or only for this session. */
+export function setRememberMe(remember: boolean) {
+  localStorage.setItem("rememberMe", remember ? "1" : "0");
+  if (remember) localStorage.removeItem("sessionOnly");
+  else { localStorage.setItem("sessionOnly", "1"); sessionStorage.setItem("sessionAlive", "1"); }
+}
+
 let authToken: string | null = localStorage.getItem("authToken");
 let refreshToken: string | null = localStorage.getItem("refreshToken");
 

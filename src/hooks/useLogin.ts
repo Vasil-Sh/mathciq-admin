@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { setRememberMe } from "@/lib/apiClient";
 
 export function useLogin() {
   const { login, isLoading } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [remember, setRemember] = useState(() => localStorage.getItem("rememberMe") !== "0");
   const [notAdmin, setNotAdmin] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<"empty" | "auth" | "other" | null>(null);
   // Lock after too many attempts: epoch ms when the next try is allowed (survives reloads).
@@ -36,6 +38,7 @@ export function useLogin() {
       }
 
       const result = await login(username.trim(), password);
+      if (result.success && !result.notAdmin) setRememberMe(remember);
       if (result.notAdmin) {
         setNotAdmin(username.trim().replace(/^@/, ""));
         setPassword("");
@@ -52,10 +55,12 @@ export function useLogin() {
         setErrorKind(result.retryAfter ? "other" : result.attemptsLeft !== undefined ? "auth" : "other");
       }
     },
-    [username, password, login, locked]
+    [username, password, login, locked, remember]
   );
 
   return {
+    remember,
+    setRemember,
     username,
     setUsername,
     password,

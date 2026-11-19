@@ -208,3 +208,11 @@
   .v3-login { align-items: flex-start; padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
   .v3-login-grid { gap: 12px; }
 }
+
+/* «Запам'ятати мене» */
+.v3-login-remember { display: flex; align-items: center; gap: 10px; margin: 2px 0 14px; cursor: pointer; color: var(--v3-ink, #11151c); font-size: 14px; font-weight: 500; user-select: none; }
+.v3-login-remember input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.v3-login-ck { flex-shrink: 0; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid #c9d0db; background: #fff; color: transparent; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.v3-login-remember input:checked + .v3-login-ck { background: var(--v3-nav, #3a6df0); border-color: var(--v3-nav, #3a6df0); color: #fff; }
+.v3-login-remember input:focus-visible + .v3-login-ck { box-shadow: 0 0 0 3px rgba(58, 109, 240, .25); }
+.v3-login-remember small { display: block; color: #5f6878; font-size: 12px; font-weight: 400; }
