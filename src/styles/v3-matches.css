@@ -1,0 +1,179 @@
+/* ══ Матчі (дизайн «Матчі v3») · будується на класах «Оплат»; анімації лише з каталогу Motion4 ══ */
+
+/* Вкладки: 4 чипи; на телефоні рядок гортається вбік, правий край затухає */
+.v3-mx-tabs { grid-template-columns: repeat(4, auto); }
+.v3-mx-tabs .v3-pay-tab.is-err:not(.is-on) .v3-pay-tab-n { background: #e5533f; color: #fff; animation: v3-mx-ask 1.8s ease-out infinite; }
+@keyframes v3-mx-ask { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 83, 63, .45); } 50% { box-shadow: 0 0 0 5px rgba(229, 83, 63, 0); } }
+
+/* Цифри підсумків: помилка парсера — коралова, додані вручну — бурштинова */
+.v3-mx-bad { color: #ff9a88; }
+.v3-mx-amber { color: #f3cf9a; }
+
+/* Таблиця матчів */
+.v3-pay-th.v3-mx-row, .v3-pay-row.v3-mx-row { grid-template-columns: 64px minmax(0, 1.4fr) 28px minmax(0, 1.2fr) 128px 76px 64px; }
+.v3-mx-time { font-weight: 600; font-variant-numeric: tabular-nums; }
+.v3-mx-time small { display: block; font-weight: 400; }
+.v3-mx-teams { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.v3-mx-teams > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.v3-mx-teams strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mx-lg { flex-shrink: 0; border-radius: 50%; object-fit: contain; background: #f1f4f9; }
+.v3-mx-lg.is-ini { display: grid; place-items: center; background: #5f6878; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: -.02em; }
+.v3-mx-score { display: flex; flex-direction: column; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
+.v3-mx-score b { font-weight: 600; line-height: 22px; }
+.v3-mx-tour { min-width: 0; }
+.v3-mx-tour strong { display: block; font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mx-n { font-variant-numeric: tabular-nums; }
+.v3-pay-row.is-sel .v3-mx-lg { background: #232a37; }
+
+/* «Наживо»: точка пульсує (Наші екрани · LIVE) */
+.v3-mx-live { gap: 6px; }
+.v3-mx-live i { position: relative; width: 7px; height: 7px; border-radius: 50%; background: #e5533f; }
+.v3-mx-live i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #e5533f; animation: v3-mx-pls 1.4s ease-out infinite; }
+@keyframes v3-mx-pls { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
+
+/* Банер про парсер над вмістом */
+.v3-mx-alert { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: 16px; border: 1px solid rgba(255, 122, 102, .4); background: rgba(255, 122, 102, .08); color: #ffb3a6; font: 400 13px/1.45 Inter, sans-serif; text-align: left; cursor: pointer; transition: background-color .2s, transform .15s ease-out; }
+.v3-mx-alert:active { transform: scale(.98); }
+.v3-mx-alert i { position: relative; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #e5533f; }
+.v3-mx-alert i::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #e5533f; animation: v3-mx-pls 1.4s ease-out infinite; }
+.v3-mx-alert b { margin-left: auto; color: #ffd2ca; font-weight: 600; white-space: nowrap; }
+
+/* Деталі (бічна панель і шторка) */
+.v3-mx-detail { display: flex; flex-direction: column; gap: 14px; }
+.v3-mx-detail > * { animation: v3-mx-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-mx-detail > :nth-child(2) { animation-delay: .04s; } .v3-mx-detail > :nth-child(3) { animation-delay: .08s; } .v3-mx-detail > :nth-child(4) { animation-delay: .12s; } .v3-mx-detail > :nth-child(n+5) { animation-delay: .16s; }
+@keyframes v3-mx-in { from { opacity: 0; transform: translateY(8px); } }
+.v3-mx-dh { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #8c95a6; font-size: 13px; }
+.v3-mx-detail h2 { margin: 0; font-size: 28px; font-weight: 400; letter-spacing: -.03em; line-height: 1.15; }
+.v3-mx-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v3-mx-kv > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: #1d232e; }
+.v3-mx-kv span { color: #8c95a6; font-size: 12px; }
+.v3-mx-kv strong { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.v3-mx-src { display: inline-flex; align-items: center; gap: 5px; color: #a3c0ff; text-decoration: none; }
+.v3-mx-src svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+.v3-mx-recs { display: flex; flex-direction: column; gap: 6px; }
+.v3-mx-rec { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #1d232e; }
+.v3-mx-rec strong { display: block; font-size: 14px; font-weight: 600; }
+.v3-mx-rec small { display: block; color: #8c95a6; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mx-more { color: #8c95a6; font-size: 12px; padding-left: 4px; }
+.v3-mx-edit { margin: 0; padding: 14px; border: 1px dashed rgba(255, 255, 255, .16); border-radius: 16px; display: flex; flex-direction: column; gap: 10px; }
+.v3-mx-edit legend { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; color: #c3c9d4; font-size: 12px; font-weight: 600; }
+.v3-mx-edit p, .v3-mx-hint { margin: 0; color: #8c95a6; font-size: 12px; line-height: 1.55; }
+.v3-mx-hint { display: flex; gap: 6px; align-items: flex-start; }
+.v3-mx-hint svg { flex-shrink: 0; margin-top: 2px; }
+.v3-mx-segd { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 4px; border-radius: 999px; background: #1d232e; opacity: .55; }
+.v3-mx-segd span { padding: 8px 4px; border-radius: 999px; color: #c3c9d4; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; }
+.v3-mx-segd span.is-on { background: var(--v3-nav); color: #fff; }
+.v3-mx-acts2 { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; }
+.v3-mx-cmp { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.v3-mx-cmp > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 16px; }
+.v3-mx-cmp .is-dark { background: #1d232e; }
+.v3-mx-cmp .is-light { background: #fff; color: var(--v3-ink); }
+.v3-mx-cmp small { color: #8c95a6; font-size: 12px; }
+.v3-mx-cmp .is-light small, .v3-mx-cmp .is-light span { color: #5f6878; }
+.v3-mx-cmp strong { font-size: 16px; font-weight: 600; }
+.v3-mx-cmp span { color: #c3c9d4; font-size: 13px; }
+
+/* Парсери */
+.v3-mx-parsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+.v3-mx-pcard { display: flex; flex-direction: column; gap: 14px; padding: 22px; animation: v3-mx-in .4s cubic-bezier(.2, .8, .2, 1) backwards; transition: box-shadow .4s; }
+.v3-mx-pcard.is-err { box-shadow: 0 0 0 2px #ff9a88; }
+.v3-mx-pcard.is-skel { min-height: 220px; gap: 18px; }
+.v3-mx-ph { display: flex; align-items: center; gap: 12px; }
+.v3-mx-ph > span:nth-child(2) { flex: 1; min-width: 0; }
+.v3-mx-ph strong { display: block; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.v3-mx-ph small { color: var(--v3-ink-muted); font-size: 12px; }
+.v3-mx-pav { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; color: #fff; font-size: 13px; font-weight: 700; }
+.v3-mx-ph .v3-tag { gap: 6px; }
+.v3-mx-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.v3-mx-dot.is-pulse { animation: v3-mx-dot 1.4s ease-out infinite; }
+@keyframes v3-mx-dot { 0% { box-shadow: 0 0 0 0 rgba(229, 83, 63, .5); } 100% { box-shadow: 0 0 0 6px rgba(229, 83, 63, 0); } }
+.v3-mx-flip { animation: v3-mx-flip .45s cubic-bezier(.2, .9, .25, 1.2) both; }
+@keyframes v3-mx-flip { from { transform: rotateX(90deg); } }
+.v3-mx-pkv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.v3-mx-pkv > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: #f4f6fa; }
+.v3-mx-pkv span { color: #5f6878; font-size: 12px; }
+.v3-mx-pkv strong { font-size: 16px; font-weight: 600; }
+.v3-mx-pkv strong.is-bad { color: #b3321c; }
+.v3-mx-pnote { margin: 0; color: #5f6878; font-size: 13px; line-height: 1.55; }
+.v3-mx-pacts { display: flex; gap: 8px; }
+.v3-mx-pacts .v3-btn { display: inline-flex; align-items: center; gap: 8px; }
+.v3-mx-pfoot { grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px; color: #c3c9d4; font-size: 13px; line-height: 1.55; }
+.v3-mx-pfoot svg { flex-shrink: 0; color: #a3c0ff; margin-top: 1px; }
+.v3-mx-spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: v3-mx-spin .7s linear infinite; }
+@keyframes v3-mx-spin { to { transform: rotate(360deg); } }
+.v3-mx-ok { animation: v3-mx-ok .4s cubic-bezier(.2, .9, .25, 1.5) both; }
+@keyframes v3-mx-ok { from { transform: scale(.3); opacity: 0; } }
+.v3-mx-ok { color: #4cd98a; }
+.v3-btn .v3-mx-ok { color: currentColor; }
+.v3-mx-rf.is-busy svg { animation: v3-mx-spin .8s linear infinite; }
+
+/* Додані вручну */
+.v3-mx-lh { padding: 4px 4px 14px; }
+.v3-mx-lh h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.v3-mx-lh p { margin: 6px 0 0; color: var(--v3-ink-muted); font-size: 13px; }
+.v3-pay-th.v3-mx-grow, .v3-pay-row.v3-mx-grow { grid-template-columns: minmax(0, 1.5fr) 80px minmax(0, 1.6fr) 110px; }
+.v3-mx-zero { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.v3-mx-zero-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 36px; }
+.v3-mx-zero-card strong { font-size: 24px; font-weight: 500; letter-spacing: -.02em; }
+.v3-mx-zero-card p { margin: 0; color: var(--v3-ink-muted); font-size: 14px; line-height: 1.6; max-width: 560px; }
+.v3-mx-zero-card > * { animation: v3-mx-in .45s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-mx-zero-card > :nth-child(2) { animation-delay: .08s; } .v3-mx-zero-card > :nth-child(3) { animation-delay: .14s; }
+.v3-mx-zero-st { display: flex; flex-direction: column; gap: 12px; }
+.v3-mx-zero-st > div { display: flex; justify-content: space-between; color: #c3c9d4; font-size: 13px; }
+.v3-mx-zero-st b { color: #f4f6fa; }
+.v3-mx-zero .v3-empty-ic { background: #e3f6ea; color: #1f7a3d; }
+
+/* Команди */
+.v3-pay-th.v3-mx-trow, .v3-pay-row.v3-mx-trow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) 80px 70px 90px; }
+.v3-mx-tname { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.v3-mx-tname strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mx-vars { display: flex; flex-wrap: wrap; gap: 4px; }
+.v3-mx-chip { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: #f1f4f9; color: #3e4656; font-size: 12px; }
+.v3-pay-row.is-sel .v3-mx-chip { background: #232a37; color: #c3c9d4; }
+.v3-mx-th { display: flex; align-items: center; gap: 14px; }
+.v3-mx-th h2 { font-size: 24px; }
+.v3-mx-th span { color: #8c95a6; font-size: 13px; }
+.v3-mx-al { display: flex; flex-direction: column; gap: 8px; }
+.v3-mx-al small { color: #8c95a6; font-size: 12px; }
+.v3-mx-al > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-mx-al .v3-mx-chip { background: #1d232e; color: #e7eaf0; }
+.v3-mx-al > span { color: #c3c9d4; font-size: 13px; }
+.v3-mx-mtools { display: grid; gap: 10px; margin-bottom: 12px; }
+
+/* Телефон */
+.v3-mx-mcard { grid-template-columns: minmax(0, 1fr) auto !important; }
+.v3-mx-mcard:has(> .v3-mx-lg) { grid-template-columns: 38px minmax(0, 1fr) auto !important; }
+.v3-mx-mcard-l { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.v3-mx-mcard-l > strong { font-size: 15px; font-weight: 600; }
+.v3-mx-mcard-l small { color: var(--v3-ink-muted); font-size: 12px; }
+.v3-mx-mcard-r { display: flex; align-items: center; gap: 10px; }
+.v3-mx-mcard .v3-mx-teams strong { font-size: 14px; }
+.v3-mx-sheet .v3-mx-detail h2 { font-size: 24px; }
+
+@media (max-width: 1179px) {
+  .v3-mx-tabs { grid-template-columns: repeat(4, auto); width: max-content; }
+  .v3-mx-zero { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .v3-mx-tabsw { margin: 0 -16px; padding: 2px 16px 4px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent); }
+  .v3-mx-tabsw::-webkit-scrollbar { display: none; }
+  .v3-mx-tabs { grid-template-columns: repeat(4, auto); width: max-content; max-width: none; }
+  .v3-mx-tabs .v3-pay-tab { min-height: 46px; padding: 0 12px 0 4px; }
+  .v3-mx-tabs .v3-pay-tab-n { min-width: 28px; height: 28px; }
+  .v3-mx-pkv { grid-template-columns: 1fr 1fr; }
+  .v3-mx-pkv > div:last-child { grid-column: 1 / -1; }
+  .v3-mx-pcard { padding: 16px; }
+  .v3-mx-zero-card { padding: 24px 20px; }
+  .v3-mx-detail h2 { font-size: 24px; }
+}
+@media (hover: hover) {
+  .v3-mx-alert:hover { background: rgba(255, 122, 102, .12); }
+  .v3-mx-src:hover svg { transform: translate(2px, -2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-mx-live i::after, .v3-mx-alert i::after, .v3-mx-dot.is-pulse, .v3-mx-detail > *, .v3-mx-pcard, .v3-mx-flip, .v3-mx-spin, .v3-mx-ok, .v3-mx-rf.is-busy svg, .v3-mx-zero-card > *, .v3-mx-tabs .v3-pay-tab-n { animation: none !important; }
+}
+/* Неактивні дії без ендпоінта: приглушені контури на темній панелі */
+.v3-mx-acts2 .v3-btn:disabled { background: transparent !important; border: 1px dashed rgba(255, 255, 255, .18) !important; color: #8c95a6 !important; box-shadow: none !important; cursor: not-allowed; }
+@media (max-width: 720px) { .v3-mx-segd { grid-template-columns: 1fr 1fr; border-radius: 16px; } }
