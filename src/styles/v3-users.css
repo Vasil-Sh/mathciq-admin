@@ -757,3 +757,15 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
   .v3-users .v3-hero-row > .v3-chips { margin-top: -4px; } /* title line 40px, button 48px */
   .v3-pay .v3-hero-row > .v3-chips { margin-top: -2px; }   /* title line 44px */
 }
+
+/* Phone filters in one line: plan dropdown takes the rest, chips keep their width */
+.v3-mfilters.is-line { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 6px; }
+.v3-mfilters.is-line > :first-child { flex: 1 1 auto; min-width: 0; }
+.v3-mfilters.is-line > .v3-fchip { flex: 0 0 auto; gap: 6px; padding: 0 11px 0 6px; font-size: 13px; }
+.v3-mfilters.is-line .v3-fchip-n { min-width: 24px; height: 24px; padding: 0 6px; }
+.v3-mfilters.is-line .v3-dd-btn { padding-left: 12px; padding-right: 10px; }
+.v3-fchip:disabled { opacity: .45; cursor: default; }
+.v3-fchip:disabled .v3-fchip-n { background: rgba(255, 255, 255, .12); color: #c3c9d4; }
+.v3-excl-search { flex: 1 1 100%; }
+.v3-receipt-note { margin: 10px 0 0; color: var(--v3-ink-muted, #5f6878); font-size: 12.5px; line-height: 1.45; text-align: center; }
+.v3-mfilters.is-line .v3-dd-pre { display: none; } /* phone: «Усі · 6» without «План:» so the value fits next to the chips */

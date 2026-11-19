@@ -77,7 +77,36 @@ export async function createPaymentReceipt(payment:ReceiptPayment,user:{username
   commands.forEach(draw=>draw());
   return canvas.toDataURL('image/png');
 }
-export function savePaymentReceipt(image:string,id:string) {
-  const link=document.createElement('a');link.href=image;link.download=`MatchIQ-payment-${id}.png`;
+/**
+ * Save the receipt PNG.
+ * iPhone/iPad Safari (and the home-screen app) ignore <a download> for images, so on touch
+ * devices we open the system share sheet with the file — it has «Зберегти зображення» / «Save to Files».
+ * Elsewhere a normal download from a blob URL.
+ */
+export async function savePaymentReceipt(image:string,id:string):Promise<void> {
+  const name=`MatchIQ-payment-${id}.png`;
+  // Decode the data URL synchronously: Safari only opens the share sheet while the tap's
+  // user activation is still alive, and an awaited fetch() can use it up.
+  let blob:Blob;
+  try {
+    const [head,b64]=image.split(',');
+    if(!/^data:image\/png;base64$/.test(head||'')) throw new Error('not a data URL');
+    const bin=atob(b64);const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    blob=new Blob([bytes],{type:'image/png'});
+  } catch {
+    try { blob=await (await fetch(image)).blob(); } catch { blob=new Blob(); }
+  }
+  const touch=typeof window!=='undefined'&&window.matchMedia?.('(pointer: coarse)').matches;
+  if(touch&&blob.size&&typeof navigator.share==='function'){
+    const file=new File([blob],name,{type:'image/png'});
+    if(!navigator.canShare||navigator.canShare({files:[file]})){
+      try { await navigator.share({files:[file],title:`Чек ${id}`}); return; }
+      catch(e){ if((e as Error)?.name==='AbortError') return; /* fall back to download */ }
+    }
+  }
+  const url=blob.size?URL.createObjectURL(blob):image;
+  const link=document.createElement('a');link.href=url;link.download=name;link.rel='noopener';
   document.body.appendChild(link);link.click();link.remove();
+  if(url!==image) window.setTimeout(()=>URL.revokeObjectURL(url),4000);
 }

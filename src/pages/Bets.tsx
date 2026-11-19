@@ -325,7 +325,7 @@ export default function Bets() {
         {gameCounts.map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}</button>)}
       </div>
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
-      <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: `Сортування: ${SORT_M[k]}` }))} />
+      <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" prefix="Сортування:" value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: SORT_M[k] }))} />
       {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : <div key={rk} className="v3-bt-mrows">{rows.slice(0, limit).map(({ u, s }, i) => {
         const open = openId === u.id;
         const head = (

@@ -54,6 +54,8 @@ export interface AdminUserOverview {
   username: string;
   role: string;
   telegram: string;
+  /** Started the MatchIQ bot — receipts can be sent to their Telegram (older backends omit it). */
+  telegramLinked?: boolean;
   priceMonth: number;
   startDate: string;
   endDate: string;

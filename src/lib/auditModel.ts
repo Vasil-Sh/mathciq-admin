@@ -76,6 +76,8 @@ export function describe(e: Entry): View {
     return { ...base, kind: "user", verb: "оновив користувача", target: at, meta: "Зміни профілю" };
   }
   if (/^\/admin\/users\/\d+\/payments$/.test(t)) return { ...base, kind: "pay", verb: "додав оплату", target: `${d.paymentId ? `№${d.paymentId}` : "оплату"}${at ? ` · ${at}` : ""}`, meta: d.extendSubscription ? "Оплата із продовженням доступу" : "Оплата без продовження доступу" };
+  const payDel = e.action === "DELETE" ? t.match(/^\/admin\/payments\/(\d+)$/) : null;
+  if (payDel) return { ...base, kind: "pay", verb: "видалив запис оплати", target: `№${payDel[1]}${at ? ` · ${at}` : ""}`, meta: `${d.amount ? `${Number(d.amount).toLocaleString("uk-UA")} ₴ · ` : ""}запис видалено повністю` };
   const payId = t.match(/^\/admin\/payments\/(\d+)\/(cancel|refund|receipt\/send)$/);
   if (payId) {
     const what = payId[2] === "cancel" ? "скасував оплату" : payId[2] === "refund" ? "повернув гроші за оплату" : "надіслав чек за оплату";

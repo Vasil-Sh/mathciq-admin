@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -55,12 +55,19 @@ function Delta({ d, on, vs, bad = false }: { d: number | null; on?: boolean; vs:
   return <><span className={`v3-dl ${on ? "is-onblue " : ""}${d === 0 ? "is-flat" : good ? "is-up" : "is-down"}${d < 0 ? " is-neg" : ""}`} title={`до ${vs}`}><ArrowUp size={10} strokeWidth={3} aria-hidden="true" />{`${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`}</span><span className="sr-only">{d >= 0 ? "зростання" : "падіння"} до {vs}{bad && d > 0 ? " (погано)" : ""} </span></>;
 }
 
+/** Search field on the «Повернення» and «Промокоди» tabs (same look as on the payments list). */
+function PaneSearch({ value, onChange, label, placeholder }: { value: string; onChange: (v: string) => void; label: string; placeholder: string }) {
+  return <label className="v3-msearch v3-pay-psearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label={label} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />{value && <button type="button" onClick={() => onChange("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
+}
+
 export default function Payments() {
   const wide = useMedia("(min-width: 1180px)");
   const online = useOnline();
   // ?tab=ref|promo opens that tab (Dashboard «Скасування» → refunds)
   const [tab, setTab] = useState<Tab>(() => { const t = new URLSearchParams(window.location.search).get("tab"); return t === "ref" || t === "promo" ? t : "pay"; });
   const [month, setMonth] = useState(kyivMonth);
+  const [qRef, setQRef] = useState("");
+  const [qPromo, setQPromo] = useState("");
   const [rows, setRows] = useState<PaymentRow[] | null>(null);
   const [prevRows, setPrevRows] = useState<PaymentRow[]>([]);
   const [refunds, setRefunds] = useState<PaymentRow[] | null>(null);
@@ -76,6 +83,7 @@ export default function Payments() {
   const [sheet, setSheet] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [cx, setCx] = useState<"" | "ask" | "busy">("");
+  const [del, setDel] = useState<"" | "ask" | "busy">("");
   const [pick, setPick] = useState(false);
   const [payFor, setPayFor] = useState<AdminUserOverview | null>(null);
   const [refundFor, setRefundFor] = useState<PaymentRow | null>(null);
@@ -170,6 +178,12 @@ export default function Payments() {
     toast.success("CSV завантажено", { id: "pay-csv", description: `matchiq-payments-${month}.csv · ${list.length} ${plural(list.length, "рядок", "рядки", "рядків")}` });
   }
 
+  // «У Telegram» needs a Telegram handle and the user having started the bot (the bot can't write first).
+  const receiptUser = receipt ? users.find((u) => u.username === receipt.username) : undefined;
+  const receiptSendBlock = !receipt ? null
+    : !receiptUser || !(receiptUser.telegram || "").trim() ? "У користувача не вказано Telegram — збережіть PNG і надішліть вручну."
+    : receiptUser.telegramLinked === false ? "Користувач ще не запустив бота MatchIQ (/start) — бот не може написати першим. Збережіть PNG."
+    : null;
   async function openReceipt(p: PaymentRow) {
     const u = userOf(p);
     setReceiptBusy(p.id);
@@ -188,7 +202,21 @@ export default function Payments() {
       setSheet(false);
     } catch (e) { toast.error((e as Error).message); } finally { setCx(""); }
   }
-  useEffect(() => { setCx(""); }, [sel?.id]);
+  // Trash icon: removes the record completely (second tap confirms). Subscription dates are not touched.
+  async function deleteRecord(p: PaymentRow) {
+    if (!del) { setDel("ask"); window.setTimeout(() => setDel((v) => (v === "ask" ? "" : v)), 3000); return; }
+    if (del !== "ask") return;
+    setDel("busy");
+    try {
+      await api.delete(`/admin/payments/${p.id}`);
+      setRows((r) => (r || []).filter((x) => x.id !== p.id));
+      setRefunds((r) => (r ? r.filter((x) => x.id !== p.id) : r));
+      setSelId(null);
+      toast.success(`Запис №${p.id} видалено`, { id: `del-${p.id}`, description: `@${p.username} · ${money(num(p))} · залишився в журналі дій` });
+      setSheet(false);
+    } catch (e) { toast.error((e as Error).message); } finally { setDel(""); }
+  }
+  useEffect(() => { setCx(""); setDel(""); }, [sel?.id]);
 
   const promoMax = (p: PromoCode) => (p.usageLimit ? Math.min(100, Math.round((p.usedCount / p.usageLimit) * 100)) : Math.min(100, p.usedCount * 2));
   async function togglePromo(p: PromoCode) {
@@ -228,9 +256,9 @@ export default function Payments() {
             <button type="button" className="v3-btn v3-btn-light" onClick={() => openReceipt(p)} disabled={receiptBusy === p.id}><Receipt size={15} aria-hidden="true" />{receiptBusy === p.id ? "Готуємо…" : "Чек"}</button>
             <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !u} onClick={() => setRefundFor(p)} title={!u ? "Користувача вже немає" : undefined}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
           </div>
-          <button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "ask" ? " is-ask" : ""}${cx === "busy" ? " is-busy" : ""}`} disabled={!online} onClick={() => cancelRecord(p)}>{cx === "ask" ? "Натисніть ще раз — скасувати" : cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button>
+          <div className="v3-pay-cxrow"><button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "ask" ? " is-ask" : ""}${cx === "busy" ? " is-busy" : ""}`} disabled={!online} onClick={() => cancelRecord(p)}>{cx === "ask" ? "Натисніть ще раз — скасувати" : cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button><button type="button" className={`v3-pay-del${del === "ask" ? " is-ask" : ""}`} disabled={!online || del === "busy"} onClick={() => deleteRecord(p)} aria-label={del === "ask" ? `Підтвердити видалення запису №${p.id}` : `Видалити запис №${p.id} повністю`} title="Видалити запис повністю">{del === "ask" ? "Видалити?" : <Trash2 size={16} aria-hidden="true" />}</button></div>
           <p className="v3-pay-hint">«Скасувати запис» — помилкова оплата (дубль). «Повернути гроші» — коли ви повернули кошти людині.</p>
-        </> : <p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p>}
+        </> : <div className="v3-pay-closed"><p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p><button type="button" className={`v3-pay-del${del === "ask" ? " is-ask" : ""}`} disabled={!online || del === "busy"} onClick={() => deleteRecord(p)} aria-label={del === "ask" ? `Підтвердити видалення запису №${p.id}` : `Видалити запис №${p.id} повністю`} title="Видалити запис повністю">{del === "ask" ? "Видалити?" : <Trash2 size={16} aria-hidden="true" />}</button></div>}
       </div>
     );
   };
@@ -323,12 +351,17 @@ export default function Payments() {
     </div>
   );
 
+  const refNeedle = qRef.trim().replace(/^[@№#]/, "").toLowerCase();
+  const refundsShown = (refunds || []).filter((p) => !refNeedle || String(p.id) === refNeedle || (p.username || "").toLowerCase().includes(refNeedle) || (p.refundReason || "").toLowerCase().includes(refNeedle));
   const refundsTab = (
+    <>
+    <PaneSearch value={qRef} onChange={setQRef} label="Пошук повернень" placeholder="№, логін або причина" />
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
         <div className="v3-pay-sec-h"><h2>Повернення</h2><p>Записи про гроші, які ви повернули вручну. Підписка в цей момент скасовується.</p></div>
         {refunds === null ? <div className="v3-pay-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
-          : refunds.length ? <div className="v3-pay-rows a">{refunds.map((p, i) => (
+          : refNeedle && !refundsShown.length && refunds.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>За запитом «{qRef.trim()}» повернень немає.</span></div>
+          : refundsShown.length ? <div className="v3-pay-rows a">{refundsShown.map((p, i) => (
             <div key={p.id} className="v3-pay-row is-ref" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
               <span className="v3-pay-no">№{p.id}</span>
               <span className="v3-pay-plan"><strong>@{p.username}</strong><small>{dShort(p.refundedAt || p.paidOn)}</small></span>
@@ -345,6 +378,7 @@ export default function Payments() {
         <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-go" onClick={() => setTab("pay")}>Відкрити оплати<ArrowRight size={14} aria-hidden="true" /></button>
       </aside>
     </section>
+    </>
   );
 
   return (
@@ -413,7 +447,7 @@ export default function Payments() {
             </section>
           ) : mobileList)}
           {tab === "ref" && refundsTab}
-          {tab === "promo" && <PromoTab promos={promos} online={online} onToggle={togglePromo} max={promoMax} onCreated={(p) => { setPromos((l) => [p, ...(l || [])]); }} />}
+          {tab === "promo" && <><PaneSearch value={qPromo} onChange={setQPromo} label="Пошук промокодів" placeholder="Код промокоду" /><PromoTab query={qPromo} promos={promos} online={online} onToggle={togglePromo} max={promoMax} onCreated={(p) => { setPromos((l) => [p, ...(l || [])]); }} /></>}
         </div>
       </>}
 
@@ -426,7 +460,7 @@ export default function Payments() {
       {whoUser && <GrantProDialog user={whoUser} open={userDlg === "pro"} onOpenChange={(o) => setUserDlg(o ? "pro" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
       {whoUser && <RefundDialog user={whoUser} payment={lastRecorded ? asPayment(lastRecorded) : null} open={userDlg === "refund"} onOpenChange={(o) => setUserDlg(o ? "refund" : null)} onDone={() => { load({ quiet: true }); loadSide(); fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
       {whoUser && <CancelSubscriptionDialog user={whoUser} open={userDlg === "cancel"} onOpenChange={(o) => setUserDlg(o ? "cancel" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
-      <ReceiptDialog data={receipt} username={receipt?.username || ""} onOpenChange={(o) => { if (!o) setReceipt(null); }} />
+      <ReceiptDialog data={receipt} username={receipt?.username || ""} onOpenChange={(o) => { if (!o) setReceipt(null); }} sendBlock={receiptSendBlock} />
     </div>
   );
 }
@@ -458,7 +492,9 @@ function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; 
 }
 
 /** Промокоди: список із заповненням смужок, увімкнення з «Скасувати», створення нового. */
-function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void }) {
+function PromoTab({ promos, online, onToggle, max, onCreated, query = "" }: { promos: PromoCode[] | null; online: boolean; onToggle: (p: PromoCode) => void; max: (p: PromoCode) => number; onCreated: (p: PromoCode) => void; query?: string }) {
+  const needle = query.trim().toUpperCase();
+  const shownPromos = (promos || []).filter((p) => !needle || p.code.toUpperCase().includes(needle));
   const [code, setCode] = useState("");
   const [pctV, setPctV] = useState("25");
   const [plan, setPlan] = useState<"basic" | "pro">("pro");
@@ -503,7 +539,8 @@ function PromoTab({ promos, online, onToggle, max, onCreated }: { promos: PromoC
         <div className="v3-pay-sec-h"><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div>
         <div className="v3-pay-th is-promo" role="row"><span>Код</span><span>Знижка</span><span>План</span><span>Використано</span><span>Діє</span><span className="v3-pay-r">Стан</span></div>
         {promos === null ? <div className="v3-pay-row is-skel is-promo" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
-          : promos.length ? <div className="v3-pay-rows a">{promos.map((p, i) => {
+          : needle && !shownPromos.length && promos.length ? <div className="v3-pay-empty"><strong>Нічого не знайдено</strong><span>Промокоду «{query.trim()}» немає.</span></div>
+          : shownPromos.length ? <div className="v3-pay-rows a">{shownPromos.map((p, i) => {
             const st = promoState(p, today); const ui = PROMO_UI[st];
             return (
               <div key={p.id} className={`v3-pay-row is-promo${st === "ended" || st === "off" ? " is-dim" : ""}${fresh === p.code ? " is-new" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>

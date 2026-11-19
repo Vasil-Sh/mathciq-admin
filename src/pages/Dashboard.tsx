@@ -107,9 +107,15 @@ export default function Dashboard() {
     if (st.status === "fulfilled") setSettings(st.value);
     if (s.status === "fulfilled") {
       setStats(s.value); setError(""); setUpdatedAt(hhmm()); setLoadedAt(Date.now());
-      if (manual) { setRefreshDone(true); window.setTimeout(() => setRefreshDone(false), 1400); }
+      if (manual) {
+        setRefreshDone(true); window.setTimeout(() => setRefreshDone(false), 1400);
+        toast.success("Дані оновлено", { id: "data-refreshed", description: `Станом на ${hhmm()}` });
+      }
     }
-    else setError((s.reason as Error)?.message || "Сервер не відповідає");
+    else {
+      setError((s.reason as Error)?.message || "Сервер не відповідає");
+      if (manual) toast.error("Не вдалося оновити", { id: "data-refreshed", description: "Показуємо останні отримані дані" });
+    }
     if (u.status === "fulfilled") { setUsers(u.value); setUsersError(false); } else setUsersError(true);
     setLoading(false);
     setRefreshing(false);

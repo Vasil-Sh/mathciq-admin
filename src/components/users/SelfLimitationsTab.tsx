@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Lock } from "lucide-react";
+import { Lock, Search, X } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { api } from "@/lib/apiClient";
 import { plural, periodLabel } from "@/lib/dashboardInsights";
@@ -20,6 +20,7 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
   const [rows, setRows] = useState<Req[] | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"active" | "done">("active");
+  const [q, setQ] = useState("");
   useEffect(() => {
     api.get<{ requests: Req[] }>("/admin/self-limitations")
       .then((r) => { setRows(r.requests || []); })
@@ -29,10 +30,14 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
   const active = list.filter((r) => r.status === "applied" && r.until && Date.parse(r.until) > Date.now());
   const done = list.filter((r) => !active.includes(r));
   useEffect(() => { if (rows) onCount?.(active.length); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
-  const shown = tab === "active" ? active : done;
+  // Search by login or Telegram, same as the users list
+  const needle = q.trim().replace(/^@/, "").toLowerCase();
+  const hit = (r: Req) => !needle || r.username.toLowerCase().includes(needle) || (r.telegram || "").toLowerCase().replace(/^@/, "").includes(needle);
+  const shown = (tab === "active" ? active : done).filter(hit);
 
   return (
     <section className="v3-excl">
+      <label className="v3-msearch v3-excl-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук у самообмеженнях" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
       <div className="v3-wcard v3-excl-list">
         <div className="v3-excl-head">
           <div><h2 className="v3-h2">Запити на самообмеження</h2><p className="v3-note-dark">Користувач сам блокує свій акаунт на обраний термін. Блок застосовується одразу.</p></div>
@@ -43,7 +48,7 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
           </div>
         </div>
         {error ? <p className="v3-field-error" role="alert">Не вдалося завантажити запити: {error}</p> : !rows ? <p className="v3-note-dark" role="status">Завантаження…</p> : shown.length === 0 ? (
-          <p className="v3-excl-empty">{tab === "active" ? "Зараз ніхто не обмежив себе." : "Завершених запитів ще немає."}</p>
+          <p className="v3-excl-empty">{needle ? `За запитом «${q.trim()}» нікого не знайдено.` : tab === "active" ? "Зараз ніхто не обмежив себе." : "Завершених запитів ще немає."}</p>
         ) : (
           <div role="table" aria-label="Самообмеження">
             <div className="v3-excl-row v3-excl-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Термін</span><span role="columnheader">Заблоковано до</span><span role="columnheader">Подано</span></div>

@@ -317,3 +317,34 @@ button.v3-pay-row { cursor: pointer; }
 .v3-pay-mcard { grid-template-columns: 40px minmax(0, 1fr) auto; }
 .v3-pay-mcard.is-skel { grid-template-columns: minmax(0, 1fr) auto; }
 .v3-pay-mav { width: 40px; height: 40px; }
+.v3-pay-psearch { margin-bottom: 12px; }
+
+/* «Скасувати запис» + trash icon (removes the record completely; second tap confirms) */
+.v3-pay-cxrow { display: flex; gap: 8px; align-items: stretch; }
+.v3-pay-cxrow > .v3-pay-cx { flex: 1 1 auto; min-width: 0; }
+.v3-pay-del { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 48px; min-height: 48px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 122, 102, .35); background: #161b24; color: #ff9a88; font: 600 13px Inter, sans-serif; cursor: pointer; transition: background-color .2s, color .2s, border-color .2s; }
+.v3-pay-del.is-ask { background: #e5533f; border-color: #e5533f; color: #fff; }
+.v3-pay-del:disabled { opacity: .5; cursor: default; }
+@media (hover: hover) { .v3-pay-del:not(:disabled):not(.is-ask):hover { background: rgba(229, 83, 63, .14); } }
+.v3-pay-closed { display: flex; align-items: center; gap: 12px; }
+.v3-pay-closed .v3-pay-hint { flex: 1 1 auto; margin: 0; }
+
+/* ── Solid controls: the star field must not show through tabs, chips, dropdowns or counters ── */
+.v3-dd-btn, .v3-pay-tab, .v3-bt-mtab, .v3-fchip, .v3-bt-allbtn { background-color: var(--v3-card); }
+.v3-pay-tab-n, .v3-bt-mtab-n, .v3-fchip-n:not(.is-exp):not(.is-age) { background-color: #2a303b; }
+
+/* ── Payments tabs on the phone: same build as the «Ставки» game tabs (taller, bigger counter) ── */
+@media (max-width: 767px) {
+  .v3-pay-tabs { grid-template-columns: auto auto auto; gap: 6px; width: 100%; }
+  .v3-pay-tab { justify-content: flex-start; min-height: 46px; gap: 6px; padding: 0 8px 0 5px; font-size: 13px; letter-spacing: -.01em; }
+  .v3-pay-tab-n { min-width: 28px; height: 28px; padding: 0 6px; font-size: 12px; }
+}
+
+/* ── Phone text: placeholders are light and thin (clearly a hint, not a value);
+      dropdowns and «Показати всіх» use one size ── */
+.v3-msearch input { font-weight: 400; }
+.v3-msearch input::placeholder { color: #6f7889; font-weight: 300; opacity: 1; }
+@media (max-width: 767px) {
+  .v3-mselect-dd .v3-dd-btn, .v3-bt-allbtn { font-size: 14px; }
+  .v3-bt-allbtn { font-weight: 500; }
+}

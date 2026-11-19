@@ -150,7 +150,7 @@ export function CancelPaymentDialog({ payment, onOpenChange, onDone }: { payment
 }
 
 /** «Чек» — the same image the user receives; can be sent to the user's Telegram. */
-export function ReceiptDialog({ data, username, onOpenChange }: { data: { image: string; payment: Payment } | null; username: string; onOpenChange: (o: boolean) => void }) {
+export function ReceiptDialog({ data, username, onOpenChange, sendBlock = null }: { data: { image: string; payment: Payment } | null; username: string; onOpenChange: (o: boolean) => void; /** Why «У Telegram» is off (no Telegram / bot not started), or null. */ sendBlock?: string | null }) {
   const [sending, setSending] = useState(false);
   async function copy() {
     if (!data) return;
@@ -185,8 +185,9 @@ export function ReceiptDialog({ data, username, onOpenChange }: { data: { image:
         <div className="v3-receipt-tools">
           <button type="button" className="v3-btn v3-btn-ghost" onClick={() => data && savePaymentReceipt(data.image, data.payment.id)}><Download size={15} aria-hidden="true" /><span className="v3-hide-mobile">Завантажити PNG</span><span className="v3-only-mobile">Зберегти PNG</span></button>
           <button type="button" className="v3-btn v3-btn-ghost v3-hide-mobile" onClick={copy}><Copy size={15} aria-hidden="true" />Копіювати</button>
-          <button type="button" className="v3-btn v3-btn-blue v3-receipt-send" onClick={send} disabled={sending}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : <><span className="v3-hide-mobile">Надіслати в Telegram</span><span className="v3-only-mobile">У Telegram</span></>}</button>
+          <button type="button" className="v3-btn v3-btn-blue v3-receipt-send" onClick={send} disabled={sending || !!sendBlock} title={sendBlock || undefined}><Send size={15} aria-hidden="true" />{sending ? "Надсилаємо…" : <><span className="v3-hide-mobile">Надіслати в Telegram</span><span className="v3-only-mobile">У Telegram</span></>}</button>
         </div>
+        {sendBlock && <p className="v3-receipt-note" role="note">{sendBlock}</p>}
       </DialogContent>
     </Dialog>
   );
