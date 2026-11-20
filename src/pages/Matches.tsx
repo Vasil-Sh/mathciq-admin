@@ -12,7 +12,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchParserEvents, fetchTeamCatalog, linkMatch, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
@@ -102,6 +102,9 @@ export default function Matches() {
   useEffect(() => setTLimit(80), [tq, tf, tg]);
   // Усі команди з пакетів логотипів — довідник не тільки з тих, що грали останні 30 днів
   const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
+  // Команди, видалені з довідника (розпалися, але лишились у пакеті логотипів)
+  const [hidden, setHidden] = useState<HiddenTeam[]>([]);
+  useEffect(() => { fetchHiddenTeams().then(setHidden).catch(() => {}); }, []);
   useEffect(() => { let off = false; fetchTeamCatalog().then((c) => { if (!off) setCatalog(c); }).catch(() => {}); return () => { off = true; }; }, []);
   const [selTeam, setSelTeam] = useState<string | null>(null);
   // Адмінські дані: псевдоніми, правки, рішення, журнал парсерів
@@ -193,7 +196,10 @@ export default function Matches() {
   const betsFor = useCallback((m: Match) => recent.filter((b) => betMatches(b, m)), [recent]);
   const known = useMemo(() => [...all, ...history.map(withLogo)], [all, history, withLogo]);
   const groups = useMemo(() => (bets ? manualGroups(recent, known).filter((x) => !decided.has(linkKey(x.game, x.t1, x.t2, x.day))) : []), [bets, recent, known, decided, aliases]);
-  const teams = useMemo(() => mergeCatalog(teamsFrom(known), catalog), [known, catalog, aliases]);
+  const teams = useMemo(() => {
+    const off = new Set(hidden.map((h) => `${h.game}:${normTeam(h.name)}`));
+    return mergeCatalog(teamsFrom(known), catalog).filter((t) => !off.has(t.key));
+  }, [known, catalog, aliases, hidden]);
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
@@ -275,6 +281,21 @@ export default function Matches() {
       if ((e as { status?: number })?.status === 404) { setEdit(null); toast("Ручних правок немає", { description: "Матч і так показує дані парсера" }); }
       else toast.error("Не вдалося скинути правку", { description: errText(e) });
     }
+    setSaving("");
+  };
+  const removeTeam = async (t: Team) => {
+    const k = `delteam:${t.key}`;
+    if (ask !== k) { setAsk(k); window.setTimeout(() => setAsk((a) => (a === k ? "" : a)), 4000); return; }
+    setAsk(""); setSaving(t.key);
+    try {
+      const h = await hideTeam({ game: t.game, name: t.name });
+      setHidden((xs) => [...xs.filter((x) => x.id !== h.id), h]);
+      setSelTeam(null); setSheet(false);
+      toast.success("Команду видалено з довідника", {
+        description: `${t.name} · ${GAME_LABEL[t.game]}`,
+        action: { label: "Повернути", onClick: async () => { try { await unhideTeam(h.id); setHidden((xs) => xs.filter((x) => x.id !== h.id)); toast.info("Команду повернуто", { description: t.name }); } catch (e) { toast.error("Не вдалося повернути", { description: errText(e) }); } } },
+      });
+    } catch (e) { toast.error("Не вдалося видалити команду", { description: errText(e) }); }
     setSaving("");
   };
   const removeManual = async (m: Match) => {
@@ -561,7 +582,8 @@ export default function Matches() {
   const tSel = tList.find((t) => t.key === selTeam) || (wide ? tList[0] : undefined) || null;
   const teamDetail = (t: Team) => (
     <div className="v3-mx-detail">
-      <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div></div>
+      <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div>
+        {t.matches === 0 && <button type="button" className={`v3-mx-tdel${ask === `delteam:${t.key}` ? " is-ask" : ""}`} disabled={!online || saving === t.key} onClick={() => removeTeam(t)} aria-label={`Видалити ${t.name} з довідника`} title="Видалити з довідника"><Trash2 size={16} aria-hidden="true" />{ask === `delteam:${t.key}` && <span>Видалити?</span>}</button>}</div>
       <div className="v3-mx-kv is-3"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Рейтинг</span><strong>{t.rank != null ? `#${t.rank}` : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
       {(() => { const tn = normTeam(t.name); const mine = known.filter((m) => m.game === t.game && (normTeam(m.t1) === tn || normTeam(m.t2) === tn)); const now = Date.now();
         const m = mine.filter((x) => x.ts >= now).sort((a, b) => a.ts - b.ts)[0] || mine.sort((a, b) => b.ts - a.ts)[0]; if (!m) return null;

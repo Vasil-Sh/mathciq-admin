@@ -101,6 +101,7 @@ export function describe(e: Entry): View {
     return { ...base, kind: "ad", verb: e.action === "POST" ? "додав Telegram-групу" : e.action === "DELETE" ? "видалив Telegram-групу" : "оновив Telegram-групу", target: nm ? String(nm) : "група", meta: "Реклама · Telegram-групи" };
   }
   if (t.startsWith("/admin/telegram-groups")) return { ...base, kind: "ad", verb: t.endsWith("/approve") ? "схвалив групу" : "відхилив групу", target: String(d.name || d.groupName || "групу"), meta: "Модерація Telegram-груп" };
+  if (t.startsWith("/admin/hidden-teams")) return { ...base, kind: "set", verb: e.action === "DELETE" ? "повернув команду в довідник" : "видалив команду з довідника", target: String(d.name || "команду"), chips: [], meta: `Матчі · команди${d.game ? ` · ${d.game === "dota2" ? "Dota 2" : "CS2"}` : ""}` };
   if (t === "/admin/settings") return { ...base, kind: "set", verb: "змінив налаштування", target: "застосунку", meta: "Налаштування застосунку" };
   if (t === "/admin/audit/cleanup") return { ...base, kind: "set", verb: "очистив старі записи", target: "журналу", chips: [{ k: "Старші ніж", from: "—", to: `${d.days} днів` }, { k: "Видалено", from: "—", to: String(d.removed ?? 0) }], meta: "Записи видалено назавжди" };
   return { ...base, kind: "user", verb: e.action === "POST" ? "створив" : e.action === "DELETE" ? "видалив" : "змінив", target: t, meta: t };

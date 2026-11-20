@@ -46,6 +46,10 @@ const notFound = (e: unknown) => (e as { status?: number })?.status === 404;
 export const fetchAliases = async () => (await api.get<{ aliases: TeamAlias[] }>("/admin/team-aliases")).aliases || [];
 export const createAlias = (b: { game: Game; canonical: string; alias: string }) => api.post<TeamAlias>("/admin/team-aliases", b);
 export const deleteAlias = (id: number) => api.delete(`/admin/team-aliases/${id}`);
+export interface HiddenTeam { id: number; game: Game; name: string; createdBy: string; createdAt: string }
+export const fetchHiddenTeams = async () => (await api.get<{ teams: HiddenTeam[] }>("/admin/hidden-teams")).teams || [];
+export const hideTeam = (b: { game: Game; name: string }) => api.post<HiddenTeam>("/admin/hidden-teams", b);
+export const unhideTeam = (id: number) => api.delete(`/admin/hidden-teams/${id}`);
 
 export const createManualMatch = (b: { game: Game; team1: string; team2: string; tournament?: string; bo?: string; startDate: string; status?: AdminStatus }) => api.post<ManualMatch>("/admin/manual-matches", b);
 export const deleteManualMatch = (id: string) => api.delete(`/admin/manual-matches/${encodeURIComponent(id)}`);

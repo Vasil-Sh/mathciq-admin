@@ -40,6 +40,8 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [device, setDevice] = useState<"desk" | "phone">("desk");
+  // Телефон: форма й попередній перегляд — дві вкладки, а не одна довга стрічка
+  const [pane, setPane] = useState<"form" | "prev">("form");
   const input = useRef<HTMLInputElement>(null);
   const initial = useRef("");
 
@@ -104,13 +106,25 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
   );
   const appRows = (n: number) => Array.from({ length: n }, (_, i) => <div key={i} className="v3-bed-row"><i /><i /></div>);
 
+  const foot = (cls: string) => (
+          <div className={`v3-bed-foot${cls}`}>
+            {banner && <button type="button" className={`v3-bed-del${del === "ask" ? " is-ask" : ""}`} disabled={!online} onClick={() => askDelete(banner)}><Trash2 size={15} aria-hidden="true" />{del === "ask" ? "Точно видалити?" : "Видалити банер"}</button>}
+            <span className="v3-bed-sp" />
+            <button type="button" className="v3-btn v3-btn-ghost" onClick={onClose}>Скасувати</button>
+            <SaveButton saving={saving} disabled={!canSave} onClick={save} />
+          </div>
+  );
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="v3-modal v3-bed" aria-describedby="bed-sub">
+      <DialogContent className={`v3-modal v3-bed${pane === "prev" ? " is-prev" : ""}`} aria-describedby="bed-sub">
         <div className="v3-bed-form">
           <div className="v3-bed-head">
             <div><DialogTitle className="v3-bed-title">{banner ? "Редагувати банер" : "Новий банер"}</DialogTitle><DialogDescription id="bed-sub" className="v3-bed-sub">{scr.label} · слот {f.slot}{banner?.createdAt ? ` · створено ${shortDay(banner.createdAt.slice(0, 10))}` : ""}{dirty && banner ? " · є незбережені зміни" : ""}</DialogDescription></div>
             <button type="button" className="v3-bed-x" aria-label="Закрити" onClick={onClose}><X size={16} /></button>
+          </div>
+          <div className="v3-bed-mtabs" role="tablist" aria-label="Редактор банера">
+            <button type="button" role="tab" aria-selected={pane === "form"} className={pane === "form" ? "is-on" : ""} onClick={() => setPane("form")}>Банер</button>
+            <button type="button" role="tab" aria-selected={pane === "prev"} className={pane === "prev" ? "is-on" : ""} onClick={() => setPane("prev")}>Перегляд</button>
           </div>
 
           <section className="v3-bed-sec">
@@ -169,12 +183,7 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
           </section>
 
           {!online && <div className="v3-bed-alert is-warn" role="status"><AlertTriangle size={16} aria-hidden="true" /><span>Немає інтернету. Зміни банерів не збережуться — дочекайтесь з’єднання.</span></div>}
-          <div className="v3-bed-foot">
-            {banner && <button type="button" className={`v3-bed-del${del === "ask" ? " is-ask" : ""}`} disabled={!online} onClick={() => askDelete(banner)}><Trash2 size={15} aria-hidden="true" />{del === "ask" ? "Точно видалити?" : "Видалити банер"}</button>}
-            <span className="v3-bed-sp" />
-            <button type="button" className="v3-btn v3-btn-ghost" onClick={onClose}>Скасувати</button>
-            <SaveButton saving={saving} disabled={!canSave} onClick={save} />
-          </div>
+          {foot("")}
         </div>
 
         <aside className="v3-bed-prev" aria-label="Попередній перегляд">
@@ -205,6 +214,7 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
             <div><span>Місце</span><strong>{scr.label} · слот {f.slot}</strong></div>
           </div>
         </aside>
+        {foot(" is-mprev")}
       </DialogContent>
     </Dialog>
   );

@@ -108,6 +108,7 @@
 .v3-bed > button.absolute { display: none; }
 .v3-bed-form { padding: 30px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; color: var(--v3-ink); scrollbar-width: thin; min-height: 0; max-height: calc(100dvh - 48px); }
 .v3-bed-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.v3-bed-mtabs, .v3-bed-foot.is-mprev { display: none; }
 .v3-bed-title { margin: 0; font-size: 26px; font-weight: 500; letter-spacing: -.025em; color: var(--v3-ink); }
 .v3-bed-sub { margin: 6px 0 0; color: #5f6878; font-size: 13px; }
 .v3-bed-x { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #dde1e7; background: #fff; color: #3e4656; cursor: pointer; flex-shrink: 0; }
@@ -184,7 +185,7 @@
 }
 @media (max-width: 767px) {
   /* same height as the other sheets — clear of the status bar, room above to pull it down */
-  .v3-modal.v3-bed[data-state] { width: 100%; border-radius: 28px 28px 0 0; }
+  .v3-modal.v3-bed[data-state] { width: 100%; max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 48px)); border-radius: 28px 28px 0 0; background: #fff; }
   .v3-bed-form { padding: 30px 18px 18px; }
   .v3-bed-prev { padding: 18px; }
   .v3-bed-opts { flex-direction: column; }
@@ -194,6 +195,17 @@
   .v3-bed-del { order: 3; width: 100%; justify-content: center; border: 1px solid rgba(214, 60, 42, .3); border-radius: 999px; }
   .v3-bed-sp { display: none; }
   .v3-bed-head .v3-bed-x { width: 36px; height: 36px; }
+}
+/* Телефон: «Банер» і «Перегляд» — дві вкладки; кнопки збереження внизу в обох */
+@media (max-width: 767px) {
+  .v3-bed-mtabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #eef1f6; }
+  .v3-bed-mtabs button { flex: 1; min-height: 38px; border: 0; border-radius: 999px; background: transparent; color: #5f6878; font: 600 13px Inter, sans-serif; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
+  .v3-bed-mtabs button.is-on { background: #fff; color: var(--v3-ink); box-shadow: 0 1px 4px rgba(16, 24, 40, .12); }
+  .v3-modal.v3-bed:not(.is-prev) .v3-bed-prev { display: none; }
+  .v3-modal.v3-bed.is-prev .v3-bed-form > :not(.v3-bed-head):not(.v3-bed-mtabs) { display: none; }
+  .v3-modal.v3-bed.is-prev .v3-bed-form { padding-bottom: 14px; }
+  .v3-modal.v3-bed.is-prev .v3-bed-prev { margin: 0 12px; border-radius: 24px; animation: v3-fade-in .25s ease-out; }
+  .v3-modal.v3-bed.is-prev .v3-bed-foot.is-mprev { display: flex; margin: 0 18px; bottom: 0; padding: 12px 0 calc(10px + env(safe-area-inset-bottom, 0px)); }
 }
 /* Mobile slot cards keep the light card from the design */
 @media (max-width: 1179px) { .v3-bn-slots { flex-basis: 100%; } }
@@ -365,13 +377,13 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 .v3-ad-nostats small { color: #8c95a6; font-size: 13px; }
 @media (max-width: 767px) {
   /* One row of chips that scrolls sideways and snaps the active one to the centre */
-  .v3-ads-tabs { display: flex; gap: 6px; margin: 0 -16px; padding: 2px 16px; border: 0; border-radius: 0; background: none; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
+  .v3-ads-tabs { display: flex; gap: 6px; margin: 0 -16px; padding: 2px 16px; border: 0; border-radius: 0; background: none; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
   .v3-ads-tabs::-webkit-scrollbar { display: none; }
   .v3-ads-tabs > .v3-pill { display: none; }
   .v3-ads-tabs .v3-ptab { flex-shrink: 0; gap: 6px; min-height: 44px; padding: 0 14px 0 6px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); font-size: 13px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
   .v3-ads-tabs .v3-ptab svg { order: -1; margin-left: 8px; }
   .v3-ads-tabs .v3-ptab span { order: -1; display: inline-grid; min-width: 24px; height: 24px; background: rgba(255, 255, 255, .12); color: inherit; font-weight: 700; }
-  .v3-ads-tabs.has-pill > .v3-ptab.is-on, .v3-ads-tabs > .v3-ptab.is-on { background: #3a6df0; border-color: #3a6df0; box-shadow: 0 6px 18px rgba(58, 109, 240, .35); scroll-snap-align: center; }
+  .v3-ads-tabs.has-pill > .v3-ptab.is-on, .v3-ads-tabs > .v3-ptab.is-on { background: #3a6df0; border-color: #3a6df0; box-shadow: 0 6px 18px rgba(58, 109, 240, .35); }
   .v3-ads-tabs .v3-ptab.is-on span { background: #fff; color: #2a55c8; }
   .v3-ads-tabs .v3-ptab:not(:disabled):active { transform: scale(.96); }
   .v3-ad-places { padding: 16px; }

@@ -292,3 +292,11 @@
   .v3-mx-zero-card { align-items: center; text-align: center; }
   .v3-mx-none { padding: 36px 18px; }
 }
+
+/* Команда: видалити з довідника (лише без матчів) — праворуч у шапці, другий тап підтверджує */
+.v3-mx-th > div { flex: 1 1 auto; min-width: 0; }
+.v3-mx-tdel { flex-shrink: 0; align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 40px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 110, 100, .35); background: rgba(229, 72, 77, .08); color: #ff8a7a; font: 600 13px Inter, sans-serif; cursor: pointer; transition: background .2s, color .2s, border-color .2s, transform .15s; }
+.v3-mx-tdel:hover { background: rgba(229, 72, 77, .16); }
+.v3-mx-tdel:active { transform: scale(.95); }
+.v3-mx-tdel.is-ask { background: #e5484d; border-color: #e5484d; color: #fff; animation: v3-fade-in .2s ease-out; }
+.v3-mx-tdel:disabled { opacity: .5; cursor: default; }
