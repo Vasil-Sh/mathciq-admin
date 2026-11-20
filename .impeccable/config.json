@@ -8,6 +8,15 @@
         "value": "inter",
         "createdAt": "2026-11-20T12:41:47.047Z",
         "reason": "Project design system: Inter is the admin's single typeface across every v3 stylesheet and all design boards; changing it is out of scope"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/styles/v3-settings.css"
+        ],
+        "createdAt": "2026-11-20T20:36:17.544Z",
+        "reason": "Approved design «10 · Налаштування»: the «Ви тут» scroll-spy pill in «Показати все» has a 3px inset left marker (.sidepill.here); code must match the design"
       }
     ]
   }
