@@ -36,14 +36,17 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
   const issues = textIssues(f.buttonText);
   const linkBad = !!f.link && !/^https?:\/\/\S+$/i.test(f.link);
 
-  async function toggleGlobal(key: "adsOddsInList" | "adsMatchDetails") {
-    const next = !(settings?.[key] ?? true);
+  // Перемикач реагує одразу; запит іде у фоні, а якщо не вдасться — повертаємо як було
+  async function toggleGlobal(key: "adsOddsInList" | "adsMatchDetails", want?: boolean) {
+    const next = want ?? !(settings?.[key] ?? true);
     const name = key === "adsOddsInList" ? "Коефіцієнти в списку матчів" : "Деталі матчу";
+    const before = settings;
+    if (before) setSettings({ ...before, [key]: next });
     try {
       setSettings(await updateSettings({ [key]: next }));
       if (next) toast.success(`«${name}» увімкнено`, { description: "Партнери знову показуються на цьому місці" });
-      else toast.success(`«${name}» вимкнено`, { description: key === "adsOddsInList" ? "Плашки букмекерів зникли з рядків матчів для всіх" : "Блок «Коефіцієнт у партнера» зник для всіх", action: { label: <UndoRing label="Повернути" />, onClick: () => toggleGlobal(key) } });
-    } catch (e) { toast.error("Не вдалося змінити місце показу", { description: (e as Error).message }); }
+      else toast.success(`«${name}» вимкнено`, { description: key === "adsOddsInList" ? "Плашки букмекерів зникли з рядків матчів для всіх" : "Блок «Коефіцієнт у партнера» зник для всіх", action: { label: <UndoRing label="Повернути" />, onClick: () => toggleGlobal(key, true) } });
+    } catch (e) { if (before) setSettings(before); toast.error("Не вдалося змінити місце показу", { description: (e as Error).message }); }
   }
 
   const [shake, setShake] = useState(0);
