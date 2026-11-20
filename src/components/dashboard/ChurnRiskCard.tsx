@@ -1,5 +1,7 @@
 import { useState } from "react";
 import WriteButton from "@/components/dashboard/WriteButton";
+import { composeMessage } from "@/lib/messages";
+import type { AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import { Link } from "react-router-dom";
 import { shortDate } from "@/lib/subscriptions";
@@ -12,7 +14,8 @@ const LIMIT = 5;
 const MOBILE_LIMIT = 3;
 
 /** «Ризик відтоку» — white card, from /admin/users (lastBetDate, lossStreak). */
-export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, thresholdsFromSettings }: { rows: RiskRow[]; inactiveDays: number; lossStreak: number; thresholdsFromSettings: boolean }) {
+export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, thresholdsFromSettings, settings }: { rows: RiskRow[]; inactiveDays: number; lossStreak: number; thresholdsFromSettings: boolean; settings?: AppSettings | null }) {
+  const msg = (r: RiskRow) => composeMessage("tplInactive", settings, r.user, r.idleDays);
   const [tab, setTab] = useState<Tab>("all");
   const [expanded, setExpanded] = useState(false);
 
@@ -64,7 +67,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
                   <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
-                  <span role="cell">{tg ? <WriteButton href={tg} /> : null}</span>
+                  <span role="cell">{tg ? <WriteButton href={tg} message={msg(r)} /> : null}</span>
                 </div>
               );
             })}
@@ -77,7 +80,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                 <li key={r.user.id}>
                   <UserAvatar username={r.user.username} telegram={r.user.telegram} />
                   <span className="v3-ret-who"><strong>@{r.user.username}</strong><small className={r.losing && tab !== "idle" ? "is-red" : undefined}>{r.losing && tab !== "idle" ? streakText(r.streak) : idleText(r)} · до {shortDate(r.user.endDate)}</small></span>
-                  {tg && <WriteButton href={tg} />}
+                  {tg && <WriteButton href={tg} message={msg(r)} />}
                 </li>
               );
             })}

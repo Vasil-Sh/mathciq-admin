@@ -42,6 +42,11 @@ export function isCancelled(u: AdminUserOverview): boolean {
 /** Cancelled «at period end» but still running. */
 export const endsWithoutRenewal = (u: AdminUserOverview) => !!u.subscriptionCancelledAt && u.subscriptionCancelMode === "end" && daysLeft(u) >= 0;
 
+/** «Закінчується за N днів» window from Налаштування → Попередження (7 until the settings load). */
+let expiringWindow = 7;
+export function setExpiringWindow(days: number | undefined | null) { if (days && days > 0) expiringWindow = days; }
+export const getExpiringWindow = () => expiringWindow;
+
 export function statusOf(u: AdminUserOverview): UStatus {
   if (isAdmin(u)) return "admin";
   if (u.selfLimitedUntil) return "blocked";
@@ -50,14 +55,14 @@ export function statusOf(u: AdminUserOverview): UStatus {
   if (!u.endDate || d < 0) return "ended";
   if (u.plan === "trial" && !u.proUntil) return "trial";
   if (d <= 2) return "urgent";
-  if (d <= 7) return "soon";
+  if (d <= expiringWindow) return "soon";
   return "active";
 }
 
-/** Days left when the subscription or trial ends within 7 days (the «закінчуються» badge in the menu), otherwise null. */
+/** Days left when the subscription or trial ends within the «закінчуються» window (menu badge, filter), otherwise null. */
 export function expiringDays(u: AdminUserOverview): number | null {
   const s = statusOf(u), d = daysLeft(u);
-  return s === "urgent" || s === "soon" || (s === "trial" && d <= 7) ? d : null;
+  return s === "urgent" || s === "soon" || (s === "trial" && d <= expiringWindow) ? d : null;
 }
 export const isExpiring = (u: AdminUserOverview) => expiringDays(u) !== null;
 /** Status tag; a trial that ends within 7 days is coloured like any other ending subscription. */
@@ -114,7 +119,7 @@ export function nextCell(u: AdminUserOverview): { text: string; cls: string } {
   }
   if (endsWithoutRenewal(u)) return { text: `${shortDate(u.endDate)} · без продовження`, cls: "" };
   const when = d === 0 ? "сьогодні" : d === 1 ? "завтра" : `через ${d} ${plural(d, "день", "дні", "днів")}`;
-  return { text: d <= 7 ? `${shortDate(u.endDate)} · ${when}` : shortDate(u.endDate), cls: s === "urgent" ? "is-urgent" : s === "soon" ? "is-soon" : "" };
+  return { text: d <= expiringWindow ? `${shortDate(u.endDate)} · ${when}` : shortDate(u.endDate), cls: s === "urgent" ? "is-urgent" : s === "soon" ? "is-soon" : "" };
 }
 
 /** Quick «+N днів» is offered when the subscription ends within 7 days or has ended (not blocked/cancelled/admin). */

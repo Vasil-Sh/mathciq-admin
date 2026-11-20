@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { setExpiringWindow } from "@/lib/usersModel";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowRight, ArrowUp, Check, ChevronRight, Download, MinusCircle, RefreshCw, Sparkles, TrendingUp, UserPlus, Users, Wallet, WifiOff, UserCheck } from "lucide-react";
@@ -14,6 +15,7 @@ import UserAvatar from "@/components/UserAvatar";
 import RollingNumber from "@/components/RollingNumber";
 import PlanDial from "@/components/dashboard/PlanDial";
 import WriteButton from "@/components/dashboard/WriteButton";
+import { composeMessage } from "@/lib/messages";
 import PillTrack from "@/components/PillTrack";
 import SwipeRow from "@/components/dashboard/SwipeRow";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -104,7 +106,7 @@ export default function Dashboard() {
     if (o.status === "fulfilled") setOverview(o.value);
     if (p.status === "fulfilled") setParsers(p.value);
     if (t.status === "fulfilled") setTickets(t.value);
-    if (st.status === "fulfilled") setSettings(st.value);
+    if (st.status === "fulfilled") { setExpiringWindow(st.value.expiringDays); setSettings(st.value); }
     if (s.status === "fulfilled") {
       setStats(s.value); setError(""); setUpdatedAt(hhmm()); setLoadedAt(Date.now());
       if (manual) {
@@ -479,7 +481,7 @@ export default function Dashboard() {
               <li key={user.id}>
                 <UserAvatar username={user.username} telegram={user.telegram} className="v3-av-sm" />
                 <span className="v3-pay-who"><Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link><small>закінчилась {ended}{tenure && ` · ${tenure}`}</small></span>
-                {tg && <WriteButton href={tg} dark />}
+                {tg && <WriteButton href={tg} dark message={composeMessage("tplLapsed", settings, user)} />}
               </li>
             );
           })}
@@ -488,7 +490,7 @@ export default function Dashboard() {
       <div className="v3-feed-foot"><Link to={feedTab === "pay" ? "/payments" : "/users?status=expired"} className="v3-head-link">{feedTab === "pay" ? "Усі оплати" : "Усі, хто не продовжив"} <span className="v3-ar" aria-hidden="true">→</span></Link></div>
     </section>
   );
-  const retCard = retTotal > 0 ? <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} byMonth={stats.retention.byMonth} focusMonth={period === "year" || period === now.key ? prevKey(now.key) : period} list={churned} /> : null;
+  const retCard = retTotal > 0 ? <RetentionCard retained={stats.retention.retained} churned={stats.retention.churned} byMonth={stats.retention.byMonth} focusMonth={period === "year" || period === now.key ? prevKey(now.key) : period} list={churned} settings={settings} /> : null;
   const plansBlock = (cls: string) => (
                 <div className={`v3-plans ${cls}`}>
                   <div className="v3-plans-head"><h3>{overview ? "Активні за тарифами" : "Користувачі за тарифами"}</h3><span>{view.planTotal} {overview ? plural(view.planTotal, "активний", "активні", "активних") : "усього"}</span></div>
@@ -503,7 +505,7 @@ export default function Dashboard() {
     <aside className="v3-wcard v3-calm-mini" aria-label="Потребує уваги">
       <div className="v3-calm-mini-head">
         <span className="v3-calm-ok"><Check size={18} strokeWidth={2.6} aria-hidden="true" /></span>
-        <div><h2 className="v3-h2">Усе спокійно</h2><p className="v3-note-dark">Збоїв, звернень і підписок, що закінчуються за 7 днів, немає</p></div>
+        <div><h2 className="v3-h2">Усе спокійно</h2><p className="v3-note-dark">Збоїв, звернень і підписок, що закінчуються за {expDays} {plural(expDays, "день", "дні", "днів")}, немає</p></div>
       </div>
       <div className="v3-calm-mini-grid">
         <div><span>Парсери</span><b>{parsersOk && <i className="v3-calm-dot" aria-hidden="true" />}{parsersOk ? "працюють" : "є збої"}</b></div>
@@ -517,7 +519,7 @@ export default function Dashboard() {
     <aside className="v3-dcard v3-calm-card" aria-label="Потребує уваги">
       <span className="v3-calm-ico"><Check size={26} strokeWidth={1.8} aria-hidden="true" /></span>
       <h2>Усе спокійно</h2>
-      <p><span className="v3-hide-mobile">Підписок, що закінчуються за 7 днів, і незавершених дій немає.</span><span className="v3-only-mobile">Немає підписок, що закінчуються</span></p>
+      <p><span className="v3-hide-mobile">Підписок, що закінчуються за {expDays} {plural(expDays, "день", "дні", "днів")}, і незавершених дій немає.</span><span className="v3-only-mobile">Немає підписок, що закінчуються</span></p>
     </aside>
   );
 
@@ -678,11 +680,11 @@ export default function Dashboard() {
           )}
           {usersError ? <p className="v3-note-dark v3-attn-sub">Не вдалося завантажити користувачів. <button type="button" className="v3-link-btn" onClick={() => load(true)}>Повторити</button></p>
             : expiring.length ? <>
-              <p className="v3-note-dark v3-attn-sub">Підписки, що закінчуються за 7 днів</p>
+              <p className="v3-note-dark v3-attn-sub">Підписки, що закінчуються за {expDays} {plural(expDays, "день", "дні", "днів")}</p>
               <ul className="v3-exp-list">
                 {expiring.map(({ user, days }, i) => (
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
-                    <SwipeRow tg={telegramLink(byId.get(user.id)?.telegram || user.telegram)} onExtend={() => extendSelected([user.id])} extendLabel={`+${extendDays} днів`} hint={i === 0}>
+                    <SwipeRow tg={telegramLink(byId.get(user.id)?.telegram || user.telegram)} message={composeMessage("tplExpiring", settings, { username: user.username, endDate: user.endDate, plan: byId.get(user.id)?.plan, priceMonth: user.priceMonth })} onExtend={() => extendSelected([user.id])} extendLabel={`+${extendDays} днів`} hint={i === 0}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
                       <UserAvatar username={user.username} telegram={byId.get(user.id)?.telegram} />
                       <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(extDoneIds.includes(user.id) ? extendedEndDate(user.endDate, extendDays) : user.endDate)}</small></span>
@@ -728,7 +730,7 @@ export default function Dashboard() {
       {!isEmpty && (retTotal > 0 || (risk && overview)) && (
         <section className="v3-dash-pair">
           {retTotal > 0 && <div className="v3-ret-slot v3-ret-pair">{retCard}</div>}
-          {risk && <ChurnRiskCard rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
+          {risk && <ChurnRiskCard settings={settings} rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
         </section>
       )}
 

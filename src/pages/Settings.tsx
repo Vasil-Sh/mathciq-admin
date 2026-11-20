@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Bell, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
+  AlertTriangle, Bell, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/settingsModel";
 import type { AppSettings } from "@/types";
 import { forgetReceiptTexts } from "@/lib/paymentReceipt";
+import { setExpiringWindow } from "@/lib/usersModel";
 
 type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners";
 const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: string; dark?: boolean }[] = [
@@ -140,6 +141,25 @@ export default function Settings() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
+  // Leaving for another screen of the admin with unsaved changes: ask first (design «Стани · 06»).
+  const navigate = useNavigate();
+  const [leaveTo, setLeaveTo] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!dirty) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as HTMLElement).closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname === location.pathname) return;
+      e.preventDefault(); e.stopPropagation();
+      setLeaveTo(url.pathname + url.search + url.hash);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [dirty]);
+
   const set = <K extends DraftKey>(k: K, v: Draft[K]) => { setCur((c) => ({ ...c, [k]: v })); if (save === "done" || save === "fail") setSave(""); };
 
   // Mark a section as seen (its «нове» badge goes away next time).
@@ -158,25 +178,27 @@ export default function Settings() {
     return "";
   };
 
-  async function doSave() {
-    if (!dirty || save === "busy") return;
+  async function doSave(): Promise<boolean> {
+    if (!dirty || save === "busy") return !dirty;
     const bad = validate();
-    if (bad) { setSave("fail"); setSaveErr(bad); setBarKick((x) => x + 1); return; }
+    if (bad) { setSave("fail"); setSaveErr(bad); setBarKick((x) => x + 1); return false; }
     const patch: Partial<AppSettings> = {};
     for (const k of changed) (patch as Record<string, unknown>)[k] = cur[k];
     const n = changed.length;
     setSave("busy"); setSaveErr("");
     try {
       const r = await saveSettings(patch);
-      setSettings(r.settings); setMeta(r.meta);
+      setSettings(r.settings); setMeta(r.meta); setExpiringWindow(r.settings.expiringDays);
       const d = toDraft(r.settings); setSaved(d); setCur(d);
       if (changed.some((k) => k.startsWith("receipt"))) forgetReceiptTexts();
       setSave("done"); setBarKick((x) => x + 1);
       toast.success("Налаштування збережено", { description: `${n} ${plural(n, "зміна", "зміни", "змін")} · записано в журнал дій` });
       fetchSettingsOverview().then(setOv).catch(() => {});
       window.setTimeout(() => setSave((s) => (s === "done" ? "" : s)), 2600);
+      return true;
     } catch (e) {
       setSave("fail"); setSaveErr((e as Error).message || "Сервер не відповідає"); setBarKick((x) => x + 1);
+      return false;
     }
   }
   const priceChanged = cur.basicPrice !== saved.basicPrice || cur.proPrice !== saved.proPrice;
@@ -283,7 +305,7 @@ export default function Settings() {
           </div>
         </div>
       </div>
-      <div className="v3-st-note"><Lock size={16} aria-hidden="true" /><span><strong>Один пробний період на людину</strong><small>Перевіряємо за Telegram і номером телефону. Повторну реєстрацію позначимо в картці «Пробний уже був».</small></span></div>
+      <div className="v3-st-note"><Lock size={16} aria-hidden="true" /><span><strong>Один пробний період на людину</strong><small>Перевіряємо за Telegram: якщо він уже є в іншому акаунті, пробний не дамо — форма запропонує Базову або Pro.</small></span></div>
     </Section>
   );
   const ai = show("ai") && <AiSection key="ai" all={all} n={n("ai")} badge={badgeOf("ai")} cur={cur} set={set} ov={ov} proPeople={proPeople} perAnalysisUah={perAnalysisUah} monthName={monthName} />;
@@ -353,6 +375,22 @@ export default function Settings() {
           <div key={`m-${mSec}`} className="v3-st-main">{body}</div>
         </div>
       )}
+
+      <Dialog open={!!leaveTo} onOpenChange={(o) => { if (!o && !leaving) setLeaveTo(null); }}>
+        <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
+          <div className="v3-modal-iconrow">
+            <span className="v3-modal-ico is-amber" aria-hidden="true"><AlertTriangle size={22} /></span>
+            <div>
+              <DialogTitle className="v3-modal-title">Залишити без збереження?</DialogTitle>
+              <DialogDescription className="v3-modal-sub">{changed.length === 1 ? `Зміна «${describeChange(changed[0], saved, cur)}» не збережеться.` : `${changed.length} ${plural(changed.length, "зміна", "зміни", "змін")} не збережуться: ${changed.slice(0, 3).map((k) => describeChange(k, saved, cur)).join(", ")}${changed.length > 3 ? "…" : ""}.`}</DialogDescription>
+            </div>
+          </div>
+          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
+            <button type="button" className="v3-btn v3-btn-ghost" disabled={leaving} onClick={() => { const to = leaveTo!; setLeaveTo(null); setCur(saved); navigate(to); }}>Не зберігати</button>
+            <button type="button" className={`v3-btn v3-btn-primary${leaving ? " is-busy" : ""}`} disabled={leaving || !online} onClick={async () => { setLeaving(true); const ok = await doSave(); setLeaving(false); if (ok) { const to = leaveTo!; setLeaveTo(null); navigate(to); } else setLeaveTo(null); }}>{leaving ? "Зберігаємо…" : "Зберегти й перейти"}</button>
+          </div></div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={priceAsk} onOpenChange={setPriceAsk}>
         <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">

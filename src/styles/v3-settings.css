@@ -335,3 +335,4 @@
 .v3-st-tpx textarea:focus-visible, .v3-st-ta:focus-visible { outline: none; }
 .v3-st-item .v3-st-dirty { margin-left: auto; }
 @media (max-width: 639px) { .v3-st-grid3.is-ai { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3-st-grid3.is-ai > .v3-st-f { grid-column: 1 / -1; } .v3-settings .v3-st-stat p { font-size: 22px; flex-wrap: wrap; gap: 4px 8px; } }
+.v3-modal-ico.is-amber { background: #fdf0d8; color: #8a5a00; }

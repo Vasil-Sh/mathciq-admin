@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { composeMessage, copyMessage } from "@/lib/messages";
 import { openTelegram } from "@/lib/telegram";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronDown, ChevronRight, History, KeyRound, Lock, MoreHorizontal, Pencil, Send, Trash2, User as UserIcon } from "lucide-react";
@@ -72,7 +73,10 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
   const ringC = dl !== null && dl < 3 ? "#e5533d" : dl !== null && dl < 7 ? "#f0a03c" : "#00B24B";
   const ringOff = dl === null ? 314 : Math.round(314 * (1 - Math.min(1, Math.max(0, dl) / 30)));
   const tgHandle = tg ? tg.replace(/^t\.me\//, "") : "";
-  const write = () => { if (!tgHandle || wr !== "idle") return; setWr("fly"); openTelegram(tgHandle); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); };
+  // Ended → «Не продовжив»; ends soon → «Закінчується підписка»; otherwise just open the chat.
+  const msgKind = dl === null ? null : dl < 0 ? "tplLapsed" as const : dl <= (settings?.expiringDays || 7) ? "tplExpiring" as const : null;
+  const message = msgKind ? composeMessage(msgKind, settings, { username: user.username, endDate: user.endDate, plan: user.plan, priceMonth: user.priceMonth }) : undefined;
+  const write = () => { if (!tgHandle || wr !== "idle") return; setWr("fly"); copyMessage(message); openTelegram(tgHandle); window.setTimeout(() => setWr("done"), 600); window.setTimeout(() => setWr("idle"), 2600); };
 
   return (
     <aside className={`v3-ucard${mobile ? " is-m" : ""}`} aria-label={`Картка ${user.username}`}>

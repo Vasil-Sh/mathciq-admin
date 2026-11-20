@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { telegramLink, type ChurnedRow } from "@/lib/dashboardInsights";
 import UserAvatar from "@/components/UserAvatar";
 import WriteButton from "@/components/dashboard/WriteButton";
+import { composeMessage } from "@/lib/messages";
+import type { AppSettings } from "@/types";
 import RollingNumber from "@/components/RollingNumber";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
@@ -23,7 +25,7 @@ interface Props {
 }
 
 /** «Утримання» — dark card. Per-month numbers from stats.retention.byMonth, the list from /admin/users. */
-export default function RetentionCard({ retained, churned, byMonth, focusMonth, list }: Props) {
+export default function RetentionCard({ retained, churned, byMonth, focusMonth, list, settings }: Props & { settings?: AppSettings | null }) {
   // Завжди 12 місяців (порожні — «—»), навіть якщо бекенд віддав коротшу історію.
   const keys = lastMonths(focusMonth, 12);
   const months = keys.map((key) => byMonth?.find((m) => m.month === key) || { month: key, ended: 0, renewed: 0 }).map((m) => {
@@ -99,7 +101,7 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`}><strong>@{user.username}</strong></Link>
                     <small><span className="v3-hide-mobile v3-hide-wide">закінчилась {ended}{tenure && ` · ${tenure}`}</span><span className="v3-only-wide">{ended}{tenure && ` · ${tenure.replace(/^з нами (.+)$/, "$1 з нами")}`}</span><span className="v3-only-mobile">не продовжив · {ended}</span></small>
                   </span>
-                  {tg && <WriteButton href={tg} dark />}
+                  {tg && <WriteButton href={tg} dark message={composeMessage("tplLapsed", settings, user)} />}
                 </li>
               );
             })}

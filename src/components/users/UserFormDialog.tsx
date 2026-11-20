@@ -27,10 +27,13 @@ interface Props {
   busy: boolean;
   onOpenChange: (o: boolean) => void;
   onSave: (form: UserForm) => void;
+  /** Who already has this Telegram (a trial is one per person); null if nobody. */
+  telegramTakenBy?: (telegram: string) => string | null;
 }
 
 /** 01 · «Новий користувач» (and the same form to edit an account). */
-export default function UserFormDialog({ mode, open, user, settings, canAppointOwner, roleLock, busy, onOpenChange, onSave }: Props) {
+export default function UserFormDialog({ mode, open, user, settings, canAppointOwner, roleLock, busy, onOpenChange, onSave, telegramTakenBy }: Props) {
+  const trialOn = settings?.trialEnabled !== false;
   const trialDays = settings?.trialDays || 7;
   const subDays = settings?.subscriptionDays || 30;
   const basic = settings?.basicPrice || 300, pro = settings?.proPrice || 600;
@@ -38,7 +41,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
   const [touchedEnd, setTouchedEnd] = useState(false);
   const [initial, setInitial] = useState("");
   const [guard, setGuard] = useState(false);
-  const [err, setErr] = useState<{ login?: string; dates?: string }>({});
+  const [err, setErr] = useState<{ login?: string; dates?: string; tg?: string }>({});
 
   useEffect(() => {
     if (!open) return;
@@ -49,11 +52,11 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
       start({ username: user.username, telegram: user.telegram || "", plan: planOf(user.proUntil ? user.proBasePlan : user.plan), startDate: user.startDate || "", endDate: user.endDate || "", role: user.isOwner ? "owner" : user.role === "admin" ? "admin" : "user", birthDate: user.birthDate || "", ageConfirmed: !!user.ageConfirmed });
     } else {
       const t = isoToday();
-      start({ username: "", telegram: "", plan: "trial", startDate: t, endDate: addDays(t, trialDays - 1), role: "user", birthDate: "", ageConfirmed: false });
+      start({ username: "", telegram: "", plan: trialOn ? "trial" : "basic", startDate: t, endDate: addDays(t, (trialOn ? trialDays : subDays) - 1), role: "user", birthDate: "", ageConfirmed: false });
     }
     setGuard(false);
     setErr({});
-  }, [open, mode, user, trialDays]);
+  }, [open, mode, user, trialDays, trialOn, subDays]);
   const dirty = mode === "edit" && !!initial && initial !== JSON.stringify(f);
 
   // New account: the end date follows the plan until the admin edits it by hand.
@@ -61,7 +64,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
   const isAdminRole = f.role !== "user";
   // Validate on submit and say what to fix next to the field (the button stays enabled).
   const check = () => {
-    const e: { login?: string; dates?: string } = {};
+    const e: { login?: string; dates?: string; tg?: string } = {};
     const u = f.username.trim();
     if (!u) e.login = "Введіть логін";
     else if (!/^[A-Za-z0-9_.-]{2,100}$/.test(u)) e.login = "Логін: від 2 символів, латиниця, цифри, крапка, _ або -";
@@ -69,10 +72,15 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
       if (!f.startDate || !f.endDate) e.dates = "Оберіть дату початку й закінчення";
       else if (f.endDate < f.startDate) e.dates = "Дата закінчення раніше за дату початку — оберіть пізнішу";
     }
+    if (!isAdminRole && mode === "create" && f.plan === "trial" && f.telegram.trim()) {
+      const by = telegramTakenBy?.(f.telegram);
+      if (by) e.tg = `Пробний період уже був: цей Telegram є в акаунті @${by}. Оберіть Базову або Pro.`;
+    }
     setErr(e);
     if (e.login) document.getElementById("uf-login")?.focus();
+    else if (e.tg) document.getElementById("uf-tg")?.focus();
     else if (e.dates) document.getElementById(f.endDate && f.startDate ? "uf-end" : "uf-start")?.focus();
-    return !e.login && !e.dates;
+    return !e.login && !e.dates && !e.tg;
   };
   const dlg = (o: boolean) => { if (busy) return; if (!o && dirty && !guard) { setGuard(true); return; } onOpenChange(o); };
 
@@ -86,7 +94,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             <legend>Основна інформація</legend>
             <div className="v3-form-grid">
               <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create"} required aria-invalid={!!err.login} aria-describedby={err.login ? "uf-login-err" : undefined} value={f.username} onChange={(e) => { setF({ ...f, username: e.target.value }); if (err.login) setErr({ ...err, login: undefined }); }} placeholder="Логін без @" autoComplete="off" />{err.login ? <small id="uf-login-err" className="v3-field-err" role="alert">{err.login}</small> : <small className="v3-hint">Використовується для входу</small>}</div>
-              <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} onChange={(e) => setF({ ...f, telegram: e.target.value })} placeholder="@username або t.me/username" /><small className="v3-hint">Контакт для зв’язку</small></div>
+              <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} aria-invalid={!!err.tg} aria-describedby={err.tg ? "uf-tg-err" : undefined} onChange={(e) => { setF({ ...f, telegram: e.target.value }); if (err.tg) setErr({ ...err, tg: undefined }); }} placeholder="@username або t.me/username" />{err.tg ? <small id="uf-tg-err" className="v3-field-err" role="alert">{err.tg}</small> : <small className="v3-hint">Контакт для зв’язку</small>}</div>
             </div>
           </fieldset>
 
@@ -94,7 +102,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             <fieldset disabled={busy} className="v3-form-sec">
               <legend>План</legend>
               <div className="v3-opts">
-                {([["trial", "Пробний", `${trialDays} днів${settings?.trialPlan ? ` · ${settings.trialPlan === "pro" ? "Pro" : "Базова"}` : ""}`], ["basic", "Базова", `${basic} ₴ / ${subDays} днів`], ["pro", "Pro", `${pro} ₴ / ${subDays} днів`]] as const).map(([k, t, s]) => (
+                {([["trial", "Пробний", `${trialDays} днів${settings?.trialPlan ? ` · ${settings.trialPlan === "pro" ? "Pro" : "Базова"}` : ""}`], ["basic", "Базова", `${basic} ₴ / ${subDays} днів`], ["pro", "Pro", `${pro} ₴ / ${subDays} днів`]] as const).filter(([k]) => k !== "trial" || trialOn || f.plan === "trial").map(([k, t, s]) => (
                   <button key={k} type="button" className={`v3-opt${f.plan === k ? " is-on" : ""}`} aria-pressed={f.plan === k} onClick={() => pickPlan(k)}><strong>{t}</strong><small>{s}</small></button>
                 ))}
               </div>
@@ -103,7 +111,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
                 <div className="v3-field"><label id="uf-end-l">Дата закінчення</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
               </div>
               {err.dates && <p className="v3-field-err" role="alert">{err.dates}</p>}
-              {mode === "create" && <p className="v3-note-info">Пробний період — один на людину. Для Базової й Pro сума плану запишеться як перша оплата.</p>}
+              {mode === "create" && <p className="v3-note-info">{trialOn ? "Пробний період — один на людину: перевіряємо за Telegram." : "Пробний період вимкнено в Налаштуваннях."} Для Базової й Pro сума плану запишеться як перша оплата.</p>}
             </fieldset>
           )}
 

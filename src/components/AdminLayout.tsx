@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getExpiringWindow } from "@/lib/usersModel";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
 import {
@@ -174,7 +175,7 @@ export default function AdminLayout() {
             {[...navigation.slice(0, -1), { label: "Журнал дій", href: "/audit", icon: History, badge: undefined }, navigation[navigation.length - 1]].map(({ label, href, icon: Icon, badge }) => (
               <NavLink key={href} to={href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
                 <Icon size={20} aria-hidden="true" />{label}
-                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring" title="У стількох користувачів підписка закінчується за 7 днів"><span>{badges.usersExpiring}</span>закінчуються</span>}
+                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring" title={`У стількох користувачів підписка закінчується за ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`}><span>{badges.usersExpiring}</span>закінчуються</span>}
                 {href === "/audit" && auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
                 {badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
               </NavLink>

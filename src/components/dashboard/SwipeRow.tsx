@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
+import { copyMessage } from "@/lib/messages";
 import { MoreHorizontal, Plus, Send } from "lucide-react";
 
 const OPEN = -148;
@@ -7,7 +8,7 @@ const OPEN = -148;
  * Рядок, який на телефоні можна потягнути вліво: під ним «Написати» і «+30 днів» (дизайн «Дашборд, мобільна»).
  * На десктопі — звичайний рядок.
  */
-export default function SwipeRow({ children, tg, onExtend, extendLabel, hint }: { children: ReactNode; tg: string | null; onExtend: () => void; extendLabel: string; hint?: boolean }) {
+export default function SwipeRow({ children, tg, onExtend, extendLabel, hint, message }: { children: ReactNode; tg: string | null; onExtend: () => void; extendLabel: string; hint?: boolean; message?: string }) {
   const [x, setX] = useState(0);
   const [drag, setDrag] = useState(false);
   const st = useRef({ x0: 0, y0: 0, base: 0, lock: "" as "" | "h" | "v", moved: false, on: false });
@@ -34,14 +35,14 @@ export default function SwipeRow({ children, tg, onExtend, extendLabel, hint }: 
   return (
     <div className="v3-swipe">
       <div className="v3-swipe-acts" aria-hidden={x === 0}>
-        {tg && <a href={tg} target="_blank" rel="noreferrer" className="is-blue" tabIndex={x === 0 ? -1 : 0} onClick={() => setX(0)}><Send size={15} aria-hidden="true" />Написати</a>}
+        {tg && <a href={tg} target="_blank" rel="noreferrer" className="is-blue" tabIndex={x === 0 ? -1 : 0} onClick={() => { copyMessage(message); setX(0); }}><Send size={15} aria-hidden="true" />Написати</a>}
         <button type="button" className="is-green" tabIndex={x === 0 ? -1 : 0} onClick={() => { setX(0); onExtend(); }}><Plus size={15} aria-hidden="true" />{extendLabel}</button>
       </div>
       <div className={`v3-swipe-face${drag ? " is-drag" : ""}${hint && x === 0 ? " is-hint" : ""}`} style={{ transform: `translateX(${x}px)` }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onClickCapture={onClickCapture}>
         {children}
       </div>
       {/* Альтернатива свайпу: кнопка відкриває ті самі дії (клавіатура, VoiceOver, один дотик) */}
-      <button type="button" className="v3-swipe-more" aria-label={x === 0 ? "Дії: Написати, +30 днів" : "Сховати дії"} aria-expanded={x !== 0} onClick={() => setX((v) => (v === 0 ? OPEN : 0))} style={{ transform: `translateX(${x}px)` }}>
+      <button type="button" className="v3-swipe-more" aria-label={x === 0 ? `Дії: Написати, ${extendLabel}` : "Сховати дії"} aria-expanded={x !== 0} onClick={() => setX((v) => (v === 0 ? OPEN : 0))} style={{ transform: `translateX(${x}px)` }}>
         <MoreHorizontal size={16} aria-hidden="true" />
       </button>
     </div>

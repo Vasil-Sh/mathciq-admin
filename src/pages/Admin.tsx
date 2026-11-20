@@ -25,7 +25,7 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { fetchAdminStats } from "@/lib/adminStatsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring, USER_FILTERS, filterFromParam } from "@/lib/usersModel";
+import { getExpiringWindow, setExpiringWindow, canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring, USER_FILTERS, filterFromParam } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import ExportCsvButton from "@/components/ExportCsvButton";
@@ -109,7 +109,7 @@ export default function Admin() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { fetchSettings().then(setSettings).catch(() => {}); }, []);
+  useEffect(() => { fetchSettings().then((st) => { setExpiringWindow(st.expiringDays); setSettings(st); }).catch(() => {}); }, []);
   useEffect(() => { fetchAdminStats().then((s) => { const c = s.conversion?.last30; if (c && c.trialEnded) setConvPct(Math.round((c.converted / c.trialEnded) * 100)); }).catch(() => {}); }, []);
   useEffect(() => { // self-limitation count for the tab badge without opening it
     api.get<{ requests: { status: string; until: string | null }[] }>("/admin/self-limitations")
@@ -202,6 +202,8 @@ export default function Admin() {
   }
 
   const [saving, setSaving] = useState(false);
+  // Same rule as the server: «@Name», «t.me/Name» and «https://t.me/Name» are one Telegram.
+  const normTg = (raw?: string | null) => String(raw ?? "").trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i, "").replace(/^@/, "").replace(/\/$/, "").toLowerCase();
   async function saveForm(f: UserForm) {
     if (!form) return;
     setSaving(true);
@@ -370,7 +372,7 @@ export default function Admin() {
       {/* One line: plan · «Закінчуються» (always there, inactive at 0) · «Вік ?» */}
       <div className="v3-mfilters is-line">
         <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : []), ...(filter === "expiring" ? [{ value: "expiring" as UFilter, label: `Закінчуються · ${counts.expiring}` }] : [])]} />
-        <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : "Ні в кого підписка не закінчується найближчі 7 днів"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
+        <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : `Ні в кого підписка не закінчується найближчі ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
         {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
       </div>
       <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
@@ -485,7 +487,7 @@ export default function Admin() {
         <PillTrack active={filter} />
                     {segs.map((s) => <button key={s.key} type="button" className={filter === s.key ? "is-on" : ""} aria-pressed={filter === s.key} onClick={() => setFilter(s.key)}>{s.label} <span className="v3-seg-n">{counts[s.key]}</span></button>)}
                   </div>
-                  {counts.expiring > 0 && <button type="button" className={`v3-fchip is-light${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-fchip-n is-exp">{counts.expiring}</span>Закінчуються за 7 днів{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
+                  {counts.expiring > 0 && <button type="button" className={`v3-fchip is-light${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className="v3-fchip-n is-exp">{counts.expiring}</span>Закінчуються за {getExpiringWindow()} {plural(getExpiringWindow(), "день", "дні", "днів")}{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
                   {noAge > 0 && <button type="button" className={`v3-fchip is-light${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік не підтверджено{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
                   <Dropdown className="is-light v3-sort-dd" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />
                 </div>
@@ -521,7 +523,8 @@ export default function Admin() {
 
       <UserFormDialog mode={form?.mode || "create"} open={!!form} user={form?.mode === "edit" ? form.user : null} settings={settings}
         canAppointOwner={!!me?.isOwner} roleLock={form?.mode === "edit" ? roleLockReason(me, ro(form.user)) : null} busy={saving}
-        onOpenChange={(o) => { if (!o) setForm(null); }} onSave={saveForm} />
+        onOpenChange={(o) => { if (!o) setForm(null); }} onSave={saveForm}
+        telegramTakenBy={(tg) => { const k = normTg(tg); return k ? all.find((u) => normTg(u.telegram) === k)?.username ?? null : null; }} />
       <PasswordDialog data={password} onClose={() => setPassword(null)} />
       <DeleteUserDialog username={deleting?.username || ""} open={!!deleting} busy={busyDelete} onOpenChange={(o) => { if (!o) setDeleting(null); }} onConfirm={doDelete} />
       <Dialog open={!!resetting} onOpenChange={(o) => { if (!o) setResetting(null); }}>

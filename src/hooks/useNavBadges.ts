@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { isExpiring } from "@/lib/usersModel";
+import { fetchSettings } from "@/lib/adminSettingsApi";
+import { setExpiringWindow, isExpiring } from "@/lib/usersModel";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { api } from "@/lib/apiClient";
 import { fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSUE } from "@/lib/dashboardInsights";
@@ -42,6 +43,9 @@ function seenAt(): number | null {
 export function markAuditSeen() {
   localStorage.setItem(SEEN_KEY, String(Date.now()));
 }
+
+/** The «закінчуються» window is read once per page load. */
+let windowLoaded = false;
 
 export function useNavBadges(currentUser: string | undefined, onAuditPage: boolean): NavBadges {
   const [badges, setBadges] = useState<NavBadges>({});
@@ -89,6 +93,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
         // Badge is a convenience — a failed request just leaves it as it was.
       }
       try {
+        if (!windowLoaded) { const st = await fetchSettings().catch(() => null); setExpiringWindow(st?.expiringDays); windowLoaded = true; }
         const users = await fetchUsersOverview();
         if (!cancelled) setBadges((b) => ({ ...b, usersExpiring: users.filter(isExpiring).length }));
       } catch { /* same as above */ }
