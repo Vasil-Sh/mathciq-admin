@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle, Bell, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
 } from "lucide-react";
@@ -116,7 +116,15 @@ export default function Settings() {
   const [saveErr, setSaveErr] = useState("");
   const [priceAsk, setPriceAsk] = useState(false);
   const [sec, setSec] = useState<SecKey | "all">(() => (location.hash.slice(1) as SecKey) || "tariffs");
-  const [mSec, setMSec] = useState<SecKey | "all">("all");
+  const [mSec, setMSec] = useState<SecKey | "all">(() => (location.hash.slice(1) as SecKey) || "all");
+  // «Пароль і сесії» from the menu links to /settings#account — also when Settings is already open
+  const { hash } = useLocation();
+  useEffect(() => {
+    const k = hash.slice(1) as SecKey;
+    if (!k || !SECS.some((x) => x.key === k)) return;
+    setSec(k); setMSec(k); markSeen(k);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [hash]); // eslint-disable-line react-hooks/exhaustive-deps
   const [here, setHere] = useState<SecKey>("tariffs");
   const [seen, setSeen] = useState<SecKey[]>(() => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch { return []; } });
   const [barKick, setBarKick] = useState(0);
