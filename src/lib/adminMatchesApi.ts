@@ -29,6 +29,8 @@ export async function fetchHistory(days = 30): Promise<Match[]> {
 export async function rerunParser(name: string): Promise<void> {
   await api.post(`/admin/parsers/${encodeURIComponent(name)}/rerun`, {});
 }
+export const stopParser = (name: string) => api.post(`/admin/parsers/${encodeURIComponent(name)}/stop`, {});
+export const startParser = (name: string) => api.post(`/admin/parsers/${encodeURIComponent(name)}/start`, {});
 
 // ── Адмінські дані матчів (cs-backend: routes/adminMatches.ts) ──
 

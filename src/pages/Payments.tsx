@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, Ban, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
 import UndoRing from "@/components/UndoRing";
 import ExportCsvButton from "@/components/ExportCsvButton";
 import UserAvatar from "@/components/UserAvatar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dropdown } from "@/components/ui/dropdown";
 import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -186,22 +187,21 @@ export default function Payments() {
     try { setReceipt({ image: await createPaymentReceipt(asPayment(p), { username: p.username, telegram: u?.telegram || "" }), payment: asPayment(p), username: p.username }); }
     catch (e) { toast.error((e as Error).message); } finally { setReceiptBusy(""); }
   }
-  // «Скасувати запис»: підтвердження в самій кнопці (як у Користувачах).
+  // «Скасувати запис» і кошик: спершу вікно підтвердження (як «Видалити користувача»)
+  const [confirmFor, setConfirmFor] = useState<{ kind: "cx" | "del"; p: PaymentRow } | null>(null);
   async function cancelRecord(p: PaymentRow) {
-    if (!cx) { setCx("ask"); window.setTimeout(() => setCx((v) => (v === "ask" ? "" : v)), 3000); return; }
-    if (cx !== "ask") return;
+    if (cx === "busy") return;
     setCx("busy");
     try {
       await api.post(`/admin/payments/${p.id}/cancel`, { reason: "Помилковий запис — скасовано в Оплатах" });
       setRows((r) => (r || []).map((x) => (x.id === p.id ? { ...x, status: "cancelled", cancelReason: "Помилковий запис — скасовано в Оплатах" } : x)));
       toast.success(`Запис №${p.id} скасовано`, { id: `cx-${p.id}`, description: `@${p.username} · ${money(num(p))} не рахуються в оплатах` });
-      setSheet(false);
+      setConfirmFor(null); setSheet(false);
     } catch (e) { toast.error((e as Error).message); } finally { setCx(""); }
   }
-  // Trash icon: removes the record completely (second tap confirms). Subscription dates are not touched.
+  // Trash icon: removes the record completely (after the confirm dialog). Subscription dates are not touched.
   async function deleteRecord(p: PaymentRow) {
-    if (!del) { setDel("ask"); window.setTimeout(() => setDel((v) => (v === "ask" ? "" : v)), 3000); return; }
-    if (del !== "ask") return;
+    if (del === "busy") return;
     setDel("busy");
     try {
       await api.delete(`/admin/payments/${p.id}`);
@@ -209,7 +209,7 @@ export default function Payments() {
       setRefunds((r) => (r ? r.filter((x) => x.id !== p.id) : r));
       setSelId(null);
       toast.success(`Запис №${p.id} видалено`, { id: `del-${p.id}`, description: `@${p.username} · ${money(num(p))} · залишився в журналі дій` });
-      setSheet(false);
+      setConfirmFor(null); setSheet(false);
     } catch (e) { toast.error((e as Error).message); } finally { setDel(""); }
   }
   useEffect(() => { setCx(""); setDel(""); }, [sel?.id]);
@@ -252,7 +252,7 @@ export default function Payments() {
             <button type="button" className="v3-btn v3-btn-light" onClick={() => openReceipt(p)} disabled={receiptBusy === p.id}><Receipt size={15} aria-hidden="true" />{receiptBusy === p.id ? "Готуємо…" : "Чек"}</button>
             <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !u} onClick={() => setRefundFor(p)} title={!u ? "Користувача вже немає" : undefined}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
           </div>
-          <div className="v3-pay-cxrow"><button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "ask" ? " is-ask" : ""}${cx === "busy" ? " is-busy" : ""}`} disabled={!online} onClick={() => cancelRecord(p)}>{cx === "ask" ? "Натисніть ще раз — скасувати" : cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button><button type="button" className={`v3-pay-del${del === "ask" ? " is-ask" : ""}`} disabled={!online || del === "busy"} onClick={() => deleteRecord(p)} aria-label={del === "ask" ? `Підтвердити видалення запису №${p.id}` : `Видалити запис №${p.id} повністю`} title="Видалити запис повністю">{del === "ask" ? "Видалити?" : <Trash2 size={16} aria-hidden="true" />}</button></div>
+          <div className="v3-pay-cxrow"><button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "busy" ? " is-busy" : ""}`} disabled={!online || cx === "busy"} onClick={() => setConfirmFor({ kind: "cx", p })}>{cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button><button type="button" className="v3-pay-del" disabled={!online || del === "busy"} onClick={() => setConfirmFor({ kind: "del", p })} aria-label={`Видалити запис №${p.id} повністю`} title="Видалити запис повністю"><Trash2 size={16} aria-hidden="true" /></button></div>
           <p className="v3-pay-hint">«Скасувати запис» — помилкова оплата (дубль). «Повернути гроші» — коли ви повернули кошти людині.</p>
         </> : <div className="v3-pay-closed"><p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p><button type="button" className={`v3-pay-del${del === "ask" ? " is-ask" : ""}`} disabled={!online || del === "busy"} onClick={() => deleteRecord(p)} aria-label={del === "ask" ? `Підтвердити видалення запису №${p.id}` : `Видалити запис №${p.id} повністю`} title="Видалити запис повністю">{del === "ask" ? "Видалити?" : <Trash2 size={16} aria-hidden="true" />}</button></div>}
       </div>
@@ -457,6 +457,14 @@ export default function Payments() {
       {refundFor && userOf(refundFor) && <RefundDialog user={userOf(refundFor)!} payment={asPayment(refundFor)} open={!!refundFor} onOpenChange={(o) => { if (!o) setRefundFor(null); }} onDone={() => { load({ quiet: true }); loadSide(); }} />}
       {whoUser && <GrantProDialog user={whoUser} open={userDlg === "pro"} onOpenChange={(o) => setUserDlg(o ? "pro" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
       {whoUser && <RefundDialog user={whoUser} payment={lastRecorded ? asPayment(lastRecorded) : null} open={userDlg === "refund"} onOpenChange={(o) => setUserDlg(o ? "refund" : null)} onDone={() => { load({ quiet: true }); loadSide(); fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
+      <ConfirmDialog open={!!confirmFor} busy={cx === "busy" || del === "busy"} onOpenChange={(o) => { if (!o) setConfirmFor(null); }}
+        onConfirm={() => { if (!confirmFor) return; if (confirmFor.kind === "cx") cancelRecord(confirmFor.p); else deleteRecord(confirmFor.p); }}
+        icon={confirmFor?.kind === "cx" ? <Ban size={22} /> : undefined}
+        title={confirmFor ? (confirmFor.kind === "cx" ? `Скасувати запис №${confirmFor.p.id}?` : `Видалити запис №${confirmFor.p.id}?`) : ""}
+        confirm={confirmFor?.kind === "cx" ? "Скасувати запис" : "Видалити назавжди"} busyText={confirmFor?.kind === "cx" ? "Скасовуємо…" : "Видаляємо…"}
+        text={confirmFor ? (confirmFor.kind === "cx"
+          ? `@${confirmFor.p.username} · ${money(num(confirmFor.p))}. Запис лишиться в історії зі статусом «Скасовано», але сума не рахуватиметься в оплатах. Для випадку, коли оплату записали помилково (дубль). Гроші людині не повертаються.`
+          : `@${confirmFor.p.username} · ${money(num(confirmFor.p))}. Запис зникне з оплат і звітів повністю; дати підписки не зміняться. Слід лишиться лише в журналі дій. Цю дію неможливо скасувати.`) : ""} />
       {whoUser && <CancelSubscriptionDialog user={whoUser} open={userDlg === "cancel"} onOpenChange={(o) => setUserDlg(o ? "cancel" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
       <ReceiptDialog data={receipt} username={receipt?.username || ""} onOpenChange={(o) => { if (!o) setReceipt(null); }} sendBlock={receiptSendBlock} />
     </div>

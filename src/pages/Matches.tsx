@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, LayoutGrid, List, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
 import UserAvatar from "@/components/UserAvatar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { DateField } from "@/components/ui/date-field";
@@ -12,7 +13,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchHiddenTeams, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
@@ -210,8 +211,8 @@ export default function Matches() {
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
   const cntFor = (name: string) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : todayM.filter((m) => m.game === f && m.source === "tips.gg").length; };
   /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
-  const pState = (p: ParserState): "down" | "flaky" | "idle" | "ok" => { const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name) === 0 ? "idle" : "ok"; };
-  const down = (parsers || []).filter((p) => pState(p) !== "ok");
+  const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name) === 0 ? "idle" : "ok"; };
+  const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });
   const issueText = (p: ParserState) => `${PARSER_NAMES[p.name] || p.name} ${PARSER_ISSUE[pState(p) as "down" | "flaky" | "idle"]}`;
   const todayBets = bets ? todayM.reduce((a, m) => a + betsFor(m).length, 0) : null;
 
@@ -232,6 +233,22 @@ export default function Matches() {
     else toast.error("Не вдалося оновити", { description: "Показуємо останні отримані дані" });
   };
 
+  const [stopping, setStopping] = useState("");
+  const setPaused = (name: string, paused: boolean) => setParsers((ps) => ps && ps.map((x) => (x.name === name ? { ...x, paused, pausedAt: paused ? new Date().toISOString() : "", pausedBy: paused ? x.pausedBy : "" } : x)));
+  const stopOrStart = async (name: string, stop: boolean) => {
+    if (stopping) return;
+    setStopping(name); setPaused(name, stop);
+    try {
+      await (stop ? stopParser(name) : startParser(name));
+      if (stop) toast.success(`${PARSER_NAMES[name] || name} зупинено`, { description: "Він не звертається до джерела, застосунок показує останні збережені дані", action: { label: "Запустити", onClick: () => stopOrStart(name, false) } });
+      else toast.success(`${PARSER_NAMES[name] || name} запущено`, { description: "Наступний запит до джерела піде як завжди" });
+      await load();
+    } catch (e) {
+      setPaused(name, !stop);
+      toast.error(stop ? "Не вдалося зупинити" : "Не вдалося запустити", { description: e instanceof Error ? e.message : "Сервер не відповів" });
+    }
+    setStopping("");
+  };
   const rerun = async (name: string) => {
     if (running[name] === "busy") return;
     setRunning((r) => ({ ...r, [name]: "busy" }));
@@ -286,14 +303,13 @@ export default function Matches() {
     }
     setSaving("");
   };
+  const [delTeam, setDelTeam] = useState<Team | null>(null);
   const removeTeam = async (t: Team) => {
-    const k = `delteam:${t.key}`;
-    if (ask !== k) { setAsk(k); window.setTimeout(() => setAsk((a) => (a === k ? "" : a)), 4000); return; }
-    setAsk(""); setSaving(t.key);
+    setSaving(t.key);
     try {
       const h = await hideTeam({ game: t.game, name: t.name });
       setHidden((xs) => [...xs.filter((x) => x.id !== h.id), h]);
-      setSelTeam(null); setSheet(false);
+      setDelTeam(null); setSelTeam(null); setSheet(false);
       toast.success("Команду видалено з довідника", {
         description: `${t.name} · ${GAME_LABEL[t.game]}`,
         action: { label: "Повернути", onClick: async () => { try { await unhideTeam(h.id); setHidden((xs) => xs.filter((x) => x.id !== h.id)); toast.info("Команду повернуто", { description: t.name }); } catch (e) { toast.error("Не вдалося повернути", { description: errText(e) }); } } },
@@ -502,7 +518,8 @@ export default function Matches() {
               <div className="v3-mx-ph">
                 <span className="v3-mx-pav" style={{ background: meta.color }}>{meta.ini}</span>
                 <span><strong>{PARSER_NAMES[p.name] || p.name}</strong><small>{meta.site}{meta.game && ` · ${meta.game}`}</small></span>
-                <span key={ps} className={`v3-tag v3-mx-flip ${ps === "down" ? "v3-tag-red" : ps === "ok" ? "v3-tag-green" : "v3-tag-amber"}`}><i className={`v3-mx-dot${ps === "down" || ps === "flaky" ? " is-pulse" : ""}`} aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : "Працює"}</span>
+                <span key={ps} className={`v3-tag v3-mx-flip ${ps === "down" ? "v3-tag-red" : ps === "ok" ? "v3-tag-green" : ps === "paused" ? "v3-tag-gray" : "v3-tag-amber"}`}><i className={`v3-mx-dot${ps === "down" || ps === "flaky" ? " is-pulse" : ""}`} aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "paused" ? "Зупинено" : "Працює"}</span>
+                {ps !== "paused" && <button type="button" className="v3-mx-pstop" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, true)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><Square size={11} fill="currentColor" aria-hidden="true" />Стоп</button>}
               </div>
               <div className="v3-mx-pkv">
                 <div><span>Останній збій</span><strong className={p.open ? "is-bad" : ""}>{p.lastFailure ? ago(p.lastFailure) : "не було"}</strong></div>
@@ -512,12 +529,13 @@ export default function Matches() {
               {(() => { const ev = events[p.name]; return ev ? (
                 <div className="v3-mx-ev"><strong>Останні події</strong>{ev.length ? ev.slice(0, 4).map((e, k) => <div key={e.id} className={`v3-mx-evr is-${e.event}`} style={{ animationDelay: `${150 + k * 45}ms` }}><span>{new Date(e.createdAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>) : <p className="v3-mx-pnote">Подій ще немає — журнал почне наповнюватися з наступних запусків.</p>}</div>
               ) : null; })()}
-              <p className="v3-mx-pnote">{p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : ps === "flaky" ? `Останні запуски завершуються помилкою (${ago(p.lastFailure)}), парсер повторює спроби. Поки так, у меню біля «Матчі» стоїть «!».` : ps === "idle" ? "Помилок немає, але сьогодні джерело не повернуло жодного матчу — найчастіше це блокування з боку сайту. Застосунок показує останні отримані дані." : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
+              <p className="v3-mx-pnote">{p.paused ? `Зупинено вручну${p.pausedBy ? ` (@${p.pausedBy})` : ""}${p.pausedAt ? ` ${ago(p.pausedAt)}` : ""}. Парсер не звертається до джерела і не рахує збоїв — застосунок показує останні збережені дані. «Запустити» вмикає його знову.` : p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : ps === "flaky" ? `Останні запуски завершуються помилкою (${ago(p.lastFailure)}), парсер повторює спроби. Поки так, у меню біля «Матчі» стоїть «!».` : ps === "idle" ? "Помилок немає, але сьогодні джерело не повернуло жодного матчу — найчастіше це блокування з боку сайту. Застосунок показує останні отримані дані." : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
               <div className="v3-mx-pacts">
+                {p.paused ? <button type="button" className="v3-btn v3-btn-primary" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}>{stopping === p.name ? <span className="v3-mx-spin" aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}Запустити</button> :
                 <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
                   {r === "busy" ? <span className="v3-mx-spin" aria-hidden="true" /> : r === "done" ? <Check size={15} aria-hidden="true" className="v3-mx-ok" /> : <RefreshCw size={15} aria-hidden="true" />}
                   {r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}
-                </button>
+                </button>}
                 <button type="button" className="v3-btn v3-btn-outline" disabled={!events[p.name]} onClick={() => setLogFor(p.name)}><History size={15} aria-hidden="true" />Повний лог</button>
               </div>
             </div>
@@ -586,7 +604,7 @@ export default function Matches() {
   const teamDetail = (t: Team) => (
     <div className="v3-mx-detail">
       <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div>
-        {t.matches === 0 && <button type="button" className={`v3-mx-tdel${ask === `delteam:${t.key}` ? " is-ask" : ""}`} disabled={!online || saving === t.key} onClick={() => removeTeam(t)} aria-label={`Видалити ${t.name} з довідника`} title="Видалити з довідника"><Trash2 size={16} aria-hidden="true" />{ask === `delteam:${t.key}` && <span>Видалити?</span>}</button>}</div>
+        {t.matches === 0 && <button type="button" className="v3-mx-tdel" disabled={!online || saving === t.key} onClick={() => setDelTeam(t)} aria-label={`Видалити ${t.name} з довідника`} title="Видалити з довідника"><Trash2 size={16} aria-hidden="true" /></button>}</div>
       <div className="v3-mx-kv is-3"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Рейтинг</span><strong>{t.rank != null ? `#${t.rank}` : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
       {(() => { const tn = normTeam(t.name); const mine = known.filter((m) => m.game === t.game && (normTeam(m.t1) === tn || normTeam(m.t2) === tn)); const now = Date.now();
         const m = mine.filter((x) => x.ts >= now).sort((a, b) => a.ts - b.ts)[0] || mine.sort((a, b) => b.ts - a.ts)[0]; if (!m) return null;
@@ -698,6 +716,9 @@ export default function Matches() {
 
       <MergeTeamDialog team={mergeFor} teams={teams} busy={!!mergeFor && saving === `team:${mergeFor.key}`} onClose={() => setMergeFor(null)} onPick={(t, names) => addAliases(t, names)} />
 
+      <ConfirmDialog open={!!delTeam} busy={!!delTeam && saving === delTeam.key} onOpenChange={(o) => { if (!o) setDelTeam(null); }} onConfirm={() => delTeam && removeTeam(delTeam)}
+        title={`Видалити ${delTeam?.name || "команду"}?`} confirm="Видалити з довідника" busyText="Видаляємо…"
+        text={<>Команда зникне з довідника «Команди»{delTeam ? ` (${GAME_LABEL[delTeam.game]})` : ""}. Логотип і матчі не зміняться. Повернути можна одразу після видалення — кнопкою в сповіщенні.</>} />
       {!wide && <Dialog open={sheet && !!sheetBody} onOpenChange={setSheet}><DialogContent className="v3-sheet v3-pay-sheet v3-mx-sheet"><DialogTitle className="sr-only">Деталі</DialogTitle><DialogDescription className="sr-only">Деталі матчу</DialogDescription>{sheetBody}</DialogContent></Dialog>}
     </div>
   );

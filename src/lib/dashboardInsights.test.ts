@@ -16,3 +16,11 @@ describe("parser health", () => {
     expect(parserHealth(p({}), NOW)).toBe("ok");
   });
 });
+
+describe("parserHealth · stopped by hand", () => {
+  it("a paused parser is not an alarm, even with an open breaker or a fresh failure", () => {
+    const now = Date.parse("2026-11-20T12:00:00Z");
+    expect(parserHealth({ name: "hltv_scraper", open: true, failures: 3, failures24h: 9, lastFailure: "2026-11-20T11:58:00Z", paused: true }, now)).toBe("ok");
+    expect(parserHealth({ name: "hltv_scraper", open: true, failures: 3, failures24h: 9, lastFailure: "2026-11-20T11:58:00Z" }, now)).toBe("down");
+  });
+});
