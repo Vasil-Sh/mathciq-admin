@@ -185,12 +185,30 @@ export interface AppSettings {
   aiUsdUah?: number;
   basicPrice?: number;
   proPrice?: number;
+  basicFeatures?: string[];
+  proFeatures?: string[];
   trialEnabled?: boolean;
   trialDays?: number;
   trialPlan?: string;
+  /** Step of the «+N днів» button: 7, 14 or 30. */
+  trialStepDays?: number;
   aiDailyLimit?: number;
+  aiStopWords?: string[];
+  aiWordingRule?: string;
+  footerDisclaimer?: string;
+  addictionHelp?: string;
+  beforeAiText?: string;
+  /** «Потребує уваги»: subscription ends within N days. */
+  expiringDays?: number;
   churnInactiveDays?: number;
   churnLossStreak?: number;
+  receiptSupport?: string;
+  receiptThanks?: string;
+  receiptPrefix?: string;
+  tplExpiring?: string;
+  tplInactive?: string;
+  tplPaid?: string;
+  tplLapsed?: string;
   adsOddsInList?: boolean;
   adsMatchDetails?: boolean;
 }

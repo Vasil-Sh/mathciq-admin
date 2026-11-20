@@ -15,6 +15,7 @@ import "./styles/v3-audit.css";
 import "./styles/v3-payments.css";
 import "./styles/v3-matches.css";
 import "./styles/v3-support.css";
+import "./styles/v3-settings.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

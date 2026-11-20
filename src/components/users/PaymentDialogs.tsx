@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { receiptNo } from "@/lib/paymentReceipt";
 import { Check, Copy, Download, Send } from "lucide-react";
 import { toast } from "sonner";
 import { DateField } from "@/components/ui/date-field";
@@ -166,7 +167,7 @@ export function ReceiptDialog({ data, username, onOpenChange, sendBlock = null }
     try {
       const blob = await (await fetch(data.image)).blob();
       const form = new FormData();
-      form.append("photo", new File([blob], `MIQ-${data.payment.id}.png`, { type: "image/png" }));
+      form.append("photo", new File([blob], `${receiptNo(data.payment.id)}.png`, { type: "image/png" }));
       await api.post(`/admin/payments/${data.payment.id}/receipt/send`, form);
       toast.success(`Чек надіслано @${username}`, { description: "Telegram · бот MatchIQ" });
     } catch (e) {
@@ -181,7 +182,7 @@ export function ReceiptDialog({ data, username, onOpenChange, sendBlock = null }
       <DialogContent className="v3-modal sm:max-w-[480px]">
         <DialogTitle className="v3-modal-title">Чек оплати №{p?.id}</DialogTitle>
         <DialogDescription className="v3-modal-sub">@{username} · {p ? `${Number(p.amount).toLocaleString("uk-UA")} ₴` : ""} · {created}</DialogDescription>
-        <div className="v3-receipt">{data && <img src={data.image} alt={`Чек оплати № MIQ-${data.payment.id}`} />}</div>
+        <div className="v3-receipt">{data && <img src={data.image} alt={`Чек оплати № ${receiptNo(data.payment.id)}`} />}</div>
         <div className="v3-receipt-tools">
           <button type="button" className="v3-btn v3-btn-ghost" onClick={() => data && savePaymentReceipt(data.image, data.payment.id)}><Download size={15} aria-hidden="true" /><span className="v3-hide-mobile">Завантажити PNG</span><span className="v3-only-mobile">Зберегти PNG</span></button>
           <button type="button" className="v3-btn v3-btn-ghost v3-hide-mobile" onClick={copy}><Copy size={15} aria-hidden="true" />Копіювати</button>

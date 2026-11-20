@@ -1,4 +1,22 @@
 import {telegramUsername} from "@/lib/telegram";
+import {fetchSettings} from "@/lib/adminSettingsApi";
+
+/** Receipt texts from «Налаштування → Чек оплати» (loaded once; defaults if the server is unreachable). */
+type ReceiptTexts = {support:string; thanks:string; prefix:string};
+const RECEIPT_DEFAULTS:ReceiptTexts = {support:'@cs2beet', thanks:'Дякуємо, що обираєш MatchIQ!', prefix:'MIQ'};
+let receiptTexts:Promise<ReceiptTexts>|null = null;
+let prefixNow = RECEIPT_DEFAULTS.prefix;
+export function loadReceiptTexts():Promise<ReceiptTexts> {
+  receiptTexts ??= fetchSettings().then((s)=>{
+    const t = {support:s.receiptSupport||RECEIPT_DEFAULTS.support, thanks:s.receiptThanks||RECEIPT_DEFAULTS.thanks, prefix:s.receiptPrefix||RECEIPT_DEFAULTS.prefix};
+    prefixNow = t.prefix; return t;
+  }).catch(()=>{ receiptTexts = null; return RECEIPT_DEFAULTS; });
+  return receiptTexts;
+}
+/** Call after the receipt settings were saved. */
+export function forgetReceiptTexts() { receiptTexts = null; }
+/** «MIQ-128» with the current prefix. */
+export const receiptNo = (id:string|number) => `${prefixNow}-${id}`;
 type ReceiptPayment = {
   id:string; amount:string; paidOn:string; periodStart:string; periodEnd:string;
   createdBy:string; status:string; username?:string;
@@ -8,6 +26,7 @@ const date=(value:string)=>value.split('-').reverse().join('.');
 /** Preview and download use the same locally generated image. */
 export async function createPaymentReceipt(payment:ReceiptPayment,user:{username:string;telegram:string}) {
   if(payment.status !== 'recorded') throw new Error('Чек доступний лише для не скасованої оплати.');
+  const rt = await loadReceiptTexts();
   await document.fonts.ready;
   const canvas=document.createElement('canvas');
   const ctx=canvas.getContext('2d');
@@ -41,7 +60,7 @@ export async function createPaymentReceipt(payment:ReceiptPayment,user:{username
   });
   text('Трекер ставок на кіберспорт',15,false,'center');
   text('Підтвердження оплати',17,true,'center');y+=12;
-  text(`Чек № MIQ-${payment.id}`,18,true,'center');
+  text(`Чек № ${rt.prefix}-${payment.id}`,18,true,'center');
   text(date(payment.paidOn),15,false,'center');
   rule();
   text('Користувач',18,true);text(payment.username||user.username,16);
@@ -67,8 +86,8 @@ export async function createPaymentReceipt(payment:ReceiptPayment,user:{username
   text('Статус: оплату записано',15);
   rule();
   text('Підтримка з питань оплати',14,false,'center');
-  text('Telegram: @cs2beet',16,true,'center');y+=16;
-  text('Дякуємо, що обираєш MatchIQ!',16,true,'center');y+=10;
+  text(`Telegram: ${rt.support}`,16,true,'center');y+=16;
+  text(rt.thanks,16,true,'center');y+=10;
   text('Підтвердження ручного запису.',12,false,'center');
   text('Не є фіскальним чеком',10,false,'center');
   text('або банківською квитанцією.',10,false,'center');

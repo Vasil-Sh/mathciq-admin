@@ -161,7 +161,10 @@ export default function Dashboard() {
     return () => window.clearInterval(id);
   }, [online, load]);
 
-  const expiring = useMemo(() => expiringUsers(users, 7), [users]);
+  // «Потребує уваги» window and the «+N днів» step come from Налаштування.
+  const expDays = settings?.expiringDays || 7;
+  const extendDays = settings?.trialStepDays || EXTEND_DAYS;
+  const expiring = useMemo(() => expiringUsers(users, expDays), [users, expDays]);
   useEffect(() => {
     if (!barOpen) return;
     const close = (e: MouseEvent) => { const t = e.target as HTMLElement; if (!t.closest?.(".v3-bar-pop") && (t.classList?.contains("v3-bar-backdrop") || !t.closest?.(".v3-bar-col"))) setBarOpen(null); };
@@ -243,7 +246,7 @@ export default function Dashboard() {
     const done: { id: number; prev: string; name: string }[] = [];
     for (const { user } of targets) {
       try {
-        await authService.updateUser(user.id, { endDate: extendedEndDate(user.endDate, EXTEND_DAYS) });
+        await authService.updateUser(user.id, { endDate: extendedEndDate(user.endDate, extendDays) });
         done.push({ id: user.id, prev: user.endDate, name: user.username });
         if (inline) setExtDoneIds((v) => [...v, user.id]);
       } catch { /* reported below */ }
@@ -259,7 +262,7 @@ export default function Dashboard() {
     if (inline) { setExtPhase("idle"); setExtDoneIds([]); }
     if (done.length < targets.length) toast.error(`Не вдалося продовжити ${targets.length - done.length} з ${targets.length}`, { description: "Решту продовжено. Спробуйте ще раз для тих, що залишились." });
     if (done.length) {
-      toast.success(`Продовжено ${done.length} ${plural(done.length, "підписку", "підписки", "підписок")} на ${EXTEND_DAYS} днів`, {
+      toast.success(`Продовжено ${done.length} ${plural(done.length, "підписку", "підписки", "підписок")} на ${extendDays} днів`, {
         description: done.map((d) => `@${d.name}`).join(", "),
         duration: Infinity,
         action: {
@@ -679,31 +682,31 @@ export default function Dashboard() {
               <ul className="v3-exp-list">
                 {expiring.map(({ user, days }, i) => (
                   <li key={user.id} className={i >= 3 ? "v3-hide-mobile" : undefined}>
-                    <SwipeRow tg={telegramLink(byId.get(user.id)?.telegram || user.telegram)} onExtend={() => extendSelected([user.id])} extendLabel={`+${EXTEND_DAYS} днів`} hint={i === 0}>
+                    <SwipeRow tg={telegramLink(byId.get(user.id)?.telegram || user.telegram)} onExtend={() => extendSelected([user.id])} extendLabel={`+${extendDays} днів`} hint={i === 0}>
                     <Link to={`/users?q=${encodeURIComponent(user.username)}`} className="v3-exp-row">
                       <UserAvatar username={user.username} telegram={byId.get(user.id)?.telegram} />
-                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(extDoneIds.includes(user.id) ? extendedEndDate(user.endDate, EXTEND_DAYS) : user.endDate)}</small></span>
+                      <span className="v3-exp-who"><strong>@{user.username}</strong><small>{planText(byId.get(user.id), user.priceMonth)} · до {shortDate(extDoneIds.includes(user.id) ? extendedEndDate(user.endDate, extendDays) : user.endDate)}</small></span>
                       {extDoneIds.includes(user.id)
-                        ? <span className="v3-tag v3-tag-green v3-tag-pop">+{EXTEND_DAYS} днів</span>
+                        ? <span className="v3-tag v3-tag-green v3-tag-pop">+{extendDays} днів</span>
                         : <span className={`v3-tag ${days <= 2 ? "v3-tag-red" : days <= 4 ? "v3-tag-amber" : "v3-tag-gray"}`}>{daysLabel(days)}</span>}
                     </Link>
                     </SwipeRow>
                   </li>
                 ))}
               </ul>
-              <p className="v3-only-mobile v3-swipe-note">Потягніть рядок вліво — «Написати» або «+{EXTEND_DAYS} днів»</p>
+              <p className="v3-only-mobile v3-swipe-note">Потягніть рядок вліво — «Написати» або «+{extendDays} днів»</p>
               {expiring.length > 3 && <Link to="/users?status=expiring" className="v3-only-mobile v3-more-link">Усі {expiring.length} {plural(expiring.length, "користувач", "користувачі", "користувачів")} <span className="v3-ar" aria-hidden="true">→</span></Link>}
               <div className="v3-xall">
                 {extPhase === "idle" && (
                   <button ref={xallBtnRef} type="button" className="v3-xall-btn" disabled={!online} title={online ? undefined : "Запрацює після відновлення зв’язку"} onClick={() => setExtPhase("ask")}>
                     <span className="v3-xall-avs v3-hide-mobile" aria-hidden="true">{expiring.slice(0, 4).map(({ user }) => <UserAvatar key={user.id} username={user.username} telegram={byId.get(user.id)?.telegram} className="v3-xall-av" />)}</span>
-                    <span className="v3-hide-mobile">Продовжити всім на +{EXTEND_DAYS} днів</span><span className="v3-only-mobile">Продовжити всім · +{EXTEND_DAYS} днів</span><span className="v3-xall-ar" aria-hidden="true">→</span>
+                    <span className="v3-hide-mobile">Продовжити всім на +{extendDays} днів</span><span className="v3-only-mobile">Продовжити всім · +{extendDays} днів</span><span className="v3-xall-ar" aria-hidden="true">→</span>
                   </button>
                 )}
                 {extPhase === "ask" && (
                   <div className="v3-xall-ask" role="group" aria-label="Підтвердження продовження" onKeyDown={(e) => { if (e.key === "Escape") setExtPhase("idle"); }}>
                     <button type="button" className="v3-btn v3-btn-outline" onClick={() => setExtPhase("idle")}>Скасувати</button>
-                    <button ref={xallYesRef} type="button" className="v3-btn v3-btn-primary" onClick={() => extendSelected(expiring.map((e) => e.user.id), true)}><span className="v3-hide-mobile">Так, продовжити {expiring.length} · +{EXTEND_DAYS} днів</span><span className="v3-only-mobile">Так, {expiring.length} · +{EXTEND_DAYS} днів</span></button>
+                    <button ref={xallYesRef} type="button" className="v3-btn v3-btn-primary" onClick={() => extendSelected(expiring.map((e) => e.user.id), true)}><span className="v3-hide-mobile">Так, продовжити {expiring.length} · +{extendDays} днів</span><span className="v3-only-mobile">Так, {expiring.length} · +{extendDays} днів</span></button>
                   </div>
                 )}
                 {(extPhase === "run" || extPhase === "done") && (
@@ -733,7 +736,7 @@ export default function Dashboard() {
       {isEmpty && <div className="v3-dcard v3-calm-row v3-only-mobile"><span className="v3-calm-ico" aria-hidden="true"><Check size={18} strokeWidth={2} /></span><div><strong>Усе спокійно</strong><small>Немає підписок, що закінчуються</small></div></div>}
       {isEmpty && <Link to="/users" className="v3-btn v3-btn-primary v3-btn-block v3-only-mobile v3-mobile-cta">Створити першого користувача</Link>}
 
-      <ExtendConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} items={expiring} days={EXTEND_DAYS} busy={extending} onConfirm={extendSelected} />
+      <ExtendConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} items={expiring} days={extendDays} busy={extending} onConfirm={extendSelected} />
     </div>
   );
 }

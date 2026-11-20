@@ -103,9 +103,9 @@ function endSession() {
 }
 
 /** Sends a request with auth, refreshing the token once on 401. Throws on non-2xx. */
-async function send(method: string, path: string, body?: unknown): Promise<Response> {
+async function send(method: string, path: string, body?: unknown, extra?: Record<string, string>): Promise<Response> {
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-  const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { ...(isForm ? {} : { "Content-Type": "application/json" }), ...extra };
   const payload = body ? (isForm ? (body as FormData) : JSON.stringify(body)) : undefined;
   if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   // Only a request made with a session can "lose" it — a wrong password on
@@ -150,16 +150,17 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
 async function request<T>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  extra?: Record<string, string>
 ): Promise<T> {
-  const res = await send(method, path, body);
+  const res = await send(method, path, body, extra);
   // 204 No Content
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>("GET", path),
+  get: <T>(path: string, opts?: { headers?: Record<string, string> }) => request<T>("GET", path, undefined, opts?.headers),
   post: <T>(path: string, body?: unknown) =>
     request<T>("POST", path, body),
   put: <T>(path: string, body?: unknown) =>
