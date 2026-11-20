@@ -1,0 +1,136 @@
+/* ══ Підтримка · звернення й Telegram-групи Pro (дошки «08 · Підтримка», анімації — каталог Motion4) ══ */
+.v3-sp-tabs { grid-template-columns: repeat(2, 1fr); }
+
+/* таблиця звернень і груп */
+.v3-pay-th.v3-sp-row, .v3-pay-row.v3-sp-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 110px 130px; }
+.v3-pay-th.v3-sp-grow, .v3-pay-row.v3-sp-grow { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 80px 100px 120px; }
+.v3-sp-subj { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.v3-sp-subj-t { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.v3-sp-subj strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-sp-subj small, .v3-sp-muted { color: var(--v3-ink-muted, #5f6878); font-size: 13px; }
+.v3-sp-subj small { font-size: 12px; }
+.v3-sp-muted.is-sm { font-size: 12px; }
+.v3-pay-row.is-sel .v3-sp-subj small, .v3-pay-row.is-sel .v3-sp-muted { color: #c3c9d4; }
+/* «не прочитано»: крапка зникає, щойно звернення взяли в роботу */
+.v3-sp-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #e5533f; animation: v3-tag-pop .35s cubic-bezier(.3, 1.5, .5, 1) backwards; }
+.v3-sp-dot.is-live { display: inline-block; margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 0 0 rgba(229, 83, 63, .6); animation: v3-sp-live 1.4s ease-out infinite; }
+@keyframes v3-sp-live { 0% { box-shadow: 0 0 0 0 rgba(229, 83, 63, .6); } 100% { box-shadow: 0 0 0 7px rgba(229, 83, 63, 0); } }
+/* мітка статусу перевертається, коли статус змінився */
+.v3-sp-flip { display: inline-flex; animation: v3-mx-flip .45s cubic-bezier(.2, .9, .25, 1.4) both; }
+.v3-sp-gname { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.v3-sp-gname > span:last-child { min-width: 0; }
+.v3-sp-gname strong { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-sp-gname small { color: var(--v3-ink-muted, #5f6878); font-size: 12px; }
+.v3-sp-gav { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: #3a6df0; color: #fff; font-size: 12px; font-weight: 700; }
+.v3-sp-none { padding: 30px 16px; text-align: center; color: var(--v3-ink-muted, #5f6878); font-size: 13px; animation: v3-pay-in .3s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-sp-none .v3-link-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; text-decoration: none; }
+.v3-sp-none .v3-link-btn svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+
+/* права панель: розмова й відповідь */
+.v3-sp-aside { flex: 1 1 420px; }
+.v3-sp-aside.is-sheet { display: flex; flex-direction: column; gap: 14px; }
+.v3-sp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.v3-sp-kicker { color: #8c95a6; font-size: 12px; }
+.v3-sp-head > .v3-tag { flex-shrink: 0; white-space: nowrap; }
+.v3-sp-title { margin-top: 6px; font-size: 19px; font-weight: 500; line-height: 1.35; color: #f4f6fa; overflow-wrap: anywhere; }
+.v3-sp-head .v3-sp-title:first-child { margin-top: 0; }
+.v3-sp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-sp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #1d232e; color: #c3c9d4; font-size: 12px; text-decoration: none; }
+.v3-sp-chip.is-link { color: #e7eaf0; }
+.v3-sp-chip.is-link svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+.v3-sp-open { align-self: flex-start; min-height: 36px; box-sizing: border-box; }
+.v3-sp-thread { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.v3-sp-bub { align-self: flex-start; max-width: 86%; padding: 12px 14px; border-radius: 18px 18px 18px 6px; background: #1d232e; color: #f4f6fa; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; animation: v3-pay-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-sp-bub > span { display: block; margin-bottom: 4px; color: #8c95a6; font-size: 12px; white-space: normal; }
+.v3-sp-bub.is-me { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: #2a4fb8; transform-origin: bottom right; }
+.v3-sp-bub.is-me > span { color: #c9d7ff; }
+.v3-sp-bub.is-me:last-of-type { animation: v3-sp-pop .4s cubic-bezier(.2, .9, .25, 1.3) backwards; }
+@keyframes v3-sp-pop { from { opacity: 0; transform: scale(.5); } }
+.v3-sp-reply { display: flex; flex-direction: column; gap: 8px; }
+.v3-sp-tpls { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-sp-tpl { min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: #c3c9d4; font: 500 12px Inter, sans-serif; cursor: pointer; transition: background-color .2s, border-color .2s, color .2s, transform .15s ease-out; }
+.v3-sp-tpl:active { transform: scale(.96); }
+.v3-sp-tpl.is-on { background: #3a6df0; border-color: #3a6df0; color: #fff; animation: v3-sp-tplpop .35s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes v3-sp-tplpop { 0% { transform: scale(.7); opacity: .2; } 60% { transform: scale(1.12); opacity: 1; } }
+.v3-sp-text { min-height: 92px; padding: 12px 14px; line-height: 1.5; resize: vertical; font-family: Inter, sans-serif; }
+.v3-sp-acts { display: grid; grid-template-columns: 1.25fr 1.1fr 1fr; gap: 8px; }
+.v3-sp-acts .v3-dd-btn { white-space: nowrap; }
+.v3-sp-send { min-height: 44px; justify-content: center; gap: 6px; }
+.v3-sp-lbl { color: #c3c9d4; font-size: 12px; font-weight: 600; }
+.v3-sp-post { padding: 12px 14px; border-radius: 14px; background: #1d232e; color: #e7eaf0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; animation: v3-pay-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-sp-post > span { display: block; margin-top: 6px; color: #8c95a6; font-size: 12px; }
+.v3-sp-note { padding: 14px; border-radius: 14px; background: #1d232e; color: #c3c9d4; font-size: 13px; line-height: 1.5; animation: v3-pay-in .35s cubic-bezier(.2, .8, .2, 1) .08s backwards; }
+.v3-sp-reason { display: flex; flex-direction: column; gap: 6px; }
+.v3-sp-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: #1d232e; }
+.v3-sp-seg > .v3-pill { top: 4px; bottom: 4px; border-radius: 12px; }
+.v3-sp-seg button { position: relative; z-index: 1; min-height: 36px; border-radius: 12px; font-weight: 500; }
+.v3-sp-seg button.is-on { font-weight: 600; }
+.v3-sp-hint { color: #8c95a6; font-size: 12px; line-height: 1.5; }
+.v3-sp-gacts { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; }
+.v3-sp-gacts.is-one { grid-template-columns: 1fr; }
+.v3-sp-gacts .v3-btn { min-height: 44px; justify-content: center; }
+
+/* телефон */
+.v3-sp-m { display: flex; flex-direction: column; gap: 12px; }
+.v3-sp-mcard { align-items: center; }
+.v3-sp-mcard-l { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; text-align: left; }
+.v3-sp-mcard-l strong { font-size: 14px; line-height: 1.35; }
+.v3-sp-mcard-l small { color: #5f6878; font-size: 12px; }
+.v3-sp-alert { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 18px; background: #161b24; border: 1px solid rgba(255, 122, 102, .35); color: #ffb3a6; font-size: 13px; animation: v3-pay-in .4s cubic-bezier(.2, .8, .2, 1) .35s backwards; }
+.v3-sp-alert > span { flex: 1; }
+.v3-sp-alert .v3-link-btn { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: #7aa2ff; text-decoration: none; white-space: nowrap; }
+.v3-sp-alert .v3-link-btn svg { transition: transform .3s cubic-bezier(.2, .9, .25, 1.4); }
+
+/* звернень ще не було */
+.v3-sp-zero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+.v3-sp-zero-card { padding: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.v3-sp-zero-card > * { animation: v3-pay-in .4s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-sp-zero-card > strong { font-size: 26px; font-weight: 500; letter-spacing: -.02em; animation-delay: .2s; }
+.v3-sp-zero-card > p { margin: 0; color: #5f6878; font-size: 14px; line-height: 1.6; max-width: 540px; animation-delay: .28s; }
+.v3-sp-zero-ico { position: relative; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #e3f6ea; color: #1f7a3d; animation: v3-sp-pop .5s cubic-bezier(.2, .9, .25, 1.5) .15s backwards !important; }
+.v3-sp-zero-ico::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #1f7a3d; opacity: 0; animation: v3-halo 1s ease-out .45s; }
+.v3-sp-zero-st { padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+.v3-sp-zero-st > strong { font-size: 17px; font-weight: 600; }
+.v3-sp-zero-st > div { display: flex; align-items: center; gap: 10px; animation: v3-pay-in .36s cubic-bezier(.2, .8, .2, 1) backwards; }
+.v3-sp-zero-st > div > span:last-child { color: #8c95a6; font-size: 13px; }
+
+@media (hover: hover) {
+  .v3-sp-tpl:not(.is-on):hover { border-color: rgba(255, 255, 255, .3); color: #fff; }
+  .v3-sp-chip.is-link:hover svg, .v3-sp-none .v3-link-btn:hover svg, .v3-sp-alert .v3-link-btn:hover svg { transform: translateX(4px); }
+  .v3-sp-chip.is-link:hover { background: #252c39; }
+}
+@media (max-width: 1179px) {
+  .v3-sp-zero { grid-template-columns: 1fr; }
+  .v3-sp-sheet .v3-sp-thread { max-height: none; }
+  .v3-pay-row.v3-sp-grow { grid-template-columns: minmax(0, 1fr) auto; }
+  .v3-pay-row.v3-sp-grow > span:nth-child(2), .v3-pay-row.v3-sp-grow > span:nth-child(3), .v3-pay-row.v3-sp-grow > span:nth-child(4) { display: none; }
+}
+@media (max-width: 767px) {
+  .v3-sp-tabs { grid-template-columns: repeat(2, auto); }
+  .v3-sp-acts { grid-template-columns: 1fr 1fr; }
+  .v3-sp-acts .v3-sp-send { grid-column: 1 / -1; }
+  .v3-sp-zero-card { padding: 26px 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-sp-dot, .v3-sp-flip, .v3-sp-bub, .v3-sp-tpl.is-on, .v3-sp-post, .v3-sp-note, .v3-sp-alert, .v3-sp-none, .v3-sp-zero-card > *, .v3-sp-zero-ico, .v3-sp-zero-ico::after, .v3-sp-zero-st > div { animation: v3-fade-in .2s both !important; }
+  .v3-sp-dot.is-live { animation: none !important; }
+}
+
+/* телефон: шторка світла, як в Оплатах і Рекламі */
+.v3-sp-sheet .v3-sp-title { color: var(--v3-ink, #11151c); }
+.v3-sp-sheet .v3-sp-kicker, .v3-sp-sheet .v3-sp-hint { color: #5f6878; }
+.v3-sp-sheet .v3-sp-chip { background: #f1f4f9; color: #3e4656; }
+.v3-sp-sheet .v3-sp-chip.is-link { color: #11151c; }
+.v3-sp-sheet .v3-sp-bub { background: #f1f4f9; color: #11151c; }
+.v3-sp-sheet .v3-sp-bub > span { color: #5f6878; }
+.v3-sp-sheet .v3-sp-bub.is-me { background: #3a6df0; color: #fff; }
+.v3-sp-sheet .v3-sp-bub.is-me > span { color: #dfe7ff; }
+.v3-sp-sheet .v3-sp-tpl { border-color: #dde1e7; color: #3e4656; }
+.v3-sp-sheet .v3-sp-tpl.is-on { border-color: #3a6df0; color: #fff; }
+.v3-sp-sheet .v3-sp-lbl { color: #3e4656; }
+.v3-sp-sheet .v3-sp-post, .v3-sp-sheet .v3-sp-note { background: #f5f7fb; color: #3e4656; }
+.v3-sp-sheet .v3-sp-seg { background: #f1f4f9; }
+.v3-sp-sheet .v3-sp-seg button:not(.is-on) { color: #3e4656; }
+.v3-pay-mcard.v3-sp-mcard { display: flex; gap: 12px; }
+.v3-sp-mcard .v3-sp-gav { width: 40px; height: 40px; }
+.v3-sp-sheet .v3-sp-head { padding-right: 44px; }

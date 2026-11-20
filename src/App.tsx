@@ -11,8 +11,8 @@ const Matches = lazy(() => import("@/pages/Matches"));
 const AuditLog = lazy(() => import("@/pages/AuditLog"));
 const Banners = lazy(() => import("@/pages/Banners"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const Support = lazy(() => import("@/pages/Support"));
 import AdminLayout from "@/components/AdminLayout";
-import ComingSoon from "@/pages/ComingSoon";
 
 import NotFound from "@/pages/NotFound";
 
@@ -77,7 +77,7 @@ function AppRoutes() {
         <Route path="/settings" element={<Suspense fallback={<div role="status">Завантаження налаштувань…</div>}><Settings /></Suspense>} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/matches" element={<Matches />} />
-        <Route path="/support" element={<ComingSoon title="Підтримка" subtitle="Звернення з форми «Проблема чи побажання» й модерація Telegram-груп." planned={["Звернення: нові, в роботі, вирішені; відповідь у застосунок і Telegram", "Шаблони відповідей", "Модерація Telegram-груп, які додали користувачі Pro"]} />} />
+        <Route path="/support" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження підтримки…</div>}><Support /></Suspense>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>
