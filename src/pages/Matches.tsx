@@ -518,7 +518,7 @@ export default function Matches() {
       <div className="v3-mx-kv"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
       <div className="v3-mx-al"><small>Інші написання в стрічках</small>{t.variants.length ? <div>{t.variants.map((v) => <span key={v} className="v3-mx-chip">{v}</span>)}</div> : <span>Немає неперевірених написань</span>}</div>
       {(() => { const own = aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name)); return (
-        <div className="v3-mx-al"><small>Псевдоніми</small>{own.length ? <div>{own.map((a) => <span key={a.id} className="v3-mx-chip is-alias">{a.alias}<button type="button" aria-label={`Видалити псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}</div> : <span>Ще немає</span>}</div>
+        <div className="v3-mx-al"><small>Псевдоніми — так команду називають джерела</small><div>{own.map((a) => <span key={a.id} className="v3-mx-chip is-alias">{a.alias}<button type="button" aria-label={`Прибрати псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}<button type="button" className="v3-mx-aladd" disabled={!online} onClick={() => setMergeFor(t)}>+ псевдонім</button></div></div>
       ); })()}
       <div className="v3-mx-acts2">
         <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online} onClick={() => setMergeFor(t)}><Plus size={15} aria-hidden="true" />Об’єднати з…</button>

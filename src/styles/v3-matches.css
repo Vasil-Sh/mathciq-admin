@@ -247,3 +247,6 @@
   .v3-mx-plus { width: 46px; height: 46px; padding: 0; justify-content: center; border-radius: 50%; }
 }
 @media (prefers-reduced-motion: reduce) { .v3-mx-evr, .v3-mx-bar { animation: none; } .v3-mx-segd > button { transition: none; } }
+.v3-mx-aladd { min-height: 28px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(255, 255, 255, .2); background: transparent; color: #8c95a6; font: 500 12px Inter, sans-serif; cursor: pointer; transition: border-color .2s, color .2s, transform .15s ease-out; }
+.v3-mx-aladd:not(:disabled):active { transform: scale(.96); }
+@media (hover: hover) { .v3-mx-aladd:not(:disabled):hover { border-color: rgba(255, 255, 255, .4); color: #e7eaf0; } }
