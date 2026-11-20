@@ -361,7 +361,7 @@ html { color-scheme: dark; }
    No blur on phones — a denser gradient hides content scrolling underneath; the buttons sit above it. */
 .v3-header > * { position: relative; z-index: 1; }
 @media (max-width: 767px) {
-  .v3-header::before { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(rgba(10, 13, 19, .94), rgba(10, 13, 19, .7) 70%, rgba(10, 13, 19, 0)); }
+  .v3-header::before { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(#0a0d13, #0a0d13 calc(100% - 16px), rgba(10, 13, 19, 0)); } /* solid: cards scrolling under must not show through */
 }
 
 /* Телефон: без смужки прокрутки (там, де браузер дозволяє її сховати) */

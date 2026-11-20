@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { isExpiring } from "@/lib/usersModel";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { api } from "@/lib/apiClient";
-import { fetchOpenTickets, fetchParsers, PARSER_NAMES } from "@/lib/dashboardInsights";
+import { fetchOpenTickets, fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSUE } from "@/lib/dashboardInsights";
 
 /**
  * Counters shown in the top navigation.
@@ -51,8 +51,8 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
       if (cancelled) return;
       if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value.length }));
       if (p.status === "fulfilled") {
-        const down = p.value.filter((x) => x.open);
-        setBadges((b) => ({ ...b, matchesError: down.length > 0, matchesErrorText: down.map((x) => `${PARSER_NAMES[x.name] || x.name} не відповідає`).join(", ") }));
+        const bad = p.value.map((x) => [x, parserHealth(x)] as const).filter(([, h]) => h !== "ok");
+        setBadges((b) => ({ ...b, matchesError: bad.length > 0, matchesErrorText: bad.map(([x, h]) => `${PARSER_NAMES[x.name] || x.name} ${PARSER_ISSUE[h as "down" | "flaky"]}`).join(", ") }));
       }
     };
     if (onAuditPage) {

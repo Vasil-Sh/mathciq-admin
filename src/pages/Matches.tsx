@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Check, ExternalLink, History, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
@@ -12,9 +12,9 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchParserEvents, linkMatch, patchMatch, rerunParser, resetMatch, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchParserEvents, linkMatch, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
-import { fetchParsers, PARSER_NAMES, plural, type ParserState } from "@/lib/dashboardInsights";
+import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
   addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, normTeam, setAliases, STATUS_LABEL, teamsFrom,
   type Game, type ManualGroup, type Match, type MStatus, type Team,
@@ -69,6 +69,7 @@ export default function Matches() {
   const [tab, setTab] = useState<Tab>(() => { const t = params.get("tab"); return t === "parsers" || t === "manual" || t === "teams" ? t : "matches"; });
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [hourSel, setHourSel] = useState<number | null>(null); // tapped hour on the 24-h bars
+  const [legendSel, setLegendSel] = useState<"ok" | "mix" | "bad" | "none" | null>(null); // legend filter on the bars
   const [failed, setFailed] = useState<Game[]>([]);
   const [history, setHistory] = useState<Match[]>([]);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
@@ -136,7 +137,11 @@ export default function Matches() {
   }, [parserNames]);
   useEffect(() => { if (parserNames) loadLogs(); }, [parserNames, loadLogs]);
   // Телефон: рядок вкладок гортається до активної
-  useEffect(() => { document.querySelector(".v3-mx-tabs .is-on")?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }, [tab]);
+  useEffect(() => { document.querySelector(".v3-mx-tabs .is-on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [tab]);
+  // Phone tab strip: fade only the edge that has more tabs behind it (no fade over a fully visible tab)
+  const tabsEl = useRef<HTMLDivElement | null>(null);
+  const [tabFade, setTabFade] = useState({ l: false, r: true });
+  const edgeFade = (el: HTMLElement) => { const l = el.scrollLeft > 4, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 4; setTabFade((o) => (o.l === l && o.r === r ? o : { l, r })); };
 
   // Ставки користувачів (у фоні): записи на матч і матчі, введені вручну
   useEffect(() => {
@@ -158,17 +163,38 @@ export default function Matches() {
   }, []);
 
   const today = kyivDay();
-  const all = matches || [];
+  // Logos for teams the feeds sent without one (e.g. matches added by hand) — same packs the app uses
+  const [logoMap, setLogoMap] = useState<Record<string, string>>({});
+  const [logoTried] = useState(() => new Set<string>());
+  useEffect(() => {
+    const need = new Map<string, { name: string; game: Game }>();
+    for (const m of [...(matches || []), ...history]) for (const [n, l] of [[m.t1, m.logo1], [m.t2, m.logo2]] as const) {
+      const k = logoKey(m.game, n); if (n && isFallbackLogo(l) && !logoTried.has(k)) need.set(k, { name: n, game: m.game });
+    }
+    if (!need.size) return;
+    need.forEach((_, k) => logoTried.add(k));
+    resolveLogos([...need.values()]).then((found) => { if (Object.keys(found).length) setLogoMap((o) => ({ ...o, ...found })); }).catch(() => {});
+  }, [matches, history, logoTried]);
+  const withLogo = useCallback((m: Match): Match => {
+    const l1 = isFallbackLogo(m.logo1) ? logoMap[logoKey(m.game, m.t1)] : undefined, l2 = isFallbackLogo(m.logo2) ? logoMap[logoKey(m.game, m.t2)] : undefined;
+    return l1 || l2 ? { ...m, logo1: l1 || m.logo1, logo2: l2 || m.logo2 } : m;
+  }, [logoMap]);
+  const all = useMemo(() => (matches || []).map(withLogo), [matches, withLogo]);
   const recent = useMemo(() => { const from = addDays(today, -14); return (bets || []).filter((b) => String(b.date).slice(0, 10) >= from); }, [bets, today]);
   const betsFor = useCallback((m: Match) => recent.filter((b) => betMatches(b, m)), [recent]);
-  const known = useMemo(() => [...all, ...history], [all, history]);
+  const known = useMemo(() => [...all, ...history.map(withLogo)], [all, history, withLogo]);
   const groups = useMemo(() => (bets ? manualGroups(recent, known).filter((x) => !decided.has(linkKey(x.game, x.t1, x.t2, x.day))) : []), [bets, recent, known, decided, aliases]);
   const teams = useMemo(() => teamsFrom(known), [known, aliases]);
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
   const liveN = all.filter((m) => m.status === "live").length;
-  const down = (parsers || []).filter((p) => p.open);
+  // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
+  const cntFor = (name: string) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : todayM.filter((m) => m.game === f && m.source === "tips.gg").length; };
+  /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
+  const pState = (p: ParserState): "down" | "flaky" | "idle" | "ok" => { const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name) === 0 ? "idle" : "ok"; };
+  const down = (parsers || []).filter((p) => pState(p) !== "ok");
+  const issueText = (p: ParserState) => `${PARSER_NAMES[p.name] || p.name} ${PARSER_ISSUE[pState(p) as "down" | "flaky" | "idle"]}`;
   const todayBets = bets ? todayM.reduce((a, m) => a + betsFor(m).length, 0) : null;
 
   // ── Матчі: фільтри ──
@@ -288,11 +314,11 @@ export default function Matches() {
 
   const sums = [
     { k: "today", label: "Матчів сьогодні", v: matches ? String(todayM.length) : "—", n: matches ? `CS2 ${todayM.filter((m) => m.game === "cs2").length} · Dota 2 ${todayM.filter((m) => m.game === "dota2").length} · наживо ${liveN}` : "…", go: () => { setTab("matches"); setDay("today"); setSt("all"); }, on: tab === "matches" },
-    { k: "parsers", label: "Парсери", v: parsers ? (down.length ? `${down.length} ${plural(down.length, "помилка", "помилки", "помилок")}` : "Працюють") : "—", n: parsers ? (down.length ? down.map((p) => `${PARSER_NAMES[p.name] || p.name} не відповідає`).join(" · ") : `${parsers.reduce((a, p) => a + p.failures24h, 0)} збоїв за 24 год`) : "…", bad: down.length > 0, go: () => setTab("parsers"), on: tab === "parsers" },
+    { k: "parsers", label: "Парсери", v: parsers ? (down.length ? `${down.length} ${plural(down.length, "проблема", "проблеми", "проблем")}` : "Працюють") : "—", n: parsers ? (down.length ? down.map(issueText).join(" · ") : `${parsers.reduce((a, p) => a + p.failures24h, 0)} збоїв за 24 год`) : "…", bad: down.length > 0, go: () => setTab("parsers"), on: tab === "parsers" },
     { k: "bets", label: "Записів на сьогодні", v: todayBets == null ? "…" : String(todayBets), n: todayBets == null ? "рахуємо зі ставок користувачів" : `на ${todayM.length} ${plural(todayM.length, "матч", "матчі", "матчів")} сьогодні`, go: undefined, on: false },
     { k: "manual", label: "Додані вручну", v: bets ? String(groups.length) : "…", n: bets ? (groups.length ? "немає в стрічках парсерів" : "усі записи на своїх матчах") : "шукаємо в записах", amber: groups.length > 0, go: () => setTab("manual"), on: tab === "manual" },
   ];
-  const tabN: Record<Tab, number | null> = { matches: matches ? todayM.length : null, parsers: parsers ? down.length || parsers.length : null, manual: bets ? groups.length : null, teams: teams.length || null };
+  const tabN: Record<Tab, number | null> = { matches: matches ? todayM.length : null, parsers: parsers ? down.length || parsers.length : null, manual: bets ? groups.length : null, teams: matches ? teams.length : null };
 
   // ── Деталі матчу (бічна панель / шторка) ──
   const detail = (m: Match) => {
@@ -413,11 +439,19 @@ export default function Matches() {
         const hours = Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok", h }; });
         return (
           <div className="v3-dcard v3-mx-up">
-            <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong><span><i className="is-ok" />успішно</span><span><i className="is-mix" />із повторами</span><span><i className="is-bad" />помилка</span><span><i className="is-none" />немає даних</span></div>
-            <div className="v3-mx-bars" role="group" aria-label="Години">{hours.map((x, i) => <button type="button" key={i} className={`v3-mx-bar is-${x.s}${hourSel === i ? " is-sel" : ""}`} style={{ animationDelay: `${i * 30}ms` }} aria-pressed={hourSel === i} aria-label={`${x.hh}:00`} onClick={() => setHourSel(hourSel === i ? null : i)} />)}</div>
+            <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong>
+              <div className="v3-mx-legend" role="group" aria-label="Показати години зі статусом">
+                {([["ok", "успішно"], ["mix", "із повторами"], ["bad", "помилка"], ["none", "немає даних"]] as const).map(([k, l]) => {
+                  const last = hours.map((x) => x.s).lastIndexOf(k);
+                  return <button key={k} type="button" className={legendSel === k ? "is-on" : ""} aria-pressed={legendSel === k} disabled={last < 0} title={last < 0 ? "За 24 години такого не було" : `Остання година зі статусом «${l}»`}
+                    onClick={() => { if (legendSel === k) { setLegendSel(null); setHourSel(null); } else { setLegendSel(k); setHourSel(last); } }}><i className={`is-${k}`} />{l}</button>;
+                })}
+              </div>
+            </div>
+            <div className="v3-mx-bars" role="group" aria-label="Години">{hours.map((x, i) => <button type="button" key={i} className={`v3-mx-bar is-${x.s}${hourSel === i ? " is-sel" : ""}${legendSel && legendSel !== x.s ? " is-dim" : ""}`} style={{ animationDelay: `${i * 30}ms` }} aria-pressed={hourSel === i} aria-label={`${x.hh}:00`} onClick={() => { setLegendSel(null); setHourSel(hourSel === i ? null : i); }} />)}</div>
             {hourSel !== null && hours[hourSel] && (() => { const x = hours[hourSel]; const next = String((Number(x.hh) + 1) % 24).padStart(2, "0"); return (
               <p className="v3-mx-hinfo" aria-live="polite"><strong>{x.hh}:00–{next}:00</strong>{x.h ? <>
-                <span className="is-ok">{x.h.success} {plural(x.h.success, "успішний запуск", "успішні запуски", "успішних запусків")}</span>
+                {(x.h.success > 0 || !x.h.failure) && <span className="is-ok">{x.h.success} {plural(x.h.success, "успішний запуск", "успішні запуски", "успішних запусків")}</span>}
                 {x.h.failure > 0 && <span className="is-bad">{x.h.failure} {plural(x.h.failure, "помилка", "помилки", "помилок")}</span>}</> : <span>немає даних — парсер у цю годину не запускався</span>}</p>
             ); })()}
             <div className="v3-mx-axis"><span>{hours[0].hh}:00</span><span>{hours[6].hh}:00</span><span>{hours[12].hh}:00</span><span>{hours[18].hh}:00</span><span>зараз</span></div>
@@ -426,14 +460,15 @@ export default function Matches() {
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-wcard v3-mx-pcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
         : parsers.map((p, i) => {
           const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
-          const cnt = meta.feed === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : todayM.filter((m) => m.game === meta.feed && m.source === "tips.gg").length;
+          const cnt = cntFor(p.name);
+          const ps = pState(p);
           const r = running[p.name];
           return (
-            <div key={p.name} className={`v3-wcard v3-mx-pcard${p.open ? " is-err" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
+            <div key={p.name} className={`v3-wcard v3-mx-pcard${ps === "down" ? " is-err" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
               <div className="v3-mx-ph">
                 <span className="v3-mx-pav" style={{ background: meta.color }}>{meta.ini}</span>
                 <span><strong>{PARSER_NAMES[p.name] || p.name}</strong><small>{meta.site}{meta.game && ` · ${meta.game}`}</small></span>
-                <span key={String(p.open)} className={`v3-tag v3-mx-flip ${p.open ? "v3-tag-red" : "v3-tag-green"}`}><i className={`v3-mx-dot${p.open ? " is-pulse" : ""}`} aria-hidden="true" />{p.open ? "Помилка" : "Працює"}</span>
+                <span key={ps} className={`v3-tag v3-mx-flip ${ps === "down" ? "v3-tag-red" : ps === "ok" ? "v3-tag-green" : "v3-tag-amber"}`}><i className={`v3-mx-dot${ps === "down" || ps === "flaky" ? " is-pulse" : ""}`} aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : "Працює"}</span>
               </div>
               <div className="v3-mx-pkv">
                 <div><span>Останній збій</span><strong className={p.open ? "is-bad" : ""}>{p.lastFailure ? ago(p.lastFailure) : "не було"}</strong></div>
@@ -443,7 +478,7 @@ export default function Matches() {
               {(() => { const ev = events[p.name]; return ev ? (
                 <div className="v3-mx-ev"><strong>Останні події</strong>{ev.length ? ev.slice(0, 4).map((e, k) => <div key={e.id} className={`v3-mx-evr is-${e.event}`} style={{ animationDelay: `${150 + k * 45}ms` }}><span>{new Date(e.createdAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>) : <p className="v3-mx-pnote">Подій ще немає — журнал почне наповнюватися з наступних запусків.</p>}</div>
               ) : null; })()}
-              <p className="v3-mx-pnote">{p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
+              <p className="v3-mx-pnote">{p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : ps === "flaky" ? `Останні запуски завершуються помилкою (${ago(p.lastFailure)}), парсер повторює спроби. Поки так, у меню біля «Матчі» стоїть «!».` : ps === "idle" ? "Помилок немає, але сьогодні джерело не повернуло жодного матчу — найчастіше це блокування з боку сайту. Застосунок показує останні отримані дані." : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
               <div className="v3-mx-pacts">
                 <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
                   {r === "busy" ? <span className="v3-mx-spin" aria-hidden="true" /> : r === "done" ? <Check size={15} aria-hidden="true" className="v3-mx-ok" /> : <RefreshCw size={15} aria-hidden="true" />}
@@ -568,7 +603,7 @@ export default function Matches() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Матчі</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з помилкою` : "Усі джерела працюють") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}`}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з проблемою` : "Усі джерела працюють") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}`}</span></p>
         </div>
         <div className="v3-chips">
           <button type="button" className={`v3-chip v3-mx-rf${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={refresh} aria-label="Оновити з джерел">
@@ -581,7 +616,7 @@ export default function Matches() {
       {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Матчі станом на {updatedAt || "останнє оновлення"}.</span></div>}
       {error && matches !== null && <div className="v3-stale" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>Не вдалося оновити: {error}.</span><button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => load()}>Спробувати ще раз</button></div>}
       {failed.length === 1 && <div className="v3-stale" role="status"><AlertTriangle size={18} aria-hidden="true" /><span>Стрічка {GAME_LABEL[failed[0]]} не відповіла — показуємо лише {GAME_LABEL[failed[0] === "cs2" ? "dota2" : "cs2"]}.</span></div>}
-      {down.length > 0 && tab === "matches" && <button type="button" className="v3-mx-alert" onClick={() => setTab("parsers")}><i aria-hidden="true" /><span>{down.map((p) => PARSER_NAMES[p.name] || p.name).join(", ")} не {down.length > 1 ? "відповідають" : "відповідає"}{down[0].lastFailure ? ` · ${ago(down[0].lastFailure)}` : ""}. Дані можуть бути застарілими.</span><b>Парсери →</b></button>}
+      {down.length > 0 && tab === "matches" && <button type="button" className="v3-mx-alert" onClick={() => setTab("parsers")}><i aria-hidden="true" /><span>{down.map(issueText).join(", ")}{down[0].lastFailure && pState(down[0]) !== "idle" ? ` · ${ago(down[0].lastFailure)}` : ""}. Дані можуть бути застарілими.</span><b>Парсери →</b></button>}
 
       {error && matches === null ? (
         <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити матчі</strong><span>Стрічки tips.gg і HLTV не відповіли.</span><code className="v3-uerror-det">{error}</code><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => load()}>Спробувати ще раз</button></div></div>
@@ -596,7 +631,7 @@ export default function Matches() {
           ))}
         </section>
 
-        <div className="v3-mx-tabsw">
+        <div className={`v3-mx-tabsw${tabFade.l ? " fade-l" : ""}${tabFade.r ? " fade-r" : ""}`} onScroll={(e) => edgeFade(e.currentTarget)} ref={(el) => { if (el && !tabsEl.current) { tabsEl.current = el; edgeFade(el); } }}>
           <div className="v3-pay-tabs v3-mx-tabs" role="tablist" aria-label="Розділи матчів">
             <PillTrack active={tab} />
             {TABS.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}${t.key === "parsers" && down.length ? " is-err" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{tabN[t.key] ?? "…"}</span>{t.label}</button>)}

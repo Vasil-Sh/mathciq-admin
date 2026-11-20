@@ -1,6 +1,6 @@
 import { api, getApiBase } from "./apiClient";
 const API_BASE = getApiBase();
-import { fromFeed, fromHistory, type FeedMatch, type Game, type HistoryMatch, type Match } from "./matchesModel";
+import { absLogo, fromFeed, fromHistory, type FeedMatch, type Game, type HistoryMatch, type Match } from "./matchesModel";
 
 /** Стрічки на сьогодні й наперед: CS2 (tips.gg + HLTV) і Dota 2 (tips.gg). */
 export async function fetchFeeds(force = false): Promise<{ matches: Match[]; failed: ("cs2" | "dota2")[] }> {
@@ -71,3 +71,13 @@ export async function fetchLinks(): Promise<MatchLink[] | null> {
 
 export const fetchParserEvents = async (name: string, limit = 100) => (await api.get<{ events: ParserEvent[] }>(`/admin/parsers/${encodeURIComponent(name)}/events?limit=${limit}`)).events || [];
 export const fetchAvailability = async (name: string, hours = 24) => (await api.get<{ availability: HourStat[] }>(`/admin/parsers/${encodeURIComponent(name)}/availability?hours=${hours}`)).availability || [];
+
+export const logoKey = (game: Game, name: string) => `${game}:${name.trim().toLowerCase()}`;
+/** Team logos the app uses (HLTV/Dota 2 logo packs on the backend, then tips.gg) — one request for many teams. */
+export async function resolveLogos(items: { name: string; game: Game }[]): Promise<Record<string, string>> {
+  if (!items.length) return {};
+  const res = await api.post<{ name: string; game: Game; url: string | null }[]>("/risky-teams/logos", items.slice(0, 300));
+  const out: Record<string, string> = {};
+  for (const r of Array.isArray(res) ? res : []) { const u = absLogo(r.url, API_BASE); if (u && r.name) out[logoKey(r.game, r.name)] = u; }
+  return out;
+}

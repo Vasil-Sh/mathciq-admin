@@ -121,6 +121,20 @@ export const PARSER_NAMES: Record<string, string> = {
   tipsgg_fetch_dota2_matches: "Tips.gg · Dota 2",
 };
 
+/**
+ * Parser health from its circuit-breaker state:
+ * down = breaker open (source not answering); flaky = closed, but failed within the last 30 min
+ * (retries keep it "closed" while errors keep coming — it must not read as «Працює»).
+ */
+export type ParserHealth = "down" | "flaky" | "ok";
+export const FLAKY_WINDOW_MIN = 30;
+export function parserHealth(p: ParserState, now = Date.now()): ParserHealth {
+  if (p.open) return "down";
+  const t = p.lastFailure ? Date.parse(p.lastFailure) : NaN;
+  return Number.isFinite(t) && now - t < FLAKY_WINDOW_MIN * 60_000 ? "flaky" : "ok";
+}
+export const PARSER_ISSUE: Record<"down" | "flaky" | "idle", string> = { down: "не відповідає", flaky: "працює зі збоями", idle: "не повертає матчів" };
+
 export async function fetchParsers(): Promise<ParserState[]> {
   const data = await api.get<{ parsers: ParserState[] }>("/admin/parsers");
   return data.parsers || [];
