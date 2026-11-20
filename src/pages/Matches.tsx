@@ -94,8 +94,9 @@ export default function Matches() {
   // Команди
   const [tq, setTq] = useState("");
   const [tf, setTf] = useState<"all" | "dup" | "logo">("all");
+  const [tg, setTg] = useState<"all" | Game>("all");
   const [tLimit, setTLimit] = useState(80);
-  useEffect(() => setTLimit(80), [tq, tf]);
+  useEffect(() => setTLimit(80), [tq, tf, tg]);
   // Усі команди з пакетів логотипів — довідник не тільки з тих, що грали останні 30 днів
   const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
   useEffect(() => { let off = false; fetchTeamCatalog().then((c) => { if (!off) setCatalog(c); }).catch(() => {}); return () => { off = true; }; }, []);
@@ -550,7 +551,9 @@ export default function Matches() {
 
   // ── Команди ──
   const tn = tq.trim().toLowerCase();
-  const tList = teams.filter((t) => (tf === "all" || (tf === "dup" ? t.variants.length > 0 : isFallbackLogo(t.logo))) && (!tn || `${t.name} ${t.variants.join(" ")} ${t.aliases.join(" ")}`.toLowerCase().includes(tn)));
+  const teamsG = tg === "all" ? teams : teams.filter((t) => t.game === tg);
+  const tgOpts = gameOpts.map((g) => ({ value: g.value, label: `${g.value === "all" ? "Усі ігри" : g.label} · ${g.value === "all" ? teams.length : teams.filter((t) => t.game === g.value).length}` }));
+  const tList = teamsG.filter((t) => (tf === "all" || (tf === "dup" ? t.variants.length > 0 : isFallbackLogo(t.logo))) && (!tn || `${t.name} ${t.variants.join(" ")} ${t.aliases.join(" ")}`.toLowerCase().includes(tn)));
   const tSel = tList.find((t) => t.key === selTeam) || (wide ? tList[0] : undefined) || null;
   const teamDetail = (t: Team) => (
     <div className="v3-mx-detail">
@@ -571,14 +574,15 @@ export default function Matches() {
       <p className="v3-mx-hint">Псевдонім — інше написання «{t.name}»: записи й матчі з будь-яким написанням рахуються як одна команда.</p>
     </div>
   );
-  const tfOpts = [{ key: "all" as const, label: "Усі", n: teams.length }, { key: "dup" as const, label: "Дублікати", n: teams.filter((t) => t.variants.length).length }, { key: "logo" as const, label: "Без логотипа", n: teams.filter((t) => isFallbackLogo(t.logo)).length }];
+  const tfOpts = [{ key: "all" as const, label: "Усі", n: teamsG.length }, { key: "dup" as const, label: "Дублікати", n: teamsG.filter((t) => t.variants.length).length }, { key: "logo" as const, label: "Без логотипа", n: teamsG.filter((t) => isFallbackLogo(t.logo)).length }];
   const teamsTab = (
     <section className={wide ? "v3-pay-main" : "v3-pay-m"}>
       <div className={wide ? "v3-wcard v3-pay-list" : ""}>
         <div className={wide ? "v3-pay-tools" : "v3-mx-mtools"}>
           <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
           {wide ? <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр"><PillTrack active={tf} />{tfOpts.map((f) => <button key={f.key} type="button" className={tf === f.key ? "is-on" : ""} aria-pressed={tf === f.key} onClick={() => setTf(f.key)}>{f.label} <span className="v3-seg-n">{f.n}</span></button>)}</div>
-            : <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} />}
+            : <div className="v3-pay-mf"><Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} /><Dropdown className="v3-mselect-dd" ariaLabel="Гра" align="right" value={tg} onChange={(v) => setTg(v)} options={tgOpts} /></div>}
+          {wide && <Dropdown className="is-light" ariaLabel="Гра" value={tg} onChange={(v) => setTg(v)} options={tgOpts} />}
         </div>
         {wide && <div className="v3-pay-th v3-mx-trow"><span>Команда</span><span>Псевдоніми з джерел</span><span>Гра</span><span>Матчів</span><span className="v3-pay-r">Останній</span></div>}
         {matches === null ? skelRows(5) : tList.length ? (<>{wide ? <div className="v3-pay-rows a">{tList.slice(0, tLimit).map((t, i) => (
