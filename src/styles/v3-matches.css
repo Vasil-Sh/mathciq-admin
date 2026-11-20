@@ -46,6 +46,7 @@
 .v3-mx-dh { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #8c95a6; font-size: 13px; }
 .v3-mx-detail h2 { margin: 0; font-size: 28px; font-weight: 400; letter-spacing: -.03em; line-height: 1.15; }
 .v3-mx-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v3-mx-kv.is-3 { grid-template-columns: repeat(3, 1fr); }
 .v3-mx-kv > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: #1d232e; }
 .v3-mx-kv span { color: #8c95a6; font-size: 12px; }
 .v3-mx-kv strong { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -271,3 +272,7 @@
 .v3-mx-strip strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v3-mx-strip > span:not(.v3-mx-lg) { color: #5f6878; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .v3-mx-chip.is-new { border: 1px dashed rgba(243, 207, 154, .5); background: transparent !important; color: #f3cf9a !important; }
+
+/* Команди: «Показати ще» під довгим довідником (≈4 000 команд з пакетів логотипів) */
+.v3-ab-more.v3-mx-more { display: block; width: calc(100% - 32px); margin: 14px auto 16px; }
+.v3-pay-m .v3-ab-more.v3-mx-more { width: 100%; margin: 12px 0 4px; }

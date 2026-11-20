@@ -1,6 +1,6 @@
 import { api, getApiBase } from "./apiClient";
 const API_BASE = getApiBase();
-import { absLogo, fromFeed, fromHistory, type FeedMatch, type Game, type HistoryMatch, type Match } from "./matchesModel";
+import { absLogo, type CatalogTeam, fromFeed, fromHistory, type FeedMatch, type Game, type HistoryMatch, type Match } from "./matchesModel";
 
 /** Стрічки на сьогодні й наперед: CS2 (tips.gg + HLTV) і Dota 2 (tips.gg). */
 export async function fetchFeeds(force = false): Promise<{ matches: Match[]; failed: ("cs2" | "dota2")[] }> {
@@ -80,4 +80,10 @@ export async function resolveLogos(items: { name: string; game: Game }[]): Promi
   const out: Record<string, string> = {};
   for (const r of Array.isArray(res) ? res : []) { const u = absLogo(r.url, API_BASE); if (u && r.name) out[logoKey(r.game, r.name)] = u; }
   return out;
+}
+
+/** Усі команди з пакетів логотипів (CS2 + Dota 2) — для довідника «Команди». */
+export async function fetchTeamCatalog(): Promise<CatalogTeam[]> {
+  const res = await api.get<{ teams: CatalogTeam[] }>("/admin/teams/catalog");
+  return (res.teams || []).map((t) => ({ ...t, logo: absLogo(t.logo, API_BASE) }));
 }

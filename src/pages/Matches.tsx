@@ -12,12 +12,12 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchParserEvents, linkMatch, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchParserEvents, fetchTeamCatalog, linkMatch, logoKey, patchMatch, rerunParser, resetMatch, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
-  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, normTeam, setAliases, STATUS_LABEL, teamsFrom,
-  type Game, type ManualGroup, type Match, type MStatus, type Team,
+  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, setAliases, STATUS_LABEL, teamsFrom,
+  type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
 
@@ -94,6 +94,11 @@ export default function Matches() {
   // Команди
   const [tq, setTq] = useState("");
   const [tf, setTf] = useState<"all" | "dup" | "logo">("all");
+  const [tLimit, setTLimit] = useState(80);
+  useEffect(() => setTLimit(80), [tq, tf]);
+  // Усі команди з пакетів логотипів — довідник не тільки з тих, що грали останні 30 днів
+  const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
+  useEffect(() => { let off = false; fetchTeamCatalog().then((c) => { if (!off) setCatalog(c); }).catch(() => {}); return () => { off = true; }; }, []);
   const [selTeam, setSelTeam] = useState<string | null>(null);
   // Адмінські дані: псевдоніми, правки, рішення, журнал парсерів
   const [aliases, setAliasList] = useState<TeamAlias[]>([]);
@@ -184,7 +189,7 @@ export default function Matches() {
   const betsFor = useCallback((m: Match) => recent.filter((b) => betMatches(b, m)), [recent]);
   const known = useMemo(() => [...all, ...history.map(withLogo)], [all, history, withLogo]);
   const groups = useMemo(() => (bets ? manualGroups(recent, known).filter((x) => !decided.has(linkKey(x.game, x.t1, x.t2, x.day))) : []), [bets, recent, known, decided, aliases]);
-  const teams = useMemo(() => teamsFrom(known), [known, aliases]);
+  const teams = useMemo(() => mergeCatalog(teamsFrom(known), catalog), [known, catalog, aliases]);
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
@@ -550,7 +555,7 @@ export default function Matches() {
   const teamDetail = (t: Team) => (
     <div className="v3-mx-detail">
       <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div></div>
-      <div className="v3-mx-kv"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
+      <div className="v3-mx-kv is-3"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Рейтинг</span><strong>{t.rank != null ? `#${t.rank}` : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
       {(() => { const tn = normTeam(t.name); const mine = known.filter((m) => m.game === t.game && (normTeam(m.t1) === tn || normTeam(m.t2) === tn)); const now = Date.now();
         const m = mine.filter((x) => x.ts >= now).sort((a, b) => a.ts - b.ts)[0] || mine.sort((a, b) => b.ts - a.ts)[0]; if (!m) return null;
         const first = normTeam(m.t1) === tn; const [n1, l1, n2, l2] = first ? [m.t1, m.logo1, m.t2, m.logo2] : [m.t2, m.logo2, m.t1, m.logo1];
@@ -576,19 +581,19 @@ export default function Matches() {
             : <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} />}
         </div>
         {wide && <div className="v3-pay-th v3-mx-trow"><span>Команда</span><span>Псевдоніми з джерел</span><span>Гра</span><span>Матчів</span><span className="v3-pay-r">Останній</span></div>}
-        {matches === null ? skelRows(5) : tList.length ? (wide ? <div className="v3-pay-rows a">{tList.slice(0, 80).map((t, i) => (
+        {matches === null ? skelRows(5) : tList.length ? (<>{wide ? <div className="v3-pay-rows a">{tList.slice(0, tLimit).map((t, i) => (
           <button key={t.key} type="button" className={`v3-pay-row v3-mx-trow${tSel?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => setSelTeam(t.key)}>
             <span className="v3-mx-tname"><Logo src={t.logo} name={t.name} size={28} /><strong>{t.name}</strong>{t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}</span>
             <span className="v3-mx-vars">{t.aliases.length + t.variants.length ? [...t.aliases, ...t.variants].slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
             <span>{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
           </button>
-        ))}</div> : <ul className="v3-pay-mlist a">{tList.slice(0, 60).map((t, i) => (
+        ))}</div> : <ul className="v3-pay-mlist a">{tList.slice(0, tLimit).map((t, i) => (
           <li key={t.key} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-mx-mcard" onClick={() => { setSelTeam(t.key); setSheet(true); }}>
             <Logo src={t.logo} name={t.name} size={38} />
-            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
+            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small>{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
             {t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}
           </button></li>
-        ))}</ul>) : empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.")}
+        ))}</ul>}{tList.length > tLimit && <button type="button" className="v3-ab-more v3-mx-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}</button>}</>) : empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.")}
       </div>
       {wide && <aside className="v3-dcard v3-pay-aside">{tSel ? teamDetail(tSel) : <div className="v3-pay-empty is-dark"><span>Оберіть команду.</span></div>}</aside>}
     </section>

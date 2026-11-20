@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { absLogo, betMatches, fromFeed, isoToKyiv, kyivToIso, linkKey, manualGroups, normTeam, setAliases, teamsFrom, type FeedMatch } from "./matchesModel";
+import { absLogo, betMatches, fromFeed, isoToKyiv, kyivToIso, linkKey, manualGroups, normTeam, setAliases, teamsFrom, mergeCatalog, type FeedMatch } from "./matchesModel";
 import { bet } from "@/test/factories";
 
 const feed = (o: Partial<FeedMatch> = {}): FeedMatch => ({
@@ -65,6 +65,21 @@ describe("teams", () => {
     const navi = t.find((x) => normTeam(x.name) === "navi")!;
     expect(navi.matches).toBe(2);
     expect(navi.variants).toHaveLength(1);
+  });
+  it("adds every team from the logo packs, with rank and logo", () => {
+    const a = fromFeed(feed({ id: "1", nameTeam1: "G2", nameTeam2: "Manual Five", logoTeam1: "", logoTeam2: "" }), "cs2", "x");
+    const t = mergeCatalog(teamsFrom([a]), [
+      { game: "cs2", name: "G2", rank: 5, logo: "g2.png" },
+      { game: "cs2", name: "Falcons", rank: 1, logo: "f.png" },
+      { game: "dota2", name: "Team Spirit", rank: 1, logo: "s.png" },
+      { game: "cs2", name: "Obscure", rank: 900, logo: "o.png" },
+    ]);
+    expect(t).toHaveLength(5);
+    const g2 = t.find((x) => x.name === "G2")!;
+    expect(g2).toMatchObject({ matches: 1, rank: 5, logo: "g2.png" });
+    expect(t.find((x) => x.name === "Falcons")).toMatchObject({ matches: 0, rank: 1 });
+    // teams with matches first, then by rank
+    expect(t.slice(2).map((x) => x.name)).toEqual(["Falcons", "Team Spirit", "Obscure"]);
   });
 });
 

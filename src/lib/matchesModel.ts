@@ -230,6 +230,30 @@ export interface Team {
   variants: string[];
   /** Написання, вже записані в псевдоніми (не дублікати). */
   aliases: string[];
+  /** Місце в рейтингу з пакета логотипів (HLTV / Dota 2), якщо команда там є. */
+  rank?: number | null;
+}
+
+export interface CatalogTeam { game: Game; name: string; rank: number | null; logo: string | null }
+
+/**
+ * Довідник команд: команди з матчів + усі команди з пакетів логотипів.
+ * Команда з матчів отримує місце в рейтингу (і логотип, якщо свого не мала);
+ * команда лише з пакета — 0 матчів. Порядок: більше матчів, потім вище в рейтингу.
+ */
+export function mergeCatalog(teams: Team[], catalog: CatalogTeam[]): Team[] {
+  const byKey = new Map<string, Team>(teams.map((t) => [t.key, { ...t }]));
+  for (const c of catalog) {
+    const n = normTeam(c.name);
+    if (!n) continue;
+    const key = `${c.game}:${n}`;
+    const t = byKey.get(key);
+    if (t) {
+      if (t.rank == null || (c.rank != null && c.rank < t.rank)) t.rank = c.rank;
+      if (isFallbackLogo(t.logo) && c.logo) t.logo = c.logo;
+    } else byKey.set(key, { key, name: c.name, game: c.game, logo: c.logo, matches: 0, last: "", variants: [], aliases: [], rank: c.rank });
+  }
+  return [...byKey.values()].sort((a, b) => b.matches - a.matches || (a.rank ?? Infinity) - (b.rank ?? Infinity) || a.name.localeCompare(b.name));
 }
 
 /** Довідник команд зі стрічок і історії: одна команда — одна нормалізована назва в межах гри. */
