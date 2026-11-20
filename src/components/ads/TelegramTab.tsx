@@ -24,7 +24,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   const sel = items.find((p) => p.id === selId) || null;
   const editing = creating || !!sel;
 
-  useEffect(() => { if (wide && !selId && !creating && items.length) setSelId(items[0].id); }, [wide, items, selId, creating]);
+  // the editor is a modal now: nothing opens until a row is clicked
   useEffect(() => {
     setRejecting(false);
     if (creating) { setF(EMPTY); return; }

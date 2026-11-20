@@ -25,7 +25,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
   const sel = items.find((b) => b.id === selId) || null;
   const editing = creating || !!sel;
 
-  useEffect(() => { if (wide && !selId && !creating && items.length) setSelId(items[0].id); }, [wide, items, selId, creating]);
+  // the editor is a modal now: nothing opens until a row is clicked
   useEffect(() => {
     if (creating) { setF(EMPTY); return; }
     if (sel) setF({ name: sel.name, licenseNumber: sel.licenseNumber, licenseUntil: sel.licenseUntil, moderationText: sel.moderationText, link: sel.link, buttonText: sel.buttonText, clickPrice: sel.clickPrice, showOddsInList: sel.showOddsInList, showMatchDetails: sel.showMatchDetails, active: sel.active });

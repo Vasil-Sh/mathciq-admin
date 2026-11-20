@@ -117,9 +117,9 @@
 .v3-mx-lh p { margin: 6px 0 0; color: var(--v3-ink-muted); font-size: 13px; }
 .v3-pay-th.v3-mx-grow, .v3-pay-row.v3-mx-grow { grid-template-columns: minmax(0, 1.5fr) 80px minmax(0, 1.6fr) 110px; }
 .v3-mx-zero { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
-.v3-mx-zero-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 36px; }
+.v3-mx-zero-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 36px; text-align: center; }
 .v3-mx-zero-card strong { font-size: 24px; font-weight: 500; letter-spacing: -.02em; }
-.v3-mx-zero-card p { margin: 0; color: var(--v3-ink-muted); font-size: 14px; line-height: 1.6; max-width: 560px; }
+.v3-mx-zero-card p { margin: 0; color: var(--v3-ink-muted); font-size: 14px; line-height: 1.6; max-width: 520px; }
 .v3-mx-zero-card > * { animation: v3-mx-in .45s cubic-bezier(.2, .8, .2, 1) backwards; }
 .v3-mx-zero-card > :nth-child(2) { animation-delay: .08s; } .v3-mx-zero-card > :nth-child(3) { animation-delay: .14s; }
 .v3-mx-zero-st { display: flex; flex-direction: column; gap: 12px; }

@@ -22,12 +22,11 @@ export const LockedLabel = () => (
   <div className="v3-ad-locked"><span className="v3-ad-locked-sw" aria-hidden="true" /><Lock size={13} aria-hidden="true" /> Мітка «Реклама · 21+» — завжди увімкнена</div>
 );
 
-/** Editor: a side panel on wide screens, a bottom sheet on narrow ones. */
-export function EditorPanel({ wide, open, title, sub, onClose, children, paneKey }: { wide: boolean; open: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode; paneKey?: string }) {
-  if (wide) return open ? <aside key={paneKey} className="v3-dcard v3-ad-aside v3-ad-pane" aria-label={title}><div className="v3-ad-aside-h"><strong>{title}</strong>{sub && <span>{sub}</span>}</div>{children}</aside> : null;
+/** Editor: a white modal like «Новий банер» — centred on wide screens, a bottom sheet on narrow ones. */
+export function EditorPanel({ wide, open, title, sub, onClose, children }: { wide: boolean; open: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode; paneKey?: string }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="v3-modal v3-ad-sheet">
+      <DialogContent className={`v3-modal v3-ad-sheet${wide ? " is-wide" : ""}`}>
         <DialogTitle className="v3-modal-title">{title}</DialogTitle>
         <DialogDescription className="v3-modal-sub">{sub || "Зміни зберігаються кнопкою внизу"}</DialogDescription>
         <div className="v3-ad-aside is-sheet">{children}</div>
