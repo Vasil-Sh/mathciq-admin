@@ -45,7 +45,9 @@ function useSheetKeyboard() {
     const y0 = window.scrollY;
     const vv = window.visualViewport;
     if (!vv) return () => root.classList.remove("v3-sheet-open");
-    let max = vv.height;
+    // A dialog that focuses its search on open brings the keyboard up before this runs: start from the full layout
+    // height, or the open keyboard would be taken as «closed» (no lift, no white under its bar — the page shows through).
+    let max = Math.max(vv.height, document.documentElement.clientHeight);
     const fill = document.createElement("div");
     fill.setAttribute("aria-hidden", "true");
     fill.style.cssText = "position:absolute;left:0;right:0;height:600px;z-index:2147482000;pointer-events:none;display:none";

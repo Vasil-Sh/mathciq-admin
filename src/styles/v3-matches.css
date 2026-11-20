@@ -16,7 +16,7 @@
 .v3-mx-teams { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .v3-mx-teams > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .v3-mx-teams strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.v3-mx-lg { flex-shrink: 0; border-radius: 50%; object-fit: contain; background: #f1f4f9; }
+.v3-mx-lg { flex-shrink: 0; box-sizing: border-box; border-radius: 50%; object-fit: contain; background: #f1f4f9; }
 .v3-mx-lg.is-ini { display: grid; place-items: center; background: #5f6878; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
 .v3-mx-score { display: flex; flex-direction: column; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
 .v3-mx-score b { font-weight: 600; line-height: 22px; }
@@ -248,7 +248,8 @@
 .v3-mx-chip.is-alias { gap: 4px; padding-right: 4px; background: rgba(58, 109, 240, .18) !important; color: #c9d8ff !important; }
 .v3-mx-chip.is-alias button { display: grid; place-items: center; width: 24px; height: 24px; margin: -4px 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; transition: background-color .2s; }
 .v3-mx-msearch { width: 100%; box-sizing: border-box; }
-.v3-mx-pick { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
+.v3-mx-pick::-webkit-scrollbar { display: none; }
+.v3-mx-pick { scrollbar-width: none; display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
 .v3-mx-pick button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 14px; background: transparent; color: #11151c; font: inherit; text-align: left; cursor: pointer; transition: background-color .15s, transform .15s ease-out; }
 .v3-mx-pick button > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .v3-mx-pick small { color: #5f6878; font-size: 12px; }
@@ -276,3 +277,8 @@
 /* Команди: «Показати ще» під довгим довідником (≈4 000 команд з пакетів логотипів) */
 .v3-ab-more.v3-mx-more { display: block; width: calc(100% - 32px); margin: 14px auto 16px; }
 .v3-pay-m .v3-ab-more.v3-mx-more { width: 100%; margin: 12px 0 4px; }
+
+/* Гра біля назви: маленький силует CS2 / Dota 2 (ті самі, що в застосунку) */
+.v3-mx-gm { display: inline-block; width: 12px; height: 12px; margin-right: 5px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--gm) center / contain no-repeat; mask: var(--gm) center / contain no-repeat; }
+.v3-mx-gm.is-cs2 { --gm: url(/assets/mark-cs2.svg); }
+.v3-mx-gm.is-dota2 { --gm: url(/assets/mark-dota2.svg); }

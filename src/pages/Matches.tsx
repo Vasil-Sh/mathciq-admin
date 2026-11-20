@@ -49,7 +49,10 @@ const resLabel = (r: string) => (r === "Win" ? ["Виграш", "v3-tag-green"] 
 function Logo({ src, name, size = 24 }: { src: string | null; name: string; size?: number }) {
   const [bad, setBad] = useState(false);
   if (!src || bad) return <span className="v3-mx-lg is-ini" style={{ width: size, height: size }} aria-hidden="true">{initials(name)}</span>;
-  return <img className="v3-mx-lg" src={src} alt="" width={size} height={size} loading="lazy" onError={() => setBad(true)} />;
+  return <img className="v3-mx-lg" src={src} alt="" width={size} height={size} style={{ padding: Math.max(2, Math.round(size * 0.13)) }} loading="lazy" onError={() => setBad(true)} />;
+}
+function GameIco({ g }: { g: Game }) {
+  return <i className={`v3-mx-gm is-${g}`} aria-hidden="true" />;
 }
 function Teams({ m }: { m: Pick<Match, "t1" | "t2" | "logo1" | "logo2"> }) {
   return <span className="v3-mx-teams"><span><Logo src={m.logo1} name={m.t1} /><strong>{m.t1}</strong></span><span><Logo src={m.logo2} name={m.t2} /><strong>{m.t2}</strong></span></span>;
@@ -589,12 +592,12 @@ export default function Matches() {
           <button key={t.key} type="button" className={`v3-pay-row v3-mx-trow${tSel?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => setSelTeam(t.key)}>
             <span className="v3-mx-tname"><Logo src={t.logo} name={t.name} size={28} /><strong>{t.name}</strong>{t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}</span>
             <span className="v3-mx-vars">{t.aliases.length + t.variants.length ? [...t.aliases, ...t.variants].slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
-            <span>{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
+            <span><GameIco g={t.game} />{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
           </button>
         ))}</div> : <ul className="v3-pay-mlist a">{tList.slice(0, tLimit).map((t, i) => (
           <li key={t.key} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-mx-mcard" onClick={() => { setSelTeam(t.key); setSheet(true); }}>
             <Logo src={t.logo} name={t.name} size={38} />
-            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small>{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
+            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
             {t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}
           </button></li>
         ))}</ul>}{tList.length > tLimit && <button type="button" className="v3-ab-more v3-mx-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}</button>}</>) : empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.")}
