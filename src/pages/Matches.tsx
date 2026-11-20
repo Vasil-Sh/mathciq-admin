@@ -71,6 +71,8 @@ export default function Matches() {
   const online = useOnline();
   const [params] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => { const t = params.get("tab"); return t === "parsers" || t === "manual" || t === "teams" ? t : "matches"; });
+  // the phone menu links to /matches?tab=… — follow it when Matches is already open
+  useEffect(() => { const t = params.get("tab"); setTab(t === "parsers" || t === "manual" || t === "teams" ? t : "matches"); }, [params]);
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [hourSel, setHourSel] = useState<number | null>(null); // tapped hour on the 24-h bars
   const [legendSel, setLegendSel] = useState<"ok" | "mix" | "bad" | "none" | null>(null); // legend filter on the bars

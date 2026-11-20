@@ -58,8 +58,8 @@ test.describe("Користувачі", () => {
     await page.goto("/users?status=trial");
     if (isPhone(page)) {
       await expect(page.locator(".v3-mselect-dd button").first()).toContainText("Пробний");
-      await page.getByRole("button", { name: "Відкрити меню" }).click();
-      await page.getByRole("link", { name: /Користувачі/ }).first().click();
+      await page.locator(".v3-tabbar").getByRole("button", { name: "Меню" }).click();
+      await page.locator(".v3-dr").getByRole("link", { name: /Користувачі/ }).click();
       await expect(page).toHaveURL(/\/users$/);
     } else {
       await expect(page.locator(".v3-seg button.is-on, .v3-fchip.is-on").first()).toContainText("Пробний");
@@ -171,7 +171,7 @@ test.describe("Журнал дій", () => {
     const row = page.locator(".v3-au-mev").first();
     await row.click();
     await expect(row).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator(".v3-header-end .v3-audit")).toBeVisible();
+    await expect(page.locator(".v3-header-end a.v3-audit")).toBeVisible();
   });
 
   test("a user's history: banner with «Увесь журнал» button", async ({ page }) => {

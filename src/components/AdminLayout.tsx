@@ -14,6 +14,7 @@ import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import StarField from "./StarField";
+import MobileDrawer, { MobileTabBar } from "@/components/MobileDrawer";
 import PillTrack from "@/components/PillTrack";
 
 type NavKey = "support" | "matches";
@@ -157,44 +158,15 @@ export default function AdminLayout() {
               </div>
             )}
           </div>
-          <span className="v3-audit-slot is-mob">{auditButton}</span>
-          <button type="button" className="v3-burger" onClick={() => setMobileOpen(true)} aria-label="Відкрити меню" aria-expanded={mobileOpen}><UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-burger-av" /><Menu size={18} aria-hidden="true" /></button>
+          <span className="v3-audit-slot is-mob">{searchButton}{auditButton}</span>
         </div>
       </header>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} links={[...navigation, { label: "Журнал дій", href: "/audit", icon: History }].map(({ label, href, icon }) => ({ label, href, icon }))} />
 
-      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
-        <DialogContent className="v3-mobile-menu">
-          <DialogTitle className="sr-only">Меню</DialogTitle>
-          <DialogDescription className="sr-only">Розділи панелі адміністратора</DialogDescription>
-          <div className="v3-mobile-top">
-            <Logo onClick={() => setMobileOpen(false)} />
-            <button type="button" className="v3-icon-btn" onClick={() => setMobileOpen(false)} aria-label="Закрити меню"><X size={20} aria-hidden="true" /></button>
-          </div>
-          <nav aria-label="Основна навігація" className="v3-mobile-nav">
-            {[...navigation.slice(0, -1), { label: "Журнал дій", href: "/audit", icon: History, badge: undefined }, navigation[navigation.length - 1]].map(({ label, href, icon: Icon, badge }) => (
-              <NavLink key={href} to={href} className={({ isActive }) => `v3-mobile-link${isActive ? " is-active" : ""}`} onClick={() => setMobileOpen(false)}>
-                <Icon size={20} aria-hidden="true" />{label}
-                {href === "/users" && !!badges.usersExpiring && <span className="v3-push v3-expiring" title={`У стількох користувачів підписка закінчується за ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`}><span>{badges.usersExpiring}</span>закінчуються</span>}
-                {href === "/audit" && auditCount && !onAudit && <span className="v3-push v3-count">{auditCount}</span>}
-                {badgeFor(badge) && <span className="v3-push">{badgeFor(badge)}</span>}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="v3-mobile-account">
-            <div className="v3-mobile-account-who">
-              <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-avatar-lg" />
-              <div><strong>@{(user?.username || "admin").replace(/^@/, "")}</strong><small>{roleName} · MatchIQ</small></div>
-            </div>
-            <div className="v3-mobile-account-actions">
-              <Link to="/settings#account" className="v3-btn v3-btn-ghost-dark" onClick={() => setMobileOpen(false)}><KeyRound size={16} aria-hidden="true" />Пароль і сесії</Link>
-              <button type="button" className="v3-btn v3-btn-danger-outline" onClick={() => { setMobileOpen(false); setLogoutOpen(true); }}><LogOut size={16} aria-hidden="true" />Вийти з акаунта</button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MobileDrawer open={mobileOpen} onOpenChange={setMobileOpen} username={handle} telegram={user?.telegram} role={roleName} badges={badges} auditCount={onAudit ? "" : auditCount} />
 
       <main id="main-content" className="v3-main"><PageErrorBoundary resetKey={pathname}><Outlet /></PageErrorBoundary></main>
+      <MobileTabBar onMenu={() => setMobileOpen(true)} menuOpen={mobileOpen} />
       <footer className="v3-footer"><span>MatchIQ / Панель керування</span><span>Все важливе. В одному місці.</span></footer>
 
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>

@@ -17,6 +17,7 @@ import "./styles/v3-matches.css";
 import "./styles/v3-support.css";
 import "./styles/v3-settings.css";
 import "./styles/v3-compact.css";
+import "./styles/v3-drawer.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
