@@ -43,6 +43,22 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
   const openEdit = (b: Banner) => setEditor({ open: true, banner: b });
   // free slot tapped: pick a banner that is not showing now (or make a new one)
   const [pickSlot, setPickSlot] = useState(0);
+  const [pickId, setPickId] = useState("");
+  const [placing, setPlacing] = useState(false);
+  // put the chosen banner into the free slot and switch it on; a finished period starts today
+  async function placeInSlot() {
+    const b = list.find((x) => x.id === pickId); const n = pickSlot;
+    if (!b || !n) return;
+    const over = !!b.endsOn && b.endsOn < today;
+    setPlacing(true);
+    try {
+      const saved = await updateBanner(b.id, { slot: n, screen, active: true, ...(over || (b.startsOn && b.startsOn > today) ? { startsOn: today } : {}), ...(over ? { endsOn: null } : {}) });
+      setBanners((x) => x.map((y) => (y.id === saved.id ? saved : y)));
+      setPickSlot(0); setPickId("");
+      toast.success(`«${saved.title}» у ${slotName(n).toLowerCase()}`, { description: saved.endsOn ? `Показується до ${shortDay(saved.endsOn)}` : "Показується без кінцевої дати — її можна задати в банері", action: { label: "Змінити дати", onClick: () => setEditor({ open: true, banner: saved }) } });
+    } catch (e) { toast.error("Не вдалося поставити банер", { description: (e as Error).message }); }
+    setPlacing(false);
+  }
   const pickable = useMemo(() => list.filter((b) => (b.screen || "matches") === screen && !["live", "sched"].includes(statusOf(b, today))), [list, screen, today]);
 
   const [hot, setHot] = useState(0);
@@ -233,21 +249,22 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
         onSaved={() => { setEditor({ open: false, banner: null }); reload(); }}
         onAskDelete={(b) => setDeleting(b)} />
 
-      <Dialog open={!!pickSlot} onOpenChange={(o) => { if (!o) setPickSlot(0); }}>
+      <Dialog open={!!pickSlot} onOpenChange={(o) => { if (!o && !placing) { setPickSlot(0); setPickId(""); } }}>
         <DialogContent className="v3-modal v3-bn-pick sm:max-w-[520px]">
           <DialogTitle className="v3-modal-title">Що поставити в «{slotName(pickSlot || 1)}»?</DialogTitle>
-          <DialogDescription className="v3-modal-sub">{slotWhere(screen, pickSlot || 1)}. Оберіть банер, який зараз не показується, — він відкриється з цим слотом, перевірте дати й збережіть.</DialogDescription>
-          <div className="v3-bn-picklist">
+          <DialogDescription className="v3-modal-sub">{slotWhere(screen, pickSlot || 1)}. Оберіть банер зі списку — він стане в цей слот і одразу ввімкнеться.</DialogDescription>
+          <div className="v3-bn-picklist" role="radiogroup" aria-label="Банери">
             {pickable.map((b) => { const bs = statusOf(b, today); return (
-              <button key={b.id} type="button" className="v3-bn-pickrow" onClick={() => { const n = pickSlot; setPickSlot(0); setEditor({ open: true, banner: b, preset: { slot: n, screen } }); }}>
+              <button key={b.id} type="button" role="radio" aria-checked={pickId === b.id} className={`v3-bn-pickrow${pickId === b.id ? " is-on" : ""}`} onClick={() => setPickId(b.id)}>
                 <span className="v3-bn-pickimg">{b.imageUrl ? <img src={b.imageUrl} alt="" /> : <Megaphone size={16} aria-hidden="true" />}</span>
                 <span className="v3-bn-pickt"><strong>{b.title}</strong><small>{slotName(b.slot)} · {b.startsOn || b.endsOn ? periodText(b) : "без дат"}</small></span>
                 {tag(bs)}
-                <ChevronRight size={15} aria-hidden="true" />
+                <span className="v3-bn-pickdot" aria-hidden="true" />
               </button>
             ); })}
           </div>
-          <button type="button" className="v3-btn v3-btn-primary v3-bn-picknew" onClick={() => { const n = pickSlot; setPickSlot(0); openNew(n); }}>+ Створити новий банер</button>
+          <button type="button" className="v3-btn v3-btn-blue v3-bn-picknew" disabled={!pickId || placing || !online} onClick={placeInSlot}>{placing ? "Ставимо…" : pickId ? `Поставити в ${slotName(pickSlot || 1).toLowerCase()}` : "Оберіть банер"}</button>
+          <button type="button" className="v3-btn v3-btn-ghost v3-bn-picknew" disabled={placing} onClick={() => { const n = pickSlot; setPickSlot(0); setPickId(""); openNew(n); }}>+ Створити новий банер</button>
         </DialogContent>
       </Dialog>
 

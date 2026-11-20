@@ -1,3 +1,5 @@
+import { initials } from "@/lib/adsModel";
+import { getApiBase } from "@/lib/apiClient";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -73,5 +75,19 @@ export function SaveButton({ saving, disabled, onClick, label = "Зберегт�
     <button type="button" className={`v3-btn ${className}${saving ? " is-busy" : ""}${ok ? " is-done" : ""}`} disabled={disabled || saving} onClick={onClick} aria-live="polite">
       {saving ? "Зберігаємо…" : ok ? <><Check size={15} strokeWidth={3} aria-hidden="true" />Збережено</> : label}
     </button>
+  );
+}
+
+/** Telegram channel photo by @username (the backend reads it from t.me); initials while loading or when there is none. */
+export function TgAvatar({ handle, name, color }: { handle: string; name: string; color: string }) {
+  const h = handle.trim().replace(/^https?:\/\/t\.me\//i, "").replace(/^@/, "").replace(/\/.*$/, "");
+  const ok = /^[A-Za-z0-9_]{4,64}$/.test(h);
+  const [state, setState] = useState<"load" | "ok" | "none">("load");
+  useEffect(() => setState("load"), [h]);
+  return (
+    <span className="v3-ad-tgav" style={{ background: state === "ok" ? "#e9edf3" : color }}>
+      {state !== "ok" && initials(name || "?")}
+      {ok && state !== "none" && <img key={h} src={`${getApiBase()}/telegram-avatar/${encodeURIComponent(h)}`} alt="" loading="lazy" className={state === "ok" ? "is-on" : ""} onLoad={() => setState("ok")} onError={() => setState("none")} />}
+    </span>
   );
 }

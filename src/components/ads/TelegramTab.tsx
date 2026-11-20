@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton } from "@/components/ads/AdsShared";
+import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton, TgAvatar } from "@/components/ads/AdsShared";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dropdown } from "@/components/ui/dropdown";
 import { DateField } from "@/components/ui/date-field";
@@ -36,11 +36,14 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   const issues = textIssues(`${f.name} ${f.description}`);
   const descIssues = textIssues(f.description);
   const badDates = !!(f.startsOn && f.endsOn && f.startsOn > f.endsOn);
-  const handleOk = /^@?[A-Za-z0-9_]{4,64}$/.test(f.handle.trim().replace(/^https?:\/\/t\.me\//i, ""));
+  const handleClean = f.handle.trim().replace(/^https?:\/\/t\.me\//i, "").replace(/^@/, "");
+  const handleOk = /^[A-Za-z0-9_]{4,64}$/.test(handleClean);
+  // say exactly what is wrong, right under the field
+  const handleHint = /[^A-Za-z0-9_]/.test(handleClean) ? "Лише латиниця, цифри й _ — без пробілів і кирилиці" : `«${handleClean}» — ${handleClean.length} ${handleClean.length === 1 ? "символ" : "символи"}; у Telegram username щонайменше 4`;
 
   async function save(review?: "approved" | "rejected") {
     if (!f.name.trim()) { toast.error("Вкажіть назву групи"); return; }
-    if (!handleOk) { toast.error("Вкажіть @username групи", { description: "Латиниця, цифри й _, від 4 символів" }); return; }
+    if (!handleOk) { toast.error("Перевірте @username групи", { id: "tg-handle", description: f.handle.trim() ? handleHint : "Поле обов’язкове" }); document.getElementById("tg-handle")?.focus(); return; }
     if (badDates) { toast.error("Кінець не може бути раніше початку"); return; }
     const status = review || f.reviewStatus;
     if (status === "approved" && issues.rules.length) { toast.error("Текст не пройшов перевірку", { description: "Приберіть «бонус», «безплатно» і обіцянки заробітку", action: { label: "Показати", onClick: () => document.getElementById("tg-desc")?.focus() } }); return; }
@@ -82,7 +85,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   const rejected = items.filter((p) => p.reviewStatus === "rejected" && p.rejectReason);
   const preview = (
     <div className="v3-ad-tgcard">
-      <div className="v3-ad-tgcard-h"><span className="v3-ad-tgwho"><span className="v3-ad-tgav" style={{ background: colorOf(f.name || "?") }}>{initials(f.name || "?")}</span><span><strong>{f.name || "Назва групи"}</strong><small>{f.subscribers != null ? `${subsText(f.subscribers)} підписників` : `@${f.handle.replace(/^@/, "") || "username"}`}</small></span></span><AdLabel /></div>
+      <div className="v3-ad-tgcard-h"><span className="v3-ad-tgwho"><TgAvatar handle={f.handle} name={f.name} color={colorOf(f.name || "?")} /><span><strong>{f.name || "Назва групи"}</strong><small>{f.subscribers != null ? `${subsText(f.subscribers)} підписників` : `@${f.handle.replace(/^@/, "") || "username"}`}</small></span></span><AdLabel /></div>
       {f.description && <span className="v3-ad-tgdesc"><Highlighted text={f.description} hits={descIssues.hits} /></span>}
       <span className="v3-ad-tgbtn">Відкрити в Telegram</span>
     </div>
@@ -94,7 +97,8 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
       {preview}
       <div className="v3-ad-row2">
         <div className="v3-ad-f"><label htmlFor="tg-name">Назва <span>*</span></label><input id="tg-name" className="v3-ad-in" value={f.name} maxLength={100} onChange={(e) => set({ name: e.target.value })} /></div>
-        <div className="v3-ad-f"><label htmlFor="tg-handle">@username <span>*</span></label><input id="tg-handle" className={`v3-ad-in${f.handle && !handleOk ? " is-err" : ""}`} value={f.handle} placeholder="@group" onChange={(e) => set({ handle: e.target.value })} /></div>
+        <div className="v3-ad-f"><label htmlFor="tg-handle">@username <span>*</span></label><input id="tg-handle" className={`v3-ad-in${f.handle && !handleOk ? " is-err" : ""}`} value={f.handle} placeholder="@group" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-invalid={!!f.handle && !handleOk} aria-describedby="tg-handle-err" onChange={(e) => set({ handle: e.target.value })} />
+          {f.handle && !handleOk && <small id="tg-handle-err" className="v3-ad-ferr">{handleHint}</small>}</div>
       </div>
       <div className="v3-ad-f"><label htmlFor="tg-desc">Опис групи</label><textarea id="tg-desc" className={`v3-ad-in v3-ad-ta${descIssues.rules.length ? " is-err" : ""}`} maxLength={300} rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} /><span className="v3-ad-hint">{f.description.length}/300 · без бонусів, «безплатно» й обіцянок заробітку</span>{issues.rules.map((r) => <span key={r} className="v3-ad-msg is-bad">• {r}</span>)}</div>
       <div className="v3-ad-row2">
@@ -138,7 +142,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
               <div className="v3-ad-tr v3-ad-tgcols is-h"><span>Група</span><span>Місце показу</span><span>Термін</span><span>Кліки / покази</span><span className="v3-ad-r">Статус</span></div>
               {items.map((p) => { const st = promoStatus(p), s = entityStats(stats, "telegram:", p.id), on = sel?.id === p.id && !creating; return (
                 <button key={p.id} type="button" className={`v3-ad-tr v3-ad-tgcols${on ? " is-sel" : ""}`} onClick={() => { setCreating(false); setSelId(p.id); }}>
-                  <span className="v3-ad-tgwho"><span className="v3-ad-tgav" style={{ background: st === "rejected" ? "#8a93a2" : colorOf(p.name) }}>{initials(p.name)}</span><span><strong>{p.name}</strong><small>@{p.handle}{p.subscribers != null ? ` · ${subsText(p.subscribers)}` : ""}</small></span></span>
+                  <span className="v3-ad-tgwho"><TgAvatar handle={p.handle} name={p.name} color={st === "rejected" ? "#8a93a2" : colorOf(p.name)} /><span><strong>{p.name}</strong><small>@{p.handle}{p.subscribers != null ? ` · ${subsText(p.subscribers)}` : ""}</small></span></span>
                   <span>{placeLabel(p)}</span>
                   <span className="v3-ad-dim">{p.startsOn || p.endsOn ? periodText(p) : "—"}</span>
                   <span>{s.impressions || s.clicks ? `${nf(s.clicks)} / ${nf(s.impressions)}` : "—"}</span>
@@ -150,7 +154,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
           ) : (
             <div className="v3-ad-mlist">{items.map((p) => { const st = promoStatus(p); return (
               <button key={p.id} type="button" className="v3-ad-mcard v3-ad-tgm" onClick={() => { setCreating(false); setSelId(p.id); }}>
-                <span className="v3-ad-tgwho"><span className="v3-ad-tgav" style={{ background: st === "rejected" ? "#8a93a2" : colorOf(p.name) }}>{initials(p.name)}</span><span><strong>{p.name}</strong><small>@{p.handle}{p.subscribers != null ? ` · ${subsText(p.subscribers)} підписників` : ""}</small></span></span>
+                <span className="v3-ad-tgwho"><TgAvatar handle={p.handle} name={p.name} color={st === "rejected" ? "#8a93a2" : colorOf(p.name)} /><span><strong>{p.name}</strong><small>@{p.handle}{p.subscribers != null ? ` · ${subsText(p.subscribers)} підписників` : ""}</small></span></span>
                 <span className={`v3-bn-tag ${PR_STATUS[st].cls}`}>{PR_STATUS[st].label}</span>
                 <small className="v3-ad-mcard-f">{placeLabel(p)} · {p.startsOn || p.endsOn ? periodText(p) : "без терміну"}{st === "rejected" && p.rejectReason ? ` · ${p.rejectReason}` : ""}</small>
                 <ChevronRight size={14} aria-hidden="true" />
