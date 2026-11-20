@@ -282,3 +282,13 @@
 .v3-mx-gm { display: inline-block; width: 12px; height: 12px; margin-right: 5px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--gm) center / contain no-repeat; mask: var(--gm) center / contain no-repeat; }
 .v3-mx-gm.is-cs2 { --gm: url(/assets/mark-cs2.svg); }
 .v3-mx-gm.is-dota2 { --gm: url(/assets/mark-dota2.svg); }
+
+/* Порожні стани: іконка з ореолом, текст по центру, не ширше за рядок читання */
+.v3-mx-none { gap: 10px; padding: 44px 20px; }
+.v3-mx-none > span:last-child { max-width: 420px; line-height: 1.55; }
+.v3-mx-none .v3-empty-ic { margin-bottom: 6px; }
+.v3-mx-pnone { padding: 0; grid-column: 1 / -1; }
+@media (max-width: 767px) {
+  .v3-mx-zero-card { align-items: center; text-align: center; }
+  .v3-mx-none { padding: 36px 18px; }
+}

@@ -760,6 +760,9 @@ mark.v3-hl { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0
   .v3-users .v3-hero-row > .v3-chips { margin-top: -4px; } /* title line 40px, button 48px */
   .v3-pay .v3-hero-row > .v3-chips { margin-top: -2px; }   /* title line 44px */
   .v3-auditpg .v3-hero-row > .v3-chips { align-self: flex-start; }
+  .v3-ads .v3-hero-row { flex-wrap: nowrap; }
+  .v3-ads .v3-hero-row > div:first-child { min-width: 0; }
+  .v3-ads .v3-hero-row > .v3-chips { align-self: flex-start; margin-top: -2px; flex-wrap: nowrap; }
 }
 
 /* Phone filters in one line: plan dropdown takes the rest, chips keep their width */

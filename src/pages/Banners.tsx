@@ -85,7 +85,8 @@ export default function Banners() {
         <div className="v3-chips">
           {tab === "stats" && <>
             <button type="button" className="v3-chip v3-hide-mobile" onClick={() => statsActions.current.rep?.()}><span key={repName || "-"} className="v3-bn-tagw">{repName ? `Звіт · ${repName} · CSV` : "Звіт для партнера · CSV"}</span></button>
-            <ExportCsvButton className="v3-btn v3-btn-primary" onClick={() => statsActions.current.exp?.()} />
+            <ExportCsvButton className="v3-btn v3-btn-primary v3-hide-mobile" onClick={() => statsActions.current.exp?.()} />
+            <ExportCsvButton className="v3-fab v3-only-mobile" iconOnly size={20} onClick={() => statsActions.current.exp?.()} />
           </>}
           {newAction && <>
             <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={17} aria-hidden="true" />{newAction.label}</button>
@@ -93,6 +94,14 @@ export default function Banners() {
           </>}
         </div>
       </section>
+
+      {/* phone: the numbers sit above the tabs, as on the other screens */}
+      {(tab === "telegram" || tab === "bookmakers") && !wide && (
+        <section className="v3-ad-mkpis">
+          <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(week.totals.clicks) : "—"}</b></div>
+          <div><span>Потребують уваги</span><b className={attention.n ? "is-warn" : ""}>{attention.n}</b></div>
+        </section>
+      )}
 
       <div className="v3-ptabs v3-ads-tabs" role="tablist" aria-label="Розділи реклами">
         <PillTrack active={tab} />
@@ -103,12 +112,6 @@ export default function Banners() {
       </div>
 
       {(tab === "telegram" || tab === "bookmakers") && wide && <AdsSums stats={week} active={{ banners: live, telegram: prLive.length, bookmakers: bmLive.length }} attention={attention} />}
-      {(tab === "telegram" || tab === "bookmakers") && !wide && (
-        <section className="v3-ad-mkpis">
-          <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(week.totals.clicks) : "—"}</b></div>
-          <div><span>Потребують уваги</span><b className={attention.n ? "is-warn" : ""}>{attention.n}</b></div>
-        </section>
-      )}
 
       {tab === "banners" && (
         <BannersTab banners={banners} slots={slots} error={error} wide={wide} online={online} reload={load}

@@ -156,7 +156,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
         <div className="v3-wcard v3-ad-table">
           <div className="v3-ad-table-h"><h2>Букмекери-партнери</h2><p>Показуємо лише ліцензованих PlayCity. Без чинної ліцензії партнер автоматично зникає з застосунку.</p></div>
           {list === null ? <div className="v3-ad-load" role="status">Завантажуємо партнерів…</div> : items.length === 0 ? (
-            <div className="v3-bt-empty"><span className="v3-ue-ico" aria-hidden="true">₴</span><strong>Партнерів ще немає</strong><span>Додайте букмекера з ліцензією PlayCity — оберіть, де показувати його коефіцієнти.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати партнера</button></div>
+            <div className="v3-bt-empty v3-ad-empty is-quiet-m"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true">₴</span><strong>Партнерів ще немає</strong><span>Додайте букмекера з ліцензією PlayCity — оберіть, де показувати його коефіцієнти.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати партнера</button></div>
           ) : wide ? (
             <>
               <div className="v3-ad-tr v3-ad-bmcols is-h"><span>Партнер</span><span>Ліцензія PlayCity</span><span>Де показується</span><span>Кліки · 7 дн.</span><span className="v3-ad-r">Статус</span></div>

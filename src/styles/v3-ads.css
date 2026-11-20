@@ -179,11 +179,13 @@
 .v3-bed-tiles .is-live { color: #7fdcaa; } .v3-bed-tiles .is-sched { color: #a3c0ff; } .v3-bed-tiles .is-off { color: #c3c9d4; } .v3-bed-tiles .is-done { color: #f3cf9a; }
 @media (max-width: 1023px) {
   .v3-modal.v3-bed[data-state] { grid-template-columns: minmax(0, 1fr); overflow-y: auto; overflow-x: hidden; }
-  .v3-bed-form, .v3-bed-prev { overflow: visible; }
+  /* one scrolling column: the parts take their full height (capped, the long form spilled under the preview) */
+  .v3-bed-form, .v3-bed-prev { overflow: visible; max-height: none; }
 }
 @media (max-width: 767px) {
-  .v3-modal.v3-bed[data-state] { width: 100%; max-height: 94dvh; border-radius: 28px 28px 0 0; }
-  .v3-bed-form { padding: 26px 18px 18px; }
+  /* same height as the other sheets — clear of the status bar, room above to pull it down */
+  .v3-modal.v3-bed[data-state] { width: 100%; border-radius: 28px 28px 0 0; }
+  .v3-bed-form { padding: 30px 18px 18px; }
   .v3-bed-prev { padding: 18px; }
   .v3-bed-opts { flex-direction: column; }
   .v3-bed-row2, .v3-bed-tiles { grid-template-columns: 1fr; }
@@ -191,7 +193,7 @@
   .v3-bed-foot .v3-btn { flex: 1; min-height: 48px; }
   .v3-bed-del { order: 3; width: 100%; justify-content: center; border: 1px solid rgba(214, 60, 42, .3); border-radius: 999px; }
   .v3-bed-sp { display: none; }
-  .v3-bed-head .v3-bed-x { display: none; }
+  .v3-bed-head .v3-bed-x { width: 36px; height: 36px; }
 }
 /* Mobile slot cards keep the light card from the design */
 @media (max-width: 1179px) { .v3-bn-slots { flex-basis: 100%; } }
@@ -338,6 +340,9 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 .v3-ad-sheet .v3-ad-tgcard { border: 1px solid #edf0f3; }
 .v3-ad-sheet .v3-btn-ghost-dark { background: #fff; color: var(--v3-ink); border-color: #dde1e7; }
 .v3-ad-sheet { overflow-y: auto; }
+/* the light sheet: date fields and dropdowns light too, like the text fields (the dark look is for the desktop aside) */
+.v3-ad-sheet .v3-ad-f .v3-date-btn, .v3-ad-sheet .v3-ad-dd .v3-dd-btn { background: #fff; border-color: #dde1e7; color: var(--v3-ink); }
+.v3-ad-sheet .v3-ad-f .v3-date-btn.is-on, .v3-ad-sheet .v3-ad-dd .v3-dd-btn[aria-expanded="true"] { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .15); }
 
 /* Stats */
 .v3-ad-chart { padding: 22px; color: var(--v3-text); }
@@ -415,4 +420,20 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 @media (prefers-reduced-motion: reduce) {
   .v3-ad-sums > *, .v3-bn-sums > *, .v3-ad-pane, .v3-ad-tr, .v3-bn-crow, .v3-bn-mrow, .v3-ad-mcard, .v3-ad-bar span, .v3-bn-tagw { animation: v3-fade-in .2s both !important; }
   .v3-bn-ws.is-hot { transform: none; }
+}
+
+/* Порожні стани реклами: кругла іконка пливе, навколо розходиться ореол */
+.v3-ue-ico.v3-halo { position: relative; }
+.v3-ue-ico.v3-halo::before, .v3-ue-ico.v3-halo::after { border-radius: 50%; }
+@media (max-width: 1179px) {
+  /* телефон: таблиця прозора, тож порожній стан — окрема біла картка, як у «Банерах» */
+  .v3-ad-table > .v3-ad-empty { padding: 34px 22px; border-radius: 28px; background: #fff; color: var(--v3-ink); }
+  /* «Букмекери»: місця показу вже зверху, а додати партнера — кнопка «+» у шапці */
+  .v3-ad-table:has(> .v3-ad-empty.is-quiet-m) { display: none; }
+  /* «Статистика»: підсумки по два в ряд */
+  .v3-ad-sums { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-ad-sum { padding: 14px; border-radius: 18px; }
+  .v3-ad-sum .v { margin-top: 8px; font-size: 28px; }
+  .v3-ad-sum .v.is-sm { font-size: 18px; }
+  .v3-ad-sum .n { font-size: 11px; line-height: 1.4; }
 }

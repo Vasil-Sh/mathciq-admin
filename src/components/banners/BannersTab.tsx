@@ -158,7 +158,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
 
       {list.length === 0 ? (
         <div className="v3-wcard v3-bt-empty v3-bn-empty">
-          <span className="v3-ue-ico" aria-hidden="true"><Megaphone size={24} /></span>
+          <span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Megaphone size={24} /></span>
           <strong>Банерів ще немає</strong>
           <span>Додайте перший банер — оберіть слот і період показу. На екрані «Матчі» вільні обидва слоти.</span>
           <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => openNew(1)}>Створити банер</button>

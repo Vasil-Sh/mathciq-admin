@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, Check, ExternalLink, History, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -323,7 +323,7 @@ export default function Matches() {
 
   const sums = [
     { k: "today", label: "Матчів сьогодні", v: matches ? String(todayM.length) : "—", n: matches ? `CS2 ${todayM.filter((m) => m.game === "cs2").length} · Dota 2 ${todayM.filter((m) => m.game === "dota2").length} · наживо ${liveN}` : "…", go: () => { setTab("matches"); setDay("today"); setSt("all"); }, on: tab === "matches" },
-    { k: "parsers", label: "Парсери", v: parsers ? (down.length ? `${down.length} ${plural(down.length, "проблема", "проблеми", "проблем")}` : "Працюють") : "—", n: parsers ? (down.length ? down.map(issueText).join(" · ") : `${parsers.reduce((a, p) => a + p.failures24h, 0)} збоїв за 24 год`) : "…", bad: down.length > 0, go: () => setTab("parsers"), on: tab === "parsers" },
+    { k: "parsers", label: "Парсери", v: parsers ? (!parsers.length ? "Немає" : down.length ? `${down.length} ${plural(down.length, "проблема", "проблеми", "проблем")}` : "Працюють") : "—", n: parsers ? (!parsers.length ? "бекенд не повідомив про джерела" : down.length ? down.map(issueText).join(" · ") : `${parsers.reduce((a, p) => a + p.failures24h, 0)} збоїв за 24 год`) : "…", bad: down.length > 0, go: () => setTab("parsers"), on: tab === "parsers" },
     { k: "bets", label: "Записів на сьогодні", v: todayBets == null ? "…" : String(todayBets), n: todayBets == null ? "рахуємо зі ставок користувачів" : `на ${todayM.length} ${plural(todayM.length, "матч", "матчі", "матчів")} сьогодні`, go: undefined, on: false },
     { k: "manual", label: "Додані вручну", v: bets ? String(groups.length) : "…", n: bets ? (groups.length ? "немає в стрічках парсерів" : "усі записи на своїх матчах") : "шукаємо в записах", amber: groups.length > 0, go: () => setTab("manual"), on: tab === "manual" },
   ];
@@ -382,7 +382,7 @@ export default function Matches() {
     );
   };
 
-  const empty = (title: string, text: string, icon?: ReactNode) => <div className="v3-pay-empty">{icon && <span className="v3-empty-ic v3-float" aria-hidden="true">{icon}</span>}<strong>{title}</strong><span>{text}</span></div>;
+  const empty = (title: string, text: string, icon: ReactNode = <Search size={22} />) => <div className="v3-pay-empty v3-mx-none"><span className="v3-empty-ic v3-float v3-halo" aria-hidden="true">{icon}</span><strong>{title}</strong><span>{text}</span></div>;
   const skelRows = (n: number) => Array.from({ length: n }, (_, i) => <div key={i} className="v3-pay-row v3-mx-row is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ height: 22, borderRadius: 999 }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>);
   const dayOpts = [{ key: "today" as Day, label: "Сьогодні" }, { key: "tomorrow" as Day, label: "Завтра" }, { key: "week" as Day, label: "Тиждень" }];
   const gameOpts = [{ value: "all" as const, label: "CS2 і Dota 2" }, { value: "cs2" as const, label: "CS2" }, { value: "dota2" as const, label: "Dota 2" }];
@@ -415,7 +415,7 @@ export default function Matches() {
               <span className="v3-pay-r v3-mx-n">{bets ? betsFor(m).length : "…"}</span>
             </button>
           );
-        })}</div> : empty("Матчів немає", noMatchesText)}
+        })}</div> : empty("Матчів немає", noMatchesText, <CalendarX2 size={22} />)}
         {matches !== null && <div className="v3-pay-foot"><span>Показано <b>{list.length}</b> із <b>{all.length}</b>{updatedAt && <> · оновлено о {updatedAt}</>}</span><span>Час — київський</span></div>}
       </div>
       <aside className="v3-dcard v3-pay-aside">{sel ? detail(sel) : <div className="v3-pay-empty is-dark"><span>Оберіть матч, щоб побачити деталі.</span></div>}</aside>
@@ -434,7 +434,7 @@ export default function Matches() {
               <span className="v3-mx-mcard-l"><Teams m={m} /><small>{day === "today" ? m.time : `${dayShort(m.day)} · ${m.time}`} · {m.tournament || GAME_LABEL[m.game]}{bets && betsFor(m).length ? ` · ${betsFor(m).length} ${plural(betsFor(m).length, "запис", "записи", "записів")}` : ""}</small></span>
               <span className="v3-mx-mcard-r"><Score m={m} /><StatusTag s={m.status} /></span>
             </button></li>
-          )) : <li className="v3-wcard v3-pay-mnone">{empty("Матчів немає", noMatchesText)}</li>}
+          )) : <li className="v3-wcard v3-pay-mnone">{empty("Матчів немає", noMatchesText, <CalendarX2 size={22} />)}</li>}
       </ul>
       {list.length > shown && <button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-block" onClick={() => setShown(shown + 12)}>Показати ще {Math.min(12, list.length - shown)}</button>}
     </div>
@@ -467,6 +467,7 @@ export default function Matches() {
           </div>
         ); })()}
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-wcard v3-mx-pcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
+        : !parsers.length ? <div className="v3-wcard v3-mx-pnone">{empty("Парсерів немає", "Бекенд не повідомив про жодне джерело матчів. Щойно парсер запуститься, він з’явиться тут.", <Activity size={22} />)}</div>
         : parsers.map((p, i) => {
           const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
           const cnt = cntFor(p.name);
@@ -600,7 +601,7 @@ export default function Matches() {
             <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
             {t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}
           </button></li>
-        ))}</ul>}{tList.length > tLimit && <button type="button" className="v3-ab-more v3-mx-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}</button>}</>) : empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.")}
+        ))}</ul>}{tList.length > tLimit && <button type="button" className="v3-ab-more v3-mx-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}</button>}</>) : (() => { const e = (teams.length ? empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.", <Users size={22} />) : empty("Команд ще немає", "Довідник заповнюється з матчів і пакетів логотипів. Якщо тут порожньо — бекенд ще не розпакував логотипи або стрічки недоступні.", <Users size={22} />)); return wide ? e : <div className="v3-wcard v3-pay-mnone">{e}</div>; })()}
       </div>
       {wide && <aside className="v3-dcard v3-pay-aside">{tSel ? teamDetail(tSel) : <div className="v3-pay-empty is-dark"><span>Оберіть команду.</span></div>}</aside>}
     </section>

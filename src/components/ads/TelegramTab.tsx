@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton } from "@/components/ads/AdsShared";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -127,7 +127,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
         <div className="v3-wcard v3-ad-table">
           <div className="v3-ad-table-h"><h2>Реклама Telegram-груп</h2><p>Картка групи показується в розділі «Telegram» застосунку або в деталях матчу. Показуємо лише після схвалення тексту.</p></div>
           {list === null ? <div className="v3-ad-load" role="status">Завантажуємо розміщення…</div> : items.length === 0 ? (
-            <div className="v3-bt-empty"><span className="v3-ue-ico" aria-hidden="true">✈</span><strong>Розміщень ще немає</strong><span>Додайте групу, оберіть місце показу й термін — після схвалення тексту картка з’явиться в застосунку.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати групу</button></div>
+            <div className="v3-bt-empty v3-ad-empty"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Розміщень ще немає</strong><span>Додайте групу, оберіть місце показу й термін — після схвалення тексту картка з’явиться в застосунку.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати групу</button></div>
           ) : wide ? (
             <>
               <div className="v3-ad-tr v3-ad-tgcols is-h"><span>Група</span><span>Місце показу</span><span>Термін</span><span>Кліки / покази</span><span className="v3-ad-r">Статус</span></div>
