@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { toast } from "sonner";
@@ -9,9 +10,9 @@ import PillTrack from "@/components/PillTrack";
 import { DateField } from "@/components/ui/date-field";
 
 type Range = { days: number } | { from: string; to: string };
-type Props = { banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void; onPartner?: (name: string | null) => void };
+type Props = { topSlot?: HTMLElement | null; banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void; onPartner?: (name: string | null) => void };
 
-export default function StatsTab({ banners, bookmakers, promos, wide, exportRef, onPartner }: Props) {
+export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, exportRef, onPartner }: Props) {
   const [range, setRange] = useState<Range>({ days: 14 });
   const [custom, setCustom] = useState({ from: "", to: "" });
   const [showCustom, setShowCustom] = useState(false);
@@ -78,14 +79,17 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef,
 
   if (error && !stats) return <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити статистику</strong><span>{error}</span><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => setRange({ ...range })}>Спробувати ще раз</button></div></div>;
 
-  return (
-    <>
+  const sums = (
       <section key={period} className="v3-ad-sums" aria-label="Підсумки за період">
         <div className="v3-ad-sum is-blue"><div className="l">Покази{period ? ` · ${period}` : ""}</div><div className="v">{t ? nf(t.impressions) : "—"}</div><div className="n">{ch === null ? `попередні ${len || ""} днів без даних` : `${ch > 0 ? "+" : ""}${ch}% до попередніх ${len} днів`}</div></div>
         <div className="v3-ad-sum"><div className="l">Кліки</div><div className="v">{t ? nf(t.clicks) : "—"}</div><div className="n">CTR {t ? ctr(t.clicks, t.impressions) : "—"}</div></div>
         <div className="v3-ad-sum"><div className="l">Найкраще місце</div><div className="v is-sm">{best ? best.name : "—"}</div><div className="n">{best ? `CTR ${ctr(best.clicks, best.impressions)} · ${best.where}` : "потрібно від 50 показів"}</div></div>
         <div className="v3-ad-sum"><div className="l">Унікальні користувачі</div><div className="v">{t ? nf(t.uniqueUsers) : "—"}</div><div className="n">{t && t.impressions && !t.uniqueUsers ? "застосунок ще не передає користувача" : "бачили рекламу хоча б раз"}</div></div>
       </section>
+  );
+  return (
+    <>
+      {topSlot ? createPortal(sums, topSlot) : sums}
 
       <section className="v3-dcard v3-ad-chart">
         <div className="v3-ad-chart-h">

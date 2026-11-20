@@ -231,6 +231,9 @@
 .v3-ad-mkpis .is-blue span { color: #e3ebff; }
 .v3-ad-mkpis b { display: block; margin-top: 6px; font-size: 24px; font-weight: 400; }
 .v3-ad-mkpis b.is-warn { color: #f3cf9a; }
+.v3-ad-mkpis small { display: block; margin-top: 4px; color: #8c95a6; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.v3-ad-mkpis .is-blue small { color: #dbe5ff; }
+.v3-ad-topslot:empty { display: none; }
 .v3-ad-label { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: #11151c; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 
 .v3-ad-places { padding: 22px; color: var(--v3-ink); }

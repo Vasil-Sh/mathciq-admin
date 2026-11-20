@@ -8,8 +8,8 @@ import StatsTab from "@/components/ads/StatsTab";
 import { AdsSums } from "@/components/ads/AdsShared";
 import { fetchBanners, fetchBannerSlots } from "@/lib/adminBannersApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
-import { kyivToday, slotState, statusOf } from "@/lib/bannersModel";
-import { bookmakerStatus, fetchAdStats, fetchBookmakers, fetchPromos, promoStatus, type AdStats, type Bookmaker, type Promo } from "@/lib/adsModel";
+import { kyivToday, shortDay, slotState, statusOf } from "@/lib/bannersModel";
+import { bookmakerStatus, entityStats, fetchAdStats, fetchBookmakers, fetchPromos, promoStatus, type AdStats, type Bookmaker, type Promo } from "@/lib/adsModel";
 import { nf } from "@/lib/adsModel";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AppSettings, Banner, BannerSlotState } from "@/types";
@@ -68,6 +68,19 @@ export default function Banners() {
     return { n: notes.length ? (bms || []).filter((b) => ["draft", "soon", "expired"].includes(bookmakerStatus(b, today))).length + pending : 0, note: notes.join(" · ") };
   }, [bms, promos, today]);
 
+  // «Банери» на телефоні: кліки по банерах за тиждень і найближча зміна (банер почнеться або закінчиться)
+  const bnWeek = entityStats(week, "banner:");
+  const nextChange = useMemo(() => {
+    const ev: { day: string; text: string }[] = [];
+    list.forEach((b) => {
+      const st = statusOf(b, today);
+      if (st === "sched" && b.startsOn) ev.push({ day: b.startsOn, text: `почнеться «${b.title || "банер"}»` });
+      if (st === "live" && b.endsOn) ev.push({ day: b.endsOn, text: `останній день «${b.title || "банер"}»` });
+    });
+    return ev.sort((a, b) => a.day.localeCompare(b.day))[0] || null;
+  }, [list, today]);
+  const [topSlot, setTopSlot] = useState<HTMLDivElement | null>(null);
+
   const newAction = tab === "banners" ? { label: "Новий банер", run: () => setEditor({ open: true, banner: null, preset: { slot: 1, screen: "matches" } }), ready: banners !== null }
     : tab === "telegram" ? { label: "Додати групу", run: () => setCreatingPr(true), ready: promos !== null }
     : tab === "bookmakers" ? { label: "Додати партнера", run: () => setCreatingBm(true), ready: bms !== null } : null;
@@ -96,6 +109,14 @@ export default function Banners() {
       </section>
 
       {/* phone: the numbers sit above the tabs, as on the other screens */}
+      {tab === "banners" && !wide && (
+        <section className="v3-ad-mkpis">
+          <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(bnWeek.clicks) : "—"}</b><small>{week ? (bnWeek.impressions ? `${nf(bnWeek.impressions)} показів банерів` : "банери ще не показувались") : "…"}</small></div>
+          <div><span>Найближча зміна</span><b>{nextChange ? shortDay(nextChange.day) : "—"}</b><small>{nextChange ? nextChange.text : "нічого не заплановано"}</small></div>
+        </section>
+      )}
+      {/* «Статистика»: підсумки періоду піднімаються сюди, над вкладки */}
+      {tab === "stats" && !wide && <div ref={setTopSlot} className="v3-ad-topslot" />}
       {(tab === "telegram" || tab === "bookmakers") && !wide && (
         <section className="v3-ad-mkpis">
           <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(week.totals.clicks) : "—"}</b></div>
@@ -120,7 +141,7 @@ export default function Banners() {
       )}
       {tab === "bookmakers" && <PartnersTab list={bms} error={bmErr} stats={week} settings={settings} wide={wide} online={online} reload={loadAds} setList={(fn) => setBms((l) => fn(l || []))} setSettings={setSettings} creating={creatingBm} setCreating={setCreatingBm} />}
       {tab === "telegram" && <TelegramTab list={promos} error={prErr} stats={week} wide={wide} online={online} reload={loadAds} setList={(fn) => setPromos((l) => fn(l || []))} creating={creatingPr} setCreating={setCreatingPr} />}
-      {tab === "stats" && <StatsTab banners={list} bookmakers={bms || []} promos={promos || []} wide={wide} exportRef={(exp, rep) => { statsActions.current = { exp, rep }; }} onPartner={setRepName} />}
+      {tab === "stats" && <StatsTab topSlot={wide ? null : topSlot} banners={list} bookmakers={bms || []} promos={promos || []} wide={wide} exportRef={(exp, rep) => { statsActions.current = { exp, rep }; }} onPartner={setRepName} />}
     </div>
   );
 }
