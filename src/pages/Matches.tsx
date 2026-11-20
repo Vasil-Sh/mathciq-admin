@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, Check, ChevronDown, ExternalLink, History, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -645,7 +645,7 @@ export default function Matches() {
             <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
             {t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}
           </button></li>
-        ))}</ul>}{tList.length > tLimit && <button type="button" className="v3-ab-more v3-mx-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}</button>}</>) : (() => { const e = (teams.length ? empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.", <Users size={22} />) : empty("Команд ще немає", "Довідник заповнюється з матчів і пакетів логотипів. Якщо тут порожньо — бекенд ще не розпакував логотипи або стрічки недоступні.", <Users size={22} />)); return wide ? e : <div className="v3-wcard v3-pay-mnone">{e}</div>; })()}
+        ))}</ul>}{tList.length > tLimit && <button type="button" className={wide ? "v3-ab-more v3-mx-more" : "v3-bt-allbtn v3-mx-mmore"} onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}{!wide && <ChevronDown size={15} aria-hidden="true" />}</button>}</>) : (() => { const e = (teams.length ? empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.", <Users size={22} />) : empty("Команд ще немає", "Довідник заповнюється з матчів і пакетів логотипів. Якщо тут порожньо — бекенд ще не розпакував логотипи або стрічки недоступні.", <Users size={22} />)); return wide ? e : <div className="v3-wcard v3-pay-mnone">{e}</div>; })()}
       </div>
       {wide && <aside className="v3-dcard v3-pay-aside">{tSel ? teamDetail(tSel) : <div className="v3-pay-empty is-dark"><span>Оберіть команду.</span></div>}</aside>}
     </section>

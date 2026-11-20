@@ -327,3 +327,4 @@
 .v3-mx-pstop:active { transform: scale(.95); }
 .v3-mx-pstop:disabled { opacity: .5; cursor: default; }
 @media (max-width: 767px) { .v3-mx-ph { gap: 10px; } .v3-mx-ph .v3-tag { padding-inline: 8px; } }
+.v3-bt-allbtn.v3-mx-mmore { margin-top: 12px; animation: none; }
