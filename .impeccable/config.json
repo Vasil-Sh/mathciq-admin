@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-20T12:41:47.047Z",
+        "reason": "Project design system: Inter is the admin's single typeface across every v3 stylesheet and all design boards; changing it is out of scope"
+      }
+    ]
+  }
+}

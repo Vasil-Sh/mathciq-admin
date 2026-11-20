@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { isExpiring } from "@/lib/usersModel";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { api } from "@/lib/apiClient";
-import { fetchOpenTickets, fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSUE } from "@/lib/dashboardInsights";
+import { fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSUE } from "@/lib/dashboardInsights";
 
 /**
  * Counters shown in the top navigation.
@@ -10,7 +10,7 @@ import { fetchOpenTickets, fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSU
  * - auditUnseen: audit entries by *other* admins since this admin last opened
  *   the audit log. Computed client-side from the first audit page; the marker
  *   lives in localStorage, so it is per browser. Opening /audit resets it.
- * - supportOpen: open support tickets (/admin/support-tickets?status=open).
+ * - supportOpen: open support tickets: new + in work + waiting (/admin/support-tickets?filter=open).
  * - matchesError: a parser circuit is open (/admin/parsers); matchesErrorText
  *   is the tooltip, e.g. "HLTV не відповідає".
  * A failed request leaves the badge as it was (never made-up numbers).
@@ -47,9 +47,10 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
   useEffect(() => {
     let cancelled = false;
     const loadOps = async () => {
-      const [t, p] = await Promise.allSettled([fetchOpenTickets(), fetchParsers()]);
+      // open = new + in work + waiting for the user (same number as the «Звернення» tab)
+      const [t, p] = await Promise.allSettled([api.get<{ tickets?: unknown[]; counts?: { open?: number } }>("/admin/support-tickets?filter=open").then((d) => d.counts?.open ?? d.tickets?.length ?? 0), fetchParsers()]);
       if (cancelled) return;
-      if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value.length }));
+      if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value }));
       if (p.status === "fulfilled") {
         const bad = p.value.map((x) => [x, parserHealth(x)] as const).filter(([, h]) => h !== "ok");
         setBadges((b) => ({ ...b, matchesError: bad.length > 0, matchesErrorText: bad.map(([x, h]) => `${PARSER_NAMES[x.name] || x.name} ${PARSER_ISSUE[h as "down" | "flaky"]}`).join(", ") }));

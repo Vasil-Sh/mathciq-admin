@@ -11,15 +11,16 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { useAuth } from "@/contexts/AuthContext";
 import { plural } from "@/lib/dashboardInsights";
 import {
-  DEFAULT_TEMPLATES, GSTATUS, KIND, PLAN, REASONS, STATUS, ago, approveGroup, bubbleTime, fetchGroups, fetchTemplates, fetchTicket, fetchTickets,
+  DEFAULT_TEMPLATES, GVIEW, KIND, fetchGroup, gView, PLAN, REASONS, STATUS, ago, approveGroup, bubbleTime, fetchGroups, fetchTemplates, fetchTicket, fetchTickets,
   minutesText, patchTicket, rejectGroup, replyTicket,
-  type GStatus, type GroupList, type TFilter, type TKind, type TMessage, type TStatus, type Template, type TgGroup, type TicketDetail, type TicketList,
+  type GStatus, type GroupDetail, type GroupList, type TFilter, type TKind, type TMessage, type TStatus, type Template, type TgGroup, type TicketDetail, type TicketList,
 } from "@/lib/supportApi";
 
 type Tab = "tickets" | "groups";
 const FILTERS: { key: TFilter; label: string }[] = [{ key: "open", label: "Відкриті" }, { key: "new", label: "Нові" }, { key: "mine", label: "Мої" }, { key: "resolved", label: "Вирішені" }];
 const KINDS: { value: TKind | "all"; label: string }[] = [{ value: "all", label: "Усі типи" }, { value: "problem", label: "Проблеми" }, { value: "idea", label: "Побажання" }, { value: "question", label: "Питання" }];
-const GFILTERS: { key: GStatus | "all"; label: string }[] = [{ key: "all", label: "Усі" }, { key: "pending", label: "Перевірити" }, { key: "approved", label: "Активні" }, { key: "rejected", label: "Заблоковані" }];
+type GFilter = GStatus | "all" | "errors";
+const GFILTERS: { key: GFilter; label: string }[] = [{ key: "all", label: "Усі" }, { key: "pending", label: "Перевірити" }, { key: "errors", label: "Помилки" }, { key: "rejected", label: "Заблоковані" }];
 const STATUS_OPTS: TStatus[] = ["open", "in_progress", "waiting", "resolved"];
 const NOBODY = "—";
 
@@ -59,7 +60,7 @@ function TicketPane({ d, templates, me, assignees, online, onUpdate }: {
   const bottom = useRef<HTMLDivElement>(null);
   const msgs: TMessage[] = [{ author: t.username, fromAdmin: false, body: t.message, createdAt: t.createdAt }, ...d.messages];
   const st = STATUS[t.status];
-  const meta = [d.context.aiToday != null ? `AI сьогодні: ${d.context.aiToday}` : "", t.meta?.device || "", t.meta?.appVersion ? `v${t.meta.appVersion.replace(/^v/, "")}` : "", t.meta?.screen ? `Екран: ${t.meta.screen}` : ""].filter(Boolean);
+  const meta = [d.context.aiToday != null ? `AI сьогодні ${d.context.aiToday}${d.context.aiLimit ? ` з ${d.context.aiLimit}` : ""}` : "", t.meta?.device || "", t.meta?.appVersion ? `v${t.meta.appVersion.replace(/^v/, "")}` : "", t.meta?.screen ? `Екран: ${t.meta.screen}` : ""].filter(Boolean);
   useEffect(() => { bottom.current?.scrollIntoView({ block: "nearest" }); }, [d.messages.length]);
 
   async function setStatus(next: TStatus) {
@@ -112,6 +113,7 @@ function TicketPane({ d, templates, me, assignees, online, onUpdate }: {
       ))}
       <div ref={bottom} />
     </div>
+    {t.status !== "resolved" && t.status !== "closed" && d.context.hints?.map((h) => <div key={h} className="v3-sp-hintb">Підказка: {h[0].toLowerCase() + h.slice(1)}</div>)}
     <div className="v3-sp-reply">
       <div className="v3-sp-tpls" role="group" aria-label="Шаблони відповіді">
         {templates.map((p) => <button key={p.id} type="button" className={`v3-sp-tpl${tpl === p.id ? " is-on" : ""}`} aria-pressed={tpl === p.id} onClick={() => { if (tpl === p.id) { setTpl(null); setText(""); } else { setTpl(p.id); setText(p.body); } }}>{p.title}</button>)}
@@ -133,10 +135,19 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
   const [reason, setReason] = useState(0);
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [det, setDet] = useState<GroupDetail | null>(null);
   const askT = useRef<number | undefined>(undefined);
-  useEffect(() => { setAsk(false); setReason(0); window.clearTimeout(askT.current); }, [g.id]);
+  useEffect(() => {
+    setAsk(false); window.clearTimeout(askT.current); setDet(null);
+    const r = REASONS.indexOf((g.flagReason || "") as (typeof REASONS)[number]); setReason(r >= 0 ? r : 0);
+    let live = true;
+    fetchGroup(g.id).then((d) => { if (live) setDet(d); }).catch(() => {});
+    return () => { live = false; };
+  }, [g.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => window.clearTimeout(askT.current), []);
-  const st = GSTATUS[g.moderationStatus];
+  const view = gView(g); const st = GVIEW[view];
+  const people = g.people || 1;
+  const texts = det?.group.flaggedTexts || [];
   async function act(next: GStatus) {
     const was = g.moderationStatus, wasReason = g.rejectReason;
     const why = next === "rejected" ? REASONS[reason] : null;
@@ -147,7 +158,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
       const undo = { label: <UndoRing />, onClick: () => { (was === "rejected" ? rejectGroup(g.id, wasReason || REASONS[0]) : approveGroup(g.id)).then(() => onChange(g.id, was, wasReason)).catch((e) => toast.error("Не вдалося повернути", { description: (e as Error).message })); } };
       // a pending group cannot be sent back to «pending» — undo only between active and blocked
       const opts = was === "pending" ? {} : { duration: 10_000, className: "v3-toast-10s", action: undo };
-      if (next === "rejected") toast.success(`${g.name} заблоковано`, { description: `${why} · група зникла в тих, хто її додав${g.addedBy ? `, @${g.addedBy} отримає пояснення` : ""}`, ...opts });
+      if (next === "rejected") toast.success(`${g.name} заблоковано`, { description: `${why} · група зникла в ${people} ${plural(people, "людини", "людей", "людей")}${g.addedBy ? `, @${g.addedBy} отримає пояснення` : ""}`, ...opts });
       else toast.success(was === "pending" ? `${g.name} — усе гаразд` : `${g.name} розблоковано`, { description: was === "pending" ? "Позначку знято, розбір працює далі" : "Група знову видна людям, які її додали", ...opts });
     } catch (e) { toast.error("Не вдалося змінити стан групи", { description: (e as Error).message }); }
     finally { setBusy(false); setAsk(false); }
@@ -157,15 +168,30 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
     void act("rejected");
   }
   const link = g.link ? (g.link.startsWith("http") ? g.link : `https://${g.link.replace(/^@/, "t.me/")}`) : null;
+  const ERR_HOW: Record<string, string> = {
+    none: "Без посилання розбір не знає, звідки брати прогнози. Попросіть додати посилання на групу.",
+    bad: "Посилання веде не на Telegram. Потрібне посилання виду t.me/назва.",
+    private: "Це посилання-запрошення в закриту групу: її пости не видно. Попросіть публічне посилання або додати бота MatchIQ у групу.",
+  };
   return <>
     <div className="v3-sp-head">
-      <div><div className="v3-sp-title">{g.name}</div><span className="v3-sp-kicker">{[g.link?.replace(/^https?:\/\//, ""), g.game, g.addedBy ? `додав @${g.addedBy}` : ""].filter(Boolean).join(" · ")}</span></div>
-      <span key={g.moderationStatus} className={`v3-tag ${st.cls} v3-sp-flip`}>{st.label}</span>
+      <div><div className="v3-sp-title">{g.name}</div><span className="v3-sp-kicker">{[g.link?.replace(/^https?:\/\//, ""), g.game, g.addedBy ? `додав @${g.addedBy}${people > 1 ? ` +${people - 1}` : ""}` : ""].filter(Boolean).join(" · ")}</span></div>
+      <span key={view} className={`v3-tag ${st.cls} v3-sp-flip`}>{st.label}</span>
     </div>
-    {link && <a className="v3-sp-chip is-link v3-sp-open" href={link} target="_blank" rel="noreferrer">Відкрити в Telegram <ExternalLink size={12} aria-hidden="true" /></a>}
-    {g.comment && <><span className="v3-sp-lbl">Коментар користувача</span><div className="v3-sp-post">«{g.comment}»<span>додано {bubbleTime(g.createdAt)}</span></div></>}
-    {g.moderationStatus === "rejected" ? <>
-      <div className="v3-sp-note">Заблоковано{g.reviewedAt ? ` ${bubbleTime(g.reviewedAt)}` : ""}{g.rejectReason ? ` · ${g.rejectReason}` : ""}{g.reviewedBy ? ` · @${g.reviewedBy}` : ""}. Група прихована в усіх, хто її додав, розбір зупинено.</div>
+    {link && g.linkState !== "bad" && <a className="v3-sp-chip is-link v3-sp-open" href={link} target="_blank" rel="noreferrer">Відкрити в Telegram <ExternalLink size={12} aria-hidden="true" /></a>}
+    {texts.length > 0 && view !== "rejected" && <>
+      <span className="v3-sp-lbl">Чому позначено</span>
+      {texts.map((x, i) => <div key={x.field} className="v3-sp-post" style={{ animationDelay: `${i * 80}ms` }}>«{x.parts.map((p, k) => p.hl ? <mark key={k} className="v3-sp-hl">{p.t}</mark> : <span key={k}>{p.t}</span>)}»<small>{x.field === "name" ? "назва групи" : "опис від користувача"}</small></div>)}
+    </>}
+    {!texts.length && g.comment && view !== "error" && <><span className="v3-sp-lbl">Опис від користувача</span><div className="v3-sp-post">«{g.comment}»<small>додано {bubbleTime(g.createdAt)}</small></div></>}
+    {view === "error" && <div className="v3-sp-errb"><strong>{g.linkProblem ? g.linkProblem[0].toUpperCase() + g.linkProblem.slice(1) : "Розбір не працює"}</strong><span>{ERR_HOW[g.linkState || "none"]}</span></div>}
+    {view === "ok" && <div className="v3-sp-gstats">
+      <div><span>Прогнозів · 7 дн.</span><b>{g.bets7d ?? 0}</b></div>
+      <div style={{ animationDelay: "60ms" }}><span>Влучність</span><b>{g.hitRate != null ? `${g.hitRate}%` : "—"}</b></div>
+      <div style={{ animationDelay: "120ms" }}><span>Останній</span><b>{g.lastBetAt ? ago(g.lastBetAt).replace(" тому", "") : "—"}</b></div>
+    </div>}
+    {view === "rejected" ? <>
+      <div className="v3-sp-note">Заблоковано{g.reviewedAt ? ` ${bubbleTime(g.reviewedAt)}` : ""}{g.rejectReason ? ` · ${g.rejectReason}` : ""}{g.reviewedBy ? ` · @${g.reviewedBy}` : ""}. Група прихована в {people} {plural(people, "людини", "людей", "людей")}, розбір зупинено.</div>
       <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || busy} onClick={() => act("approved")}>Розблокувати</button>
     </> : <>
       <div className="v3-sp-reason"><span className="v3-sp-lbl">Причина блокування</span>
@@ -174,7 +200,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
           {REASONS.map((r, i) => <button key={r} type="button" className={reason === i ? "is-on" : ""} aria-pressed={reason === i} onClick={() => setReason(i)}>{r}</button>)}
         </div>
       </div>
-      <span className="v3-sp-hint">Після блокування група зникне в усіх, хто її додав, розбір зупиниться.{g.addedBy ? ` Користувачу @${g.addedBy} прийде пояснення.` : ""}</span>
+      <span className="v3-sp-hint">Після блокування група зникне в усіх, хто її додав ({people} {plural(people, "людина", "людини", "людей")}), розбір зупиниться.{g.addedBy ? ` Користувачу @${g.addedBy} прийде пояснення.` : ""}</span>
       <div className={`v3-sp-gacts${g.moderationStatus === "pending" ? "" : " is-one"}`}>
         {g.moderationStatus === "pending" && <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || busy} onClick={() => act("approved")}>Усе гаразд</button>}
         <button type="button" className={`v3-btn v3-btn-red${ask ? " v3-pay-cx is-ask" : ""}${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={block}>{busy ? "Блокуємо…" : ask ? "Точно заблокувати?" : "Заблокувати групу"}</button>
@@ -204,7 +230,7 @@ export default function Support() {
   const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES);
   const [rk, setRk] = useState(0);
   // groups
-  const [gf, setGf] = useState<GStatus | "all">("all");
+  const [gf, setGf] = useState<GFilter>("all");
   const [gq, setGq] = useState("");
   const [groups, setGroups] = useState<GroupList | null>(null);
   const [gErr, setGErr] = useState("");
@@ -258,8 +284,9 @@ export default function Support() {
   const c = list?.counts;
   const s = list?.stats;
   const gc = groups?.counts;
+  const gs = groups?.summary;
   const visible = tickets.filter((t) => filter !== "open" || !["resolved", "closed"].includes(t.status));
-  const sub = tab === "tickets" ? (s ? `${s.new} ${plural(s.new, "нове", "нові", "нових")} · ${s.inWork} в роботі` : "…") : (gc ? `${gc.pending} на перевірці · ${gc.approved} активних` : "…");
+  const sub = tab === "tickets" ? (s ? `${s.new} ${plural(s.new, "нове", "нові", "нових")} · ${s.inWork} в роботі` : "…") : (gc ? `${gc.pending} на перевірці · ${gc.errors ?? 0} з помилкою` : "…");
 
   const sums = tab === "tickets" ? [
     { k: "n", l: "Нові", v: s ? String(s.new) : "—", n: s?.oldestNewAt ? `найстаріше — ${ago(s.oldestNewAt)}` : "нових немає", on: true, go: () => { setFilter("new"); setRk((x) => x + 1); } },
@@ -267,10 +294,10 @@ export default function Support() {
     { k: "f", l: "Середня перша відповідь", v: s ? minutesText(s.avgFirstReplyMin) : "—", n: "за 7 днів" },
     { k: "r", l: "Вирішено за тиждень", v: s ? String(s.resolvedWeek) : "—", n: s ? `проблем ${s.resolvedProblems} · побажань ${s.resolvedIdeas}` : "", go: () => { setFilter("resolved"); setRk((x) => x + 1); } },
   ] : [
-    { k: "a", l: "Груп у користувачів Pro", v: gc ? String(gc.all) : "—", n: "усі, що додали користувачі", on: true, go: () => { setGf("all"); setRk((x) => x + 1); } },
-    { k: "ok", l: "Активні", v: gc ? String(gc.approved) : "—", n: "розбір прогнозів працює", go: () => { setGf("approved"); setRk((x) => x + 1); } },
-    { k: "b", l: "Заблоковані", v: gc ? String(gc.rejected) : "—", n: "приховані в усіх", go: () => { setGf("rejected"); setRk((x) => x + 1); } },
-    { k: "p", l: "Потребують перевірки", v: gc ? String(gc.pending) : "—", n: gc?.pending ? "перегляньте перед показом" : "усе перевірено", bad: !!gc?.pending, go: () => { setGf("pending"); setRk((x) => x + 1); } },
+    { k: "a", l: "Груп у користувачів Pro", v: gs ? String(gs.all) : gc ? String(gc.all) : "—", n: gs ? `у ${gs.people} ${plural(gs.people, "людини", "людей", "людей")}` : "", on: true, go: () => { setGf("all"); setRk((x) => x + 1); } },
+    { k: "ok", l: "Розбір працює", v: gs ? String(gs.working) : "—", n: gs ? `прогнозів за 7 днів: ${gs.bets7d.toLocaleString("uk-UA")}` : "" },
+    { k: "e", l: "З помилкою розбору", v: gs ? String(gs.errors) : "—", n: gs?.errors ? gs.errorKinds.join(" · ") : "помилок немає", amber: !!gs?.errors, go: () => { setGf("errors"); setRk((x) => x + 1); } },
+    { k: "p", l: "Потребують перевірки", v: gc ? String(gc.pending) : "—", n: gs?.pendingReason ? `схоже на «${gs.pendingReason.toLowerCase()}»` : gc?.pending ? "перегляньте перед показом" : "усе перевірено", bad: !!gc?.pending, go: () => { setGf("pending"); setRk((x) => x + 1); } },
   ];
 
   const errorCard = (msg: string, retry: () => void) => (
@@ -357,14 +384,14 @@ export default function Support() {
 
   const gEmpty = <div className="v3-sp-none">Таких груп немає · <button type="button" className="v3-link-btn" onClick={() => { setGf("all"); setGq(""); setRk((x) => x + 1); }}>показати всі <ArrowRight size={13} aria-hidden="true" /></button></div>;
   const groupRow = (g: TgGroup, i: number) => {
-    const st = GSTATUS[g.moderationStatus]; const on = g.id === gSel;
+    const v = gView(g); const st = GVIEW[v]; const on = g.id === gSel;
     return (
       <button key={g.id} type="button" className={`v3-pay-row v3-sp-grow${on ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} aria-pressed={on} onClick={() => setGSel(g.id)}>
         <span className="v3-sp-gname"><span className="v3-sp-gav" aria-hidden="true">{g.name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "TG"}</span><span><strong>{g.name}</strong><small>{g.link?.replace(/^https?:\/\//, "") || "без посилання"}</small></span></span>
-        <span>{g.addedBy ? `@${g.addedBy}` : "—"}</span>
-        <span className="v3-sp-muted">{g.game || "—"}</span>
-        <span className="v3-sp-muted is-sm">{ago(g.createdAt)}</span>
-        <span className="v3-pay-r"><span key={g.moderationStatus} className={`v3-tag ${st.cls} v3-sp-flip`}>{st.label}</span></span>
+        <span>{g.addedBy ? `@${g.addedBy}${(g.people || 1) > 1 ? ` +${(g.people || 1) - 1}` : ""}` : "—"}</span>
+        <span className={`v3-sp-parse is-${v}`}>{v === "rejected" ? "—" : v === "error" ? g.linkProblem : v === "pending" ? (g.flagReason ? `схоже: ${g.flagReason.toLowerCase()}` : "на перевірці") : "✓ працює"}</span>
+        <span>{v === "rejected" ? "—" : g.bets7d ?? 0}</span>
+        <span className="v3-pay-r"><span key={v} className={`v3-tag ${st.cls} v3-sp-flip`}>{st.label}</span></span>
       </button>
     );
   };
@@ -372,15 +399,15 @@ export default function Support() {
     <div className="v3-sp-m">
       <div className="v3-pay-mf">
         <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук груп" placeholder="Назва або хто додав" value={gq} onChange={(e) => { setGq(e.target.value); setRk((x) => x + 1); }} />{gq && <button type="button" onClick={() => setGq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-        <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр груп" value={gf} onChange={(v) => { setGf(v as GStatus | "all"); setRk((x) => x + 1); }} options={GFILTERS.map((f) => ({ value: f.key, label: `${f.label}${gc ? ` · ${gc[f.key]}` : ""}` }))} />
+        <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр груп" value={gf} onChange={(v) => { setGf(v as GFilter); setRk((x) => x + 1); }} options={GFILTERS.map((f) => ({ value: f.key, label: `${f.label}${gc ? ` · ${gc[f.key]}` : ""}` }))} />
       </div>
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
         {!groups ? Array.from({ length: 3 }, (_, i) => <li key={i} className="v3-pay-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /></li>)
           : gList.length ? gList.map((g, i) => (
             <li key={g.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-sp-mcard" onClick={() => { setGSel(g.id); setGSheet(true); }}>
               <span className="v3-sp-gav" aria-hidden="true">{g.name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "TG"}</span>
-              <span className="v3-sp-mcard-l"><strong>{g.name}</strong><small>{[g.addedBy ? `@${g.addedBy}` : "", g.game, ago(g.createdAt)].filter(Boolean).join(" · ")}</small></span>
-              <span className={`v3-tag ${GSTATUS[g.moderationStatus].cls}`}>{GSTATUS[g.moderationStatus].label}</span>
+              <span className="v3-sp-mcard-l"><strong>{g.name}</strong><small>{[g.addedBy ? `@${g.addedBy}` : "", gView(g) === "error" ? g.linkProblem : gView(g) === "ok" ? `${g.bets7d ?? 0} за 7 днів` : g.game].filter(Boolean).join(" · ")}</small></span>
+              <span className={`v3-tag ${GVIEW[gView(g)].cls}`}>{GVIEW[gView(g)].label}</span>
             </button></li>
           )) : <li className="v3-wcard v3-pay-mnone">{gEmpty}</li>}
       </ul>
@@ -399,7 +426,7 @@ export default function Support() {
             {GFILTERS.map((f) => { const n = gc ? gc[f.key] : 0; return <button key={f.key} type="button" className={gf === f.key ? "is-on" : ""} aria-pressed={gf === f.key} onClick={() => { setGf(f.key); setRk((x) => x + 1); }}>{f.label}{n ? <span className="v3-seg-n">{n}</span> : null}</button>; })}
           </div>
         </div>
-        <div className="v3-pay-th v3-sp-grow" role="row"><span>Група</span><span>Додав</span><span>Гра</span><span>Додано</span><span className="v3-pay-r">Стан</span></div>
+        <div className="v3-pay-th v3-sp-grow" role="row"><span>Група</span><span>Додав</span><span>Розбір прогнозів</span><span>7 днів</span><span className="v3-pay-r">Стан</span></div>
         {!groups ? skel(4) : gList.length ? <div className={`v3-pay-rows ${rk % 2 ? "a" : "b"}`}>{gList.map(groupRow)}</div> : gEmpty}
       </div>
       <Pane wide open={!!gCur} paneKey={gCur?.id || "-"} label={gCur ? gCur.name : "Група"} onClose={() => setGSel(null)}>
@@ -432,7 +459,7 @@ export default function Support() {
           {sums.map((x) => (
             <button key={x.k} type="button" className={`v3-sum${x.on ? " is-on" : ""}${x.go ? "" : " is-static"}`} onClick={x.go} disabled={!x.go}>
               <span className="v3-sum-l">{x.l}</span>
-              <strong className={`v3-sum-v${"bad" in x && x.bad ? " v3-mx-bad" : ""}`}><RollingNumber key={`${x.k}-${x.v}`} text={x.v} /></strong>
+              <strong className={`v3-sum-v${"bad" in x && x.bad ? " v3-mx-bad" : ""}${"amber" in x && x.amber ? " v3-mx-amber" : ""}`}><RollingNumber key={`${x.k}-${x.v}`} text={x.v} /></strong>
               <span className="v3-sum-n"><span className="v3-pay-note">{x.n}</span></span>
             </button>
           ))}

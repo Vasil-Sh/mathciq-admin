@@ -19,7 +19,7 @@ export interface TicketStats {
   avgFirstReplyMin: number | null; resolvedWeek: number; resolvedProblems: number; resolvedIdeas: number;
 }
 export interface TicketList { tickets: Ticket[]; counts: Record<TFilter, number>; stats: TicketStats; }
-export interface TicketDetail { ticket: Ticket; messages: TMessage[]; context: { aiToday: number | null }; }
+export interface TicketDetail { ticket: Ticket; messages: TMessage[]; context: { aiToday: number | null; aiLimit?: number; hints?: string[] }; }
 export interface Template { id: string; title: string; body: string; }
 
 export const STATUS: Record<TStatus, { label: string; cls: string }> = {
@@ -62,8 +62,22 @@ export interface TgGroup {
   id: string; name: string; link: string | null; game: string | null; hasChannel: boolean; comment: string | null;
   userId: number | null; addedBy: string | null; addedByPlan: string | null;
   moderationStatus: GStatus; reviewedBy: string | null; reviewedAt: string | null; rejectReason: string | null; createdAt: string;
+  // filled by the moderation list (older backends omit them)
+  flags?: string[]; flagReason?: string | null; linkState?: "ok" | "none" | "bad" | "private"; linkProblem?: string | null;
+  people?: number; bets7d?: number; betsTotal?: number; wins?: number; losses?: number; lastBetAt?: string | null; hitRate?: number | null;
 }
-export interface GroupList { groups: TgGroup[]; hasMore: boolean; counts: Record<GStatus | "all", number>; }
+export interface GroupSummary { all: number; people: number; working: number; bets7d: number; errors: number; errorKinds: string[]; pending: number; flagged: number; pendingReason: string | null; }
+export interface GroupList { groups: TgGroup[]; hasMore: boolean; counts: Record<GStatus | "all" | "errors", number>; summary?: GroupSummary; }
+export interface GroupDetail { group: TgGroup & { flaggedTexts?: { field: "name" | "comment"; parts: { t: string; hl: boolean }[] }[] }; recentBets: { match: string | null; betType: string | null; odds: string | null; result: string | null; createdAt: string }[]; }
+export type GView = "pending" | "ok" | "error" | "rejected";
+/** What the moderator sees: blocked, waiting for review, link problem, or working. */
+export const gView = (g: TgGroup): GView => g.moderationStatus === "rejected" ? "rejected" : g.moderationStatus === "pending" ? "pending" : g.linkState && g.linkState !== "ok" ? "error" : "ok";
+export const GVIEW: Record<GView, { label: string; cls: string }> = {
+  pending: { label: "Перевірити", cls: "v3-tag-red" },
+  ok: { label: "Активна", cls: "v3-tag-green" },
+  error: { label: "Помилка", cls: "v3-tag-amber" },
+  rejected: { label: "Заблоковано", cls: "v3-tag-gray" },
+};
 export const GSTATUS: Record<GStatus, { label: string; cls: string }> = {
   pending: { label: "Перевірити", cls: "v3-tag-red" },
   approved: { label: "Активна", cls: "v3-tag-green" },
@@ -71,7 +85,8 @@ export const GSTATUS: Record<GStatus, { label: string; cls: string }> = {
 };
 export const REASONS = ["Договірні матчі", "Шахрайство", "Спам"] as const;
 
-export async function fetchGroups(status: GStatus | "all", q: string, page = 1): Promise<GroupList> {
+export const fetchGroup = (id: string) => api.get<GroupDetail>(`/admin/telegram-groups/${id}`);
+export async function fetchGroups(status: GStatus | "all" | "errors", q: string, page = 1): Promise<GroupList> {
   const p = new URLSearchParams({ status, page: String(page) });
   if (q.trim()) p.set("q", q.trim());
   return api.get<GroupList>(`/admin/telegram-groups?${p}`);
