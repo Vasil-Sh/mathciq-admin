@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, Check, ExternalLink, History, LayoutGrid, List, Plus, RefreshCw, RotateCcw, Search, Shield, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -99,6 +99,9 @@ export default function Matches() {
   const [tf, setTf] = useState<"all" | "dup" | "logo">("all");
   const [tg, setTg] = useState<"all" | Game>("all");
   const [tLimit, setTLimit] = useState(80);
+  // Телефон: команди списком або блоками по дві в ряд (запам’ятовуємо вибір)
+  const [tView, setTView] = useState<"list" | "grid">(() => { try { return localStorage.getItem("mx-team-view") === "grid" ? "grid" : "list"; } catch { return "list"; } });
+  const flipView = () => setTView((v) => { const n = v === "list" ? "grid" : "list"; try { localStorage.setItem("mx-team-view", n); } catch { /* private mode */ } return n; });
   useEffect(() => setTLimit(80), [tq, tf, tg]);
   // Усі команди з пакетів логотипів — довідник не тільки з тих, що грали останні 30 днів
   const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
@@ -605,19 +608,20 @@ export default function Matches() {
     <section className={wide ? "v3-pay-main" : "v3-pay-m"}>
       <div className={wide ? "v3-wcard v3-pay-list" : ""}>
         <div className={wide ? "v3-pay-tools" : "v3-mx-mtools"}>
-          <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
+          {(() => { const sb = <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
+            return wide ? sb : <div className="v3-mx-srow">{sb}<button type="button" className="v3-mx-vbtn" onClick={flipView} aria-label={tView === "list" ? "Показати блоками" : "Показати списком"} title={tView === "list" ? "Блоки" : "Список"}><span key={tView} className="v3-mx-vico">{tView === "list" ? <LayoutGrid size={18} /> : <List size={18} />}</span></button></div>; })()}
           {wide ? <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр"><PillTrack active={tf} />{tfOpts.map((f) => <button key={f.key} type="button" className={tf === f.key ? "is-on" : ""} aria-pressed={tf === f.key} onClick={() => setTf(f.key)}>{f.label} <span className="v3-seg-n">{f.n}</span></button>)}</div>
             : <div className="v3-pay-mf"><Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} /><Dropdown className="v3-mselect-dd" ariaLabel="Гра" align="right" value={tg} onChange={(v) => setTg(v)} options={tgOpts} /></div>}
           {wide && <Dropdown className="is-light" ariaLabel="Гра" value={tg} onChange={(v) => setTg(v)} options={tgOpts} />}
         </div>
         {wide && <div className="v3-pay-th v3-mx-trow"><span>Команда</span><span>Псевдоніми з джерел</span><span>Гра</span><span>Матчів</span><span className="v3-pay-r">Останній</span></div>}
-        {matches === null ? skelRows(5) : tList.length ? (<>{wide ? <div className="v3-pay-rows a">{tList.slice(0, tLimit).map((t, i) => (
+        {matches === null ? (wide ? skelRows(5) : <ul className="v3-pay-mlist" aria-hidden="true">{Array.from({ length: 5 }, (_, i) => <li key={i}><div className="v3-pay-mcard v3-mx-mcard v3-mx-mskel"><span className="v3-skel v3-skel-light" /><span className="v3-mx-mcard-l"><span className="v3-skel v3-skel-light" style={{ width: "55%" }} /><span className="v3-skel v3-skel-light" style={{ width: "35%" }} /></span></div></li>)}</ul>) : tList.length ? (<>{wide ? <div className="v3-pay-rows a">{tList.slice(0, tLimit).map((t, i) => (
           <button key={t.key} type="button" className={`v3-pay-row v3-mx-trow${tSel?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => setSelTeam(t.key)}>
             <span className="v3-mx-tname"><Logo src={t.logo} name={t.name} size={28} /><strong>{t.name}</strong>{t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}</span>
             <span className="v3-mx-vars">{t.aliases.length + t.variants.length ? [...t.aliases, ...t.variants].slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
             <span><GameIco g={t.game} />{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
           </button>
-        ))}</div> : <ul className="v3-pay-mlist a">{tList.slice(0, tLimit).map((t, i) => (
+        ))}</div> : <ul key={tView} className={`v3-pay-mlist a${tView === "grid" ? " v3-mx-tgrid" : ""}`}>{tList.slice(0, tLimit).map((t, i) => (
           <li key={t.key} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-mx-mcard" onClick={() => { setSelTeam(t.key); setSheet(true); }}>
             <Logo src={t.logo} name={t.name} size={38} />
             <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>

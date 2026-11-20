@@ -125,7 +125,6 @@
 .v3-mx-zero-st { display: flex; flex-direction: column; gap: 12px; }
 .v3-mx-zero-st > div { display: flex; justify-content: space-between; color: #c3c9d4; font-size: 13px; }
 .v3-mx-zero-st b { color: #f4f6fa; }
-.v3-mx-zero .v3-empty-ic { background: #e3f6ea; color: #1f7a3d; }
 
 /* Команди */
 .v3-pay-th.v3-mx-trow, .v3-pay-row.v3-mx-trow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) 80px 70px 90px; }
@@ -300,3 +299,24 @@
 .v3-mx-tdel:active { transform: scale(.95); }
 .v3-mx-tdel.is-ask { background: #e5484d; border-color: #e5484d; color: #fff; animation: v3-fade-in .2s ease-out; }
 .v3-mx-tdel:disabled { opacity: .5; cursor: default; }
+
+/* Команди на телефоні: перемикач «список / блоки» поруч із пошуком */
+.v3-mx-srow { display: flex; gap: 8px; align-items: stretch; }
+.v3-mx-srow > .v3-msearch { flex: 1 1 auto; min-width: 0; }
+.v3-mx-vbtn { flex-shrink: 0; display: grid; place-items: center; width: 52px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04); color: #f4f6fa; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .2s, transform .15s; }
+.v3-mx-vbtn:active { transform: scale(.94); background: rgba(255, 255, 255, .1); }
+.v3-mx-vico { display: grid; animation: v3-mx-vflip .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes v3-mx-vflip { from { opacity: 0; transform: rotate(-90deg) scale(.6); } to { opacity: 1; transform: none; } }
+.v3-pay-mlist.v3-mx-tgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v3-mx-tgrid .v3-mx-mcard { flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; height: 100%; padding: 18px 10px 14px; text-align: center; }
+.v3-mx-tgrid .v3-mx-mcard .v3-mx-lg { width: 52px; height: 52px; }
+.v3-mx-tgrid .v3-mx-mcard-l { align-items: center; min-width: 0; width: 100%; }
+.v3-mx-tgrid .v3-mx-mcard-l strong { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mx-tgrid .v3-mx-mcard-l small { white-space: normal; }
+.v3-mx-tgrid .v3-tag { position: absolute; top: 8px; right: 8px; font-size: 10px; }
+.v3-mx-tgrid .v3-mx-mcard { position: relative; display: flex !important; grid-template-columns: none !important; }
+@media (prefers-reduced-motion: reduce) { .v3-mx-vico { animation: none; } }
+/* телефон: поки вантажаться матчі — сірі картки команд, а не рядки таблиці (ті вилазили за екран) */
+.v3-mx-mskel { grid-template-columns: 38px minmax(0, 1fr) !important; align-items: center; min-height: 66px; }
+.v3-mx-mskel .v3-skel { display: block; height: 10px; border-radius: 6px; }
+.v3-mx-mskel > .v3-skel { width: 38px; height: 38px; border-radius: 50%; }
