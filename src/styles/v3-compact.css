@@ -1,0 +1,54 @@
+/*
+ * Компактний телефон: менші заголовки, щільніші картки, вкладки й кнопки — щоб текст
+ * вміщався, а на екран потрапляло більше. Лише до 767px; шир. екран не змінюється.
+ * Файл підключено останнім — щоб повернути старий вигляд, досить прибрати його з main.tsx.
+ */
+@media (max-width: 767px) {
+  /* сторінка */
+  .v3-page { gap: 12px; padding: 0 14px 20px; }
+  .v3-hero { margin: 4px 0 0; }
+  .v3-title, .v3-users .v3-title, .v3-dash .v3-title { font-size: 30px !important; letter-spacing: -.03em; line-height: 1.1; }
+  .v3-subtitle { margin-top: 6px; font-size: 13px; line-height: 1.45; }
+  .v3-fab { width: 42px; height: 42px; }
+  .v3-fab svg { width: 18px; height: 18px; }
+  .v3-hero-row .v3-chip { min-height: 40px; min-width: 40px; }
+
+  /* підсумки вгорі */
+  .v3-sums { gap: 8px; }
+  .v3-sum { gap: 2px; padding: 12px 14px; border-radius: 16px; }
+  .v3-sum-l { font-size: 12px; }
+  .v3-sum-v { margin-top: 4px; font-size: 24px; }
+  .v3-sum-n { font-size: 11px; line-height: 1.35; }
+  .v3-kpi { padding: 12px 14px !important; border-radius: 16px !important; }
+  .v3-ad-mkpis > div { padding: 12px 14px; border-radius: 16px; }
+  .v3-ad-mkpis b { font-size: 24px; }
+
+  /* вкладки-пігулки */
+  .v3-pay-tab, .v3-ads-tabs .v3-ptab, .v3-mx-tabs .v3-pay-tab { min-height: 38px !important; gap: 6px; padding: 0 12px 0 4px !important; font-size: 13px; }
+  .v3-pay-tab-n, .v3-mx-tabs .v3-pay-tab-n, .v3-ads-tabs .v3-ptab span { min-width: 26px !important; height: 26px !important; font-size: 12px; }
+
+  /* пошук, фільтри, кнопки */
+  .v3-msearch { min-height: 42px; padding: 0 14px; }
+  .v3-mselect-dd > button, .v3-mselect-dd .v3-dd-btn { min-height: 42px; }
+  .v3-btn { min-height: 42px; padding: 0 16px; font-size: 14px; }
+  .v3-btn-sm { min-height: 34px; }
+  .v3-bt-allbtn { min-height: 42px; }
+
+  /* картки й рядки */
+  /* only the radius here: some white cards are transparent wrappers with their own padding */
+  .v3-wcard { border-radius: 20px; }
+  .v3-dcard { border-radius: 18px; }
+  .v3-pay-mcard, .v3-ad-mcard { padding: 11px 12px; border-radius: 16px; gap: 2px 10px; }
+  .v3-pay-mlist, .v3-ad-mlist { gap: 6px; }
+  .v3-pay-mcard strong, .v3-ad-mcard strong { font-size: 14px; }
+  .v3-pay-mcard small, .v3-ad-mcard small { font-size: 12px; }
+  .v3-tag, .v3-bn-tag { font-size: 11px; }
+
+  /* меню */
+  .v3-mobile-link { min-height: 42px; gap: 12px; padding: 0 14px; border-radius: 14px; font-size: 15px; }
+  .v3-mobile-link svg { width: 18px; height: 18px; }
+
+  /* шторки й вікна */
+  .v3-modal-title { font-size: 20px; }
+  .v3-modal-sub { font-size: 13px; }
+}
