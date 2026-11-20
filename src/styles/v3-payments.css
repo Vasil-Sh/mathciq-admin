@@ -354,3 +354,4 @@ button.v3-pay-row { cursor: pointer; }
   .v3-mselect-dd .v3-dd-btn, .v3-bt-allbtn { font-size: 14px; }
   .v3-bt-allbtn { font-weight: 500; }
 }
+.v3-pay-sums .v3-sum.is-static:hover { translate: none; }

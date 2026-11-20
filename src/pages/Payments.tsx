@@ -421,12 +421,13 @@ export default function Payments() {
         </>
       ) : <>
         <section className="v3-sums v3-pay-sums" aria-label="Підсумки">
-          {sums.map((s) => (
-            <button key={s.k} type="button" className={`v3-sum${sumOn === s.k ? " is-on" : ""}${s.go ? "" : " is-static"}`} aria-pressed={sumOn === s.k} onClick={s.go} disabled={!s.go}>
+          {/* numbers only — sections switch with the tabs below; the first card is the blue one */}
+          {sums.map((s, i) => (
+            <div key={s.k} className={`v3-sum is-static${i === 0 ? " is-on" : ""}`}>
               <span className="v3-sum-l">{s.k === "recv" ? <><span className="v3-hide-mobile">{s.label}</span><span className="v3-only-mobile">Отримано</span></> : s.label}</span>
               <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`${s.k}-${s.value}`} text={s.value} />}</strong>
-              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={sumOn === s.k} vs={vs} bad={s.k === "ref"} />}<span className="v3-pay-note">{s.note}</span></span>
-            </button>
+              <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={i === 0} vs={vs} bad={s.k === "ref"} />}<span className="v3-pay-note">{s.note}</span></span>
+            </div>
           ))}
         </section>
 
