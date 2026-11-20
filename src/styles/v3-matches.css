@@ -159,7 +159,7 @@
   .v3-mx-zero { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
-  .v3-mx-tabsw { margin: 0 -16px; padding: 2px 16px 10px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .v3-mx-tabsw { margin: -10px -16px -18px; padding: 10px 16px 28px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
   .v3-mx-tabsw.fade-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
   .v3-mx-tabsw.fade-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px); mask-image: linear-gradient(90deg, transparent, #000 28px); }
   .v3-mx-tabsw.fade-l.fade-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
@@ -328,3 +328,13 @@
 .v3-mx-pstop:disabled { opacity: .5; cursor: default; }
 @media (max-width: 767px) { .v3-mx-ph { gap: 10px; } .v3-mx-ph .v3-tag { padding-inline: 8px; } }
 .v3-bt-allbtn.v3-mx-mmore { margin-top: 12px; animation: none; }
+
+/* KPI на «Матчах» — лише цифри, не кнопки */
+.v3-mx-sums .v3-sum.is-static:hover { translate: none; }
+
+/* 24 години: парсер зупинено вручну — знак «стоп» зверху, смужки приглушені */
+.v3-mx-upstop { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 12px 14px; border-radius: 16px; background: rgba(229, 72, 77, .1); border: 1px solid rgba(229, 72, 77, .25); animation: v3-fade-in .3s ease-out; }
+.v3-mx-upstop-ico { flex-shrink: 0; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #e5484d; color: #fff; }
+.v3-mx-upstop strong { display: block; font-size: 14px; font-weight: 600; }
+.v3-mx-upstop small { display: block; margin-top: 2px; color: #a8b0bf; font-size: 12px; line-height: 1.45; }
+.v3-mx-up.is-stopped .v3-mx-bars { opacity: .45; }

@@ -115,9 +115,9 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
         )}
       </section>
 
-      <section className="v3-wcard v3-ad-table">
+      <section className={`v3-wcard v3-ad-table${rows.length === 0 ? " is-empty" : ""}`}>
         <div className="v3-ad-table-h"><h2>За місцями й партнерами</h2><p>Для рахунку партнеру: оберіть рядок → «Звіт для партнера».</p></div>
-        {rows.length === 0 ? <p className="v3-ad-foot">Подій за період немає.</p> : wide ? (
+        {rows.length === 0 ? null : wide ? (
           <>
             <div className="v3-ad-tr v3-ad-stcols is-h"><span>Розміщення</span><span>Покази</span><span>Кліки</span><span>CTR</span><span>Примітка</span></div>
             {rows.map((r) => (

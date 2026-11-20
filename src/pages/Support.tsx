@@ -315,13 +315,13 @@ export default function Support() {
   const emptyAll = (
     <section className="v3-sp-zero">
       <div className="v3-wcard v3-sp-zero-card">
-        <span className="v3-sp-zero-ico" aria-hidden="true"><Check size={22} strokeWidth={3} /></span>
+        <span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Check size={24} strokeWidth={2.6} /></span>
         <strong>Звернень поки немає</strong>
         <p>Коли користувач надішле «Проблему чи побажання» з профілю, воно з’явиться тут з контекстом: план, пристрій, екран. Нові звернення видно й на дашборді.</p>
       </div>
       <div className="v3-dcard v3-sp-zero-st">
         <strong>Статуси</strong>
-        {(["open", "in_progress", "waiting", "resolved"] as TStatus[]).map((k, i) => <div key={k} style={{ animationDelay: `${300 + i * 70}ms` }}><span className={`v3-tag ${STATUS[k].cls}`}>{STATUS[k].label}</span><span>{["щойно надійшло, ніхто не взяв", "адмін розбирається", "відповіли, чекаємо користувача", "закрито — відкриється, якщо напишуть"][i]}</span></div>)}
+        {(["open", "in_progress", "waiting", "resolved"] as TStatus[]).map((k, i) => <div key={k} className="v3-sp-strow" style={{ animationDelay: `${300 + i * 70}ms` }}><span className={`v3-tag ${STATUS[k].cls}`}>{STATUS[k].label}</span><span>{["щойно надійшло, ніхто не взяв", "адмін розбирається", "відповіли, чекаємо користувача", "закрито — відкриється, якщо напишуть"][i]}</span></div>)}
       </div>
     </section>
   );
@@ -364,7 +364,7 @@ export default function Support() {
     <div className="v3-sp-m">
       <div className="v3-pay-mf">
         <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр звернень" value={filter} onChange={(v) => { setFilter(v as TFilter); setRk((x) => x + 1); }} options={FILTERS.map((f) => ({ value: f.key, label: f.label }))} />
-        <Dropdown className="v3-mselect-dd" ariaLabel="Тип звернення" value={kind} onChange={(v) => { setKind(v as TKind | "all"); setRk((x) => x + 1); }} options={KINDS} />
+        <Dropdown className="v3-mselect-dd" align="right" ariaLabel="Тип звернення" value={kind} onChange={(v) => { setKind(v as TKind | "all"); setRk((x) => x + 1); }} options={KINDS} />
       </div>
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
         {!list ? Array.from({ length: 4 }, (_, i) => <li key={i} className="v3-pay-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /></li>)
@@ -382,7 +382,11 @@ export default function Support() {
     </div>
   );
 
-  const gEmpty = <div className="v3-sp-none">Таких груп немає · <button type="button" className="v3-link-btn" onClick={() => { setGf("all"); setGq(""); setRk((x) => x + 1); }}>показати всі <ArrowRight size={13} aria-hidden="true" /></button></div>;
+  // no groups at all → a proper empty state; nothing in this filter / search → a way back to all
+  const noGroupsAtAll = !!groups && (groups.counts?.all ?? groups.groups.length) === 0;
+  const gEmpty = noGroupsAtAll
+    ? <div className="v3-sp-gzero"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Груп ще немає</strong><span>Коли користувач Pro додасть свою Telegram-групу зі ставками, вона з’явиться тут на перевірку: посилання, хто додав, що знайшов парсер.</span></div>
+    : <div className="v3-sp-gzero"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Search size={22} /></span><strong>Нічого не знайдено</strong><span>{gq.trim() ? `За «${gq.trim()}» груп немає.` : "У цьому фільтрі груп немає."}</span><button type="button" className="v3-btn v3-btn-primary" onClick={() => { setGf("all"); setGq(""); setRk((x) => x + 1); }}>Показати всі</button></div>;
   const groupRow = (g: TgGroup, i: number) => {
     const v = gView(g); const st = GVIEW[v]; const on = g.id === gSel;
     return (
@@ -399,7 +403,7 @@ export default function Support() {
     <div className="v3-sp-m">
       <div className="v3-pay-mf">
         <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук груп" placeholder="Назва або хто додав" value={gq} onChange={(e) => { setGq(e.target.value); setRk((x) => x + 1); }} />{gq && <button type="button" onClick={() => setGq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-        <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр груп" value={gf} onChange={(v) => { setGf(v as GFilter); setRk((x) => x + 1); }} options={GFILTERS.map((f) => ({ value: f.key, label: `${f.label}${gc ? ` · ${gc[f.key]}` : ""}` }))} />
+        <Dropdown className="v3-mselect-dd" align="right" ariaLabel="Фільтр груп" value={gf} onChange={(v) => { setGf(v as GFilter); setRk((x) => x + 1); }} options={GFILTERS.map((f) => ({ value: f.key, label: `${f.label}${gc ? ` · ${gc[f.key]}` : ""}` }))} />
       </div>
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
         {!groups ? Array.from({ length: 3 }, (_, i) => <li key={i} className="v3-pay-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /></li>)

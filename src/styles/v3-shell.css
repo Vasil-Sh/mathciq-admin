@@ -429,3 +429,8 @@ input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webki
 /* Mistakes next to the field (forms validate on submit) */
 .v3-field-err { margin: 0; color: #b3321c; font-size: 13px; line-height: 1.45; animation: v3-err-in .3s cubic-bezier(.2, .9, .25, 1.2) both; }
 @media (prefers-reduced-motion: reduce) { .v3-field-err { animation: none; } }
+
+/* «Матчі»: усі парсери зупинені вручну — знак «в’їзд заборонено» (червоне коло з білою смугою) */
+.v3-count.v3-noentry { position: relative; padding: 0; min-width: 20px; width: 20px; background: #e5484d; }
+.v3-count.v3-noentry i { display: block; width: 55%; height: 3px; border-radius: 2px; background: #fff; }
+.v3-mobile-link .v3-count.v3-noentry { width: 26px; min-width: 26px; }

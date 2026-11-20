@@ -22,6 +22,8 @@ export interface NavBadges {
   supportOpen?: number;
   matchesError?: boolean;
   matchesErrorText?: string;
+  /** every parser is stopped by hand — «Матчі» gets a no-entry sign */
+  matchesStopped?: boolean;
   /** subscriptions ending within 7 days — shown on «Користувачі» in the mobile menu */
   usersExpiring?: number;
 }
@@ -53,7 +55,8 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
       if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value }));
       if (p.status === "fulfilled") {
         const bad = p.value.map((x) => [x, parserHealth(x)] as const).filter(([, h]) => h !== "ok");
-        setBadges((b) => ({ ...b, matchesError: bad.length > 0, matchesErrorText: bad.map(([x, h]) => `${PARSER_NAMES[x.name] || x.name} ${PARSER_ISSUE[h as "down" | "flaky"]}`).join(", ") }));
+        const stopped = p.value.length > 0 && p.value.every((x) => x.paused);
+        setBadges((b) => ({ ...b, matchesStopped: stopped, matchesError: bad.length > 0, matchesErrorText: bad.map(([x, h]) => `${PARSER_NAMES[x.name] || x.name} ${PARSER_ISSUE[h as "down" | "flaky"]}`).join(", ") }));
       }
     };
     if (onAuditPage) {

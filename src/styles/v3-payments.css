@@ -6,7 +6,7 @@
 /* Вкладки-чипи (як фільтри-чипи в Користувачах): лічильник на початку, вибрана — синя таблетка переїжджає */
 .v3-pay-tabs { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: max-content; max-width: 100%; }
 .v3-pay-tabs > .v3-pill { top: 0; bottom: 0; }
-.v3-pay-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; min-width: 156px; min-height: 44px; padding: 0 16px 0 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #f4f6fa; font: 600 14px Inter, sans-serif; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: color .3s, border-color .3s, background-color .2s, transform .15s ease-out; }
+.v3-pay-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; min-width: 156px; min-height: 44px; padding: 0 16px 0 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: #161b24; color: #f4f6fa; font: 600 14px Inter, sans-serif; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: color .3s, border-color .3s, background-color .2s, transform .15s ease-out; }
 .v3-pay-tabs.has-pill .v3-pay-tab.is-on { background: transparent; border-color: transparent; }
 .v3-pay-tab.is-on { background: var(--v3-nav); border-color: var(--v3-nav); color: #fff; }
 .v3-pay-tab-n { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; box-sizing: border-box; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; transition: background-color .3s, color .3s; }

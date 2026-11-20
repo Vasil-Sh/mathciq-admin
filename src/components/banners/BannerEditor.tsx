@@ -50,7 +50,14 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
     const next: BannerInput = banner
       ? { active: banner.active, screen: banner.screen || "matches", startsOn: banner.startsOn || null, endsOn: banner.endsOn || null, slot: banner.slot ?? 1, title: banner.title, description: banner.description || "", imageUrl: banner.imageUrl || "", href: banner.href || "" }
       : { ...EMPTY, slot: preset?.slot ?? 1, screen: preset?.screen ?? "matches" };
-    setF(next); initial.current = JSON.stringify(next);
+    initial.current = JSON.stringify(next);
+    // an existing banner picked for a free slot: move it there and switch it on; a finished period starts over
+    if (banner && preset) {
+      const today = kyivToday();
+      const over = !!banner.endsOn && banner.endsOn < today;
+      Object.assign(next, { slot: preset.slot, screen: preset.screen, active: true, ...(over ? { startsOn: today, endsOn: null } : {}) });
+    }
+    setF(next);
     setFile(null); setFileErr(null); setImgFailed(false); setUrlMode(false); setDevice("desk");
   }, [open, banner, preset]);
 

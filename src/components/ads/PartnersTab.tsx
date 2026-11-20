@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdLabel, AskToggle, EditorPanel, LockedLabel, SaveButton } from "@/components/ads/AdsShared";
@@ -74,11 +75,15 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
       else toast.success("Розміщення увімкнено", { description: `${saved.name} знову показується` });
     } catch (e) { toast.error("Не вдалося змінити партнера", { description: (e as Error).message }); }
   }
+  const [delAsk, setDelAsk] = useState<Bookmaker | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
   async function remove(b: Bookmaker) {
+    setDelBusy(true);
     try {
-      await deleteBookmaker(b.id); setList((l) => l.filter((x) => x.id !== b.id)); setSelId(null);
+      await deleteBookmaker(b.id); setList((l) => l.filter((x) => x.id !== b.id)); setSelId(null); setDelAsk(null);
       toast.success("Партнера видалено", { description: b.name, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: async () => { try { await saveBookmaker(null, { ...b }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
     } catch (e) { toast.error("Не вдалося видалити партнера", { description: (e as Error).message }); }
+    setDelBusy(false);
   }
 
   if (error && list === null) return <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити партнерів</strong><span>{error}</span><div><button type="button" className="v3-btn v3-btn-blue" onClick={reload}>Спробувати ще раз</button></div></div>;
@@ -135,7 +140,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
         {!creating && sel ? <AskToggle active={sel.active} resetKey={sel.id} disabled={!online || bookmakerStatus(sel) === "draft"} onToggle={() => toggleActive(sel)} /> : <button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setCreating(false)}>Скасувати</button>}
         <SaveButton saving={saving} disabled={!online} onClick={() => save()} />
       </div>
-      {!creating && sel && <button type="button" className="v3-ad-del" onClick={() => remove(sel)}><Trash2 size={14} aria-hidden="true" />Видалити партнера</button>}
+      {!creating && sel && <button type="button" className="v3-ad-del" disabled={!online} onClick={() => setDelAsk(sel)}><Trash2 size={14} aria-hidden="true" />Видалити партнера</button>}
     </EditorPanel>
   );
 
@@ -179,6 +184,9 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
         {editor}
       </section>
       {!wide && <div className="v3-ad-note"><AdLabel /><span>додається до кожного розміщення автоматично</span></div>}
+      <ConfirmDialog open={!!delAsk} busy={delBusy} onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && remove(delAsk)}
+        title={`Видалити «${delAsk?.name || "партнера"}»?`} confirm="Видалити" busyText="Видаляємо…"
+        text="Коефіцієнти партнера зникнуть із застосунку, а сам партнер — зі списку. Статистика кліків лишиться у звітах. Повернути можна одразу після видалення — кнопкою в сповіщенні." />
     </>
   );
 }

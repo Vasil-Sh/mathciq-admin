@@ -486,8 +486,11 @@ export default function Matches() {
       {(() => { const focus = down[0]?.name || (avail.hltv_scraper ? "hltv_scraper" : Object.keys(avail)[0]); const a = focus ? avail[focus] : undefined; if (!a) return null;
         const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
         const hours = Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok", h }; });
+        const allStopped = !!parsers?.length && parsers.every((p) => p.paused);
+        const fStopped = allStopped || !!parsers?.find((p) => p.name === focus)?.paused;
         return (
-          <div className="v3-dcard v3-mx-up">
+          <div className={`v3-dcard v3-mx-up${fStopped ? " is-stopped" : ""}`}>
+            {fStopped && <div className="v3-mx-upstop" role="status"><span className="v3-mx-upstop-ico" aria-hidden="true"><Square size={12} fill="currentColor" /></span><span><strong>{allStopped ? "Усі парсери зупинені" : `${PARSER_NAMES[focus] || focus} зупинено`}</strong><small>Запитів до джерел немає — нові години не з’являться, поки парсер не запустять. Нижче — що було до зупинки.</small></span></div>}
             <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong>
               <div className="v3-mx-legend" role="group" aria-label="Показати години зі статусом">
                 {([["ok", "успішно"], ["mix", "із повторами"], ["bad", "помилка"], ["none", "немає даних"]] as const).map(([k, l]) => {
@@ -660,7 +663,7 @@ export default function Matches() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Матчі</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з проблемою` : "Усі джерела працюють") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}`}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з проблемою` : parsers?.length && parsers.every((p) => p.paused) ? "Усі парсери зупинені вручну" : "Усі джерела працюють") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}`}</span></p>
         </div>
         <div className="v3-chips">
           <button type="button" className={`v3-chip v3-mx-rf${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={refresh} aria-label="Оновити з джерел">
@@ -679,12 +682,13 @@ export default function Matches() {
         <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити матчі</strong><span>Стрічки tips.gg і HLTV не відповіли.</span><code className="v3-uerror-det">{error}</code><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => load()}>Спробувати ще раз</button></div></div>
       ) : <>
         <section className="v3-sums v3-pay-sums v3-mx-sums" aria-label="Підсумки">
-          {sums.map((s) => (
-            <button key={s.k} type="button" className={`v3-sum${s.on ? " is-on" : ""}${s.go ? "" : " is-static"}`} aria-pressed={s.on} onClick={s.go} disabled={!s.go}>
+          {/* only numbers here — the tabs below switch sections; the first card is the blue one, as on the other screens */}
+          {sums.map((s, i) => (
+            <div key={s.k} className={`v3-sum is-static${i === 0 ? " is-on" : ""}`}>
               <span className="v3-sum-l">{s.label}</span>
-              <strong className={`v3-sum-v${s.bad && !s.on ? " v3-mx-bad" : ""}${s.amber && !s.on ? " v3-mx-amber" : ""}`}><RollingNumber key={`${s.k}-${s.v}`} text={s.v} /></strong>
+              <strong className={`v3-sum-v${s.bad && i ? " v3-mx-bad" : ""}${s.amber && i ? " v3-mx-amber" : ""}`}><RollingNumber key={`${s.k}-${s.v}`} text={s.v} /></strong>
               <span className="v3-sum-n"><span className="v3-pay-note">{s.n}</span></span>
-            </button>
+            </div>
           ))}
         </section>
 

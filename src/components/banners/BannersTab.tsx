@@ -41,6 +41,9 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
 
   const openNew = (slot = 1) => setEditor({ open: true, banner: null, preset: { slot, screen } });
   const openEdit = (b: Banner) => setEditor({ open: true, banner: b });
+  // free slot tapped: pick a banner that is not showing now (or make a new one)
+  const [pickSlot, setPickSlot] = useState(0);
+  const pickable = useMemo(() => list.filter((b) => (b.screen || "matches") === screen && !["live", "sched"].includes(statusOf(b, today))), [list, screen, today]);
 
   const [hot, setHot] = useState(0);
   async function toggle(b: Banner, undo = false) {
@@ -83,9 +86,10 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     if (!b) return (
       <article key={n} className="v3-wcard v3-bn-slot" onMouseEnter={() => setHot(n)} onMouseLeave={() => setHot(0)}>
         <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div>{tag("free")}</div>
-        <div className={`v3-bn-free${screen === "matches" && ph(n) ? "" : " is-hidden"}`}>
+        <button type="button" className={`v3-bn-free v3-bn-freebtn${screen === "matches" && ph(n) ? "" : " is-hidden"}`} disabled={!online} onClick={() => (pickable.length ? setPickSlot(n) : openNew(n))} aria-label={`Обрати банер для «${slotName(n)}»`}>
           {screen === "matches" && ph(n) ? <><strong>Слот вільний</strong><span>Користувачі бачать плейсхолдер реклами</span></> : <><strong>У застосунку слот прихований</strong><span>Користувачі не бачать нічого на цьому місці</span></>}
-        </div>
+          <em className="v3-bn-freecta">{pickable.length ? `Обрати банер · ${pickable.length}` : "Створити банер"}</em>
+        </button>
         <dl className="v3-bn-dl">
           <div><dt>Розмір зображення</dt><dd>1100 × 260 px · до 1,5 МБ</dd></div>
           <div><dt>Останній банер тут</dt><dd>{s.last ? `${s.last.title.length > 28 ? s.last.title.slice(0, 28) + "…" : s.last.title}${s.last.endsOn ? ` · до ${shortDay(s.last.endsOn)}` : ""}` : "ще не було"}</dd></div>
@@ -227,7 +231,25 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
       <BannerEditor open={editor.open} banner={editor.banner} preset={editor.preset} banners={list} online={online}
         onClose={() => setEditor({ open: false, banner: null })}
         onSaved={() => { setEditor({ open: false, banner: null }); reload(); }}
-        onAskDelete={(b) => setDeleting(b)} onDeleteNow={(b) => doDelete(b)} />
+        onAskDelete={(b) => setDeleting(b)} />
+
+      <Dialog open={!!pickSlot} onOpenChange={(o) => { if (!o) setPickSlot(0); }}>
+        <DialogContent className="v3-modal v3-bn-pick sm:max-w-[520px]">
+          <DialogTitle className="v3-modal-title">Що поставити в «{slotName(pickSlot || 1)}»?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">{slotWhere(screen, pickSlot || 1)}. Оберіть банер, який зараз не показується, — він відкриється з цим слотом, перевірте дати й збережіть.</DialogDescription>
+          <div className="v3-bn-picklist">
+            {pickable.map((b) => { const bs = statusOf(b, today); return (
+              <button key={b.id} type="button" className="v3-bn-pickrow" onClick={() => { const n = pickSlot; setPickSlot(0); setEditor({ open: true, banner: b, preset: { slot: n, screen } }); }}>
+                <span className="v3-bn-pickimg">{b.imageUrl ? <img src={b.imageUrl} alt="" /> : <Megaphone size={16} aria-hidden="true" />}</span>
+                <span className="v3-bn-pickt"><strong>{b.title}</strong><small>{slotName(b.slot)} · {b.startsOn || b.endsOn ? periodText(b) : "без дат"}</small></span>
+                {tag(bs)}
+                <ChevronRight size={15} aria-hidden="true" />
+              </button>
+            ); })}
+          </div>
+          <button type="button" className="v3-btn v3-btn-primary v3-bn-picknew" onClick={() => { const n = pickSlot; setPickSlot(0); openNew(n); }}>+ Створити новий банер</button>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
         <DialogContent className="v3-modal sm:max-w-[520px]">

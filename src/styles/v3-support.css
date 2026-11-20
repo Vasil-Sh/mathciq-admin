@@ -159,3 +159,21 @@
 .v3-sp-sheet .v3-sp-gstats > div { background: #f5f7fb; }
 .v3-sp-sheet .v3-sp-gstats b { color: #11151c; }
 @media (prefers-reduced-motion: reduce) { .v3-sp-hl, .v3-sp-errb, .v3-sp-hintb, .v3-sp-gstats > div { animation: v3-fade-in .2s both !important; } }
+
+/* Порожні стани як на інших екранах: синя іконка пливе з ореолом, усе по центру */
+.v3-sp-zero-card { align-items: center; text-align: center; }
+.v3-sp-zero-card > p { max-width: 460px; }
+.v3-sp-zero-card > .v3-ue-ico { animation-delay: 0s; }
+.v3-sp-gzero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 40px 22px; animation: v3-pay-in .35s cubic-bezier(.2, .8, .2, 1) both; }
+.v3-sp-gzero strong { font-size: 18px; font-weight: 600; color: var(--v3-ink); }
+.v3-sp-gzero > span:not(.v3-ue-ico) { max-width: 420px; color: #5f6878; font-size: 14px; line-height: 1.55; }
+.v3-sp-gzero .v3-ue-ico { margin-bottom: 6px; }
+.v3-sp-gzero .v3-btn { margin-top: 6px; }
+/* «Статуси»: мітки однакової ширини в колонці, пояснення поруч — рівні рядки */
+.v3-sp-zero-st > .v3-sp-strow { display: grid; grid-template-columns: 148px minmax(0, 1fr); align-items: center; gap: 12px; }
+.v3-sp-strow .v3-tag { justify-self: start; white-space: nowrap; }
+.v3-sp-strow > span:last-child { line-height: 1.45; }
+@media (max-width: 767px) { .v3-sp-zero-st > .v3-sp-strow { grid-template-columns: 138px minmax(0, 1fr); } }
+.v3-sp-zero-card > .v3-ue-ico.v3-float { animation: v3-float 3.2s ease-in-out infinite; }
+.v3-ue-ico.v3-halo { position: relative; }
+@media (prefers-reduced-motion: reduce) { .v3-sp-zero-card > .v3-ue-ico.v3-float { animation: none; } }

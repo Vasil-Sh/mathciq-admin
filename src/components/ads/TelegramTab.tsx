@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton } from "@/components/ads/AdsShared";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dropdown } from "@/components/ui/dropdown";
 import { DateField } from "@/components/ui/date-field";
 import { PR_STATUS, colorOf, deletePromo, entityStats, initials, nf, placeLabel, promoStatus, savePromo, subsText, textIssues, type AdStats, type Promo, type PromoInput } from "@/lib/adsModel";
@@ -65,11 +66,15 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
       else toast.success("Розміщення увімкнено", { description: saved.name });
     } catch (e) { toast.error("Не вдалося змінити розміщення", { description: (e as Error).message }); }
   }
+  const [delAsk, setDelAsk] = useState<Promo | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
   async function remove(p: Promo) {
+    setDelBusy(true);
     try {
-      await deletePromo(p.id); setList((l) => l.filter((x) => x.id !== p.id)); setSelId(null);
+      await deletePromo(p.id); setList((l) => l.filter((x) => x.id !== p.id)); setSelId(null); setDelAsk(null);
       toast.success("Розміщення видалено", { description: p.name, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: async () => { try { await savePromo(null, { ...p }); reload(); } catch (e) { toast.error("Не вдалося повернути", { description: (e as Error).message }); } } } });
     } catch (e) { toast.error("Не вдалося видалити", { description: (e as Error).message }); }
+    setDelBusy(false);
   }
 
   if (error && list === null) return <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити розміщення</strong><span>{error}</span><div><button type="button" className="v3-btn v3-btn-blue" onClick={reload}>Спробувати ще раз</button></div></div>;
@@ -117,7 +122,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
           <SaveButton saving={saving} disabled={!online || (!creating && f.reviewStatus === "rejected")} onClick={() => save()} />
         </div>
       )}
-      {!creating && sel && <button type="button" className="v3-ad-del" onClick={() => remove(sel)}><Trash2 size={14} aria-hidden="true" />Видалити розміщення</button>}
+      {!creating && sel && <button type="button" className="v3-ad-del" disabled={!online} onClick={() => setDelAsk(sel)}><Trash2 size={15} aria-hidden="true" />Видалити розміщення</button>}
     </EditorPanel>
   );
 
@@ -144,10 +149,10 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
             </>
           ) : (
             <div className="v3-ad-mlist">{items.map((p) => { const st = promoStatus(p); return (
-              <button key={p.id} type="button" className="v3-ad-mcard" onClick={() => { setCreating(false); setSelId(p.id); }}>
-                <span><strong>{p.name}</strong><small>@{p.handle} · {placeLabel(p)}</small></span>
+              <button key={p.id} type="button" className="v3-ad-mcard v3-ad-tgm" onClick={() => { setCreating(false); setSelId(p.id); }}>
+                <span className="v3-ad-tgwho"><span className="v3-ad-tgav" style={{ background: st === "rejected" ? "#8a93a2" : colorOf(p.name) }}>{initials(p.name)}</span><span><strong>{p.name}</strong><small>@{p.handle}{p.subscribers != null ? ` · ${subsText(p.subscribers)} підписників` : ""}</small></span></span>
                 <span className={`v3-bn-tag ${PR_STATUS[st].cls}`}>{PR_STATUS[st].label}</span>
-                <small className="v3-ad-mcard-f">{p.startsOn || p.endsOn ? periodText(p) : "без дат"}{st === "rejected" && p.rejectReason ? ` · ${p.rejectReason}` : ""}</small>
+                <small className="v3-ad-mcard-f">{placeLabel(p)} · {p.startsOn || p.endsOn ? periodText(p) : "без терміну"}{st === "rejected" && p.rejectReason ? ` · ${p.rejectReason}` : ""}</small>
                 <ChevronRight size={14} aria-hidden="true" />
               </button>
             ); })}</div>
@@ -155,6 +160,9 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
         </div>
         {editor}
       </section>
+      <ConfirmDialog open={!!delAsk} busy={delBusy} onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && remove(delAsk)}
+        title={`Видалити «${delAsk?.name || "розміщення"}»?`} confirm="Видалити" busyText="Видаляємо…"
+        text="Група зникне із застосунку й зі списку розміщень. Статистика кліків лишиться у звітах. Повернути можна одразу після видалення — кнопкою в сповіщенні." />
     </>
   );
 }

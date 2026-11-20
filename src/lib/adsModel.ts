@@ -100,7 +100,14 @@ export const PR_STATUS: Record<PrStatus, { label: string; cls: string }> = {
   off: { label: "Вимкнено", cls: "is-off" }, pending: { label: "На перевірці", cls: "is-done" }, rejected: { label: "Відхилено", cls: "is-red" },
 };
 export const placeLabel = (p: Pick<Promo, "placement" | "game">) => (p.placement === "telegram-top" ? "Telegram · верх списку" : `Деталі матчу${p.game ? ` · ${p.game}` : ""}`);
-export const subsText = (n: number | null) => (n == null ? "" : n >= 1000 ? `${(n / 1000).toFixed(1).replace(".0", "").replace(".", ",")} тис.` : String(n));
+/** 950 → «950», 5 694 → «5,7 тис.», 53 846 527 → «53,8 млн» */
+export const subsText = (n: number | null) => {
+  if (n == null) return "";
+  const short = (v: number) => (v >= 100 ? String(Math.round(v)) : v.toFixed(1).replace(/\.0$/, "").replace(".", ","));
+  if (n >= 999_500) return `${short(n / 1e6)} млн`;
+  if (n >= 1000) return `${short(n / 1000)} тис.`;
+  return String(n);
+};
 export const initials = (name: string) => { const w = name.split(/\s+/).filter(Boolean); return (w.length > 1 ? w.slice(0, 2).map((x) => x[0]).join("") : (w[0] || "?").slice(0, 2)).toUpperCase(); };
 const PALETTE = ["#3a6df0", "#7a4fd0", "#1f7a3d", "#c2410c", "#0e7490", "#9a2a17"];
 export const colorOf = (s: string) => PALETTE[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % PALETTE.length];

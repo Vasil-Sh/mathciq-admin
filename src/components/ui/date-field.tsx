@@ -51,6 +51,8 @@ export function DateField({ id, value, onChange, min, max, required, labelledBy,
   const move = (d: number) => { setDir(d); setRun((r) => r + 1); setView((v) => { const m = v.m + d; return { y: v.y + Math.floor(m / 12), m: ((m % 12) + 12) % 12 }; }); };
   const first = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
   const days = new Date(view.y, view.m + 1, 0).getDate();
+  // today by Kyiv time — ringed in the grid so «what day is it» is visible at once
+  const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(new Date());
   const shown = value ? value.split("-").reverse().join(".") : "Оберіть дату";
   const anim = `${dir > 0 ? "is-r" : "is-l"}${run % 2 ? "2" : ""}`;
   const cal = (win: boolean) => (
@@ -67,8 +69,8 @@ export function DateField({ id, value, onChange, min, max, required, labelledBy,
       <div key={`g${run}`} className={`v3-date-grid ${anim}`}>
         {Array.from({ length: first }, (_, i) => <span key={`b${i}`} />)}
         {Array.from({ length: days }, (_, k) => {
-          const d = k + 1, v = iso(view.y, view.m, d), off = (!!min && v < min) || (!!max && v > max), on = v === value;
-          return <button key={v} type="button" className={on ? "is-on" : ""} disabled={off} aria-pressed={on} aria-label={`${d} ${MONTHS_G[view.m]} ${view.y}`} style={{ animationDelay: `${Math.min(k, 20) * 10}ms` }} onClick={() => { onChange(v); close(); }}>{d}</button>;
+          const d = k + 1, v = iso(view.y, view.m, d), off = (!!min && v < min) || (!!max && v > max), on = v === value, now = v === todayIso;
+          return <button key={v} type="button" className={`${on ? "is-on" : ""}${now ? " is-today" : ""}`} aria-current={now ? "date" : undefined} disabled={off} aria-pressed={on} aria-label={`${d} ${MONTHS_G[view.m]} ${view.y}`} style={{ animationDelay: `${Math.min(k, 20) * 10}ms` }} onClick={() => { onChange(v); close(); }}>{d}</button>;
         })}
       </div>
       {win && value && <button type="button" className="v3-date-clear" onClick={() => { onChange(""); close(); }}>Очистити дату</button>}

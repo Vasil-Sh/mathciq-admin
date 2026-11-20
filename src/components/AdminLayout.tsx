@@ -87,6 +87,7 @@ export default function AdminLayout() {
 
   const badgeFor = (key?: NavKey) => {
     if (key === "support" && badges.supportOpen) return <span className="v3-count" aria-label={`${badges.supportOpen} відкритих звернень`}>{badges.supportOpen}</span>;
+    if (key === "matches" && badges.matchesStopped && !badges.matchesError) return <span className="v3-count v3-noentry" role="img" aria-label="Усі парсери зупинені" title="Усі парсери зупинені вручну"><i aria-hidden="true" /></span>;
     if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label={badges.matchesErrorText || "Помилка парсера"} title={badges.matchesErrorText || "Помилка парсера"}>!</span>;
     return null;
   };
