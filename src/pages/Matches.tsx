@@ -16,7 +16,7 @@ import {
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_NAMES, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
-  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, setAliases, STATUS_LABEL, teamsFrom,
+  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, normTeam, setAliases, STATUS_LABEL, teamsFrom,
   type Game, type ManualGroup, type Match, type MStatus, type Team,
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
@@ -510,15 +510,19 @@ export default function Matches() {
 
   // ── Команди ──
   const tn = tq.trim().toLowerCase();
-  const tList = teams.filter((t) => (tf === "all" || (tf === "dup" ? t.variants.length > 0 : isFallbackLogo(t.logo))) && (!tn || `${t.name} ${t.variants.join(" ")}`.toLowerCase().includes(tn)));
+  const tList = teams.filter((t) => (tf === "all" || (tf === "dup" ? t.variants.length > 0 : isFallbackLogo(t.logo))) && (!tn || `${t.name} ${t.variants.join(" ")} ${t.aliases.join(" ")}`.toLowerCase().includes(tn)));
   const tSel = tList.find((t) => t.key === selTeam) || (wide ? tList[0] : undefined) || null;
   const teamDetail = (t: Team) => (
     <div className="v3-mx-detail">
       <div className="v3-mx-th"><Logo src={t.logo} name={t.name} size={52} /><div><h2>{t.name}</h2><span>{GAME_LABEL[t.game]} · {t.matches} {plural(t.matches, "матч", "матчі", "матчів")} за 30 днів</span></div></div>
       <div className="v3-mx-kv"><div><span>Останній матч</span><strong>{t.last ? dayShort(t.last) : "—"}</strong></div><div><span>Логотип</span><strong>{isFallbackLogo(t.logo) ? "немає" : "є"}</strong></div></div>
-      <div className="v3-mx-al"><small>Інші написання в стрічках</small>{t.variants.length ? <div>{t.variants.map((v) => <span key={v} className="v3-mx-chip">{v}</span>)}</div> : <span>Немає неперевірених написань</span>}</div>
+      {(() => { const tn = normTeam(t.name); const mine = known.filter((m) => m.game === t.game && (normTeam(m.t1) === tn || normTeam(m.t2) === tn)); const now = Date.now();
+        const m = mine.filter((x) => x.ts >= now).sort((a, b) => a.ts - b.ts)[0] || mine.sort((a, b) => b.ts - a.ts)[0]; if (!m) return null;
+        const first = normTeam(m.t1) === tn; const [n1, l1, n2, l2] = first ? [m.t1, m.logo1, m.t2, m.logo2] : [m.t2, m.logo2, m.t1, m.logo1];
+        return (<div className="v3-mx-al"><small>Як виглядає на шкалі матчів</small><div className="v3-mx-strip"><Logo src={l1} name={n1} size={26} /><strong>{n1}</strong><span>{m.day === today ? m.time : `${dayShort(m.day)}, ${m.time}`}</span><Logo src={l2} name={n2} size={26} /><strong>{n2}</strong></div></div>);
+      })()}
       {(() => { const own = aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name)); return (
-        <div className="v3-mx-al"><small>Псевдоніми — так команду називають джерела</small><div>{own.map((a) => <span key={a.id} className="v3-mx-chip is-alias">{a.alias}<button type="button" aria-label={`Прибрати псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}<button type="button" className="v3-mx-aladd" disabled={!online} onClick={() => setMergeFor(t)}>+ псевдонім</button></div></div>
+        <div className="v3-mx-al"><small>Псевдоніми — так команду називають джерела</small><div>{own.map((a) => <span key={a.id} className="v3-mx-chip is-alias">{a.alias}<button type="button" aria-label={`Прибрати псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}{t.variants.map((v) => <span key={v} className="v3-mx-chip is-new" title="Нове написання з джерел — підтвердіть «Це одна команда»">{v}</span>)}<button type="button" className="v3-mx-aladd" disabled={!online} onClick={() => setMergeFor(t)}>+ псевдонім</button></div></div>
       ); })()}
       <div className="v3-mx-acts2">
         <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online} onClick={() => setMergeFor(t)}><Plus size={15} aria-hidden="true" />Об’єднати з…</button>
@@ -536,11 +540,11 @@ export default function Matches() {
           {wide ? <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр"><PillTrack active={tf} />{tfOpts.map((f) => <button key={f.key} type="button" className={tf === f.key ? "is-on" : ""} aria-pressed={tf === f.key} onClick={() => setTf(f.key)}>{f.label} <span className="v3-seg-n">{f.n}</span></button>)}</div>
             : <Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} />}
         </div>
-        {wide && <div className="v3-pay-th v3-mx-trow"><span>Команда</span><span>Інші написання</span><span>Гра</span><span>Матчів</span><span className="v3-pay-r">Останній</span></div>}
+        {wide && <div className="v3-pay-th v3-mx-trow"><span>Команда</span><span>Псевдоніми з джерел</span><span>Гра</span><span>Матчів</span><span className="v3-pay-r">Останній</span></div>}
         {matches === null ? skelRows(5) : tList.length ? (wide ? <div className="v3-pay-rows a">{tList.slice(0, 80).map((t, i) => (
           <button key={t.key} type="button" className={`v3-pay-row v3-mx-trow${tSel?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => setSelTeam(t.key)}>
             <span className="v3-mx-tname"><Logo src={t.logo} name={t.name} size={28} /><strong>{t.name}</strong>{t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}</span>
-            <span className="v3-mx-vars">{t.variants.length ? t.variants.slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
+            <span className="v3-mx-vars">{t.aliases.length + t.variants.length ? [...t.aliases, ...t.variants].slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
             <span>{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
           </button>
         ))}</div> : <ul className="v3-pay-mlist a">{tList.slice(0, 60).map((t, i) => (

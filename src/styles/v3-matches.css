@@ -250,3 +250,7 @@
 .v3-mx-aladd { min-height: 28px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(255, 255, 255, .2); background: transparent; color: #8c95a6; font: 500 12px Inter, sans-serif; cursor: pointer; transition: border-color .2s, color .2s, transform .15s ease-out; }
 .v3-mx-aladd:not(:disabled):active { transform: scale(.96); }
 @media (hover: hover) { .v3-mx-aladd:not(:disabled):hover { border-color: rgba(255, 255, 255, .4); color: #e7eaf0; } }
+.v3-mx-strip { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #fff; color: #11151c; font-size: 13px; min-width: 0; }
+.v3-mx-strip strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-mx-strip > span:not(.v3-mx-lg) { color: #5f6878; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v3-mx-chip.is-new { border: 1px dashed rgba(243, 207, 154, .5); background: transparent !important; color: #f3cf9a !important; }
