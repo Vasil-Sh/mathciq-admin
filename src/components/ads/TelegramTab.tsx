@@ -84,7 +84,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   );
 
   const editor = (
-    <EditorPanel wide={wide} open={editing} title={creating ? "Нова група" : sel?.name || ""} sub={creating ? "Платне розміщення Telegram-групи" : sel ? PR_STATUS[promoStatus(sel)].label : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
+    <EditorPanel wide={wide} open={editing} paneKey={creating ? "new" : sel?.id} title={creating ? "Нова група" : sel?.name || ""} sub={creating ? "Платне розміщення Telegram-групи" : sel ? PR_STATUS[promoStatus(sel)].label : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
       <span className="v3-ad-lbl">Як побачать користувачі</span>
       {preview}
       <div className="v3-ad-row2">

@@ -9,9 +9,9 @@ import PillTrack from "@/components/PillTrack";
 import { DateField } from "@/components/ui/date-field";
 
 type Range = { days: number } | { from: string; to: string };
-type Props = { banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void };
+type Props = { banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void; onPartner?: (name: string | null) => void };
 
-export default function StatsTab({ banners, bookmakers, promos, wide, exportRef }: Props) {
+export default function StatsTab({ banners, bookmakers, promos, wide, exportRef, onPartner }: Props) {
   const [range, setRange] = useState<Range>({ days: 14 });
   const [custom, setCustom] = useState({ from: "", to: "" });
   const [showCustom, setShowCustom] = useState(false);
@@ -45,6 +45,8 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef 
   const len = stats ? stats.daily.length : 0;
   const maxClicks = Math.max(1, ...(stats?.daily || []).map((d) => d.clicks));
   const sel = rows.find((r) => r.key === selKey) || null;
+  useEffect(() => { onPartner?.(sel?.partner || null); }, [sel?.partner]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onPartner?.(null), []); // eslint-disable-line react-hooks/exhaustive-deps
   const period = stats ? `${shortDay(stats.from)} — ${shortDay(stats.to)}` : "";
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef 
 
   return (
     <>
-      <section className="v3-ad-sums" aria-label="Підсумки за період">
+      <section key={period} className="v3-ad-sums" aria-label="Підсумки за період">
         <div className="v3-ad-sum is-blue"><div className="l">Покази{period ? ` · ${period}` : ""}</div><div className="v">{t ? nf(t.impressions) : "—"}</div><div className="n">{ch === null ? `попередні ${len || ""} днів без даних` : `${ch > 0 ? "+" : ""}${ch}% до попередніх ${len} днів`}</div></div>
         <div className="v3-ad-sum"><div className="l">Кліки</div><div className="v">{t ? nf(t.clicks) : "—"}</div><div className="n">CTR {t ? ctr(t.clicks, t.impressions) : "—"}</div></div>
         <div className="v3-ad-sum"><div className="l">Найкраще місце</div><div className="v is-sm">{best ? best.name : "—"}</div><div className="n">{best ? `CTR ${ctr(best.clicks, best.impressions)} · ${best.where}` : "потрібно від 50 показів"}</div></div>
@@ -101,8 +103,8 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef 
           <div className="v3-ad-nostats"><span aria-hidden="true"><BarChart3 size={20} /></span><strong>Статистики за цей період немає</strong><small>Покази й кліки з’являться після перших показів реклами в застосунку.</small></div>
         ) : (
           <>
-            <div className="v3-ad-bars" role="img" aria-label={`Кліки по днях, максимум ${maxClicks}`}>
-              {stats.daily.map((d) => <div key={d.day} className="v3-ad-bar" title={`${dmy(d.day)}: ${nf(d.clicks)} кліків · ${nf(d.impressions)} показів`}><span style={{ height: `${Math.max(d.clicks ? 3 : 0, (d.clicks / maxClicks) * 100)}%` }} /></div>)}
+            <div key={`${stats.daily[0]?.day}-${stats.daily.length}`} className="v3-ad-bars" role="img" aria-label={`Кліки по днях, максимум ${maxClicks}`}>
+              {stats.daily.map((d, i) => <div key={d.day} className="v3-ad-bar" style={{ ["--i" as string]: Math.min(i, 20) }} title={`${dmy(d.day)}: ${nf(d.clicks)} кліків · ${nf(d.impressions)} показів`}><span style={{ height: `${Math.max(d.clicks ? 3 : 0, (d.clicks / maxClicks) * 100)}%` }} /></div>)}
             </div>
             <div className="v3-ad-axis">{stats.daily.map((d, i) => <span key={d.day}>{len <= 16 || i % Math.ceil(len / 15) === 0 ? Number(d.day.slice(8)) : ""}</span>)}</div>
           </>

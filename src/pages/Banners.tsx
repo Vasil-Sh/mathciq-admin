@@ -37,6 +37,7 @@ export default function Banners() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [creatingBm, setCreatingBm] = useState(false);
   const [creatingPr, setCreatingPr] = useState(false);
+  const [repName, setRepName] = useState<string | null>(null);
   const statsActions = useRef<{ exp: (() => void) | null; rep: (() => void) | null }>({ exp: null, rep: null });
 
   const load = useCallback(async () => {
@@ -83,7 +84,7 @@ export default function Banners() {
         </div>
         <div className="v3-chips">
           {tab === "stats" && <>
-            <button type="button" className="v3-chip v3-hide-mobile" onClick={() => statsActions.current.rep?.()}>Звіт для партнера · CSV</button>
+            <button type="button" className="v3-chip v3-hide-mobile" onClick={() => statsActions.current.rep?.()}><span key={repName || "-"} className="v3-bn-tagw">{repName ? `Звіт · ${repName} · CSV` : "Звіт для партнера · CSV"}</span></button>
             <ExportCsvButton className="v3-btn v3-btn-primary" onClick={() => statsActions.current.exp?.()} />
           </>}
           {newAction && <>
@@ -116,7 +117,7 @@ export default function Banners() {
       )}
       {tab === "bookmakers" && <PartnersTab list={bms} error={bmErr} stats={week} settings={settings} wide={wide} online={online} reload={loadAds} setList={(fn) => setBms((l) => fn(l || []))} setSettings={setSettings} creating={creatingBm} setCreating={setCreatingBm} />}
       {tab === "telegram" && <TelegramTab list={promos} error={prErr} stats={week} wide={wide} online={online} reload={loadAds} setList={(fn) => setPromos((l) => fn(l || []))} creating={creatingPr} setCreating={setCreatingPr} />}
-      {tab === "stats" && <StatsTab banners={list} bookmakers={bms || []} promos={promos || []} wide={wide} exportRef={(exp, rep) => { statsActions.current = { exp, rep }; }} />}
+      {tab === "stats" && <StatsTab banners={list} bookmakers={bms || []} promos={promos || []} wide={wide} exportRef={(exp, rep) => { statsActions.current = { exp, rep }; }} onPartner={setRepName} />}
     </div>
   );
 }

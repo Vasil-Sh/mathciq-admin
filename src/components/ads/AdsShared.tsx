@@ -23,8 +23,8 @@ export const LockedLabel = () => (
 );
 
 /** Editor: a side panel on wide screens, a bottom sheet on narrow ones. */
-export function EditorPanel({ wide, open, title, sub, onClose, children }: { wide: boolean; open: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode }) {
-  if (wide) return open ? <aside className="v3-dcard v3-ad-aside" aria-label={title}><div className="v3-ad-aside-h"><strong>{title}</strong>{sub && <span>{sub}</span>}</div>{children}</aside> : null;
+export function EditorPanel({ wide, open, title, sub, onClose, children, paneKey }: { wide: boolean; open: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode; paneKey?: string }) {
+  if (wide) return open ? <aside key={paneKey} className="v3-dcard v3-ad-aside v3-ad-pane" aria-label={title}><div className="v3-ad-aside-h"><strong>{title}</strong>{sub && <span>{sub}</span>}</div>{children}</aside> : null;
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="v3-modal v3-ad-sheet">

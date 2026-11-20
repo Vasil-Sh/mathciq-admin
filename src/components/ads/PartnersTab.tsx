@@ -89,12 +89,12 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
     <section className="v3-wcard v3-ad-places">
       <div className="v3-ad-places-h"><div><h2>Місця показу</h2><p>Вимкнене місце зникає із застосунку одразу для всіх користувачів. Партнерів не видаляє.</p></div><AdLabel /></div>
       <div className="v3-ad-places-g">
-        <div className="v3-ad-place">
+        <div className={`v3-ad-place${listOn ? "" : " is-off"}`}>
           <div className="v3-ad-place-h"><span><strong>Коефіцієнти в списку матчів</strong><small>Плашка в рядку матчу · «Зараз грають» і найближчі</small></span><input type="checkbox" role="switch" className="v3-switch" aria-label="Коефіцієнти в списку матчів" checked={listOn} disabled={!online || !settings} onChange={() => toggleGlobal("adsOddsInList")} /></div>
           {wide && <div className="v3-ad-mock"><span className="v3-ad-mock-m"><small>Приклад · CS2 · LIVE</small><b>Команда A <i>vs</i> Команда B</b></span>{oddsChip(listPartners[0]?.name || "Партнер")}</div>}
           <span className="v3-ad-place-f">{listPartners.length ? <>Партнери: <b>{listPartners.map((b) => b.name).join(", ")}</b> · {nf(sList.impressions)} показів · {nf(sList.clicks)} кліків за 7 днів</> : "Немає партнерів із цим місцем"}</span>
         </div>
-        <div className="v3-ad-place">
+        <div className={`v3-ad-place${detOn ? "" : " is-off"}`}>
           <div className="v3-ad-place-h"><span><strong>Деталі матчу</strong><small>Блок «Коефіцієнт у партнера» під коефіцієнтами</small></span><input type="checkbox" role="switch" className="v3-switch" aria-label="Деталі матчу" checked={detOn} disabled={!online || !settings} onChange={() => toggleGlobal("adsMatchDetails")} /></div>
           {wide && <div className="v3-ad-mock"><span>Коефіцієнт у партнера <b>1,74</b></span><span className="v3-ad-mock-link">{(detPartners[0]?.name || "Партнер")} → перейти</span></div>}
           <span className="v3-ad-place-f">{detPartners.length ? <>{detPartners.map((b) => b.name).join(", ")} · {nf(sDet.impressions)} показів · {nf(sDet.clicks)} кліків за 7 днів</> : "Немає партнерів із цим місцем"}</span>
@@ -104,7 +104,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
   );
 
   const editor = (
-    <EditorPanel wide={wide} open={editing} title={creating ? "Новий партнер" : sel?.name || ""} sub={creating ? "Букмекер з ліцензією PlayCity" : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
+    <EditorPanel wide={wide} open={editing} paneKey={creating ? "new" : sel?.id} title={creating ? "Новий партнер" : sel?.name || ""} sub={creating ? "Букмекер з ліцензією PlayCity" : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
       <div className="v3-ad-f"><label htmlFor="bm-name">Назва <span>*</span></label><input id="bm-name" className="v3-ad-in" value={f.name} maxLength={100} onChange={(e) => set({ name: e.target.value })} /></div>
       <div className="v3-ad-row2">
         <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder="Не вказано" onChange={(e) => set({ licenseNumber: e.target.value })} /></div>

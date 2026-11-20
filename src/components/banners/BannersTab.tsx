@@ -42,13 +42,15 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
   const openNew = (slot = 1) => setEditor({ open: true, banner: null, preset: { slot, screen } });
   const openEdit = (b: Banner) => setEditor({ open: true, banner: b });
 
-  async function toggle(b: Banner) {
+  const [hot, setHot] = useState(0);
+  async function toggle(b: Banner, undo = false) {
     const on = !b.active;
     try {
       await updateBanner(b.id, { active: on });
       setBanners((x) => x.map((y) => (y.id === b.id ? { ...y, active: on } : y)));
-      if (on) toast.success("Банер увімкнено", { description: `«${b.title}» · ${periodText(b)}` });
-      else toast.success("Банер вимкнено", { description: `Слот ${b.slot ?? 1} тепер ${ph(b.slot ?? 1) && (b.screen || "matches") === "matches" ? "показує плейсхолдер" : "прихований у застосунку"}`, action: { label: "Увімкнути", onClick: () => toggle({ ...b, active: false }) } });
+      if (undo) toast.info(on ? "Банер знову показується" : "Банер знову вимкнено", { description: `«${b.title}»` });
+      else if (on) toast.success("Банер увімкнено", { description: `«${b.title}» · ${periodText(b)}` });
+      else toast.success("Банер вимкнено", { description: `Слот ${b.slot ?? 1} тепер ${ph(b.slot ?? 1) && (b.screen || "matches") === "matches" ? "показує плейсхолдер" : "прихований у застосунку"}`, duration: 10_000, className: "v3-toast-10s", action: { label: <UndoRing label="Повернути" />, onClick: () => { void toggle({ ...b, active: false }, true); } } });
     } catch (e) { toast.error(on ? "Не вдалося увімкнути банер" : "Не вдалося вимкнути банер", { description: (e as Error).message }); }
   }
   async function togglePh(n: number) {
@@ -79,7 +81,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
   function slotCard(n: number) {
     const s = st[n - 1], b = s.current;
     if (!b) return (
-      <article key={n} className="v3-wcard v3-bn-slot">
+      <article key={n} className="v3-wcard v3-bn-slot" onMouseEnter={() => setHot(n)} onMouseLeave={() => setHot(0)}>
         <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div>{tag("free")}</div>
         <div className={`v3-bn-free${screen === "matches" && ph(n) ? "" : " is-hidden"}`}>
           {screen === "matches" && ph(n) ? <><strong>Слот вільний</strong><span>Користувачі бачать плейсхолдер реклами</span></> : <><strong>У застосунку слот прихований</strong><span>Користувачі не бачать нічого на цьому місці</span></>}
@@ -96,8 +98,8 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     );
     const t = timeline(b, today), on = t.st === "live" || t.st === "sched";
     return (
-      <article key={n} className="v3-wcard v3-bn-slot">
-        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div>{tag(t.st)}</div>
+      <article key={n} className="v3-wcard v3-bn-slot" onMouseEnter={() => setHot(n)} onMouseLeave={() => setHot(0)}>
+        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div><span key={`${b.id}-${t.st}`} className="v3-bn-tagw">{tag(t.st)}</span></div>
         <div className={`v3-bn-img${t.st === "done" || t.st === "off" ? " is-dim" : ""}`}>{b.imageUrl ? <img src={b.imageUrl} alt={b.title} /> : <span>Без зображення</span>}</div>
         <div className="v3-bn-title"><strong>{b.title}</strong></div>
         <div className="v3-bn-prog"><div><span>{periodText(b)}</span><b>{t.left}</b></div><i><span style={{ width: `${t.prog}%` }} className={on ? "" : "is-gray"} /></i></div>
@@ -170,9 +172,9 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
                 <Dropdown className="v3-ad-dd v3-bn-scr-dd" ariaLabel="Екран" value={screen} onChange={(v) => setScreen(v)} options={SCREENS.map((s) => ({ value: s.id, label: `${s.label}${list.some((b) => (b.screen || "matches") === s.id) ? "" : " · порожньо"}` }))} />
                 <div className="v3-bn-phone">
                   <i style={{ height: 14, width: "50%" }} /><span>{scr.before}</span><i style={{ height: 56 }} />
-                  <div className={`v3-bn-ws${st[0].occupied ? " is-on" : ""}`}>Слот 1</div>
+                  <div className={`v3-bn-ws${st[0].occupied ? " is-on" : ""}${hot === 1 ? " is-hot" : ""}`}>Слот 1</div>
                   <span>{scr.mid}</span><i style={{ height: 40 }} /><i style={{ height: 40 }} />
-                  <div className={`v3-bn-ws${st[1].occupied ? " is-on" : ""}`}>Слот 2</div>
+                  <div className={`v3-bn-ws${st[1].occupied ? " is-on" : ""}${hot === 2 ? " is-hot" : ""}`}>Слот 2</div>
                   <span>{scr.after}</span><i style={{ height: 40 }} />
                 </div>
                 <div className="v3-bn-legend"><span><i className="is-on" />зайнятий</span><span><i />вільний</span></div>
