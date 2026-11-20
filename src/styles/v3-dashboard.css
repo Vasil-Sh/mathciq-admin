@@ -150,7 +150,7 @@
   .v3-hide-sm { display: none; }
   .v3-bars { height: 180px; gap: 4px; }
   .v3-bar-val { display: none; }
-  .v3-modal[data-state] { top: auto; bottom: 0; left: 0; transform: none; width: 100%; max-width: 100%; border-radius: 28px 28px 0 0; max-height: 92dvh; }
+  .v3-modal[data-state] { top: auto; bottom: 0; left: 0; transform: none; width: 100%; max-width: 100%; border-radius: 28px 28px 0 0; max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 48px)); } /* keep clear of the status bar */
   .v3-modal-actions { width: 100%; }
   .v3-modal-actions .v3-btn { flex: 1; min-height: 50px; }
   /* Design «модалки на мобільному»: grab handle, round close, main action wider (1 : 1.4) in the thumb zone */

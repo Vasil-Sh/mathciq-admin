@@ -68,6 +68,7 @@ export default function Matches() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => { const t = params.get("tab"); return t === "parsers" || t === "manual" || t === "teams" ? t : "matches"; });
   const [matches, setMatches] = useState<Match[] | null>(null);
+  const [hourSel, setHourSel] = useState<number | null>(null); // tapped hour on the 24-h bars
   const [failed, setFailed] = useState<Game[]>([]);
   const [history, setHistory] = useState<Match[]>([]);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
@@ -407,6 +408,21 @@ export default function Matches() {
   // ── Парсери ──
   const parsersTab = (
     <section className="v3-mx-parsers">
+      {(() => { const focus = down[0]?.name || (avail.hltv_scraper ? "hltv_scraper" : Object.keys(avail)[0]); const a = focus ? avail[focus] : undefined; if (!a) return null;
+        const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
+        const hours = Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok", h }; });
+        return (
+          <div className="v3-dcard v3-mx-up">
+            <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong><span><i className="is-ok" />успішно</span><span><i className="is-mix" />із повторами</span><span><i className="is-bad" />помилка</span><span><i className="is-none" />немає даних</span></div>
+            <div className="v3-mx-bars" role="group" aria-label="Години">{hours.map((x, i) => <button type="button" key={i} className={`v3-mx-bar is-${x.s}${hourSel === i ? " is-sel" : ""}`} style={{ animationDelay: `${i * 30}ms` }} aria-pressed={hourSel === i} aria-label={`${x.hh}:00`} onClick={() => setHourSel(hourSel === i ? null : i)} />)}</div>
+            {hourSel !== null && hours[hourSel] && (() => { const x = hours[hourSel]; const next = String((Number(x.hh) + 1) % 24).padStart(2, "0"); return (
+              <p className="v3-mx-hinfo" aria-live="polite"><strong>{x.hh}:00–{next}:00</strong>{x.h ? <>
+                <span className="is-ok">{x.h.success} {plural(x.h.success, "успішний запуск", "успішні запуски", "успішних запусків")}</span>
+                {x.h.failure > 0 && <span className="is-bad">{x.h.failure} {plural(x.h.failure, "помилка", "помилки", "помилок")}</span>}</> : <span>немає даних — парсер у цю годину не запускався</span>}</p>
+            ); })()}
+            <div className="v3-mx-axis"><span>{hours[0].hh}:00</span><span>{hours[6].hh}:00</span><span>{hours[12].hh}:00</span><span>{hours[18].hh}:00</span><span>зараз</span></div>
+          </div>
+        ); })()}
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-wcard v3-mx-pcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
         : parsers.map((p, i) => {
           const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
@@ -429,7 +445,7 @@ export default function Matches() {
               ) : null; })()}
               <p className="v3-mx-pnote">{p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
               <div className="v3-mx-pacts">
-                <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}${r === "busy" ? " is-busy" : ""}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
+                <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
                   {r === "busy" ? <span className="v3-mx-spin" aria-hidden="true" /> : r === "done" ? <Check size={15} aria-hidden="true" className="v3-mx-ok" /> : <RefreshCw size={15} aria-hidden="true" />}
                   {r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}
                 </button>
@@ -438,16 +454,6 @@ export default function Matches() {
             </div>
           );
         })}
-      {(() => { const focus = down[0]?.name || "hltv_scraper"; const a = avail[focus]; if (!a) return null;
-        const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
-        const hours = Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok", h }; });
-        return (
-          <div className="v3-dcard v3-mx-up">
-            <div className="v3-mx-uph"><strong>{PARSER_NAMES[focus] || focus} за 24 години</strong><span><i className="is-ok" />успішно</span><span><i className="is-mix" />із повторами</span><span><i className="is-bad" />помилка</span><span><i className="is-none" />немає даних</span></div>
-            <div className="v3-mx-bars">{hours.map((x, i) => <span key={i} className={`v3-mx-bar is-${x.s}`} style={{ animationDelay: `${i * 30}ms` }} title={`${x.hh}:00 · ${x.h ? `${x.h.success} успішно, ${x.h.failure} помилок` : "немає даних"}`} />)}</div>
-            <div className="v3-mx-axis"><span>{hours[0].hh}:00</span><span>{hours[6].hh}:00</span><span>{hours[12].hh}:00</span><span>{hours[18].hh}:00</span><span>зараз</span></div>
-          </div>
-        ); })()}
       <div className="v3-dcard v3-mx-pfoot"><Shield size={18} aria-hidden="true" /><span>Якщо парсер не відповідає, у меню біля «Матчі» з’являється «!», а на дашборді — пункт у «Потребує уваги». Поки джерело не працює, у застосунку видно останні дані з позначкою часу.</span></div>
     </section>
   );
