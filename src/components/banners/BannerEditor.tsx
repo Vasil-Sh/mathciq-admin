@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { createBanner, updateBanner, uploadBannerImage } from "@/lib/adminBannersApi";
 import { ACCEPT, MAX_BYTES, SCREENS, STATUS, fmtBytes, kyivToday, overlaps, periodText, screenOf, shortDay, slotName, slotWhere, statusOf, timeline } from "@/lib/bannersModel";
 import type { Banner, BannerInput } from "@/types";
+import { SaveButton } from "@/components/ads/AdsShared";
+import { Dropdown } from "@/components/ui/dropdown";
+import { DateField } from "@/components/ui/date-field";
 
 const EMPTY: BannerInput = { active: true, screen: "matches", startsOn: null, endsOn: null, slot: 1, title: "", description: "", imageUrl: "", href: "" };
 
@@ -17,9 +20,18 @@ type Props = {
   onClose: () => void;
   onSaved: (b: Banner, created: boolean) => void;
   onAskDelete: (b: Banner) => void;
+  onDeleteNow?: (b: Banner) => Promise<void> | void;
 };
 
-export default function BannerEditor({ open, banner, preset, banners, online, onClose, onSaved, onAskDelete }: Props) {
+export default function BannerEditor({ open, banner, preset, banners, online, onClose, onSaved, onAskDelete, onDeleteNow }: Props) {
+  const [del, setDel] = useState<"" | "ask">("");
+  const delT = useRef<number | undefined>(undefined);
+  useEffect(() => { setDel(""); window.clearTimeout(delT.current); }, [banner?.id, open]);
+  function askDelete(b: Banner) {
+    if (!onDeleteNow) { onAskDelete(b); return; }
+    if (del !== "ask") { setDel("ask"); window.clearTimeout(delT.current); delT.current = window.setTimeout(() => setDel((v) => (v === "ask" ? "" : v)), 3000); return; }
+    setDel(""); void onDeleteNow(b);
+  }
   const [f, setF] = useState<BannerInput>(EMPTY);
   const [file, setFile] = useState<{ name: string; size: number; w?: number; h?: number } | null>(null);
   const [fileErr, setFileErr] = useState<string | null>(null);
@@ -135,7 +147,7 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
 
           <section className="v3-bed-sec">
             <h3>Де показувати</h3>
-            <div className="v3-bed-f"><label htmlFor="b-screen">Екран</label><select id="b-screen" className="v3-bed-in" value={f.screen || "matches"} onChange={(e) => set({ screen: e.target.value })}>{SCREENS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
+            <div className="v3-bed-f"><label id="b-screen-l">Екран</label><Dropdown className="v3-ad-dd is-light" ariaLabel="Екран" value={f.screen || "matches"} onChange={(v) => set({ screen: v })} options={SCREENS.map((s) => ({ value: s.id, label: s.label }))} /></div>
             <div className="v3-bed-opts" role="radiogroup" aria-label="Слот">
               {[1, 2].map((n) => { const busy = otherSlotBusy(n); return (
                 <button key={n} type="button" role="radio" aria-checked={f.slot === n} className={`v3-opt${f.slot === n ? " is-on" : ""}`} onClick={() => set({ slot: n })}>
@@ -148,8 +160,8 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
           <section className="v3-bed-sec">
             <h3>Період показу</h3>
             <div className="v3-bed-row2">
-              <div className="v3-bed-f"><label htmlFor="b-from">Початок показу</label><input id="b-from" className="v3-bed-in" type="date" value={f.startsOn || ""} onChange={(e) => set({ startsOn: e.target.value || null })} /></div>
-              <div className="v3-bed-f"><label htmlFor="b-to">Останній день показу</label><input id="b-to" className={`v3-bed-in${clash || badDates ? " is-err" : ""}`} type="date" value={f.endsOn || ""} min={f.startsOn || undefined} aria-invalid={!!(clash || badDates)} aria-describedby={clash || badDates ? "b-overlap" : undefined} onChange={(e) => set({ endsOn: e.target.value || null })} /></div>
+              <div className="v3-bed-f"><label id="b-from-l">Початок показу</label><DateField id="b-from" labelledBy="b-from-l" value={f.startsOn || ""} onChange={(v) => set({ startsOn: v || null })} /></div>
+              <div className="v3-bed-f"><label id="b-to-l">Останній день показу</label><DateField id="b-to" labelledBy="b-to-l" value={f.endsOn || ""} min={f.startsOn || undefined} onChange={(v) => set({ endsOn: v || null })} /></div>
             </div>
             {(clash || badDates) && <div id="b-overlap" role="alert" className="v3-bed-alert"><AlertTriangle size={16} aria-hidden="true" /><span>{badDates ? "Останній день не може бути раніше початку." : `Перетинається з «${clash!.title}» (${periodText(clash!)}) у цьому ж слоті. Змініть дати або вимкніть ту кампанію.`}</span></div>}
             <span className="v3-bed-hint">За часом Києва, включно з останнім днем. Без дат — без обмежень. Після завершення банер зникне з застосунку автоматично.</span>
@@ -158,10 +170,10 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
 
           {!online && <div className="v3-bed-alert is-warn" role="status"><AlertTriangle size={16} aria-hidden="true" /><span>Немає інтернету. Зміни банерів не збережуться — дочекайтесь з’єднання.</span></div>}
           <div className="v3-bed-foot">
-            {banner && <button type="button" className="v3-bed-del" onClick={() => onAskDelete(banner)}><Trash2 size={15} aria-hidden="true" />Видалити банер</button>}
+            {banner && <button type="button" className={`v3-bed-del${del === "ask" ? " is-ask" : ""}`} disabled={!online} onClick={() => askDelete(banner)}><Trash2 size={15} aria-hidden="true" />{del === "ask" ? "Точно видалити?" : "Видалити банер"}</button>}
             <span className="v3-bed-sp" />
             <button type="button" className="v3-btn v3-btn-ghost" onClick={onClose}>Скасувати</button>
-            <button type="button" className="v3-btn v3-btn-primary" disabled={!canSave} onClick={save}>{saving ? "Зберігаємо…" : "Зберегти"}</button>
+            <SaveButton saving={saving} disabled={!canSave} onClick={save} />
           </div>
         </div>
 

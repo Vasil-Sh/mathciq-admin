@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Lock } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ctr, nf, pctChange, type AdStats } from "@/lib/adsModel";
 
@@ -42,4 +42,37 @@ export function Highlighted({ text, hits }: { text: string; hits: { from: number
   hits.forEach((h, k) => { if (h.from > i) out.push(text.slice(i, h.from)); out.push(<mark key={k}>{text.slice(h.from, h.to)}</mark>); i = h.to; });
   out.push(text.slice(i));
   return <>{out}</>;
+}
+
+/** «Вимкнути» asks inside the button first («Точно вимкнути?»), the second press does it. Turning on needs no ask. */
+export function AskToggle({ active, disabled, onToggle, resetKey }: { active: boolean; disabled?: boolean; onToggle: () => Promise<void> | void; resetKey?: string }) {
+  const [st, setSt] = useState<"" | "ask" | "busy">("");
+  const t = useRef<number | undefined>(undefined);
+  useEffect(() => { setSt(""); window.clearTimeout(t.current); }, [resetKey, active]);
+  useEffect(() => () => window.clearTimeout(t.current), []);
+  async function click() {
+    if (active && st === "") { setSt("ask"); t.current = window.setTimeout(() => setSt((v) => (v === "ask" ? "" : v)), 3000); return; }
+    window.clearTimeout(t.current); setSt("busy");
+    try { await onToggle(); } finally { setSt(""); }
+  }
+  return (
+    <button type="button" className={`v3-btn v3-btn-ghost-dark${active ? " v3-pay-cx" : ""}${st === "ask" ? " is-ask" : ""}${st === "busy" ? " is-busy" : ""}`} disabled={disabled || st === "busy"} onClick={click}>
+      {st === "ask" ? "Точно вимкнути?" : st === "busy" ? (active ? "Вимикаємо…" : "Вмикаємо…") : active ? "Вимкнути" : "Увімкнути"}
+    </button>
+  );
+}
+
+/** Save: spinner while the request runs, then a ✓ for a moment. */
+export function SaveButton({ saving, disabled, onClick, label = "Зберегти", className = "v3-btn-primary" }: { saving: boolean; disabled?: boolean; onClick: () => void; label?: string; className?: string }) {
+  const [ok, setOk] = useState(false);
+  const was = useRef(saving);
+  useEffect(() => {
+    if (was.current && !saving) { setOk(true); const id = window.setTimeout(() => setOk(false), 1400); was.current = saving; return () => window.clearTimeout(id); }
+    was.current = saving;
+  }, [saving]);
+  return (
+    <button type="button" className={`v3-btn ${className}${saving ? " is-busy" : ""}${ok ? " is-done" : ""}`} disabled={disabled || saving} onClick={onClick} aria-live="polite">
+      {saving ? "Зберігаємо…" : ok ? <><Check size={15} strokeWidth={3} aria-hidden="true" />Збережено</> : label}
+    </button>
+  );
 }

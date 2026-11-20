@@ -8,6 +8,7 @@ import { SCREENS, STATUS, kyivToday, periodText, screenOf, shortDay, slotName, s
 import type { Banner, BannerSlotState } from "@/types";
 import UndoRing from "@/components/UndoRing";
 import PillTrack from "@/components/PillTrack";
+import { Dropdown } from "@/components/ui/dropdown";
 
 type Props = {
   banners: Banner[] | null;
@@ -55,9 +56,10 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     try { const r = await updateBannerSlot(n, !cur); setSlots((s) => [...s.filter((x) => x.slot !== n), r]); toast.success(cur ? "Плейсхолдер вимкнено" : "Плейсхолдер увімкнено", { description: cur ? `Слот ${n} у застосунку прихований, поки немає банера` : `У слоті ${n} — «Тут може бути ваша реклама»` }); }
     catch (e) { toast.error("Не вдалося змінити плейсхолдер", { description: (e as Error).message }); }
   }
-  async function doDelete() {
-    if (!deleting) return;
-    const b = deleting; setBusyDel(true);
+  async function doDelete(target?: Banner) {
+    const b = target || deleting;
+    if (!b) return;
+    setBusyDel(true);
     try {
       await deleteBanner(b.id);
       setBanners((x) => x.filter((y) => y.id !== b.id)); setDeleting(null); setEditor({ open: false, banner: null });
@@ -165,7 +167,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
             {wide && (
               <div className="v3-dcard v3-bn-scheme">
                 <div><strong>Схема екрана «{scr.label}»</strong><p>Де користувач побачить банери</p></div>
-                <label className="v3-bn-scr"><span className="sr-only">Екран</span><select value={screen} onChange={(e) => setScreen(e.target.value)}>{SCREENS.map((s) => <option key={s.id} value={s.id}>{s.label}{list.some((b) => (b.screen || "matches") === s.id) ? "" : " · порожньо"}</option>)}</select></label>
+                <Dropdown className="v3-ad-dd v3-bn-scr-dd" ariaLabel="Екран" value={screen} onChange={(v) => setScreen(v)} options={SCREENS.map((s) => ({ value: s.id, label: `${s.label}${list.some((b) => (b.screen || "matches") === s.id) ? "" : " · порожньо"}` }))} />
                 <div className="v3-bn-phone">
                   <i style={{ height: 14, width: "50%" }} /><span>{scr.before}</span><i style={{ height: 56 }} />
                   <div className={`v3-bn-ws${st[0].occupied ? " is-on" : ""}`}>Слот 1</div>
@@ -223,7 +225,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
       <BannerEditor open={editor.open} banner={editor.banner} preset={editor.preset} banners={list} online={online}
         onClose={() => setEditor({ open: false, banner: null })}
         onSaved={() => { setEditor({ open: false, banner: null }); reload(); }}
-        onAskDelete={(b) => setDeleting(b)} />
+        onAskDelete={(b) => setDeleting(b)} onDeleteNow={(b) => doDelete(b)} />
 
       <Dialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
         <DialogContent className="v3-modal sm:max-w-[520px]">
@@ -233,7 +235,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
           </div>
           <div className="v3-modal-actions">
             {deleting?.active && <button type="button" className="v3-btn v3-btn-ghost" onClick={disableInstead}>Вимкнути замість цього</button>}
-            <button type="button" className="v3-btn v3-btn-red" disabled={busyDel || !online} onClick={doDelete}>{busyDel ? "Видаляємо…" : "Видалити"}</button>
+            <button type="button" className="v3-btn v3-btn-red" disabled={busyDel || !online} onClick={() => doDelete()}>{busyDel ? "Видаляємо…" : "Видалити"}</button>
           </div>
         </DialogContent>
       </Dialog>

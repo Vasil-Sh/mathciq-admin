@@ -346,7 +346,9 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 .v3-ad-chart-h span { color: #8c95a6; font-size: 12px; }
 .v3-ad-seg { background: #1d232e; }
 .v3-ad-custom { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -6px 0 16px; color: #c3c9d4; font-size: 12px; }
-.v3-ad-custom input { min-height: 36px; margin-left: 6px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .12); background: #1d232e; color: #f4f6fa; font: 500 13px Inter, sans-serif; }
+.v3-ad-cf { display: inline-flex; align-items: center; gap: 8px; }
+.v3-ad-cf .v3-date { width: 170px; }
+.v3-ad-cf .v3-date-btn { min-height: 40px; border-radius: 12px; border-color: rgba(255, 255, 255, .12); background: #1d232e; color: #f4f6fa; font-size: 13px; }
 .v3-ad-bars { display: flex; gap: 8px; align-items: flex-end; height: 160px; }
 .v3-ad-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; }
 .v3-ad-bar span { display: block; border-radius: 6px 6px 3px 3px; background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
@@ -357,9 +359,16 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 .v3-ad-nostats strong { font-size: 17px; font-weight: 600; }
 .v3-ad-nostats small { color: #8c95a6; font-size: 13px; }
 @media (max-width: 767px) {
-  .v3-ads-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 24px; background: #161b24; border: 1px solid rgba(255, 255, 255, .08); }
-  .v3-ads-tabs .v3-ptab { justify-content: center; min-height: 40px; border: 0; font-size: 13px; padding: 0 8px; }
-  .v3-ads-tabs .v3-ptab span { display: none; }
+  /* One row of chips that scrolls sideways and snaps the active one to the centre */
+  .v3-ads-tabs { display: flex; gap: 6px; margin: 0 -16px; padding: 2px 16px; border: 0; border-radius: 0; background: none; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
+  .v3-ads-tabs::-webkit-scrollbar { display: none; }
+  .v3-ads-tabs > .v3-pill { display: none; }
+  .v3-ads-tabs .v3-ptab { flex-shrink: 0; gap: 6px; min-height: 44px; padding: 0 14px 0 6px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); font-size: 13px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .v3-ads-tabs .v3-ptab svg { order: -1; margin-left: 8px; }
+  .v3-ads-tabs .v3-ptab span { order: -1; display: inline-grid; min-width: 24px; height: 24px; background: rgba(255, 255, 255, .12); color: inherit; font-weight: 700; }
+  .v3-ads-tabs.has-pill > .v3-ptab.is-on, .v3-ads-tabs > .v3-ptab.is-on { background: #3a6df0; border-color: #3a6df0; box-shadow: 0 6px 18px rgba(58, 109, 240, .35); scroll-snap-align: center; }
+  .v3-ads-tabs .v3-ptab.is-on span { background: #fff; color: #2a55c8; }
+  .v3-ads-tabs .v3-ptab:not(:disabled):active { transform: scale(.96); }
   .v3-ad-places { padding: 16px; }
   .v3-ad-place { padding: 0; background: none; gap: 4px; }
   .v3-ad-places-g { gap: 10px; }
@@ -372,3 +381,15 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 }
 .v3-ads > .v3-ad-table { flex: none; }
 .v3-ad-mcard small.is-ok { color: #5f6878 !important; }
+
+/* Form controls in the dark editor aside: custom dropdown + calendar field instead of system ones */
+.v3-ad-f .v3-date-btn { min-height: 44px; border-radius: 14px; border-color: rgba(255, 255, 255, .12); background: #1d232e; color: #f4f6fa; }
+.v3-ad-f .v3-date-btn.is-on { border-color: #5b8cff; box-shadow: 0 0 0 3px rgba(90, 140, 255, .2); }
+.v3-ad-dd { display: flex; width: 100%; }
+.v3-ad-dd .v3-dd-btn { min-height: 44px; border-radius: 14px; border-color: rgba(255, 255, 255, .12); background: #1d232e; font-weight: 500; }
+.v3-ad-dd.is-light .v3-dd-btn { min-height: 46px; border-color: #dde1e7; background: #fff; color: var(--v3-ink); }
+.v3-bn-scr-dd .v3-dd-btn { border-radius: 999px; background: rgba(255, 255, 255, .04); }
+/* Save: ✓ after the request; «Вимкнути» / «Видалити банер» ask inside the button */
+.v3-btn.is-done { gap: 6px; background: #00B24B !important; border-color: #00B24B !important; color: #fff !important; animation: v3-xall-done .5s cubic-bezier(.3, 1.6, .5, 1); }
+.v3-bed-del.is-ask { background: var(--v3-danger); color: #fff; border-radius: 999px; padding: 0 16px; animation: v3-pay-ask 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .v3-btn.is-done, .v3-bed-del.is-ask { animation: none; } }

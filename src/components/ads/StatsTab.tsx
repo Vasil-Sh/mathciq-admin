@@ -6,6 +6,7 @@ import { ctr, dmy, fetchAdStats, licenseState, nf, pctChange, placeLabel, type A
 import { screenOf, shortDay } from "@/lib/bannersModel";
 import type { Banner } from "@/types";
 import PillTrack from "@/components/PillTrack";
+import { DateField } from "@/components/ui/date-field";
 
 type Range = { days: number } | { from: string; to: string };
 type Props = { banners: Banner[]; bookmakers: Bookmaker[]; promos: Promo[]; wide: boolean; exportRef: (fn: (() => void) | null, report: (() => void) | null) => void };
@@ -91,8 +92,8 @@ export default function StatsTab({ banners, bookmakers, promos, wide, exportRef 
         </div>
         {showCustom && (
           <form className="v3-ad-custom" onSubmit={(e) => { e.preventDefault(); if (custom.from && custom.to && custom.from <= custom.to) setRange({ ...custom }); else toast.error("Перевірте дати", { description: "Кінець не може бути раніше початку" }); }}>
-            <label>З <input type="date" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} /></label>
-            <label>По <input type="date" value={custom.to} min={custom.from || undefined} onChange={(e) => setCustom({ ...custom, to: e.target.value })} /></label>
+            <span className="v3-ad-cf"><span id="st-from-l">З</span><DateField id="st-from" labelledBy="st-from-l" max={custom.to || undefined} value={custom.from} onChange={(v) => setCustom({ ...custom, from: v })} /></span>
+            <span className="v3-ad-cf"><span id="st-to-l">По</span><DateField id="st-to" labelledBy="st-to-l" min={custom.from || undefined} value={custom.to} onChange={(v) => setCustom({ ...custom, to: v })} /></span>
             <button type="submit" className="v3-btn v3-btn-blue v3-btn-sm">Показати</button>
           </form>
         )}

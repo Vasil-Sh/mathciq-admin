@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download, Plus } from "lucide-react";
+import { BarChart3, Download, Plus } from "lucide-react";
 import BannersTab from "@/components/banners/BannersTab";
 import PartnersTab from "@/components/ads/PartnersTab";
 import TelegramTab from "@/components/ads/TelegramTab";
@@ -24,6 +24,7 @@ export default function Banners() {
   const online = useOnline();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.id === params.get("tab"))?.id || "banners") as Tab;
+  useEffect(() => { const t = document.querySelector<HTMLElement>(".v3-ads-tabs"); const on = t?.querySelector<HTMLElement>(".is-on"); if (t && on && t.scrollWidth > t.clientWidth) t.scrollTo({ left: on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2, behavior: "smooth" }); }, [tab]);
   const [banners, setBannersState] = useState<Banner[] | null>(null);
   const [slots, setSlotsState] = useState<BannerSlotState[]>([]);
   const [error, setError] = useState("");
@@ -96,7 +97,7 @@ export default function Banners() {
         <PillTrack active={tab} />
         {TABS.map((t) => {
           const n = t.id === "banners" ? (banners ? `${occupied}/2` : "") : t.id === "telegram" ? (promos ? String(promos.filter((p) => !["rejected", "done"].includes(promoStatus(p, today))).length) : "") : t.id === "bookmakers" ? (bms ? String(bmLive.length) : "") : "";
-          return <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`v3-ptab${tab === t.id ? " is-on" : ""}`} onClick={() => setParams(t.id === "banners" ? {} : { tab: t.id })}>{t.label}{n ? <span>{n}</span> : null}</button>;
+          return <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`v3-ptab${tab === t.id ? " is-on" : ""}`} onClick={() => setParams(t.id === "banners" ? {} : { tab: t.id })}>{t.label}{n ? <span>{n}</span> : t.id === "stats" ? <BarChart3 size={15} aria-hidden="true" /> : null}</button>;
         })}
       </div>
 

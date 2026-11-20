@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AdLabel, EditorPanel, Highlighted } from "@/components/ads/AdsShared";
+import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton } from "@/components/ads/AdsShared";
+import { Dropdown } from "@/components/ui/dropdown";
+import { DateField } from "@/components/ui/date-field";
 import { PR_STATUS, colorOf, deletePromo, entityStats, initials, nf, placeLabel, promoStatus, savePromo, subsText, textIssues, type AdStats, type Promo, type PromoInput } from "@/lib/adsModel";
 import { periodText } from "@/lib/bannersModel";
 import UndoRing from "@/components/UndoRing";
@@ -92,12 +94,12 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
       <div className="v3-ad-f"><label htmlFor="tg-desc">Опис групи</label><textarea id="tg-desc" className={`v3-ad-in v3-ad-ta${descIssues.rules.length ? " is-err" : ""}`} maxLength={300} rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} /><span className="v3-ad-hint">{f.description.length}/300 · без бонусів, «безплатно» й обіцянок заробітку</span>{issues.rules.map((r) => <span key={r} className="v3-ad-msg is-bad">• {r}</span>)}</div>
       <div className="v3-ad-row2">
         <div className="v3-ad-f"><label htmlFor="tg-subs">Підписників</label><input id="tg-subs" className="v3-ad-in" type="number" min={0} value={f.subscribers ?? ""} onChange={(e) => set({ subscribers: e.target.value === "" ? null : Number(e.target.value) })} /></div>
-        <div className="v3-ad-f"><label htmlFor="tg-place">Місце показу</label><select id="tg-place" className="v3-ad-in" value={f.placement} onChange={(e) => set({ placement: e.target.value as PromoInput["placement"] })}><option value="telegram-top">Telegram · верх списку</option><option value="match-details">Деталі матчу</option></select></div>
+        <div className="v3-ad-f"><label id="tg-place-l">Місце показу</label><Dropdown className="v3-ad-dd" ariaLabel="Місце показу" value={f.placement} onChange={(v) => set({ placement: v })} options={[{ value: "telegram-top" as PromoInput["placement"], label: "Telegram · верх списку" }, { value: "match-details" as PromoInput["placement"], label: "Деталі матчу" }]} /></div>
       </div>
-      {f.placement === "match-details" && <div className="v3-ad-f"><label htmlFor="tg-game">Гра</label><select id="tg-game" className="v3-ad-in" value={f.game} onChange={(e) => set({ game: e.target.value as PromoInput["game"] })}><option value="">Усі матчі</option><option value="CS2">CS2</option><option value="Dota 2">Dota 2</option></select></div>}
+      {f.placement === "match-details" && <div className="v3-ad-f"><label id="tg-game-l">Гра</label><Dropdown className="v3-ad-dd" ariaLabel="Гра" value={(f.game || "all") as string} onChange={(v) => set({ game: (v === "all" ? "" : v) as PromoInput["game"] })} options={[{ value: "all", label: "Усі матчі" }, { value: "CS2", label: "CS2" }, { value: "Dota 2", label: "Dota 2" }]} /></div>}
       <div className="v3-ad-row2">
-        <div className="v3-ad-f"><label htmlFor="tg-from">Початок</label><input id="tg-from" type="date" className="v3-ad-in" value={f.startsOn || ""} onChange={(e) => set({ startsOn: e.target.value || null })} /></div>
-        <div className="v3-ad-f"><label htmlFor="tg-to">Кінець</label><input id="tg-to" type="date" className={`v3-ad-in${badDates ? " is-err" : ""}`} value={f.endsOn || ""} min={f.startsOn || undefined} onChange={(e) => set({ endsOn: e.target.value || null })} /></div>
+        <div className="v3-ad-f"><label id="tg-from-l">Початок</label><DateField id="tg-from" labelledBy="tg-from-l" value={f.startsOn || ""} onChange={(v) => set({ startsOn: v || null })} /></div>
+        <div className="v3-ad-f"><label id="tg-to-l">Кінець</label><DateField id="tg-to" labelledBy="tg-to-l" value={f.endsOn || ""} min={f.startsOn || undefined} onChange={(v) => set({ endsOn: v || null })} /></div>
       </div>
       <div className="v3-ad-f"><label htmlFor="tg-price">Умови оплати <small>для звіту</small></label><input id="tg-price" className="v3-ad-in" maxLength={200} value={f.priceNote} placeholder="Наприклад, фіксована ціна за місяць" onChange={(e) => set({ priceNote: e.target.value })} /></div>
       {f.reviewStatus === "approved" && !issues.rules.length ? <div className="v3-ad-check"><span>✓</span>Текст пройшов перевірку · без бонусів і обіцянок заробітку</div>
@@ -111,8 +113,8 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
         <div className="v3-ad-acts"><button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setRejecting(false)}>Скасувати</button><button type="button" className="v3-btn v3-btn-red" disabled={!online || saving || !f.rejectReason.trim()} onClick={() => save("rejected")}>Відхилити</button></div>
       ) : (
         <div className="v3-ad-acts">
-          {!creating && sel ? <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || sel.reviewStatus !== "approved"} onClick={() => toggleActive(sel)}>{sel.active ? "Вимкнути" : "Увімкнути"}</button> : <button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setCreating(false)}>Скасувати</button>}
-          <button type="button" className="v3-btn v3-btn-primary" disabled={!online || saving} onClick={() => save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button>
+          {!creating && sel ? <AskToggle active={sel.active} resetKey={sel.id} disabled={!online || sel.reviewStatus !== "approved"} onToggle={() => toggleActive(sel)} /> : <button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setCreating(false)}>Скасувати</button>}
+          <SaveButton saving={saving} disabled={!online || (!creating && f.reviewStatus === "rejected")} onClick={() => save()} />
         </div>
       )}
       {!creating && sel && <button type="button" className="v3-ad-del" onClick={() => remove(sel)}><Trash2 size={14} aria-hidden="true" />Видалити розміщення</button>}

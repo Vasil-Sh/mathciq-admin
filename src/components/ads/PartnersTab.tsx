@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AdLabel, EditorPanel, LockedLabel } from "@/components/ads/AdsShared";
+import { AdLabel, AskToggle, EditorPanel, LockedLabel, SaveButton } from "@/components/ads/AdsShared";
+import { DateField } from "@/components/ui/date-field";
 import { BM_STATUS, bookmakerStatus, deleteBookmaker, dmy, entityStats, initials, licenseLine, licenseState, nf, saveBookmaker, textIssues, type AdStats, type Bookmaker, type BookmakerInput } from "@/lib/adsModel";
 import { updateSettings } from "@/lib/adminSettingsApi";
 import { plural } from "@/lib/dashboardInsights";
@@ -45,8 +46,10 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
     } catch (e) { toast.error("Не вдалося змінити місце показу", { description: (e as Error).message }); }
   }
 
-  async function save() {
+  const [shake, setShake] = useState(0);
+  async function save(draft = false) {
     if (!f.name.trim()) { toast.error("Вкажіть назву партнера"); return; }
+    if (!draft && !f.licenseNumber.trim()) { setShake((n) => n + 1); toast.error("Вкажіть номер ліцензії", { description: "Перевіримо його в реєстрі PlayCity — без ліцензії не показуємо", action: { label: "Зберегти чернетку", onClick: () => { void save(true); } } }); return; }
     if (linkBad) { toast.error("Посилання має починатися з https://"); return; }
     if (issues.rules.length) { toast.error("Текст не пройшов перевірку", { description: "Приберіть «бонус», «безплатно» і обіцянки заробітку" }); return; }
     setSaving(true);
@@ -104,8 +107,8 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
     <EditorPanel wide={wide} open={editing} title={creating ? "Новий партнер" : sel?.name || ""} sub={creating ? "Букмекер з ліцензією PlayCity" : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
       <div className="v3-ad-f"><label htmlFor="bm-name">Назва <span>*</span></label><input id="bm-name" className="v3-ad-in" value={f.name} maxLength={100} onChange={(e) => set({ name: e.target.value })} /></div>
       <div className="v3-ad-row2">
-        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" className={`v3-ad-in${f.licenseNumber.trim() ? "" : " is-err"}`} value={f.licenseNumber} placeholder="Не вказано" onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
-        <div className="v3-ad-f"><label htmlFor="bm-until">Діє до</label><input id="bm-until" type="date" className={`v3-ad-in${licenseState(f).st === "expired" ? " is-err" : licenseState(f).st === "soon" ? " is-warn" : ""}`} value={f.licenseUntil || ""} onChange={(e) => set({ licenseUntil: e.target.value || null })} /></div>
+        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder="Не вказано" onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
+        <div className="v3-ad-f"><label id="bm-until-l">Діє до</label><DateField id="bm-until" labelledBy="bm-until-l" yearNav value={f.licenseUntil || ""} onChange={(v) => set({ licenseUntil: v || null })} /></div>
       </div>
       {!f.licenseNumber.trim() ? <span className="v3-ad-msg is-bad">Рекламувати можна лише ліцензованих організаторів. Без номера партнер збережеться як чернетка й не з’явиться в застосунку.</span>
         : licenseState(f).st === "soon" ? <span className="v3-ad-msg is-warn">Ліцензія діє до {dmy(f.licenseUntil!)} — через {licenseState(f).left} {plural(licenseState(f).left!, "день", "дні", "днів")}. Після цієї дати партнер зникне з застосунку автоматично.</span>
@@ -126,8 +129,8 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
       <span className="v3-ad-hint">{f.licenseNumber ? `Ліцензія PlayCity № ${f.licenseNumber} · ` : ""}«Азартні ігри можуть викликати залежність» показуємо поруч з кожним місцем.</span>
       <LockedLabel />
       <div className="v3-ad-acts">
-        {!creating && sel ? <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || bookmakerStatus(sel) === "draft"} onClick={() => toggleActive(sel)}>{sel.active ? "Вимкнути" : "Увімкнути"}</button> : <button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setCreating(false)}>Скасувати</button>}
-        <button type="button" className="v3-btn v3-btn-primary" disabled={!online || saving} onClick={save}>{saving ? "Зберігаємо…" : f.licenseNumber.trim() ? "Зберегти" : "Зберегти чернетку"}</button>
+        {!creating && sel ? <AskToggle active={sel.active} resetKey={sel.id} disabled={!online || bookmakerStatus(sel) === "draft"} onToggle={() => toggleActive(sel)} /> : <button type="button" className="v3-btn v3-btn-ghost-dark" onClick={() => setCreating(false)}>Скасувати</button>}
+        <SaveButton saving={saving} disabled={!online} onClick={() => save()} />
       </div>
       {!creating && sel && <button type="button" className="v3-ad-del" onClick={() => remove(sel)}><Trash2 size={14} aria-hidden="true" />Видалити партнера</button>}
     </EditorPanel>
