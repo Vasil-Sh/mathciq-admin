@@ -104,7 +104,7 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
           </form>
         )}
         {!stats ? <div className="v3-ad-load" role="status">Завантажуємо…</div> : t && t.impressions + t.clicks === 0 ? (
-          <div className="v3-ad-nostats"><span aria-hidden="true"><BarChart3 size={20} /></span><strong>Статистики за цей період немає</strong><small>Покази й кліки з’являться після перших показів реклами в застосунку.</small></div>
+          <div className="v3-ad-nostats"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><BarChart3 size={22} /></span><strong>Статистики за цей період немає</strong><small>Покази й кліки з’являться після перших показів реклами в застосунку.</small></div>
         ) : (
           <>
             <div key={`${stats.daily[0]?.day}-${stats.daily.length}`} className="v3-ad-bars" role="img" aria-label={`Кліки по днях, максимум ${maxClicks}`}>

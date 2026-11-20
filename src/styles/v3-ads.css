@@ -378,10 +378,11 @@ small.is-ok { color: #1f7a3d !important; } small.is-warn { color: #8a5a00 !impor
 .v3-ad-bar span { display: block; border-radius: 6px 6px 3px 3px; background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
 .v3-ad-axis { display: flex; gap: 8px; margin-top: 8px; color: #8c95a6; font-size: 11px; }
 .v3-ad-axis span { flex: 1; text-align: center; min-width: 0; }
-.v3-ad-nostats { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 26px 10px; }
-.v3-ad-nostats > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #1d232e; color: #8c95a6; }
+/* порожня статистика — біла картка з іконкою, що пливе, як «Партнерів ще немає» */
+.v3-ad-nostats { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; margin-top: 14px; padding: 34px 22px; border-radius: 24px; background: #fff; color: var(--v3-ink); }
+.v3-ad-nostats .v3-ue-ico { margin-bottom: 6px; }
 .v3-ad-nostats strong { font-size: 17px; font-weight: 600; }
-.v3-ad-nostats small { color: #8c95a6; font-size: 13px; }
+.v3-ad-nostats small { max-width: 360px; color: #5f6878; font-size: 13px; line-height: 1.55; }
 @media (max-width: 767px) {
   /* One row of chips that scrolls sideways and snaps the active one to the centre */
   .v3-ads-tabs { display: flex; gap: 6px; margin: 0 -16px; padding: 2px 16px; border: 0; border-radius: 0; background: none; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
