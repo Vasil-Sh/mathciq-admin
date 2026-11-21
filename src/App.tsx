@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import Splash from "@/components/Splash";
+import { hideSplashWhenReady } from "@/lib/splash";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -59,13 +59,15 @@ function useTouchUnpauseToasts() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isVerifying } = useAuth();
-  if (isVerifying) return <Splash />;
+  if (isVerifying) return null; // the launch screen from index.html stays up (see hideSplash)
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isVerifying } = useAuth();
+  // launch screen: off once the session is checked and the first screen's data is in
+  useEffect(() => { if (!isVerifying) hideSplashWhenReady(); }, [isVerifying]);
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to={takeReturnTo()} replace /> : <LoginPage />} />

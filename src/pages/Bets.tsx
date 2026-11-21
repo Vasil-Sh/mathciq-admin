@@ -279,7 +279,10 @@ export default function Bets() {
   };
   const streakTag = (u: AdminUserOverview, short = false) => (u.lossStreak || 0) >= STREAK_ALERT && <span className="v3-bt-stk">{u.lossStreak} поспіль{short ? "" : " програшів"}</span>;
   const wlText = (s: Stats) => `${s.wins} / ${s.losses}${s.pending ? ` · ${s.pending} очік.` : ""}`;
-  const wrBar = (s: Stats) => <span className="v3-bt-wl"><span style={{ width: `${Math.min(100, Math.max(0, s.wr))}%` }} /></span>;
+  // win / loss split as in betting apps: «44%  ●━━━━ ━━━━━━  56%» — green wins, red losses, a gap between
+  const wrBar = (s: Stats) => { const w = Math.round(Math.min(100, Math.max(0, s.wr))); return (
+    <span className="v3-bt-wl2" aria-label={`${w}% виграшів`}><small className="is-w">{w}%</small><span className="v3-bt-wl">{w > 0 && <span style={{ width: `${w}%` }} />}{w < 100 && <i />}</span><small className="is-l">{100 - w}%</small></span>
+  ); };
   const moreAll = people.length > playing.length && (
     <button type="button" className={`v3-bt-morebtn${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? "Лише ті, хто грає" : "Показати всіх"}<ChevronDown size={15} aria-hidden="true" /></button>
   );

@@ -147,16 +147,29 @@ async function send(method: string, path: string, body?: unknown, extra?: Record
   return res;
 }
 
+// Requests in flight — the launch screen waits until the first screen's data has arrived.
+let inflight = 0;
+const idleWaiters = new Set<() => void>();
+export function whenIdle(): Promise<void> {
+  return inflight === 0 ? Promise.resolve() : new Promise((r) => idleWaiters.add(r));
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   extra?: Record<string, string>
 ): Promise<T> {
-  const res = await send(method, path, body, extra);
-  // 204 No Content
-  if (res.status === 204) return undefined as T;
-  return res.json();
+  inflight++;
+  try {
+    const res = await send(method, path, body, extra);
+    // 204 No Content
+    if (res.status === 204) return undefined as T;
+    return await res.json();
+  } finally {
+    inflight--;
+    if (inflight === 0) { const w = [...idleWaiters]; idleWaiters.clear(); w.forEach((f) => f()); }
+  }
 }
 
 export const api = {

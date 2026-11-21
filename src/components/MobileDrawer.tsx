@@ -1,25 +1,25 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ChevronDown, ChevronRight, CircleDollarSign, CreditCard, History, LayoutDashboard, Megaphone, MessageCircle, Settings2, Swords, Users, X } from "lucide-react";
+import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Swords, Tag, UserCog, Users } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Badges = { usersExpiring?: number; supportOpen?: number; matchesError?: boolean; matchesStopped?: boolean; matchesErrorText?: string };
-type Sub = { label: string; to: string; key: string };
+type Sub = { label: string; to: string; key: string; icon: typeof Users };
 type Item = { label: string; to: string; icon: typeof Users; group?: "ads" | "matches" | "settings"; subs?: Sub[] };
 
-const SETTINGS: Sub[] = [
-  ["tariffs", "Тарифи"], ["trial", "Пробний період"], ["ai", "AI-аналіз"], ["texts", "Тексти й дисклеймери"], ["alerts", "Попередження"],
-  ["receipt", "Чек оплати"], ["templates", "Шаблони повідомлень"], ["account", "Мій акаунт"], ["banners", "Банери"],
-].map(([k, l]) => ({ key: k, label: l, to: `/settings#${k}` }));
+const SETTINGS: Sub[] = ([
+  ["tariffs", "Тарифи", Tag], ["trial", "Пробний період", Gift], ["ai", "AI-аналіз", Bot], ["texts", "Тексти й дисклеймери", FileText], ["alerts", "Попередження", Bell],
+  ["receipt", "Чек оплати", Receipt], ["templates", "Шаблони повідомлень", MessageCircle], ["account", "Мій акаунт", UserCog], ["banners", "Банери", Image],
+] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: `/settings#${k}` }));
 
 const ITEMS: Item[] = [
   { label: "Дашборд", to: "/dashboard", icon: LayoutDashboard },
   { label: "Користувачі", to: "/users", icon: Users },
   { label: "Оплати", to: "/payments", icon: CreditCard },
   { label: "Ставки", to: "/bets", icon: CircleDollarSign },
-  { label: "Реклама", to: "/banners", icon: Megaphone, group: "ads", subs: [["banners", "Банери"], ["telegram", "Telegram-групи"], ["bookmakers", "Букмекери"], ["stats", "Статистика"]].map(([k, l]) => ({ key: k, label: l, to: k === "banners" ? "/banners" : `/banners?tab=${k}` })) },
-  { label: "Матчі", to: "/matches", icon: Swords, group: "matches", subs: [["matches", "Матчі"], ["parsers", "Парсери"], ["manual", "Додані вручну"], ["teams", "Команди"]].map(([k, l]) => ({ key: k, label: l, to: k === "matches" ? "/matches" : `/matches?tab=${k}` })) },
+  { label: "Реклама", to: "/banners", icon: Megaphone, group: "ads", subs: ([["banners", "Банери", Image], ["telegram", "Telegram-групи", Send], ["bookmakers", "Букмекери", Hand], ["stats", "Статистика", BarChart3]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "banners" ? "/banners" : `/banners?tab=${k}` })) },
+  { label: "Матчі", to: "/matches", icon: Swords, group: "matches", subs: ([["matches", "Матчі", CalendarDays], ["parsers", "Парсери", Activity], ["manual", "Додані вручну", List], ["teams", "Команди", Users]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "matches" ? "/matches" : `/matches?tab=${k}` })) },
 ];
 
 /**
@@ -45,7 +45,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   };
   const subs = (list: Sub[]) => (
     <div className="v3-dr-subs">
-      {list.map((s) => <Link key={s.key} to={s.to} className={`v3-dr-sub${here(s.to) ? " is-on" : ""}`} onClick={close}>{s.label}{s.key === "parsers" && badges.matchesStopped && !badges.matchesError && <em>стоп</em>}</Link>)}
+      {list.map((s) => <Link key={s.key} to={s.to} className={`v3-dr-sub${here(s.to) ? " is-on" : ""}`} onClick={close}><s.icon size={18} aria-hidden="true" />{s.label}{s.key === "parsers" && badges.matchesStopped && !badges.matchesError && <em>стоп</em>}</Link>)}
     </div>
   );
   const row = (it: Item) => {
@@ -55,7 +55,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
     const exp = openGrp === it.group;
     return (
       <div key={it.to}>
-        <button type="button" className={`v3-dr-row${on ? " is-on" : ""}`} aria-expanded={exp} onClick={() => toggle(it.group!)}><Icon size={21} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}<ChevronDown size={18} className={`v3-dr-chev${exp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
+        <button type="button" className={`v3-dr-row${on ? " is-on" : ""}${exp ? " is-exp" : ""}`} aria-expanded={exp} onClick={() => toggle(it.group!)}><Icon size={21} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}<ChevronDown size={18} className={`v3-dr-chev${exp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
         {exp && subs(it.subs)}
       </div>
     );
@@ -78,14 +78,13 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
             {ITEMS.map(row)}
             <div className="v3-dr-sep" />
             <Link to="/audit" className={`v3-dr-row${pathname.startsWith("/audit") ? " is-on" : ""}`} onClick={close}><History size={21} aria-hidden="true" /><span>Журнал дій</span><span className="v3-dr-end">{auditCount && <span className="v3-dr-badge is-red">{auditCount}</span>}</span></Link>
-            <button type="button" className={`v3-dr-row${setOn ? " is-on" : ""}`} aria-expanded={setExp} onClick={() => toggle("settings")}><Settings2 size={21} aria-hidden="true" /><span>Налаштування</span><span className="v3-dr-end"><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
+            <button type="button" className={`v3-dr-row${setOn ? " is-on" : ""}${setExp ? " is-exp" : ""}`} aria-expanded={setExp} onClick={() => toggle("settings")}><Settings2 size={21} aria-hidden="true" /><span>Налаштування</span><span className="v3-dr-end"><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
             {setExp && subs(SETTINGS)}
           </nav>
           <Link to="/support" className="v3-dr-support" onClick={close}>
             <span className="v3-dr-sico"><MessageCircle size={18} aria-hidden="true" /></span><span>Підтримка</span>
             {!!badges.supportOpen && <span className="v3-dr-pill">{badges.supportOpen} {badges.supportOpen === 1 ? "нове" : "нових"}</span>}
           </Link>
-          <DialogPrimitive.Close className="v3-dr-x" aria-label="Закрити меню"><X size={20} aria-hidden="true" /></DialogPrimitive.Close>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

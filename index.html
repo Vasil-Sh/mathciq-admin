@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <meta name="theme-color" content="#0a0d13" />
+    <meta name="theme-color" content="#141416" />
     <meta name="color-scheme" content="dark" />
     <!-- Застосунок на головному екрані iPhone: темний статус-бар поверх сторінки, без білих смуг -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,11 +32,13 @@
       @keyframes mq-pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
       @keyframes mq-halo { from { opacity: .9; transform: scale(.92); } to { opacity: 0; transform: scale(1.35); } }
       @keyframes mq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      .mq-splash.is-out { opacity: 0; transition: opacity .35s ease; pointer-events: none; }
       @media (prefers-reduced-motion: reduce) { .mq-splash, .mq-splash *, .mq-splash-mark::after { animation: none !important; } }
     </style>
   </head>
   <body class="bg-canvas text-ink antialiased">
-    <div id="root"><div class="mq-splash" role="status" aria-label="MatchIQ завантажується"><div class="mq-splash-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(5,6)" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16"/><path d="M3 8h16" class="mq-ax"/><path class="mq-b mq-b1" d="M8 19v-4"/><path class="mq-b mq-b2" d="M14 19V7"/><path class="mq-b mq-b3" d="M20 19v-8"/></g></svg></div><div class="mq-splash-name">MatchIQ <span>Admin</span></div></div></div>
+    <div id="root"></div>
+    <div id="mq-splash" class="mq-splash" role="status" aria-label="MatchIQ завантажується"><div class="mq-splash-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(5,6)" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16"/><path d="M3 8h16" class="mq-ax"/><path class="mq-b mq-b1" d="M8 19v-4"/><path class="mq-b mq-b2" d="M14 19V7"/><path class="mq-b mq-b3" d="M20 19v-8"/></g></svg></div><div class="mq-splash-name">MatchIQ <span>Admin</span></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
