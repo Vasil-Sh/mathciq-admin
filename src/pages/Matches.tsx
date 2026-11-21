@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
 import { Activity, AlertTriangle, CalendarX2, Check, ChevronDown, ExternalLink, History, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
@@ -370,6 +371,7 @@ export default function Matches() {
     { k: "manual", label: "Додані вручну", v: bets ? String(groups.length) : "…", n: bets ? (groups.length ? "немає в стрічках парсерів" : "усі записи на своїх матчах") : "шукаємо в записах", amber: groups.length > 0, go: () => setTab("manual"), on: tab === "manual" },
   ];
   const tabN: Record<Tab, number | null> = { matches: matches ? todayM.length : null, parsers: parsers ? down.length || parsers.length : null, manual: bets ? groups.length : null, teams: matches ? teams.length : null };
+  useEffect(() => { publishMatchCounts(tabN); }, [tabN.matches, tabN.parsers, tabN.manual, tabN.teams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Деталі матчу (бічна панель / шторка) ──
   const detail = (m: Match) => {

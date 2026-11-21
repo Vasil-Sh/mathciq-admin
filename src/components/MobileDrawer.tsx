@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Swords, Tag, UserCog, Users } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
+import { useMatchCounts } from "@/lib/navCounts";
 
 type Badges = { usersExpiring?: number; supportOpen?: number; matchesError?: boolean; matchesStopped?: boolean; matchesErrorText?: string };
 type Sub = { label: string; to: string; key: string; icon: typeof Users };
@@ -36,6 +37,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   useEffect(() => { if (open) setOpenGrp(groupOf(pathname)); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const close = () => onOpenChange(false);
   const toggle = (g: string) => setOpenGrp((x) => (x === g ? null : g));
+  const mxN = useMatchCounts();
 
   const extra = (it: Item) => {
     if (it.to === "/users" && badges.usersExpiring) return <span className="v3-dr-badge is-amber" title="Підписка закінчується найближчими днями">{badges.usersExpiring}</span>;
@@ -45,17 +47,20 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   };
   const subs = (list: Sub[]) => (
     <div className="v3-dr-subs">
-      {list.map((s) => <Link key={s.key} to={s.to} className={`v3-dr-sub${here(s.to) ? " is-on" : ""}`} onClick={close}><s.icon size={18} aria-hidden="true" />{s.label}{s.key === "parsers" && badges.matchesStopped && !badges.matchesError && <em>стоп</em>}</Link>)}
+      {list.map((s) => <Link key={s.key} to={s.to} className={`v3-dr-sub${here(s.to) ? " is-on" : ""}`} onClick={close}><s.icon size={17} aria-hidden="true" />{s.label}{s.key === "parsers" && badges.matchesStopped && !badges.matchesError ? <em>стоп</em> : s.to.startsWith("/matches") && mxN[s.key as keyof typeof mxN] != null && <b className="v3-dr-n">{mxN[s.key as keyof typeof mxN]}</b>}</Link>)}
     </div>
   );
   const row = (it: Item) => {
     const on = it.group ? groupOf(pathname) === it.group : pathname.startsWith(it.to);
     const Icon = it.icon;
-    if (!it.subs) return <Link key={it.to} to={it.to} className={`v3-dr-row${on ? " is-on" : ""}`} onClick={close}><Icon size={21} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}</span></Link>;
+    if (!it.subs) return <Link key={it.to} to={it.to} className={`v3-dr-row${on ? " is-on" : ""}`} onClick={close}><Icon size={20} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}</span></Link>;
     const exp = openGrp === it.group;
     return (
       <div key={it.to}>
-        <button type="button" className={`v3-dr-row${on ? " is-on" : ""}${exp ? " is-exp" : ""}`} aria-expanded={exp} onClick={() => toggle(it.group!)}><Icon size={21} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}<ChevronDown size={18} className={`v3-dr-chev${exp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
+        <div className={`v3-dr-row v3-dr-grp${on ? " is-on" : ""}${exp ? " is-exp" : ""}`}>
+          <Link to={it.to} className="v3-dr-glink" onClick={close}><Icon size={20} aria-hidden="true" /><span>{it.label}</span><span className="v3-dr-end">{extra(it)}</span></Link>
+          <button type="button" className="v3-dr-gtog" aria-expanded={exp} aria-label={`${exp ? "Згорнути" : "Розгорнути"}: ${it.label}`} onClick={() => toggle(it.group!)}><ChevronDown size={18} className={`v3-dr-chev${exp ? " is-up" : ""}`} aria-hidden="true" /></button>
+        </div>
         {exp && subs(it.subs)}
       </div>
     );
@@ -77,8 +82,11 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
           <nav className="v3-dr-nav" aria-label="Основна навігація">
             {ITEMS.map(row)}
             <div className="v3-dr-sep" />
-            <Link to="/audit" className={`v3-dr-row${pathname.startsWith("/audit") ? " is-on" : ""}`} onClick={close}><History size={21} aria-hidden="true" /><span>Журнал дій</span><span className="v3-dr-end">{auditCount && <span className="v3-dr-badge is-red">{auditCount}</span>}</span></Link>
-            <button type="button" className={`v3-dr-row${setOn ? " is-on" : ""}${setExp ? " is-exp" : ""}`} aria-expanded={setExp} onClick={() => toggle("settings")}><Settings2 size={21} aria-hidden="true" /><span>Налаштування</span><span className="v3-dr-end"><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></span></button>
+            <Link to="/audit" className={`v3-dr-row${pathname.startsWith("/audit") ? " is-on" : ""}`} onClick={close}><History size={20} aria-hidden="true" /><span>Журнал дій</span><span className="v3-dr-end">{auditCount && <span className="v3-dr-badge is-red">{auditCount}</span>}</span></Link>
+            <div className={`v3-dr-row v3-dr-grp${setOn ? " is-on" : ""}${setExp ? " is-exp" : ""}`}>
+              <Link to="/settings" className="v3-dr-glink" onClick={close}><Settings2 size={20} aria-hidden="true" /><span>Налаштування</span></Link>
+              <button type="button" className="v3-dr-gtog" aria-expanded={setExp} aria-label={`${setExp ? "Згорнути" : "Розгорнути"}: Налаштування`} onClick={() => toggle("settings")}><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></button>
+            </div>
             {setExp && subs(SETTINGS)}
           </nav>
           <Link to="/support" className="v3-dr-support" onClick={close}>
@@ -103,10 +111,10 @@ export function MobileTabBar({ onMenu, menuOpen }: { onMenu: () => void; menuOpe
   return (
     <nav className="v3-tabbar" aria-label="Швидкі розділи">
       <button type="button" className={`v3-tab${menuOpen ? " is-on" : ""}`} onClick={onMenu} aria-expanded={menuOpen}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg><span>Меню</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg><span>Меню</span>
       </button>
       {tabs.map(({ to, label, icon: Icon }) => { const on = pathname.startsWith(to); return (
-        <Link key={to} to={to} className={`v3-tab${on ? " is-on" : ""}`} aria-current={on ? "page" : undefined}><Icon size={24} strokeWidth={on ? 2.1 : 1.8} aria-hidden="true" /><span>{label}</span></Link>
+        <Link key={to} to={to} className={`v3-tab${on ? " is-on" : ""}`} aria-current={on ? "page" : undefined}><Icon size={22} strokeWidth={on ? 1.9 : 1.6} aria-hidden="true" /><span>{label}</span></Link>
       ); })}
     </nav>
   );
