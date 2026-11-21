@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Swords, Tag, UserCog, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Tag, UserCog, Users } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { useMatchCounts } from "@/lib/navCounts";
 
@@ -20,7 +20,7 @@ const ITEMS: Item[] = [
   { label: "Оплати", to: "/payments", icon: CreditCard },
   { label: "Ставки", to: "/bets", icon: CircleDollarSign },
   { label: "Реклама", to: "/banners", icon: Megaphone, group: "ads", subs: ([["banners", "Банери", Image], ["telegram", "Telegram-групи", Send], ["bookmakers", "Букмекери", Hand], ["stats", "Статистика", BarChart3]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "banners" ? "/banners" : `/banners?tab=${k}` })) },
-  { label: "Матчі", to: "/matches", icon: Swords, group: "matches", subs: ([["matches", "Матчі", CalendarDays], ["parsers", "Парсери", Activity], ["manual", "Додані вручну", List], ["teams", "Команди", Users]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "matches" ? "/matches" : `/matches?tab=${k}` })) },
+  { label: "Матчі", to: "/matches", icon: Gamepad2, group: "matches", subs: ([["matches", "Матчі", CalendarDays], ["parsers", "Парсери", Activity], ["manual", "Додані вручну", List], ["teams", "Команди", Users]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "matches" ? "/matches" : `/matches?tab=${k}` })) },
 ];
 
 /**
@@ -106,7 +106,7 @@ export function MobileTabBar({ onMenu, menuOpen }: { onMenu: () => void; menuOpe
     { to: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
     { to: "/users", label: "Юзери", icon: Users },
     { to: "/payments", label: "Оплати", icon: CreditCard },
-    { to: "/matches", label: "Матчі", icon: Swords },
+    { to: "/matches", label: "Матчі", icon: Gamepad2 },
   ];
   return (
     <nav className="v3-tabbar" aria-label="Швидкі розділи">
