@@ -36,6 +36,8 @@
   .v3-users .v3-ptab { flex: 1; min-height: 38px; border-radius: 10px; color: #11151c; font: 500 14px Inter, sans-serif; }
   .v3-users .v3-ptab.is-on { color: #fff; font-weight: 600; }
   .v3-users .v3-ptab > span { background: #e5484d; color: #fff; }
+  .v3-users .v3-ptab > span.is-zero { background: #e3e6eb; color: #6b7384; }
+  .v3-users .v3-ptab.is-on > span.is-zero { background: rgba(255,255,255,.25); color: #fff; }
 
   /* фільтри одним рядком: «Усі · 6 ▾», чипи, сортування */
   .v3-users .v3-msearch { display: none; }
@@ -176,6 +178,7 @@
   .v3-users .v3-excl-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #11151c; color: #fff; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .v3-users .v3-excl-head .v3-seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 3px; border: 0; border-radius: 12px; background: #eef0f4; }
   .v3-users .v3-excl-head .v3-seg button { min-height: 32px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font-size: 12px; font-weight: 500; }
+  .v3-users .v3-excl-head .v3-seg .v3-pill { background: #fff; box-shadow: 0 1px 2px rgba(17,21,28,.08); }
   .v3-users .v3-excl-head .v3-seg button.is-on { background: #fff; color: #11151c; font-weight: 600; box-shadow: 0 1px 2px rgba(17,21,28,.08); }
   .v3-users .v3-excl-row.v3-excl-th { display: none; }
   .v3-users .v3-excl-list, .v3-users .v3-excl-side { flex: none; }

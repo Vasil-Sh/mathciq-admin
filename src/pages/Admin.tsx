@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { openTelegram } from "@/lib/telegram";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowDownWideNarrow, ArrowRight, Check, Send, Shield, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowDownAZ, ArrowDownWideNarrow, ArrowRight, Check, Send, Shield, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
@@ -379,9 +379,9 @@ export default function Admin() {
       {/* One line: plan · «Закінчуються» (always there, inactive at 0) · «Вік ?» · sort */}
       <div className="v3-mfilters is-line">
         <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : []), ...(filter === "expiring" ? [{ value: "expiring" as UFilter, label: `Закінчуються · ${counts.expiring}` }] : [])]} />
-        <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : `Ні в кого підписка не закінчується найближчі ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
-        {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
-        <button type="button" className={`v3-msort${sort === "name" ? " is-on" : ""}`} aria-label={`Сортування: ${sort === "name" ? "за логіном" : "нові спочатку"}. Змінити`} title={sort === "name" ? "За логіном" : "Нові спочатку"} onClick={() => { const next = sort === "name" ? "new" : "name"; setSort(next); toast.info(next === "name" ? "Сортування: за логіном" : "Сортування: нові спочатку", { id: "users-sort" }); }}><ArrowDownWideNarrow size={17} aria-hidden="true" /></button>
+        <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : `Ні в кого підписка не закінчується найближчі ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`} onClick={() => { setAgeOnly(false); setFilter(filter === "expiring" ? "all" : "expiring"); }}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
+        {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => { if (filter === "expiring") setFilter("all"); setAgeOnly(!ageOnly); }}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
+        <button type="button" className={`v3-msort${sort === "name" ? " is-on" : ""}`} aria-pressed={sort === "name"} aria-label={`Сортування: ${sort === "name" ? "за логіном" : "нові спочатку"}. Змінити`} title={sort === "name" ? "За логіном" : "Нові спочатку"} onClick={() => { const next = sort === "name" ? "new" : "name"; setSort(next); toast.info(next === "name" ? "Сортування: за логіном" : "Сортування: нові спочатку", { id: "users-sort" }); }}>{sort === "name" ? <ArrowDownAZ size={17} aria-hidden="true" /> : <ArrowDownWideNarrow size={17} aria-hidden="true" />}</button>
       </div>
       {q.trim() && list.length > 0 && <p className="v3-mfound" role="status">Знайдено {list.length}</p>}
       <div className={`v3-ptr${pulling ? " is-drag" : ""}${pull >= 60 && !refreshing ? " is-ready" : ""}`} style={{ height: pull }} role="status" aria-live="polite">
@@ -450,7 +450,7 @@ export default function Admin() {
       {!(emptyPlatform && !exclCount) && <div className="v3-ptabs" role="tablist" aria-label="Розділи">
         <PillTrack active={tab} />
         <button type="button" role="tab" aria-selected={tab === "users"} className={`v3-ptab${tab === "users" ? " is-on" : ""}`} onClick={() => setTab("users")}>Усі користувачі</button>
-        <button type="button" role="tab" aria-selected={tab === "excl"} className={`v3-ptab${tab === "excl" ? " is-on" : ""}`} onClick={() => setTab("excl")}>Самообмеження{exclCount ? <span>{exclCount}</span> : null}</button>
+        <button type="button" role="tab" aria-selected={tab === "excl"} className={`v3-ptab${tab === "excl" ? " is-on" : ""}`} onClick={() => setTab("excl")}>Самообмеження{exclCount !== null ? <span className={exclCount ? undefined : "is-zero"}>{exclCount}</span> : null}</button>
       </div>}
 
       {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Список станом на {updatedAt || "—"} — створення, оплати й продовження недоступні.</span><button type="button" className="v3-btn v3-btn-ghost-dark v3-btn-sm" onClick={() => { if (navigator.onLine) load(); else toast.info("Досі немає з’єднання"); }}>Перевірити ще раз</button></div>}

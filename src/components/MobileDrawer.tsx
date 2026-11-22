@@ -100,12 +100,12 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   );
 }
 
-/** Phone tab bar: Меню · Дашборд · Юзери · Оплати · Матчі (as on the design). */
+/** Phone tab bar: Меню · Дашборд · Користувачі · Оплати · Матчі (as on the design). */
 export function MobileTabBar({ onMenu, menuOpen }: { onMenu: () => void; menuOpen: boolean }) {
   const { pathname } = useLocation();
   const tabs = [
     { to: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
-    { to: "/users", label: "Юзери", icon: Users },
+    { to: "/users", label: "Користувачі", icon: Users },
     { to: "/payments", label: "Оплати", icon: CreditCard },
     { to: "/matches", label: "Матчі", icon: Gamepad2 },
   ];
