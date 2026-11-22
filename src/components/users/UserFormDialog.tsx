@@ -86,9 +86,9 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
 
   return (
     <Dialog open={open} onOpenChange={dlg}>
-      <DialogContent className="v3-modal v3-modal-lg sm:max-w-[620px]">
+      <DialogContent className="v3-modal v3-modal-lg v3-ufd sm:max-w-[620px]">
         <DialogTitle className="v3-modal-title">{mode === "create" ? "Новий користувач" : `Редагувати @${user?.username}`}</DialogTitle>
-        <DialogDescription className="v3-modal-sub">{mode === "create" ? "Створіть обліковий запис і налаштуйте доступ до MatchIQ." : "Логін, Telegram, план, дати, вік і роль."}</DialogDescription>
+        <DialogDescription className="v3-modal-sub">{mode === "create" ? <><span className="v3-hide-mobile">Створіть обліковий запис і налаштуйте доступ до MatchIQ.</span><span className="v3-only-mobile">Обліковий запис і доступ до MatchIQ</span></> : "Логін, Telegram, план, дати, вік і роль."}</DialogDescription>
         <form className="v3-form" noValidate onSubmit={(e) => { e.preventDefault(); if (check()) onSave({ ...f, username: f.username.trim(), telegram: f.telegram.trim() }); }}>
           <fieldset disabled={busy} className="v3-form-sec">
             <legend>Основна інформація</legend>
@@ -102,16 +102,16 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             <fieldset disabled={busy} className="v3-form-sec">
               <legend>План</legend>
               <div className="v3-opts">
-                {([["trial", "Пробний", `${trialDays} днів${settings?.trialPlan ? ` · ${settings.trialPlan === "pro" ? "Pro" : "Базова"}` : ""}`], ["basic", "Базова", `${basic} ₴ / ${subDays} днів`], ["pro", "Pro", `${pro} ₴ / ${subDays} днів`]] as const).filter(([k]) => k !== "trial" || trialOn || f.plan === "trial").map(([k, t, s]) => (
-                  <button key={k} type="button" className={`v3-opt${f.plan === k ? " is-on" : ""}`} aria-pressed={f.plan === k} onClick={() => pickPlan(k)}><strong>{t}</strong><small>{s}</small></button>
+                {([["trial", "Пробний", `${trialDays} днів${settings?.trialPlan ? ` · ${settings.trialPlan === "pro" ? "Pro" : "Базова"}` : ""}`, `${trialDays} днів · 0 ₴`], ["basic", "Базова", `${basic} ₴ / ${subDays} днів`, `${basic} ₴ · ${subDays} дн.`], ["pro", "Pro", `${pro} ₴ / ${subDays} днів`, `${pro} ₴ · ${subDays} дн.`]] as const).filter(([k]) => k !== "trial" || trialOn || f.plan === "trial").map(([k, t, s, sm]) => (
+                  <button key={k} type="button" className={`v3-opt${f.plan === k ? " is-on" : ""}`} aria-pressed={f.plan === k} onClick={() => pickPlan(k)}><strong>{t}</strong><small><span className="v3-hide-mobile">{s}</span><span className="v3-only-mobile">{sm}</span></small></button>
                 ))}
               </div>
-              <div className="v3-form-grid">
-                <div className="v3-field"><label id="uf-start-l">Дата початку</label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => { setF({ ...f, startDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
-                <div className="v3-field"><label id="uf-end-l">Дата закінчення</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
+              <div className="v3-form-grid v3-ufd-dates">
+                <div className="v3-field"><label id="uf-start-l"><span className="v3-hide-mobile">Дата початку</span><span className="v3-only-mobile">Початок</span></label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => { setF({ ...f, startDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
+                <div className="v3-field"><label id="uf-end-l"><span className="v3-hide-mobile">Дата закінчення</span><span className="v3-only-mobile">Кінець</span></label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
               </div>
               {err.dates && <p className="v3-field-err" role="alert">{err.dates}</p>}
-              {mode === "create" && <p className="v3-note-info">{trialOn ? "Пробний період — один на людину: перевіряємо за Telegram." : "Пробний період вимкнено в Налаштуваннях."} Для Базової й Pro сума плану запишеться як перша оплата.</p>}
+              {mode === "create" && <p className="v3-note-info"><span className="v3-hide-mobile">{trialOn ? "Пробний період — один на людину: перевіряємо за Telegram." : "Пробний період вимкнено в Налаштуваннях."} Для Базової й Pro сума плану запишеться як перша оплата.</span><span className="v3-only-mobile">{f.plan === "trial" ? "Пробний — один на людину, перевіряємо за Telegram." : "Сума плану запишеться як перша оплата."}</span></p>}
             </fieldset>
           )}
 
@@ -129,11 +129,11 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
           )}
 
           <fieldset disabled={busy || !!roleLock} className="v3-form-sec">
-            <legend>Роль і доступ</legend>
+            <legend><span className="v3-hide-mobile">Роль і доступ</span><span className="v3-only-mobile">Роль</span></legend>
             <div className="v3-opts">
-              <button type="button" className={`v3-opt${f.role === "user" ? " is-on" : ""}`} aria-pressed={f.role === "user"} onClick={() => setF({ ...f, role: "user" })}><strong>Користувач</strong><small>Звичайний акаунт</small></button>
-              <button type="button" className={`v3-opt${f.role === "admin" ? " is-on" : ""}`} aria-pressed={f.role === "admin"} onClick={() => setF({ ...f, role: "admin" })}><strong>Адміністратор</strong><small>Керування користувачами</small></button>
-              <button type="button" className={`v3-opt${f.role === "owner" ? " is-on" : ""}`} aria-pressed={f.role === "owner"} disabled={!canAppointOwner} title={canAppointOwner ? undefined : "Призначати овнера може лише овнер"} onClick={() => setF({ ...f, role: "owner" })}><strong>Овнер</strong><small>{canAppointOwner ? "Повний доступ" : "лише овнер може призначити"}</small></button>
+              <button type="button" className={`v3-opt${f.role === "user" ? " is-on" : ""}`} aria-pressed={f.role === "user"} onClick={() => setF({ ...f, role: "user" })}><strong>Користувач</strong><small><span className="v3-hide-mobile">Звичайний акаунт</span><span className="v3-only-mobile">звичайний</span></small></button>
+              <button type="button" className={`v3-opt${f.role === "admin" ? " is-on" : ""}`} aria-pressed={f.role === "admin"} onClick={() => setF({ ...f, role: "admin" })}><strong><span className="v3-hide-mobile">Адміністратор</span><span className="v3-only-mobile">Адмін</span></strong><small><span className="v3-hide-mobile">Керування користувачами</span><span className="v3-only-mobile">керування</span></small></button>
+              <button type="button" className={`v3-opt${f.role === "owner" ? " is-on" : ""}`} aria-pressed={f.role === "owner"} disabled={!canAppointOwner} title={canAppointOwner ? undefined : "Призначати овнера може лише овнер"} onClick={() => setF({ ...f, role: "owner" })}><strong>Овнер</strong><small>{canAppointOwner ? <><span className="v3-hide-mobile">Повний доступ</span><span className="v3-only-mobile">повний</span></> : "лише овнер може призначити"}</small></button>
             </div>
             {roleLock && <p className="v3-lock-note"><Lock size={13} aria-hidden="true" />{roleLock}</p>}
           </fieldset>
