@@ -55,6 +55,9 @@
   .v3-dash .v3-dl.is-onblue.is-up, .v3-dash .v3-dl.is-onblue.is-flat { background: #1f9d55; color: #fff; }
   .v3-dash .v3-dl.is-onblue.is-down { background: #e5484d; color: #fff; }
   .v3-dash .v3-kpi-ai-side { color: #3a6df0; }
+  /* завантаження: світлі смужки замість темних */
+  .v3-dash .v3-skel { background: linear-gradient(90deg, #eef0f4, #e3e6ec, #eef0f4); background-size: 200% 100%; }
+  .v3-dash .v3-skel-card.v3-dcard { background: linear-gradient(90deg, #fff, #f6f7f9, #fff); background-size: 200% 100%; animation: v3-shimmer 1.4s ease-in-out infinite; }
 
   /* ── білі картки замість темних ── */
   .v3-dash .v3-dcard { border: 0; border-radius: 20px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
