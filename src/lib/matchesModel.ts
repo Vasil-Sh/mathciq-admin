@@ -54,7 +54,7 @@ export interface Match {
   tournament: string;
   bo: string;
   status: MStatus;
-  source: "HLTV" | "tips.gg" | "Вручну";
+  source: "HLTV" | "tips.gg" | "OddsPapi" | "Вручну";
   link: string;
   /** id у стрічці без префікса гри — для ручних правок. */
   raw: string;
@@ -102,7 +102,7 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     tournament: String(m.tournament ?? ""),
     bo: (m.type || "").toUpperCase(),
     status: m.status === "live" ? "live" : m.status === "finished" ? "done" : m.status === "postponed" ? "moved" : m.status === "cancelled" ? "off" : "plan",
-    source: String(m.id).startsWith("manual-") ? "Вручну" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
+    source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
     link: m.link || "",
     raw: String(m.id),
     manual: String(m.id).startsWith("manual-"),
