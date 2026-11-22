@@ -40,7 +40,7 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
       <label className="v3-msearch v3-excl-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук у самообмеженнях" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
       <div className="v3-wcard v3-excl-list">
         <div className="v3-excl-head">
-          <div><h2 className="v3-h2">Запити на самообмеження</h2><p className="v3-note-dark">Користувач сам блокує свій акаунт на обраний термін. Блок застосовується одразу.</p></div>
+          <div><h2 className="v3-h2">Запити на самообмеження{tab === "active" && active.length > 0 && <span className="v3-excl-count v3-only-mobile" aria-label={`${active.length} активних`}>{active.length}</span>}</h2><p className="v3-note-dark">Користувач сам блокує свій акаунт на обраний термін. Блок застосовується одразу.</p></div>
           <div className="v3-seg v3-seg-soft" role="group" aria-label="Стан">
         <PillTrack active={tab} />
             <button type="button" className={tab === "active" ? "is-on" : ""} aria-pressed={tab === "active"} onClick={() => setTab("active")}>Активні · {active.length}</button>
@@ -61,6 +61,19 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
                   <span role="cell">{periodLabel(r.periodDays)}</span>
                   <span role="cell" className="v3-excl-until">{r.until ? <><strong>{longDate(r.until.slice(0, 10))}</strong>{tab === "active" && <span className={`v3-tag ${isNew ? "v3-tag-amber" : "v3-tag-blue"}`}>{isNew ? "новий · сьогодні" : `ще ${left} ${plural(left, "день", "дні", "днів")}`}</span>}</> : "—"}</span>
                   <span role="cell" className="v3-muted">{when(r.createdAt)}</span>
+                  {/* Phone (design UsersMobileSelf): card with two tiles */}
+                  <div className="v3-excl-m v3-only-mobile" role="cell">
+                    <div className="v3-excl-m-top">
+                      <span className="v3-excl-m-av"><UserAvatar username={r.username} telegram={r.telegram} /><i><Lock size={9} strokeWidth={2.5} /></i></span>
+                      <span className="v3-excl-m-id"><span><strong>@{r.username}</strong>{r.plan && <span className={`v3-ptag is-${r.plan}`}>{planName(r.plan)}</span>}</span><small>подано {when(r.createdAt)}</small></span>
+                      {tab === "active" && r.until && <span className={`v3-excl-m-tag${isNew ? " is-new" : ""}`}>{isNew ? "новий · сьогодні" : `ще ${left} ${plural(left, "день", "дні", "днів")}`}</span>}
+                      {tab !== "active" && <span className="v3-excl-m-tag is-done">{r.status === "denied" ? "відхилено" : "завершено"}</span>}
+                    </div>
+                    <dl className="v3-excl-m-tiles">
+                      <div><dt>Термін</dt><dd>{periodLabel(r.periodDays)}</dd></div>
+                      <div><dt>Заблоковано до</dt><dd>{r.until ? longDate(r.until.slice(0, 10)) : "—"}</dd></div>
+                    </dl>
+                  </div>
                 </div>
               );
             })}
@@ -70,7 +83,8 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
       <aside className="v3-dcard v3-excl-side">
         <span className="v3-excl-ico" aria-hidden="true"><Lock size={20} /></span>
         <strong>Зняти блок раніше не можна</strong>
-        <p>Ні адмін, ні овнер не можуть скасувати самообмеження до кінця терміну. Оплачені дні не згорають — підписка продовжується на час блоку.</p>
+        <p className="v3-only-mobile">Оплачені дні не згорають — підписка продовжується на час блоку</p>
+        <p className="v3-hide-mobile">Ні адмін, ні овнер не можуть скасувати самообмеження до кінця терміну. Оплачені дні не згорають — підписка продовжується на час блоку.</p>
         <div className="v3-excl-rules">
           <span><b>Під час блоку:</b> вхід закрито, оплати не приймаються.</span>
           <span><b>Після терміну:</b> доступ відкривається автоматично.</span>

@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import StarField from "./StarField";
 import MobileDrawer, { MobileTabBar } from "@/components/MobileDrawer";
 import PillTrack from "@/components/PillTrack";
+import { PageSearchProvider, usePageSearchHost, isPhoneWidth } from "@/lib/pageSearch";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -40,6 +41,30 @@ function Logo({ onClick }: { onClick?: () => void }) {
 }
 
 export default function AdminLayout() {
+  return <PageSearchProvider><AdminShell /></PageSearchProvider>;
+}
+
+/** Phone header search field (design 22.11): replaces the logo and buttons; «Скасувати» closes it and clears the query. */
+function HeaderSearch() {
+  const ps = usePageSearchHost();
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (ps?.open) inputRef.current?.focus(); }, [ps?.open]);
+  if (!ps?.open || !ps.placeholder) return null;
+  const close = () => { ps.setQ(""); ps.setOpen(false); };
+  return (
+    <div className="v3-hsearch" role="search">
+      <label className="v3-hsearch-field">
+        <Search size={17} aria-hidden="true" />
+        <input ref={inputRef} type="search" enterKeyHint="search" aria-label={ps.placeholder} placeholder={ps.placeholder} value={ps.q} onChange={(e) => ps.setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") close(); }} />
+        {ps.q && <button type="button" className="v3-hsearch-clear" aria-label="Очистити пошук" onClick={() => { ps.setQ(""); inputRef.current?.focus(); }}><X size={12} strokeWidth={3} aria-hidden="true" /></button>}
+      </label>
+      <button type="button" className="v3-hsearch-cancel" onClick={close}>Скасувати</button>
+    </div>
+  );
+}
+
+function AdminShell() {
+  const pageSearch = usePageSearchHost();
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -106,7 +131,7 @@ export default function AdminLayout() {
   }, []);
   const searchButton = (
     <span className="v3-tip-wrap">
-      <button type="button" className="v3-audit v3-search-btn" onClick={() => setCmdOpen(true)} aria-label="Швидкий пошук, Ctrl K" aria-keyshortcuts="Control+K">
+      <button type="button" className="v3-audit v3-search-btn" onClick={() => { if (pageSearch?.placeholder && isPhoneWidth()) pageSearch.setOpen(true); else setCmdOpen(true); }} aria-label="Швидкий пошук, Ctrl K" aria-keyshortcuts="Control+K">
         <Search size={19} aria-hidden="true" />
       </button>
       <span className="v3-tip" role="tooltip">Швидкий пошук <kbd>Ctrl K</kbd></span>
@@ -160,6 +185,7 @@ export default function AdminLayout() {
           </div>
           <span className="v3-audit-slot is-mob">{searchButton}{auditButton}</span>
         </div>
+        <HeaderSearch />
       </header>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} links={[...navigation, { label: "Журнал дій", href: "/audit", icon: History }].map(({ label, href, icon }) => ({ label, href, icon }))} />
 

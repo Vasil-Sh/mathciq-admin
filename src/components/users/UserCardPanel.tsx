@@ -11,6 +11,9 @@ import { ageText, birthText, daysLeft, isAdmin, leftTag, longDate, planCell, sta
 import type { AdminUserOverview, AppSettings } from "@/types";
 
 
+const dayMonth = (v?: string | null) => { if (!v) return "—"; const d = new Date(`${v.slice(0, 10)}T00:00:00`); return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString("uk-UA", { day: "numeric", month: "long" }); };
+const weekday = (v?: string | null) => { if (!v) return ""; const d = new Date(`${v.slice(0, 10)}T00:00:00`); return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("uk-UA", { weekday: "short" }); };
+const daysSince = (v?: string | null) => { if (!v) return null; const t = new Date(`${v.slice(0, 10)}T00:00:00`).getTime(); return Number.isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t) / 86400000)); };
 const money = (n: number) => `${Math.round(n).toLocaleString("uk-UA")} ₴`;
 const telegramUrl = (t?: string) => { const h = (t || "").replace(/^https?:\/\/t\.me\//, "").replace(/^@/, "").trim(); return h ? `t.me/${h}` : ""; };
 
@@ -92,7 +95,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           <p>{tg || "Telegram не вказано"} · {role}</p>
           {(mobile || !admin) && (
             <div className="v3-bdgs">
-              {mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
+              {mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : admin && <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
               {!admin && <>
               {user.ageConfirmed
                 ? <span className="v3-bdg is-ok"><Check size={13} strokeWidth={3} className="v3-bdg-ck" aria-hidden="true" />Вік підтверджено</span>
@@ -105,6 +108,34 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         {!mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
       </div>
 
+      {mobile && !admin ? (
+        <div className={`v3-uc-msub is-${dl !== null && dl < 3 ? "red" : dl !== null && dl < 7 ? "amber" : "green"}`}>
+          {/* Phone (design UserMobileCard): plan + status, ring with start/end, three tiles */}
+          <div className="v3-uc-msub-top">
+            <span className="v3-uc-msub-plan">{plan.plan}</span>
+            <span className="v3-uc-msub-price">{user.plan === "trial" || user.proUntil ? plan.price : `${plan.price}${plan.price !== "—" ? " / 30 днів" : ""}`}</span>
+            <span className="v3-uc-msub-st"><i aria-hidden="true" />{ui.label}</span>
+          </div>
+          <div className="v3-uc-msub-main">
+            <div className="v3-uc-msub-ring" role="img" aria-label={dl === null ? "Без дати" : `${Math.max(0, dl)} ${plural(Math.max(0, dl), "день", "дні", "днів")} до кінця`}>
+              <svg width="88" height="88" viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="9" />
+                <circle className="v3-uc-msub-p" cx="60" cy="60" r="50" fill="none" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeDasharray="314" strokeDashoffset={ringOff} transform="rotate(-90 60 60)" />
+              </svg>
+              <span aria-hidden="true"><strong key={dl ?? "x"}>{dl === null ? "—" : Math.max(0, dl)}</strong><small>{dl === null ? "без дати" : plural(Math.max(0, dl), "день", "дні", "днів")}</small></span>
+            </div>
+            <dl className="v3-uc-msub-dates">
+              <div><dt>Почалась</dt><dd>{dayMonth(user.startDate)}</dd></div>
+              <div><dt>{st === "ended" ? "Закінчилась" : st === "cancelled" ? "Доступ до" : "Закінчиться"}</dt><dd>{user.endDate ? `${dayMonth(user.endDate)} · ${weekday(user.endDate)}` : "—"}</dd></div>
+            </dl>
+          </div>
+          <dl className="v3-uc-msub-tiles">
+            <div><dt>Наступна оплата</dt><dd>{["ended", "cancelled"].includes(st) || !user.endDate ? "—" : shortDate(user.endDate)}</dd></div>
+            <div><dt>Сплачено</dt><dd>{money(user.paidTotal || 0)}</dd></div>
+            <div><dt>З нами</dt><dd>{(() => { const n = daysSince(user.createdAt); return n === null ? "—" : `${n} ${plural(n, "день", "дні", "днів")}`; })()}</dd></div>
+          </dl>
+        </div>
+      ) : (
       <div className="v3-uc-sub">
         <div className="v3-uc-sub-top"><span>Підписка</span><span className="v3-uc-sub-tag">{leftTag(user)}</span></div>
         <div className="v3-uc-sub-main">
@@ -130,6 +161,7 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           </div>
         )}
       </div>
+      )}
 
       {user.selfLimitedUntil && (
         <div className="v3-uc-excl"><Lock size={18} aria-hidden="true" /><span><strong>Самообмеження до {longDate(user.selfLimitedUntil.slice(0, 10))}</strong> — на прохання користувача. Зняти раніше не можна.</span></div>
@@ -166,11 +198,9 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
       <>
         {mobile ? (
           <dl className="v3-uc-tiles">
-            {!admin && <div><dt>Наступна оплата</dt><dd>{["ended", "cancelled"].includes(st) || !user.endDate ? "—" : `${shortDate(user.endDate)}${user.priceMonth ? ` · ${money(Number(user.priceMonth))}` : ""}`}</dd></div>}
             {!admin && <div><dt>AI сьогодні</dt><dd>{aiLimit ? `${user.aiToday || 0} з ${aiLimit}` : user.aiToday || "—"}</dd></div>}
             {!admin && <div><dt>Дата народження</dt><dd>{birthText(user)}<span className={`v3-tag ${user.ageConfirmed ? "v3-tag-okdark" : "v3-tag-warndark"}`}>{ageText(user)}</span></dd></div>}
             {!admin && <div><dt>Пробний період</dt><dd>{trialText(user, settings)}</dd></div>}
-            {!admin && <div><dt>Загалом сплачено</dt><dd>{paidLine}</dd></div>}
             <div><dt>Створено</dt><dd>{user.createdAt ? longDate(user.createdAt.slice(0, 10)) : "—"}</dd></div>
             {admin && <div><dt>План</dt><dd>{plan.plan} · {plan.price}</dd></div>}
           </dl>

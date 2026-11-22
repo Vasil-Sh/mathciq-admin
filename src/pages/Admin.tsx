@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { openTelegram } from "@/lib/telegram";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowRight, Check, Send, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowDownWideNarrow, ArrowRight, Check, Send, Shield, ChevronLeft, ChevronRight, Download, Plus, Search, SearchX, UserPlus, WifiOff, X, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import UserCardPanel from "@/components/users/UserCardPanel";
@@ -25,9 +25,10 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { fetchAdminStats } from "@/lib/adminStatsApi";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { getExpiringWindow, setExpiringWindow, canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring, USER_FILTERS, filterFromParam } from "@/lib/usersModel";
+import { getExpiringWindow, setExpiringWindow, canQuickExtend, daysLeft, isAdmin, matches, nextCell, planCell, planName, STATUS_UI, statusOf, type UFilter, tagOf, isExpiring, USER_FILTERS, filterFromParam } from "@/lib/usersModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
+import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 const PAGE_SIZE = 10;
@@ -73,6 +74,13 @@ export default function Admin() {
   const [ageOnly, setAgeOnly] = useState(false);
   const [q, setQ] = useSessionFilter<string>("users.search", "");
   const [sort, setSort] = useSessionFilter<Sort>("users.sort3", "new", SORTS);
+  // Phone: the search lives in the header (design 22.11) — its query drives the same list filter.
+  const pageSearch = usePageSearch("Логін або Telegram");
+  const searchSynced = useRef(false);
+  useEffect(() => {
+    if (!searchSynced.current) { searchSynced.current = true; if (isPhoneWidth() && q) { pageSearch.setQ(q); pageSearch.setOpen(true); } return; }
+    if (isPhoneWidth()) setQ(pageSearch.q);
+  }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
   const [page, setPage] = useState(1);
   const [mobileShown, setMobileShown] = useState(PAGE_SIZE);
   const [showErr, setShowErr] = useState(false);
@@ -368,14 +376,14 @@ export default function Admin() {
 
   const mobileList = (
     <div className="v3-umobile">
-      <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
-      {/* One line: plan · «Закінчуються» (always there, inactive at 0) · «Вік ?» */}
+      {/* One line: plan · «Закінчуються» (always there, inactive at 0) · «Вік ?» · sort */}
       <div className="v3-mfilters is-line">
         <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : []), ...(filter === "expiring" ? [{ value: "expiring" as UFilter, label: `Закінчуються · ${counts.expiring}` }] : [])]} />
         <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : `Ні в кого підписка не закінчується найближчі ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`} onClick={() => setFilter(filter === "expiring" ? "all" : "expiring")}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
         {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => setAgeOnly(!ageOnly)}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
+        <button type="button" className={`v3-msort${sort === "name" ? " is-on" : ""}`} aria-label={`Сортування: ${sort === "name" ? "за логіном" : "нові спочатку"}. Змінити`} title={sort === "name" ? "За логіном" : "Нові спочатку"} onClick={() => { const next = sort === "name" ? "new" : "name"; setSort(next); toast.info(next === "name" ? "Сортування: за логіном" : "Сортування: нові спочатку", { id: "users-sort" }); }}><ArrowDownWideNarrow size={17} aria-hidden="true" /></button>
       </div>
-      <div className="v3-mmeta"><Dropdown className="is-link" ariaLabel="Сортування" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} />{updatedAt && <span>оновлено о {updatedAt}</span>}</div>
+      {q.trim() && list.length > 0 && <p className="v3-mfound" role="status">Знайдено {list.length}</p>}
       <div className={`v3-ptr${pulling ? " is-drag" : ""}${pull >= 60 && !refreshing ? " is-ready" : ""}`} style={{ height: pull }} role="status" aria-live="polite">
         {refreshing ? <span className="v3-ptr-sp" aria-hidden="true" /> : <span className="v3-ptr-ar" aria-hidden="true">↓</span>}
         <span>{refreshing ? "Оновлюємо…" : pull >= 60 ? "Відпустіть, щоб оновити" : pull > 0 ? "Потягніть, щоб оновити" : ""}</span>
@@ -383,18 +391,31 @@ export default function Admin() {
       <ul className="v3-mcards" onTouchStart={onListTouchStart} onTouchMove={onListTouchMove} onTouchEnd={onListTouchEnd} onTouchCancel={onListTouchEnd}>
         {users === null && loading ? Array.from({ length: 5 }, (_, i) => <li key={i} className="v3-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light v3-skel-av" /><span className="v3-skel v3-skel-light" style={{ width: "60%" }} /><span className="v3-skel v3-skel-light" style={{ width: 60 }} /></li>)
           : list.length ? list.slice(0, mobileShown).map((u) => {
-            const st = statusOf(u), ui = tagOf(u), p = planCell(u, settings);
+            const st = statusOf(u), ui = tagOf(u);
             const d = daysLeft(u);
-            const tag = isExpiring(u) ? (d === 0 ? "сьогодні" : `${d} ${plural(d, "день", "дні", "днів")}`) : ui.label;
-            const line = isAdmin(u) ? `${u.isOwner ? "Овнер" : "Адмін"} · повний доступ` : st === "blocked" ? `${p.plan} · самообмеження до ${shortDate(u.selfLimitedUntil!)}` : st === "cancelled" ? `${p.plan} · скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}` : st === "trial" ? `Пробний · до ${shortDate(u.endDate)}` : st === "ended" ? `${p.plan} · закінчилась ${shortDate(u.endDate)}` : `${p.plan} · оплата ${shortDate(u.endDate)}`;
+            const admin = isAdmin(u), ageWarn = !admin && !u.ageConfirmed;
+            const planKey = u.proUntil ? "pro" : u.plan || "trial";
+            const line = admin ? `${u.isOwner ? "Овнер" : "Адмін"} · повний доступ` : st === "blocked" ? `самообмеження до ${shortDate(u.selfLimitedUntil!)}` : st === "cancelled" ? `скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}` : st === "ended" ? `закінчилась ${shortDate(u.endDate)}` : `до ${shortDate(u.endDate)}`;
+            const ring = !admin && ["trial", "active", "soon", "urgent"].includes(st) && d >= 0;
+            const period = planKey === "trial" && !u.proUntil ? settings?.trialDays || 7 : 30;
+            const ringCls = d <= 2 ? "is-red" : isExpiring(u) ? "is-amber" : "is-green";
             return (
               <li key={u.id} className={`v3-mitem${menuId === u.id ? " is-lifted" : ""}`}><button type="button" className={`v3-mcard${pressId === u.id ? " is-press" : ""}`}
                 onTouchStart={() => pressStart(u.id)} onTouchEnd={pressEnd} onTouchCancel={pressEnd} onContextMenu={(e) => { e.preventDefault(); setMenuId(u.id); }}
                 onClick={() => { if (touch.current.long) { touch.current.long = false; return; } openCard(u); }}>
                 <span className="v3-mcard-lp" aria-hidden="true" />
-                <UserAvatar username={u.username} telegram={u.telegram} />
-                <span className="v3-mcard-who"><strong>@{hl(u.username, q)}{!isAdmin(u) && !u.ageConfirmed && <span className="v3-tag v3-tag-age">21+ ?</span>}</strong><small>{line}</small></span>
-                <span className={`v3-tag ${ui.cls}`}>{tag}</span>
+                <span className="v3-mcard-av"><UserAvatar username={u.username} telegram={u.telegram} />{ageWarn && <span className="v3-mcard-warn" aria-hidden="true">!</span>}</span>
+                <span className="v3-mcard-who">
+                  <strong><span className="v3-mcard-name">@{hl(u.username, q)}</span>{!admin && <span className={`v3-ptag is-${planKey}`}>{planName(planKey)}</span>}</strong>
+                  <small>{line}</small>
+                  {ageWarn && <small className="v3-mcard-age">вік не підтверджено</small>}
+                </span>
+                {admin ? <span className="v3-mrole"><Shield size={12} aria-hidden="true" />{u.isOwner ? "Овнер" : "Адмін"}</span>
+                  : ring ? <span className={`v3-mring ${ringCls}`} role="img" aria-label={d === 0 ? "закінчується сьогодні" : `ще ${d} ${plural(d, "день", "дні", "днів")}`}>
+                      <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" className="v3-mring-t" /><circle cx="18" cy="18" r="15.5" className="v3-mring-p" pathLength={100} strokeDasharray={`${Math.max(4, Math.min(100, (d / period) * 100))} 100`} /></svg>
+                      <b>{d}</b>
+                    </span>
+                  : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>}
               </button>
               {menuId === u.id && (
                 <div className="v3-lpmenu" role="menu" aria-label={`Дії з @${u.username}`}>
@@ -417,7 +438,7 @@ export default function Admin() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Користувачі</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Облікові записи, підписки, оплати й доступ до MatchIQ.</span><span className="v3-only-mobile">{all.length} {plural(all.length, "запис", "записи", "записів")} · {counts.paid} платних · {counts.trial} на пробному</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Облікові записи, підписки, оплати й доступ до MatchIQ.</span><span className="v3-only-mobile">{all.length} {plural(all.length, "запис", "записи", "записів")} · {counts.paid} платних · {counts.trial} на пробному{updatedAt ? ` · оновлено ${updatedAt}` : ""}</span></p>
         </div>
         <div className="v3-chips">
           {!emptyPlatform && <ExportCsvButton className="v3-chip v3-hide-mobile" onClick={exportCsv} disabled={!list.length} />}

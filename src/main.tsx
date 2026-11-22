@@ -19,6 +19,7 @@ import "./styles/v3-settings.css";
 import "./styles/v3-compact.css";
 import "./styles/v3-drawer.css";
 import "./styles/v3-dash-phone.css";
+import "./styles/v3-users-phone.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

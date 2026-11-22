@@ -217,14 +217,15 @@ export function CancelSubscriptionDialog({ user, open, onOpenChange, onDone }: {
 export function DeleteUserDialog({ username, open, busy, onOpenChange, onConfirm }: { username: string; open: boolean; busy: boolean; onOpenChange: (o: boolean) => void; onConfirm: () => void }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
+      <DialogContent className="v3-modal v3-udel sm:max-w-[480px]" role="alertdialog">
         <div className="v3-modal-iconrow">
           <span className="v3-modal-ico is-red" aria-hidden="true"><Trash2 size={22} /></span>
           <div>
             <DialogTitle className="v3-modal-title">Видалити @{username}?</DialogTitle>
-            <DialogDescription className="v3-modal-sub">Обліковий запис і доступ буде видалено назавжди. Записи оплат лишаться в історії з цим логіном. Цю дію неможливо скасувати.</DialogDescription>
+            <DialogDescription className="v3-modal-sub">Обліковий запис і доступ буде видалено назавжди. Записи оплат лишаться в історії з цим логіном.<span className="v3-hide-mobile"> Цю дію неможливо скасувати.</span></DialogDescription>
           </div>
         </div>
+        <p className="v3-udel-warn v3-only-mobile"><TriangleAlert size={14} aria-hidden="true" />Цю дію неможливо скасувати</p>
         <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
           <button type="button" className="v3-btn v3-btn-ghost" onClick={() => onOpenChange(false)} disabled={busy}>Скасувати</button>
           <button type="button" className="v3-btn v3-btn-red" onClick={onConfirm} disabled={busy}>{busy ? "Видаляємо…" : "Видалити назавжди"}</button>
