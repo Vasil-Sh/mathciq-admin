@@ -20,7 +20,7 @@
     <title>MatchIQ Admin</title>
     <style>
       /* Заставка під час запуску: те саме лого, що в шапці; стовпчики «ростуть» по черзі */
-      .mq-splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #0a0d13; font-family: Inter, system-ui, -apple-system, sans-serif; }
+      .mq-splash { position: fixed; inset: 0; z-index: 9999; transform: translateZ(0); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #0a0d13; font-family: Inter, system-ui, -apple-system, sans-serif; }
       .mq-splash-mark { position: relative; display: grid; place-items: center; width: 76px; height: 76px; border-radius: 22px; background: #00b24b; box-shadow: 0 14px 40px rgba(0, 178, 75, .35); animation: mq-pop .6s cubic-bezier(.2, .9, .25, 1.4) both; }
       .mq-splash-mark::after { content: ""; position: absolute; inset: -8px; border-radius: 28px; border: 2px solid rgba(0, 178, 75, .45); animation: mq-halo 1.8s ease-out .4s infinite; }
       .mq-splash-mark svg { width: 46px; height: 46px; overflow: visible; }
@@ -33,6 +33,8 @@
       @keyframes mq-halo { from { opacity: .9; transform: scale(.92); } to { opacity: 0; transform: scale(1.35); } }
       @keyframes mq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
       .mq-splash.is-out { opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+      /* iPhone could paint the fixed tab bar over the launch screen: keep it hidden until the launch screen starts to fade */
+      body:has(.mq-splash:not(.is-out)) .v3-tabbar { visibility: hidden; }
       @media (prefers-reduced-motion: reduce) { .mq-splash, .mq-splash *, .mq-splash-mark::after { animation: none !important; } }
     </style>
   </head>
