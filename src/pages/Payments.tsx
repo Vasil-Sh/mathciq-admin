@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, Ban, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Banknote, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, Ban, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Banknote, Search, Undo2, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -71,6 +71,7 @@ function methodIcon(m?: string | null) {
 export default function Payments() {
   const wide = useMedia("(min-width: 1180px)");
   const phone = useMedia("(max-width: 767px)");
+  const [payStep, setPayStep] = useState(false);
   const online = useOnline();
   // ?tab=ref|promo opens that tab (Dashboard «Скасування» → refunds)
   const [tab, setTab] = useState<Tab>(() => { const t = new URLSearchParams(window.location.search).get("tab"); return t === "ref" || t === "promo" ? t : "pay"; });
@@ -268,7 +269,7 @@ export default function Payments() {
         {p.status === "recorded" ? <>
           <div className="v3-pay-acts">
             <button type="button" className="v3-btn v3-btn-light" onClick={() => openReceipt(p)} disabled={receiptBusy === p.id}><Receipt size={15} aria-hidden="true" />{receiptBusy === p.id ? "Готуємо…" : "Чек"}</button>
-            <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !u} onClick={() => setRefundFor(p)} title={!u ? "Користувача вже немає" : undefined}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
+            <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !u} onClick={() => setRefundFor(p)} title={!u ? "Користувача вже немає" : undefined}>{mobile ? <Undo2 size={15} aria-hidden="true" /> : <RotateCcw size={14} aria-hidden="true" />}Повернути гроші</button>
           </div>
           <div className="v3-pay-cxrow"><button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "busy" ? " is-busy" : ""}`} disabled={!online || cx === "busy"} onClick={() => setConfirmFor({ kind: "cx", p })}>{cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button><button type="button" className="v3-pay-del" disabled={!online || del === "busy"} onClick={() => setConfirmFor({ kind: "del", p })} aria-label={`Видалити запис №${p.id} повністю`} title="Видалити запис повністю"><Trash2 size={16} aria-hidden="true" /></button></div>
           <p className="v3-pay-hint">«Скасувати запис» — помилкова оплата (дубль). «Повернути гроші» — коли ви повернули кошти людині.</p>
@@ -282,16 +283,16 @@ export default function Payments() {
       <div className="v3-pay-user-id">
         <UserAvatar username={who} telegram={whoUser?.telegram} className="v3-av-lg" />
         <div>
-          <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && <span className={`v3-tag ${statusUi(whoUser).cls}`}>{statusUi(whoUser).label}</span>}</span>
-          <span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}${phone && daysLeft(whoUser) >= 0 ? ` · ще ${daysLeft(whoUser)} ${plural(daysLeft(whoUser), "день", "дні", "днів")}` : ""}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
+          <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && (() => { const ui = phone && statusOf(whoUser) === "trial" ? { cls: "v3-st-active", label: "Активна" } : statusUi(whoUser); return <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>; })()}</span>
+          <span className="v3-pay-user-line">{whoUser && phone && !isAdmin(whoUser) && (() => { const c = whoUser.plan === "trial" ? "trial" : whoUser.plan === "pro" ? "pro" : "basic"; return <span className={`v3-ptag is-${c}`}>{c === "trial" ? "Пробний" : c === "pro" ? "Pro" : "Базова"}</span>; })()}{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${phone ? "" : `${planCell(whoUser, settings).plan} · `}${whoUser.endDate ? `до ${dShort(whoUser.endDate)}${phone && daysLeft(whoUser) >= 0 ? ` · ще ${daysLeft(whoUser)} ${plural(daysLeft(whoUser), "день", "дні", "днів")}` : ""}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
         </div>
         <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Закрити — показати оплати всіх" title="Оплати всіх"><X size={16} aria-hidden="true" /></button>
       </div>
       {whoUser && !isAdmin(whoUser) && (
         <div className="v3-pay-user-acts">
-          <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => setPayFor(whoUser)}><Plus size={16} aria-hidden="true" />Записати оплату</button>
+          <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setPayStep(false); setPayFor(whoUser); }}><Plus size={16} aria-hidden="true" />Записати оплату</button>
           <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || statusOf(whoUser) === "blocked"} onClick={() => setUserDlg("pro")}><Crown size={15} aria-hidden="true" />{phone ? "Pro на N днів" : "Видати Pro на N днів"}</button>
-          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : undefined} onClick={() => setUserDlg("refund")}><RotateCcw size={14} aria-hidden="true" />{phone ? "Повернути" : "Повернути гроші"}</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : undefined} onClick={() => setUserDlg("refund")}>{phone ? <Undo2 size={15} aria-hidden="true" /> : <RotateCcw size={14} aria-hidden="true" />}{phone ? "Повернути" : "Повернути гроші"}</button>
           <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-cx" disabled={!online || !["active", "soon", "urgent", "trial"].includes(statusOf(whoUser)) || endsWithoutRenewal(whoUser)} onClick={() => setUserDlg("cancel")}>Скасувати підписку</button>
         </div>
       )}
@@ -496,8 +497,8 @@ export default function Payments() {
 
       {!wide && <Dialog open={sheet && !!sel} onOpenChange={setSheet}><DialogContent className="v3-sheet v3-pay-sheet"><DialogTitle className="sr-only">Оплата №{sel?.id}</DialogTitle><DialogDescription className="sr-only">Деталі оплати</DialogDescription>{sel && detail(sel, true)}</DialogContent></Dialog>}
 
-      <PickUserDialog open={pick} users={users} onOpenChange={setPick} onPick={(u) => { setPick(false); setPayFor(u); }} />
-      {payFor && <AddPaymentDialog open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} userId={payFor.id} username={payFor.username} endDate={payFor.endDate} priceMonth={String(payFor.priceMonth || "")} planLabel={planCell(payFor, null).plan}
+      <PickUserDialog open={pick} users={users} onOpenChange={setPick} onPick={(u) => { setPick(false); setPayStep(true); setPayFor(u); }} />
+      {payFor && <AddPaymentDialog open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} userId={payFor.id} username={payFor.username} endDate={payFor.endDate} priceMonth={String(payFor.priceMonth || "")} planLabel={planCell(payFor, null).plan} step={payStep ? "Крок 2 з 2" : undefined}
         onSaved={async () => { const before = new Set(all.map((p) => p.id)); if (!who) setMonth(kyivMonth()); const r = await fetchPayments(who ? "" : kyivMonth()).catch(() => null); if (r) { const got = who ? r.payments.filter((p) => (p.username || "").toLowerCase() === who.toLowerCase()) : r.payments; setRows(got); r.payments = got; const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
       {refundFor && userOf(refundFor) && <RefundDialog user={userOf(refundFor)!} payment={asPayment(refundFor)} open={!!refundFor} onOpenChange={(o) => { if (!o) setRefundFor(null); }} onDone={() => { load({ quiet: true }); loadSide(); }} />}
       {whoUser && <GrantProDialog user={whoUser} open={userDlg === "pro"} onOpenChange={(o) => setUserDlg(o ? "pro" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}

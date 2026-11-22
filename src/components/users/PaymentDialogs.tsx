@@ -21,9 +21,16 @@ const addDays = (v: string, n: number) => { const d = new Date(`${v}T12:00:00Z`)
 const dmy = (v: string) => v.split("-").reverse().join(".");
 
 /** «Додати оплату» — manual record; extends access by default (same rules as before). */
-export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate, priceMonth, onSaved, planLabel, onReceipt }: {
+/** Phone method cards (design «Записати оплату · крок 2»): title + hint. */
+const METHOD_CARD: Record<string, [string, string]> = { "Переказ на картку": ["Картка", "переказ"], "Монобанк": ["monobank", "банка"], "Готівка": ["Готівка", "інше"] };
+const dShortUk = (v: string) => { const d = parseDate(v); return d ? d.toLocaleDateString("uk-UA", { day: "numeric", month: "short" }) : v; };
+const planCls = (l?: string) => !l ? "" : l === "Pro" ? "pro" : l.startsWith("Пробний") ? "trial" : l === "Базова" ? "basic" : "";
+
+export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate, priceMonth, onSaved, planLabel, onReceipt, step }: {
   open: boolean; onOpenChange: (o: boolean) => void; userId: number; username: string; endDate: string; priceMonth: string; onSaved: () => void;
   planLabel?: string; onReceipt?: (paymentId: string) => void;
+  /** «Крок 2 з 2» chip on the phone when the user was picked first. */
+  step?: string;
 }) {
   const [days, setDays] = useState(30);
   const [form, setForm] = useState({ requestId: "", amount: "", paidOn: "", periodStart: "", periodEnd: "", note: "", extendSubscription: true, paymentMethod: "Монобанк", promoCode: "" });
@@ -79,20 +86,27 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="v3-modal sm:max-w-[520px]">
-        <DialogTitle className="v3-modal-title">Додати оплату</DialogTitle>
-        <DialogDescription className="v3-modal-sub">@{username} · ручний облік у гривнях, банківська транзакція не перевіряється.</DialogDescription>
+      <DialogContent className="v3-modal v3-ap sm:max-w-[520px]">
+        <DialogTitle className="v3-modal-title"><span className="v3-hide-mobile">Додати оплату</span><span className="v3-only-mobile">Записати оплату</span>{step && <span className="v3-ap-step v3-only-mobile">{step}</span>}</DialogTitle>
+        <DialogDescription className="v3-modal-sub"><span className="v3-hide-mobile">@{username} · ручний облік у гривнях, банківська транзакція не перевіряється.</span><span className="v3-only-mobile v3-ap-who">@{username}{planCls(planLabel) && <span className={`v3-ap-ptag is-${planCls(planLabel)}`}>{planLabel}</span>}{endDate ? ` · до ${dShortUk(endDate)}` : ""}</span></DialogDescription>
         <form onSubmit={save} className="v3-form">
           <fieldset disabled={busy} className="v3-form-grid">
+            <div className="v3-apg"><p className="v3-apg-t v3-only-mobile">Сума й дата</p>
             <div className="v3-field"><label htmlFor="pay-amount">Сума, ₴</label><input id="pay-amount" required inputMode="decimal" pattern="[0-9]{1,9}([.,][0-9]{1,2})?" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="300" /></div>
             <div className="v3-field"><label id="pay-date-l">Дата оплати</label><DateField id="pay-date" labelledBy="pay-date-l" required max={today()} value={form.paidOn} onChange={(v) => setForm({ ...form, paidOn: v })} /></div>
-            <div className="v3-field"><label id="pay-from-l">Період: від</label><DateField id="pay-from" labelledBy="pay-from-l" required max={form.periodEnd} value={form.periodStart} onChange={(v) => setForm({ ...form, periodStart: v })} /></div>
+            </div>
+            <div className="v3-apg"><p className="v3-apg-t v3-only-mobile">Період підписки</p>
+            <div className="v3-field"><label id="pay-from-l"><span className="v3-hide-mobile">Період: від</span><span className="v3-only-mobile">Від</span></label><DateField id="pay-from" labelledBy="pay-from-l" required max={form.periodEnd} value={form.periodStart} onChange={(v) => setForm({ ...form, periodStart: v })} /></div>
             <div className="v3-field"><label id="pay-to-l">До включно</label><DateField id="pay-to" labelledBy="pay-to-l" required min={form.periodStart} value={form.periodEnd} onChange={(v) => setForm({ ...form, periodEnd: v })} /></div>
-            <div className="v3-field v3-span2"><label htmlFor="pay-note">Примітка</label><textarea id="pay-note" rows={2} maxLength={1000} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Необов’язково" /></div>
-            <div className="v3-field v3-span2"><span className="v3-label" id="pay-m-l">Спосіб</span><div className="v3-chipset" role="group" aria-labelledby="pay-m-l">{METHODS.map((m) => <button key={m} type="button" className={form.paymentMethod === m ? "is-on" : ""} aria-pressed={form.paymentMethod === m} onClick={() => setForm({ ...form, paymentMethod: m })}>{m}</button>)}</div></div>
+            {form.extendSubscription && form.periodStart && <p className="v3-apg-hint v3-only-mobile">Продовжить поточну підписку з {dShortUk(form.periodStart)}</p>}
+            </div>
+            <div className="v3-apg"><p className="v3-apg-t v3-only-mobile">Деталі</p>
+            <div className="v3-field v3-span2 v3-ap-note"><label htmlFor="pay-note">Примітка</label><textarea id="pay-note" rows={2} maxLength={1000} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Необов’язково" /></div>
+            <div className="v3-field v3-span2"><span className="v3-label" id="pay-m-l">Спосіб</span><div className="v3-chipset" role="group" aria-labelledby="pay-m-l">{METHODS.map((m) => <button key={m} type="button" className={form.paymentMethod === m ? "is-on" : ""} aria-pressed={form.paymentMethod === m} onClick={() => setForm({ ...form, paymentMethod: m })}><span className="v3-hide-mobile">{m}</span><span className="v3-only-mobile v3-ap-mc"><b>{METHOD_CARD[m]?.[0] || m}</b><small>{METHOD_CARD[m]?.[1] || ""}</small></span></button>)}</div></div>
             <div className="v3-field v3-span2"><label htmlFor="pay-promo">Промокод</label>
               <div className="v3-promo-row"><span key={promo.shake} className={`v3-promo-in${promo.state === "ok" ? " is-ok" : ""}${promo.state === "bad" ? " is-bad" : ""}`}><input id="pay-promo" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (promo.state !== "idle") { setPromo((p) => ({ state: "idle", shake: p.shake })); if (promo.base) setForm((f) => ({ ...f, amount: String(promo.base), promoCode: "" })); } }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }} placeholder="Напр., MATCHIQ20" autoComplete="off" aria-invalid={promo.state === "bad"} aria-describedby="pay-promo-m" /></span><button type="button" className={`v3-btn v3-btn-dark${promo.state === "busy" ? " is-busy" : ""}`} onClick={applyPromo} disabled={!code.trim() || promo.state === "busy"}>{promo.state === "busy" ? "Перевіряємо…" : "Застосувати"}</button></div>
               <span id="pay-promo-m" role="status" aria-live="polite">{promo.state === "bad" && <span className="v3-field-error">{promo.msg}</span>}{promo.state === "ok" && <span className="v3-promo-price"><span className="v3-promo-old">{(promo.base || 0).toLocaleString("uk-UA")} ₴</span><span className="v3-promo-new">{Number(form.amount).toLocaleString("uk-UA")} ₴</span><span className="v3-promo-pct">−{promo.pct}%</span></span>}</span>
+            </div>
             </div>
           </fieldset>
           <label className={`v3-agree${form.extendSubscription ? " is-on" : ""}`}>
@@ -104,7 +118,7 @@ export function AddPaymentDialog({ open, onOpenChange, userId, username, endDate
             <span className="v3-hint">Запишеться в журнал дій</span>
             <div className="v3-modal-actions">
               <button type="button" className="v3-btn v3-btn-ghost" onClick={() => onOpenChange(false)} disabled={busy}>Скасувати</button>
-              <button type="submit" className="v3-btn v3-btn-primary" disabled={busy}>{busy ? "Збереження…" : form.extendSubscription ? "Записати й продовжити" : "Записати оплату"}</button>
+              <button type="submit" className="v3-btn v3-btn-primary" disabled={busy}>{busy ? "Збереження…" : <><span className="v3-hide-mobile">{form.extendSubscription ? "Записати й продовжити" : "Записати оплату"}</span><span className="v3-only-mobile">{Number(String(form.amount).replace(",", ".")) > 0 ? `Записати ${Number(String(form.amount).replace(",", ".")).toLocaleString("uk-UA")} ₴` : "Записати оплату"}</span></>}</button>
             </div>
           </div>
         </form>
