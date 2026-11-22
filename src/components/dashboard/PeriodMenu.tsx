@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Check, ChevronDown } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, X } from "lucide-react";
 
 export interface PeriodOption { key: string; label: string }
 
@@ -14,6 +14,30 @@ export default function PeriodMenu({ value, options, onChange }: { value: string
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const current = options.find((o) => o.key === value) || options[0];
+  // drag the sheet down by its handle or title (or anywhere when the list is scrolled to the top) to close it
+  const drag = useRef<{ y0: number; dy: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const list = listRef.current;
+    if (!list) return;
+    const onHead = !!(e.target as HTMLElement).closest(".v3-pm-grab-row, .v3-pm-head");
+    if (!onHead && list.scrollTop > 0) return;
+    drag.current = { y0: e.touches[0].clientY, dy: 0 };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const d = drag.current, list = listRef.current;
+    if (!d || !list) return;
+    d.dy = Math.max(0, e.touches[0].clientY - d.y0);
+    list.style.transition = "none";
+    list.style.transform = d.dy ? `translateY(${d.dy}px)` : "";
+  };
+  const onTouchEnd = () => {
+    const d = drag.current, list = listRef.current;
+    drag.current = null;
+    if (!d || !list) return;
+    list.style.transition = "transform .2s ease-out";
+    if (d.dy > 90) { list.style.transform = "translateY(100%)"; window.setTimeout(() => setOpen(false), 180); }
+    else list.style.transform = "";
+  };
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent | TouchEvent) => { const t = e.target as Node; if (!ref.current?.contains(t) && !listRef.current?.contains(t)) setOpen(false); };
@@ -34,9 +58,9 @@ export default function PeriodMenu({ value, options, onChange }: { value: string
       {open && createPortal(
         <div className="v3-pm-layer">
           <div className="v3-pm-scrim" aria-hidden="true" onClick={() => setOpen(false)} />
-          <ul ref={listRef} className="v3-pm-list" role="listbox" aria-label="Період">
-            <li aria-hidden="true"><span className="v3-pm-grab" /></li>
-            <li aria-hidden="true" className="v3-pm-head"><strong>Період</strong><span>за який показати дашборд</span></li>
+          <ul ref={listRef} className="v3-pm-list" role="listbox" aria-label="Період" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+            <li aria-hidden="true" className="v3-pm-grab-row"><span className="v3-pm-grab" /></li>
+            <li className="v3-pm-head"><div><strong>Період</strong><span>за який показати дашборд</span></div><button type="button" className="v3-pm-x" aria-label="Закрити" onClick={() => setOpen(false)}><X size={16} aria-hidden="true" /></button></li>
             {options.map((o) => (
               <li key={o.key}>
                 <button type="button" role="option" aria-selected={o.key === value} className={o.key === value ? "is-on" : undefined} onClick={() => { onChange(o.key); setOpen(false); }}>
