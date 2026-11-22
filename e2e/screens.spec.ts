@@ -50,7 +50,8 @@ test.describe("Користувачі", () => {
     await page.goto("/users");
     await expect(page.getByRole("heading", { name: "Користувачі" })).toBeVisible();
     await expect(page.getByText("@Gerrry").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.locator(".v3-st-owner").filter({ visible: true }).first()).toHaveText("Овнер");
+    // desktop: «Овнер» in the status column; phone: the role chip on the row
+    await expect(page.locator(".v3-st-owner, .v3-mrole").filter({ visible: true, hasText: "Овнер" }).first()).toBeVisible();
     if (isPhone(page)) await expect(page.locator(".v3-mselect-dd button").first()).toContainText("Усі");
   });
 
@@ -68,7 +69,10 @@ test.describe("Користувачі", () => {
 
   test("search finds a user by login", async ({ page }) => {
     await page.goto("/users");
-    await page.getByPlaceholder(/Логін або Telegram|Знайти за логіном/).first().fill("Ter");
+    // phone: one search, in the header — the magnifier opens the field
+    if (isPhone(page)) await page.locator(".v3-search-btn").filter({ visible: true }).first().click();
+    const box = isPhone(page) ? page.locator(".v3-hsearch-field input") : page.getByPlaceholder(/Логін або Telegram|Знайти за логіном/).first();
+    await box.fill("Ter");
     await expect(page.getByText("@Ter").first()).toBeVisible();
     await expect(page.getByText("@Gerrry")).toHaveCount(0);
   });
@@ -76,7 +80,13 @@ test.describe("Користувачі", () => {
   test("«Самообмеження» tab with search", async ({ page }) => {
     await page.goto("/users");
     await page.getByRole("button", { name: "Самообмеження" }).or(page.getByRole("tab", { name: "Самообмеження" })).first().click();
-    await expect(page.locator(".v3-excl-search, input[placeholder*='Логін']").first()).toBeVisible();
+    if (isPhone(page)) {
+      // phone: the tab's own field is hidden — search is the header one
+      await page.locator(".v3-search-btn").filter({ visible: true }).first().click();
+      await expect(page.locator(".v3-hsearch-field input")).toBeVisible();
+    } else {
+      await expect(page.locator(".v3-excl-search, input[placeholder*='Логін']").filter({ visible: true }).first()).toBeVisible();
+    }
   });
 });
 
@@ -88,18 +98,24 @@ test.describe("Оплати", () => {
 
     await page.getByRole("tab", { name: /Повернення/ }).click();
     await expect(page).toHaveURL(/tab=ref|\/payments/);
-    const ref = page.getByPlaceholder("№, логін або причина");
+    // phone: the tab's own field is hidden — search is the header one (magnifier)
+    const headerSearch = async () => {
+      if (await page.locator(".v3-hsearch-field input").isVisible()) return page.locator(".v3-hsearch-field input");
+      await page.locator(".v3-search-btn").filter({ visible: true }).first().click();
+      return page.locator(".v3-hsearch-field input");
+    };
+    const ref = isPhone(page) ? await headerSearch() : page.getByPlaceholder("№, логін або причина");
     await expect(ref).toBeVisible();
-    await expect(page.getByText("@Ter").first()).toBeVisible();
+    await expect(page.getByText("@Ter").filter({ visible: true }).first()).toBeVisible();
     await ref.fill("нікого-такого");
-    await expect(page.getByText("@Ter")).toHaveCount(0);
+    await expect(page.getByText("@Ter").filter({ visible: true })).toHaveCount(0);
 
     await page.getByRole("tab", { name: /Промокоди/ }).click();
-    const promo = page.getByPlaceholder("Код промокоду");
+    const promo = isPhone(page) ? await headerSearch() : page.getByPlaceholder("Код промокоду");
     await expect(promo).toBeVisible();
-    await expect(page.getByText("START10").first()).toBeVisible();
+    await expect(page.getByText("START10").filter({ visible: true }).first()).toBeVisible();
     await promo.fill("PRO");
-    await expect(page.getByText("START10")).toHaveCount(0);
+    await expect(page.getByText("START10").filter({ visible: true })).toHaveCount(0);
     await expect(page.getByText("PRO20").first()).toBeVisible();
   });
 
