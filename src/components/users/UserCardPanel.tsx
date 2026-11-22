@@ -93,9 +93,9 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
         <div className="v3-uc-id">
           <h2>@{user.username}</h2>
           <p>{tg || "Telegram не вказано"} · {role}</p>
-          {(mobile || !admin) && (
+          {(!admin || (mobile && viewOnly)) && (
             <div className="v3-bdgs">
-              {mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : admin && <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>)}
+              {mobile && (viewOnly ? <span className="v3-tag v3-tag-view">Лише перегляд</span> : null)}
               {!admin && <>
               {user.ageConfirmed
                 ? <span className="v3-bdg is-ok"><Check size={13} strokeWidth={3} className="v3-bdg-ck" aria-hidden="true" />Вік підтверджено</span>
