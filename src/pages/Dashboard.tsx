@@ -303,7 +303,7 @@ export default function Dashboard() {
         <p className="v3-subtitle">
           {emptyPlatform
             ? <><span className="v3-hide-mobile">Тут з’являться оплати, підписки й активність, щойно на платформі будуть перші користувачі.</span><span className="v3-only-mobile">Показники з’являться після перших користувачів і оплат.</span></>
-            : <>Оплати, підписки й активність MatchIQ — за обраний період.{updatedAt && <span className="v3-dim v3-only-mobile"> · Оновлено {updatedAt}</span>}</>}
+            : <><span className="v3-hide-mobile">Оплати, підписки й активність MatchIQ — за обраний період.</span>{updatedAt && <span className="v3-dim v3-only-mobile">Оновлено {updatedAt}</span>}</>}
         </p>
       </div>
       <div className="v3-chips" role="group" aria-label="Період">
