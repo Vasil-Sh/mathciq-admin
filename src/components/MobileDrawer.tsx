@@ -88,12 +88,12 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
               <button type="button" className="v3-dr-gtog" aria-expanded={setExp} aria-label={`${setExp ? "Згорнути" : "Розгорнути"}: Налаштування`} onClick={() => toggle("settings")}><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></button>
             </div>
             {setExp && subs(SETTINGS)}
-            <button type="button" className="v3-dr-row v3-dr-logout" onClick={() => { close(); onLogout(); }}><LogOut size={20} aria-hidden="true" /><span>Вийти</span></button>
+            <Link to="/support" className={`v3-dr-row${pathname.startsWith("/support") ? " is-on" : ""}`} onClick={close}><MessageCircle size={20} aria-hidden="true" /><span>Підтримка</span>
+              <span className="v3-dr-end">{!!badges.supportOpen && <span className="v3-dr-pill">{badges.supportOpen} {badges.supportOpen === 1 ? "нове" : "нових"}</span>}</span></Link>
           </nav>
-          <Link to="/support" className="v3-dr-support" onClick={close}>
-            <span className="v3-dr-sico"><MessageCircle size={18} aria-hidden="true" /></span><span>Підтримка</span>
-            {!!badges.supportOpen && <span className="v3-dr-pill">{badges.supportOpen} {badges.supportOpen === 1 ? "нове" : "нових"}</span>}
-          </Link>
+          <button type="button" className="v3-dr-support v3-dr-out" onClick={() => { close(); onLogout(); }}>
+            <span className="v3-dr-sico"><LogOut size={18} aria-hidden="true" /></span><span>Вийти</span>
+          </button>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
