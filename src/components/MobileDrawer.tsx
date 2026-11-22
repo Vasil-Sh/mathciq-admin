@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Tag, UserCog, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Tag, UserCog, Users, LogOut } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { useMatchCounts } from "@/lib/navCounts";
 
@@ -27,8 +27,8 @@ const ITEMS: Item[] = [
  * Phone menu: a 272-px drawer from the left over a dimmed page (as in mobile betting apps).
  * Sections with sub-screens (Реклама, Матчі, Налаштування) open in place with a chevron.
  */
-export default function MobileDrawer({ open, onOpenChange, username, telegram, role, badges, auditCount }: {
-  open: boolean; onOpenChange: (o: boolean) => void; username: string; telegram?: string | null; role: string; badges: Badges; auditCount: string;
+export default function MobileDrawer({ open, onOpenChange, username, telegram, role, badges, auditCount, onLogout }: {
+  open: boolean; onOpenChange: (o: boolean) => void; username: string; telegram?: string | null; role: string; badges: Badges; auditCount: string; onLogout: () => void;
 }) {
   const { pathname, search, hash } = useLocation();
   const here = (to: string) => { const [p, q = ""] = to.split(/[?#]/); const tail = to.includes("?") ? `?${q}` : to.includes("#") ? `#${q}` : ""; return pathname === p && (tail ? (tail.startsWith("?") ? search === tail : hash === tail) : !search && !hash); };
@@ -40,7 +40,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   const mxN = useMatchCounts();
 
   const extra = (it: Item) => {
-    if (it.to === "/users" && badges.usersExpiring) return <span className="v3-dr-badge is-amber" title="Підписка закінчується найближчими днями">{badges.usersExpiring}</span>;
+    if (it.to === "/users" && badges.usersExpiring) return <span className="v3-dr-badge is-red" title="Підписка закінчується найближчими днями">{badges.usersExpiring}</span>;
     if (it.group === "matches" && badges.matchesError) return <span className="v3-dr-badge is-red" title={badges.matchesErrorText || "Помилка парсера"}>!</span>;
     if (it.group === "matches" && badges.matchesStopped) return <span className="v3-dr-noentry" role="img" aria-label="Парсери зупинені"><i /></span>;
     return null;
@@ -88,6 +88,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
               <button type="button" className="v3-dr-gtog" aria-expanded={setExp} aria-label={`${setExp ? "Згорнути" : "Розгорнути"}: Налаштування`} onClick={() => toggle("settings")}><ChevronDown size={18} className={`v3-dr-chev${setExp ? " is-up" : ""}`} aria-hidden="true" /></button>
             </div>
             {setExp && subs(SETTINGS)}
+            <button type="button" className="v3-dr-row v3-dr-logout" onClick={() => { close(); onLogout(); }}><LogOut size={20} aria-hidden="true" /><span>Вийти</span></button>
           </nav>
           <Link to="/support" className="v3-dr-support" onClick={close}>
             <span className="v3-dr-sico"><MessageCircle size={18} aria-hidden="true" /></span><span>Підтримка</span>

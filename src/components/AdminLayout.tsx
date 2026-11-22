@@ -163,7 +163,7 @@ export default function AdminLayout() {
       </header>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} links={[...navigation, { label: "Журнал дій", href: "/audit", icon: History }].map(({ label, href, icon }) => ({ label, href, icon }))} />
 
-      <MobileDrawer open={mobileOpen} onOpenChange={setMobileOpen} username={handle} telegram={user?.telegram} role={roleName} badges={badges} auditCount={onAudit ? "" : auditCount} />
+      <MobileDrawer open={mobileOpen} onOpenChange={setMobileOpen} username={handle} telegram={user?.telegram} role={roleName} badges={badges} auditCount={onAudit ? "" : auditCount} onLogout={() => setLogoutOpen(true)} />
 
       <main id="main-content" className="v3-main"><PageErrorBoundary resetKey={pathname}><Outlet /></PageErrorBoundary></main>
       <MobileTabBar onMenu={() => setMobileOpen(true)} menuOpen={mobileOpen} />
