@@ -4,6 +4,8 @@
   /* шапка: лого зліва, праворуч пошук і журнал — меню тепер у нижній панелі */
   /* чорна шапка на всю ширину, як у мобільних застосунках */
   .v3-header { min-height: 56px; padding-bottom: 10px; background: #141416 !important; }
+  /* iOS 26 Safari м’яко розмиває верх екрана під статус-баром — лого й кнопки опускаємо на 8 px, щоб вони не потрапляли в цю зону */
+  .v3-header { padding-top: calc(22px + env(safe-area-inset-top, 0px)) !important; }
   .v3-header::before { display: none !important; }
   /* над шапкою (зона годинника) і при відтягуванні сторінки — суцільний колір шапки, без розмитої смуги */
   html { background: #141416 !important; overscroll-behavior-y: none; }
