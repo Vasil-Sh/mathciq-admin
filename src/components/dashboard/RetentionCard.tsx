@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { telegramLink, type ChurnedRow } from "@/lib/dashboardInsights";
 import UserAvatar from "@/components/UserAvatar";
@@ -40,6 +41,19 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
   const avg = withData.length ? Math.round(withData.reduce((s, m) => s + (m.rate || 0), 0) / withData.length) : null;
   const showBars = months.length > 0;
   const shown = (list || []).slice(0, 3);
+  // phone: the last 6 months as bars; tap one to see that month (like «Оплати за місяцями»)
+  const mini = months.slice(-6);
+  const [pick, setPick] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pick) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setPick(null); };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [pick]);
+  const pi = pick ? months.findIndex((m) => m.month === pick) : -1;
+  const pm = pi >= 0 ? months[pi] : null;
+  const prevRate = pi > 0 ? months[pi - 1].rate : null;
+  const GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
 
   return (
     <section className="v3-dcard v3-ret-card" aria-labelledby="ret-title">
@@ -64,8 +78,32 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
           <span>продовжили {t.renewed} з {t.total} · відтік <b>{t.lost}</b></span>
         </div>
         {showBars && (
-          <div className="v3-ret-mini" aria-hidden="true">
-            {months.map((m) => <i key={m.month} className={m.month === focus?.month ? "is-on" : undefined} style={{ height: `${Math.max(6, m.rate ?? 0)}%` }} />)}
+          <div className="v3-ret-mini" role="group" aria-label="Утримання за місяцями">
+            {mini.map((m) => {
+              const on = m.month === (pick || focus?.month);
+              return (
+                <button key={m.month} type="button" className={on ? "is-on" : undefined} aria-pressed={m.month === pick}
+                  aria-label={`${MONTHS_FULL[mIdx(m.month)]}: ${m.rate === null ? "немає даних" : `${m.rate}%`}`} onClick={() => setPick(m.month === pick ? null : m.month)}>
+                  <i>{m.rate !== null && <span style={{ height: `${Math.max(8, m.rate)}%` }} />}</i>
+                  <small>{MONTHS[mIdx(m.month)].slice(0, 1)}</small>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {pm && <div className="v3-bar-backdrop v3-only-mobile" aria-hidden="true" onClick={() => setPick(null)} />}
+        {pm && (
+          <div className="v3-bar-pop v3-ret-pop" role="dialog" aria-label={`Утримання · ${MONTHS_FULL[mIdx(pm.month)]} ${pm.month.slice(0, 4)}`}>
+            <div className="v3-bar-pop-head"><strong>{MONTHS_FULL[mIdx(pm.month)]} {pm.month.slice(0, 4)}</strong>{pm.month === keys[keys.length - 1] && <span className="v3-tag">Поточний</span>}</div>
+            {pm.total ? (
+              <dl>
+                <div><dt>Утримання</dt><dd>{pm.rate}%</dd></div>
+                <div><dt>Продовжили</dt><dd>{pm.renewed} <small>з {pm.total}</small></dd></div>
+                <div><dt>Не продовжили</dt><dd className={pm.ended ? "v3-down-l" : undefined}>{pm.ended}</dd></div>
+                {prevRate !== null && pm.rate !== null && <div><dt>До {GEN[mIdx(months[pi - 1].month)]}</dt><dd className={pm.rate - prevRate >= 0 ? "v3-up-l" : "v3-down-l"}>{pm.rate - prevRate >= 0 ? "+" : "−"}{Math.abs(pm.rate - prevRate)} п.</dd></div>}
+              </dl>
+            ) : <p className="v3-ret-pop-empty">Цього місяця підписки не закінчувались — утримання не рахуємо.</p>}
+            <button type="button" className="v3-btn v3-btn-ghost v3-btn-sm v3-btn-block" onClick={() => setPick(null)}>Закрити</button>
           </div>
         )}
       </div>
