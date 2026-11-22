@@ -119,6 +119,7 @@ export const PARSER_NAMES: Record<string, string> = {
   hltv_scraper: "HLTV",
   tipsgg_fetch_cs2_matches: "Tips.gg · CS2",
   tipsgg_fetch_dota2_matches: "Tips.gg · Dota 2",
+  liquipedia: "Liquipedia",
   oddspapi: "OddsPapi",
   opendota: "OpenDota",
 };

@@ -40,11 +40,12 @@ const EV_LABEL: Record<ParserEvent["event"], string> = { success: "Оновле�
 /** Поле часу: лише цифри, двокрапка ставиться сама («1930» → «19:30»). */
 const hhmmInput = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d; };
 const errText = (e: unknown, d = "Сервер не відповів") => (e instanceof Error && e.message ? e.message : d);
-const PARSER_META: Record<string, { ini: string; color: string; site: string; game: string; feed: Game | "hltv" | "oddspapi" | "opendota" }> = {
+const PARSER_META: Record<string, { ini: string; color: string; site: string; game: string; feed: Game | "hltv" | "oddspapi" | "opendota" | "liquipedia" }> = {
   hltv_scraper: { ini: "HL", color: "#2450c4", site: "hltv.org", game: "CS2", feed: "hltv" },
   tipsgg_fetch_cs2_matches: { ini: "TI", color: "#7a4fd0", site: "tips.gg", game: "CS2", feed: "cs2" },
   tipsgg_fetch_dota2_matches: { ini: "TI", color: "#c2410c", site: "tips.gg", game: "Dota 2", feed: "dota2" },
-  oddspapi: { ini: "OP", color: "#0f7b5f", site: "oddspapi.io", game: "CS2 · Dota 2", feed: "oddspapi" },
+  liquipedia: { ini: "LP", color: "#2b6cb0", site: "liquipedia.net", game: "CS2 · Dota 2", feed: "liquipedia" },
+  oddspapi: { ini: "OP", color: "#0f7b5f", site: "oddspapi.io", game: "коефіцієнти", feed: "oddspapi" },
   opendota: { ini: "OD", color: "#a33a2b", site: "opendota.com", game: "Dota 2 · рахунок", feed: "opendota" },
 };
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
@@ -214,7 +215,7 @@ export default function Matches() {
   const todayM = all.filter((m) => m.day === today);
   const liveN = all.filter((m) => m.status === "live").length;
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
-  const cntFor = (name: string) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : f === "oddspapi" ? todayM.filter((m) => m.source === "OddsPapi").length : f === "opendota" ? todayM.filter((m) => m.game === "dota2" && m.source === "OddsPapi").length : todayM.filter((m) => m.game === f && m.source === "tips.gg").length; };
+  const cntFor = (name: string) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? todayM.filter((m) => m.source === "Liquipedia").length : f === "oddspapi" ? todayM.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? todayM.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : todayM.filter((m) => m.game === f && m.source === "tips.gg").length; };
   /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
   const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name) === 0 ? "idle" : "ok"; };
   const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });

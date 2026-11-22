@@ -21,6 +21,8 @@ export interface FeedMatch {
   /** postponed / cancelled — лише з ручних правок адміна. */
   status: "upcoming" | "live" | "finished" | "postponed" | "cancelled";
   startDate?: string;
+  coeff1?: number | null;
+  coeff2?: number | null;
 }
 
 /** Як приходить із GET /matches-history. */
@@ -54,12 +56,14 @@ export interface Match {
   tournament: string;
   bo: string;
   status: MStatus;
-  source: "HLTV" | "tips.gg" | "OddsPapi" | "Вручну";
+  source: "HLTV" | "tips.gg" | "OddsPapi" | "Liquipedia" | "Вручну";
   link: string;
   /** id у стрічці без префікса гри — для ручних правок. */
   raw: string;
   /** Матч, доданий адміном (manual-…). */
   manual: boolean;
+  /** Є коефіцієнти букмекера (OddsPapi / tips.gg). */
+  odds?: boolean;
 }
 
 export const GAME_LABEL: Record<Game, string> = { cs2: "CS2", dota2: "Dota 2" };
@@ -102,8 +106,9 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     tournament: String(m.tournament ?? ""),
     bo: (m.type || "").toUpperCase(),
     status: m.status === "live" ? "live" : m.status === "finished" ? "done" : m.status === "postponed" ? "moved" : m.status === "cancelled" ? "off" : "plan",
-    source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
+    source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : String(m.id).startsWith("lp-") ? "Liquipedia" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
     link: m.link || "",
+    odds: m.coeff1 != null && m.coeff2 != null,
     raw: String(m.id),
     manual: String(m.id).startsWith("manual-"),
   };
