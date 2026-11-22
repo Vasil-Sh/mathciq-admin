@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, Ban, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, Ban, ArrowRight, ArrowUp, Check, CreditCard, Crown, Plus, Receipt, RotateCcw, Banknote, Search, SearchX, Shuffle, Tag, Trash2, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -19,7 +19,8 @@ import { fetchSettings } from "@/lib/adminSettingsApi";
 import { createPaymentReceipt } from "@/lib/paymentReceipt";
 import { downloadCsv } from "@/lib/csv";
 import { plural } from "@/lib/dashboardInsights";
-import { endsWithoutRenewal, isAdmin, planCell, statusOf, statusUi } from "@/lib/usersModel";
+import { daysLeft, endsWithoutRenewal, isAdmin, planCell, statusOf, statusUi } from "@/lib/usersModel";
+import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 import {
   dayLabel, dShort, fetchPayments, fetchPromoCodes, kyivMonth, kyivToday, money, monthGen, monthName, monthShort, pct, period, PLAN_LABEL,
   PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode, deltaVs,
@@ -57,8 +58,19 @@ function PaneSearch({ value, onChange, label, placeholder, inline = false }: { v
   return <label className={inline ? "v3-search v3-pay-hsearch" : "v3-msearch v3-pay-psearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label={label} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />{value && <button type="button" onClick={() => onChange("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
 }
 
+/** Payment method on the phone list: icon + short label (design «№4 · картка»). */
+const methodLabel = (m?: string | null) => { const v = (m || "").toLowerCase(); return !v ? "оплата" : v.includes("моно") || v.includes("mono") ? "monobank" : v.includes("карт") ? "картка" : v.includes("готів") ? "готівка" : v; };
+function methodIcon(m?: string | null) {
+  const v = methodLabel(m);
+  if (v === "monobank") return <span className="v3-pay-mi is-mono" aria-hidden="true">m</span>;
+  if (v === "картка") return <span className="v3-pay-mi" aria-hidden="true"><CreditCard size={14} /></span>;
+  if (v === "готівка") return <span className="v3-pay-mi is-cash" aria-hidden="true"><Banknote size={14} /></span>;
+  return null;
+}
+
 export default function Payments() {
   const wide = useMedia("(min-width: 1180px)");
+  const phone = useMedia("(max-width: 767px)");
   const online = useOnline();
   // ?tab=ref|promo opens that tab (Dashboard «Скасування» → refunds)
   const [tab, setTab] = useState<Tab>(() => { const t = new URLSearchParams(window.location.search).get("tab"); return t === "ref" || t === "promo" ? t : "pay"; });
@@ -74,6 +86,9 @@ export default function Payments() {
   const [loading, setLoading] = useState(true);
   const [rk, setRk] = useState(0); // re-run the list entrance
   const [q, setQ] = useState("");
+  // Phone: the 🔍 in the header searches the open tab (design PaymentsMobileSearch)
+  const pageSearch = usePageSearch(tab === "pay" ? "№, логін або промокод" : tab === "ref" ? "Логін або причина" : "Код промокоду");
+  useEffect(() => { if (!isPhoneWidth()) return; if (tab === "pay") setQ(pageSearch.q); else if (tab === "ref") setQRef(pageSearch.q); else setQPromo(pageSearch.q); }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
   const [filt, setFilt] = useState<Filt>("all");
   const [sort, setSort] = useState<Sort>("no-desc");
   const [selId, setSelId] = useState<string | null>(null);
@@ -148,6 +163,9 @@ export default function Payments() {
   const plans = (() => { const pro = rec.filter((p) => planOf(p, userOf(p)) === "Pro").length; return rec.length ? `Pro ${Math.round((pro / rec.length) * 100)}% · Базова ${100 - Math.round((pro / rec.length) * 100)}%` : "—"; })();
   const topPromo = (() => { const m: Record<string, number> = {}; withPromo.forEach((p) => { m[p.promoCode] = (m[p.promoCode] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || ""; })();
   const vs = monthGen(shiftMonth(month, -1));
+  // Phone KPI «Очікуємо»: paid subscriptions that end within 7 days and will renew
+  const due = users.filter((u) => !isAdmin(u) && ["active", "soon", "urgent"].includes(statusOf(u)) && !endsWithoutRenewal(u) && !!u.endDate && daysLeft(u) >= 0 && daysLeft(u) <= 7);
+  const dueSum = due.reduce((x, u) => x + (Number(u.priceMonth) || 0), 0);
   const sums = [
     { k: "recv", label: `Отримано за ${monthShort(month)}`, value: money(recSum), ...deltaVs(recSum, prevSum), note: `${rec.length} ${plural(rec.length, "оплата", "оплати", "оплат")}`, go: () => { setTab("pay"); setFilt("all"); setRk((x) => x + 1); } },
     { k: "ref", label: "Повернено", value: money(refSum), ...deltaVs(refSum, prevRef), note: refSum ? `${all.filter((p) => p.status === "refunded").length} ${plural(all.filter((p) => p.status === "refunded").length, "повернення", "повернення", "повернень")} · ${recSum ? Math.round((refSum / (recSum + refSum)) * 100) : 0}% від оплат` : "повернень немає", go: () => { setTab("pay"); setFilt("refunded"); setRk((x) => x + 1); } },
@@ -233,12 +251,12 @@ export default function Payments() {
     return (
       <div key={`${p.id}-${p.status}`} className={`v3-pay-card${mobile ? " is-m" : ""}`} aria-live="polite">
         <div className="v3-pay-card-h">
-          <div><span className="v3-pay-card-k">Оплата №{p.id}</span><strong className="v3-pay-card-sum"><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong></div>
+          <div><span className="v3-pay-card-k">Оплата №{p.id}{mobile && ` · ${dShort(p.paidOn)}`}</span><strong className="v3-pay-card-sum"><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong></div>
           <span className={`v3-tag ${st.cls}`}>{st.label}</span>
         </div>
         <dl className="v3-pay-dl">
           <div><dt>Користувач</dt><dd><Link className="v3-pay-link" to={`/users?q=${encodeURIComponent(p.username)}`}>@{p.username} <ArrowRight size={13} aria-hidden="true" /></Link></dd></div>
-          <div><dt>План</dt><dd>{planOf(p, u)}</dd></div>
+          <div><dt>План</dt><dd>{(() => { const pl = planOf(p, u); const c = pl === "Pro" ? "pro" : pl === "Базова" ? "basic" : pl.startsWith("Пробний") ? "trial" : ""; return mobile && c ? <span className={`v3-ptag is-${c}`}>{pl}</span> : pl; })()}</dd></div>
           <div><dt>Період</dt><dd>{period(p.periodStart, p.periodEnd)}</dd></div>
           <div><dt>Промокод</dt><dd>{p.promoCode || "без промокоду"}</dd></div>
           <div><dt>Спосіб</dt><dd>{p.paymentMethod || "—"}</dd></div>
@@ -265,15 +283,15 @@ export default function Payments() {
         <UserAvatar username={who} telegram={whoUser?.telegram} className="v3-av-lg" />
         <div>
           <span className="v3-pay-user-name"><strong>@{who}</strong>{whoUser && <span className={`v3-tag ${statusUi(whoUser).cls}`}>{statusUi(whoUser).label}</span>}</span>
-          <span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
+          <span>{whoUser ? (isAdmin(whoUser) ? "Адміністратор" : `${planCell(whoUser, settings).plan} · ${whoUser.endDate ? `до ${dShort(whoUser.endDate)}${phone && daysLeft(whoUser) >= 0 ? ` · ще ${daysLeft(whoUser)} ${plural(daysLeft(whoUser), "день", "дні", "днів")}` : ""}` : "без дати"}`) : "Користувача не знайдено — лише історія оплат"}</span>
         </div>
         <button type="button" className="v3-pay-user-x" onClick={clearWho} aria-label="Закрити — показати оплати всіх" title="Оплати всіх"><X size={16} aria-hidden="true" /></button>
       </div>
       {whoUser && !isAdmin(whoUser) && (
         <div className="v3-pay-user-acts">
           <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => setPayFor(whoUser)}><Plus size={16} aria-hidden="true" />Записати оплату</button>
-          <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || statusOf(whoUser) === "blocked"} onClick={() => setUserDlg("pro")}><Crown size={15} aria-hidden="true" />Видати Pro на N днів</button>
-          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : undefined} onClick={() => setUserDlg("refund")}><RotateCcw size={14} aria-hidden="true" />Повернути гроші</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || statusOf(whoUser) === "blocked"} onClick={() => setUserDlg("pro")}><Crown size={15} aria-hidden="true" />{phone ? "Pro на N днів" : "Видати Pro на N днів"}</button>
+          <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-ref" disabled={!online || !lastRecorded} title={!lastRecorded ? "Немає записаної оплати" : undefined} onClick={() => setUserDlg("refund")}><RotateCcw size={14} aria-hidden="true" />{phone ? "Повернути" : "Повернути гроші"}</button>
           <button type="button" className="v3-btn v3-btn-ghost-dark v3-pay-cx" disabled={!online || !["active", "soon", "urgent", "trial"].includes(statusOf(whoUser)) || endsWithoutRenewal(whoUser)} onClick={() => setUserDlg("cancel")}>Скасувати підписку</button>
         </div>
       )}
@@ -324,6 +342,12 @@ export default function Payments() {
   );
 
   // Мобільний список: групи за днями, «Показати ще» (каталог · Списки 12)
+  // Day header on the phone: «225 ₴ · 2» or «повернено 300 ₴»
+  const daySum = (day: string) => {
+    const d = list.filter((p) => p.paidOn === day); const ok = d.filter((p) => p.status === "recorded");
+    if (ok.length) return `${money(sumOf(ok))}${who ? "" : ` · ${ok.length}`}`;
+    const rf = d.filter((p) => p.status === "refunded"); return rf.length ? `повернено ${money(refOf(rf) || sumOf(rf))}` : "";
+  };
   const mobileList = (
     <div className="v3-pay-m">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
@@ -331,14 +355,19 @@ export default function Payments() {
         {!who && <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
         <Dropdown className="v3-mselect-dd" ariaLabel="Статус" value={filt} onChange={(v) => { setFilt(v as Filt); setRk((x) => x + 1); }} options={segs.map((s) => ({ value: s.key, label: `${s.key === "all" ? "Усі статуси" : s.label} · ${cnt(s.key)}` }))} />
       </div>
+      {q.trim() && <p className="v3-pay-found" role="status">Знайдено {list.length} · за логіном, № або промокодом</p>}
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>
         {rows === null && loading ? Array.from({ length: 5 }, (_, i) => <li key={i} className="v3-pay-mcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "55%" }} /><span className="v3-skel v3-skel-light" style={{ width: 60 }} /></li>)
           : list.length ? list.slice(0, shown).map((p, i, arr) => {
             const st = STATUS[p.status]; const head = i === 0 || arr[i - 1].paidOn !== p.paidOn;
-            return [head && <li key={`d-${p.paidOn}`} className="v3-pay-day" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{dayLabel(p.paidOn)}</li>,
+            return [head && <li key={`d-${p.paidOn}`} className="v3-pay-day" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><span>{dayLabel(p.paidOn)}</span><span className="v3-pay-day-sum">{daySum(p.paidOn)}</span></li>,
               <li key={p.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className={`v3-pay-mcard${fresh === p.id ? " is-new" : ""}`} onClick={() => { setSelId(p.id); setSheet(true); }}>
                 <UserAvatar username={p.username} telegram={userOf(p)?.telegram} className="v3-pay-mav" />
-                <span className="v3-pay-mcard-who"><strong>@{p.username}</strong><small>№{p.id} · {p.status === "recorded" ? (p.promoCode || p.paymentMethod || "оплата") : p.status === "cancelled" ? (p.cancelReason || "скасовано") : `повернено ${money(Number(p.refundedAmount) || num(p))}`}</small></span>
+                <span className="v3-pay-mcard-who">
+                  <span className="v3-pay-mcard-nm"><strong>@{p.username}</strong>{(() => { const pl = planOf(p, userOf(p)); const c = pl === "Pro" ? "pro" : pl === "Базова" ? "basic" : pl.startsWith("Пробний") ? "trial" : ""; return c ? <span className={`v3-ptag is-${c}`}>{pl}</span> : null; })()}</span>
+                  <small>{p.status === "recorded" && methodIcon(p.paymentMethod)}№{p.id} · {p.status === "recorded" ? methodLabel(p.paymentMethod) : p.status === "cancelled" ? (p.cancelReason || "скасовано") : `повернено ${money(Number(p.refundedAmount) || num(p))}`}</small>
+                  {p.status === "recorded" && p.promoCode && <span className="v3-pay-mpromo">{p.promoCode}{(() => { const pc = (promos || []).find((x) => x.code.toLowerCase() === p.promoCode.toLowerCase()); return pc ? ` −${pc.discountPercent}%` : ""; })()}</span>}
+                </span>
                 <span className="v3-pay-mcard-r"><strong><span className={p.status === "recorded" ? "" : "v3-strk"}>{money(num(p))}</span></strong><span className={`v3-tag ${st.cls}`}>{st.label}</span></span>
               </button></li>];
           }) : <li className="v3-wcard v3-pay-mnone">{emptyFiltered}</li>}
@@ -366,6 +395,12 @@ export default function Payments() {
               <span className="v3-pay-sum"><strong className="v3-pay-neg">−{money(Number(p.refundedAmount) || num(p))}</strong><small>{Number(p.refundedAmount) < num(p) ? "частково" : "повністю"}</small></span>
               <span className="v3-pay-reason">{p.refundReason || "—"}</span>
               <span className="v3-pay-by">@{p.refundedBy || p.createdBy}</span>
+              {/* Phone (design PaymentsMobileRefunds): avatar, plan, date · payment № */}
+              <span className="v3-pay-rm v3-only-mobile">
+                <UserAvatar username={p.username} telegram={userOf(p)?.telegram} className="v3-pay-mav" />
+                <span className="v3-pay-rm-who"><span className="v3-pay-mcard-nm"><strong>@{p.username}</strong>{(() => { const pl = planOf(p, userOf(p)); const c = pl === "Pro" ? "pro" : pl === "Базова" ? "basic" : ""; return c ? <span className={`v3-ptag is-${c}`}>{pl}</span> : null; })()}</span><small>{dShort(p.refundedAt || p.paidOn)} · оплата №{p.id}</small></span>
+                <span className="v3-pay-rm-sum"><strong>−{money(Number(p.refundedAmount) || num(p))}</strong><small>{Number(p.refundedAmount) < num(p) ? "частково" : "повністю"}</small></span>
+              </span>
             </div>))}</div>
           : <div className="v3-pay-empty"><span className="v3-empty-ic v3-float" aria-hidden="true"><RotateCcw size={22} /></span><strong>Повернень ще немає</strong><span>Повернення записується з оплати: «Повернути гроші» — повністю або частково, з причиною.</span></div>}
       </div>
@@ -420,22 +455,31 @@ export default function Payments() {
           </section>
         </>
       ) : <>
+        {/* Phone (design PaymentsMobileUser): the user card comes first */}
+        {who && phone && userPanel}
         <section className="v3-sums v3-pay-sums" aria-label="Підсумки">
           {/* numbers only — sections switch with the tabs below; the first card is the blue one */}
           {sums.map((s, i) => (
-            <div key={s.k} className={`v3-sum is-static${i === 0 ? " is-on" : ""}`}>
+            <div key={s.k} className={`v3-sum is-static${i === 0 ? " is-on" : ""}${s.k === "ref" && !who ? " v3-hide-mobile" : ""}`}>
               <span className="v3-sum-l">{s.k === "recv" ? <><span className="v3-hide-mobile">{s.label}</span><span className="v3-only-mobile">Отримано</span></> : s.label}</span>
               <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`${s.k}-${s.value}`} text={s.value} />}</strong>
               <span className="v3-sum-n">{rows !== null && <Delta d={s.d} on={i === 0} vs={vs} bad={s.k === "ref"} />}<span className="v3-pay-note">{s.note}</span></span>
             </div>
           ))}
+          {!who && (
+            <div className="v3-sum is-static v3-only-mobile v3-pay-due">
+              <span className="v3-sum-l">Очікуємо</span>
+              <strong className="v3-sum-v">{rows === null ? "—" : <RollingNumber key={`due-${dueSum}`} text={money(dueSum)} />}</strong>
+              <span className="v3-sum-n"><span className="v3-pay-note">{due.length ? `${due.length} ${plural(due.length, "підписка закінчується", "підписки закінчуються", "підписок закінчуються")} цього тижня` : "цього тижня нічого не закінчується"}</span></span>
+            </div>
+          )}
         </section>
 
-        {who && userPanel}
+        {who && !phone && userPanel}
 
         <div className="v3-pay-tabs" role="tablist" aria-label="Розділи оплат">
           <PillTrack active={tab} />
-          {tabs.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{t.n ?? "…"}</span>{t.label}</button>)}
+          {tabs.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{t.n ?? "…"}</span>{t.label}<span className="v3-only-mobile v3-pay-tab-c">{t.n !== null && (!who || t.key === "pay") ? `· ${t.n}` : ""}</span></button>)}
         </div>
 
         <div key={tab} className="v3-pay-pane">
@@ -488,7 +532,7 @@ function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; 
           {list.length ? list.map((u, i) => (
             <li key={u.id} style={{ animationDelay: `${i * 30}ms` }}><button type="button" role="option" aria-selected="false" onClick={() => onPick(u)}>
               <UserAvatar username={u.username} telegram={u.telegram} />
-              <span><strong>@{u.username}</strong><small>{planCell(u, null).plan} · до {dShort(u.endDate)}</small></span>
+              <span><span className="v3-pick-nm"><strong>@{u.username}</strong>{(() => { const c = u.plan === "trial" ? "trial" : u.plan === "pro" ? "pro" : u.plan === "basic" ? "basic" : ""; return c ? <span className={`v3-ptag is-${c} v3-only-mobile`}>{planCell(u, null).plan}</span> : null; })()}</span><small><span className="v3-hide-mobile">{planCell(u, null).plan} · </span>до {dShort(u.endDate)}</small></span>
               <ArrowRight size={15} aria-hidden="true" />
             </button></li>
           )) : <li className="v3-pick-empty">Нікого не знайдено</li>}
@@ -552,7 +596,7 @@ function PromoTab({ promos, online, onToggle, max, onCreated, query = "", search
             const st = promoState(p, today); const ui = PROMO_UI[st];
             return (
               <div key={p.id} className={`v3-pay-row is-promo${st === "ended" || st === "off" ? " is-dim" : ""}${fresh === p.code ? " is-new" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
-                <span className="v3-pay-code"><strong>{p.code}</strong><small>{p.usageLimit ? `ліміт ${p.usageLimit}` : "без ліміту"}</small></span>
+                <span className="v3-pay-code"><strong>{p.code}</strong><small><span className="v3-hide-mobile">{p.usageLimit ? `ліміт ${p.usageLimit}` : "без ліміту"}</span><span className="v3-only-mobile">{p.usageLimit ? `до ${p.usageLimit} разів` : "без ліміту"} · використано {p.usedCount}{ui.label !== "Діє" ? ` · ${ui.label.toLowerCase()}` : ""}</span></small></span>
                 <strong>−{p.discountPercent}%</strong>
                 <span>{PLAN_LABEL[p.plan] || p.plan}</span>
                 <span className="v3-pay-use"><span className="v3-pay-bar"><i style={{ width: `${max(p)}%` }} /></span>{p.usedCount} / {p.usageLimit ?? "∞"}</span>

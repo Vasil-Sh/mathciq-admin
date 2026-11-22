@@ -63,10 +63,10 @@
   .v3-users .v3-mcard-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .v3-users .v3-mcard-who small { color: #6b7384; font-size: 12px; }
   .v3-users .v3-mcard-who small.v3-mcard-age { color: #c27400; }
-  .v3-users .v3-ptag { flex-shrink: 0; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-  .v3-users .v3-ptag.is-trial { background: #e6edff; color: #2f5fd8; }
-  .v3-users .v3-ptag.is-basic { background: #e3f5ea; color: #1f8a4c; }
-  .v3-users .v3-ptag.is-pro { background: #fde2df; color: #c2341f; }
+  .v3-users .v3-ptag, .v3-pay .v3-ptag { flex-shrink: 0; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .v3-users .v3-ptag.is-trial, .v3-pay .v3-ptag.is-trial { background: #e6edff; color: #2f5fd8; }
+  .v3-users .v3-ptag.is-basic, .v3-pay .v3-ptag.is-basic { background: #e3f5ea; color: #1f8a4c; }
+  .v3-users .v3-ptag.is-pro, .v3-pay .v3-ptag.is-pro { background: #fde2df; color: #c2341f; }
   .v3-users .v3-mrole { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid #dde1e7; border-radius: 999px; color: #3c4350; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .v3-users .v3-mcard > .v3-tag { height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; }
   .v3-users .v3-mcard > .v3-st-cancelled { background: #fde2df; color: #c2341f; }

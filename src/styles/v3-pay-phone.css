@@ -1,0 +1,181 @@
+/* ══ Оплати · телефон, світлий дизайн (22.11) ══
+   Лише ≤ 767 px і лише сторінка «Оплати» (.v3-pay). Комп’ютер не змінюється. */
+@media (max-width: 767px) {
+  body:has(.v3-pay),
+  .v3-shell:has(.v3-pay) { background: #e9ecf2; }
+  .v3-shell:has(.v3-pay) .v3-stars { display: none; }
+  .v3-pay { color: #11151c; }
+
+  /* заголовок */
+  .v3-pay .v3-hero { position: relative; display: block; margin-bottom: 2px; }
+  .v3-pay .v3-hero .v3-chips { position: absolute; top: 0; right: 0; margin: 0; }
+  .v3-pay .v3-hero .v3-title { padding-right: 52px; }
+  .v3-pay .v3-title { font-size: 30px; font-weight: 400; letter-spacing: -.03em; line-height: 1.1; color: #11151c; }
+  .v3-pay .v3-subtitle { margin-top: 4px; font-size: 12px; line-height: 1.4; color: #6b7384; }
+  .v3-pay .v3-fab { width: 40px; height: 40px; border-radius: 12px; box-shadow: none; }
+
+  /* підсумки: синя «Отримано» + біла «Очікуємо» */
+  .v3-pay .v3-pay-sums { gap: 10px; }
+  .v3-pay .v3-pay-sums .v3-sum.v3-pay-due { display: flex; }
+  .v3-pay .v3-pay-sums .v3-sum { min-height: 112px; padding: 14px; gap: 4px; border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-pay .v3-pay-sums .v3-sum.is-on { background: linear-gradient(160deg, #4a7cff, #3a64e0); color: #fff; }
+  .v3-pay .v3-pay-sums .v3-sum-l { font-size: 13px; font-weight: 500; color: inherit; }
+  .v3-pay .v3-pay-sums .v3-sum-v { font-size: 26px; font-weight: 400; letter-spacing: -.02em; color: inherit; font-variant-numeric: tabular-nums; }
+  .v3-pay .v3-pay-sums .v3-sum-n { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 11px; color: #6b7384; }
+  .v3-pay .v3-pay-sums .v3-sum.is-on .v3-sum-n { color: rgba(255, 255, 255, .9); }
+  .v3-pay .v3-pay-sums .v3-pay-note { font-size: 11px; line-height: 1.35; color: inherit; }
+  .v3-pay .v3-dl.is-onblue.is-up, .v3-pay .v3-dl.is-onblue.is-flat { background: #1f9d55; color: #fff; }
+  .v3-pay .v3-dl.is-onblue.is-down { background: #e5484d; color: #fff; }
+
+  /* вкладки: біла доріжка, синя пігулка, «Оплати · 3» */
+  .v3-pay .v3-pay-tabs { gap: 0; padding: 4px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-pay .v3-pay-tabs > .v3-pill { top: 4px; bottom: 4px; border-radius: 10px; background: #3a6df0; box-shadow: none; }
+  .v3-pay .v3-pay-tab, .v3-pay .v3-pay-tab.is-on { justify-content: center; min-height: 38px !important; padding: 0 6px !important; gap: 0; border: 0; border-radius: 10px; background: transparent; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; box-shadow: none; }
+  .v3-pay .v3-pay-tab.is-on { color: #fff; font-weight: 600; }
+  .v3-pay .v3-pay-tabs:not(.has-pill) .v3-pay-tab.is-on { background: #3a6df0; }
+  .v3-pay .v3-pay-tab-n { display: none; }
+
+  /* пошук — у шапці (🔍) */
+  .v3-pay .v3-pay-m > .v3-msearch, .v3-pay .v3-pay-psearch { display: none; }
+
+  /* фільтри: місяць і статус */
+  .v3-pay .v3-mselect-dd .v3-dd-btn { min-height: 40px; height: 40px; padding: 0 12px; border: 0; border-radius: 12px; background: #fff; color: #11151c; font: 500 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+
+  /* список: день + сума, білі картки */
+  .v3-pay .v3-pay-mlist { gap: 8px; }
+  .v3-pay .v3-pay-day { display: flex; justify-content: space-between; gap: 8px; padding: 6px 2px 0; font-size: 12px; font-weight: 500; color: #6b7384; }
+  .v3-pay .v3-pay-day-sum { font-variant-numeric: tabular-nums; }
+  .v3-pay .v3-pay-mcard { grid-template-columns: auto minmax(0, 1fr) auto; padding: 12px 14px; border: 0; border-radius: 16px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-pay .v3-pay-mav { width: 40px; height: 40px; font-size: 12px; background: #e6edff; color: #2f5fd8; }
+  .v3-pay .v3-pay-mcard-who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .v3-pay .v3-pay-mcard-nm { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+  .v3-pay .v3-pay-mcard-nm strong { min-width: 0; font-size: 15px; font-weight: 600; color: #11151c; }
+  .v3-pay .v3-pay-mcard-who small { display: flex; align-items: center; gap: 5px; max-width: 100%; font-size: 12px; color: #6b7384; }
+  .v3-pay .v3-pay-mi { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 4px; color: #5f6878; }
+  .v3-pay .v3-pay-mi.is-mono { background: #11151c; color: #fff; font-size: 9px; font-weight: 800; }
+  .v3-pay .v3-pay-mi.is-cash { color: #1f9d55; }
+  .v3-pay .v3-pay-mpromo { margin-top: 2px; padding: 2px 7px; border-radius: 6px; background: #efe7ff; color: #6b3fd4; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .v3-pay .v3-pay-mcard-r strong { font-size: 15px; font-weight: 600; color: #11151c; font-variant-numeric: tabular-nums; }
+  .v3-pay .v3-pay-mcard-r .v3-strk { color: #9aa3b2; }
+  .v3-pay .v3-pay-mcard-r .v3-tag { border: 0; font-size: 11px; }
+  .v3-pay .v3-pst-ok { background: #e3f5ea; color: #1f8a4c; }
+  .v3-pay .v3-pst-refund { background: #fde2df; color: #c2341f; }
+  .v3-pay .v3-pst-cancel, .v3-pay .v3-pst-cx { background: #eef0f4; color: #6b7384; }
+  .v3-pay .v3-pay-mnone { border: 0; border-radius: 18px; background: #fff; color: #11151c; }
+  .v3-pay .v3-btn-block { border: 0; background: #fff; color: #11151c; }
+  @media (hover: hover) {
+    .v3-pay .v3-pay-mcard:hover { background: #fafbfc; }
+  }
+}
+@media (max-width: 767px) { .v3-pay .v3-pay-tab-c:not(:empty) { margin-left: 4px; } }
+
+/* ══ Оплата (шторка) · телефон (design PaymentsMobileDetail) ══ */
+@media (max-width: 767px) {
+  .v3-pay-sheet { background: #fff !important; color: #11151c; }
+  .v3-pay-sheet .v3-ptag { flex-shrink: 0; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .v3-pay-sheet .v3-ptag.is-trial { background: #e6edff; color: #2f5fd8; }
+  .v3-pay-sheet .v3-ptag.is-basic { background: #e3f5ea; color: #1f8a4c; }
+  .v3-pay-sheet .v3-ptag.is-pro { background: #fde2df; color: #c2341f; }
+  .v3-pay-sheet .v3-pst-ok { background: #e3f5ea; color: #1f8a4c; }
+  .v3-pay-sheet .v3-pst-refund { background: #fde2df; color: #c2341f; }
+  .v3-pay-sheet .v3-pst-cancel { background: #eef0f4; color: #6b7384; }
+  .v3-pay-card.is-m { background: #fff; color: #11151c; }
+  .v3-pay-card.is-m .v3-pay-card-h { align-items: flex-start; }
+  .v3-pay-card.is-m .v3-pay-card-k { font-size: 12px; color: #6b7384; }
+  .v3-pay-card.is-m .v3-pay-card-sum { font-size: 34px; font-weight: 400; letter-spacing: -.02em; color: #11151c; font-variant-numeric: tabular-nums; }
+  .v3-pay-card.is-m .v3-pay-card-sum .v3-strk { color: #9aa3b2; }
+  .v3-pay-card.is-m .v3-tag { border: 0; font-size: 11px; }
+  .v3-pay-card.is-m .v3-pay-dl > div { padding: 12px 0; border-top: 1px solid #eef0f4; font-size: 13px; }
+  .v3-pay-card.is-m .v3-pay-dl > div:last-child { border-bottom: 1px solid #eef0f4; }
+  .v3-pay-card.is-m .v3-pay-dl dt { color: #6b7384; }
+  .v3-pay-card.is-m .v3-pay-dl dd { color: #11151c; font-weight: 500; }
+  .v3-pay-card.is-m .v3-pay-link { color: #3a6df0; }
+  .v3-pay-card.is-m .v3-pay-why { border: 0; border-radius: 12px; background: #f4f6f9; color: #3c4350; }
+  .v3-pay-card.is-m .v3-pay-why strong { color: #11151c; }
+  .v3-pay-card.is-m .v3-pay-acts .v3-btn { min-height: 44px; border: 0; border-radius: 12px; }
+  .v3-pay-card.is-m .v3-pay-acts .v3-btn-light { background: #11151c; color: #fff; }
+  .v3-pay-card.is-m .v3-pay-acts .v3-pay-ref { background: #eef0f4; color: #11151c; }
+  /* «Скасувати…» — червона з білим текстом (правило 22.11) */
+  .v3-pay-card.is-m .v3-pay-cxrow .v3-pay-cx { min-height: 44px; border: 0; border-radius: 12px; background: #e5484d !important; color: #fff !important; }
+  .v3-pay-card.is-m .v3-pay-cx:disabled { opacity: .6; }
+  .v3-pay-card.is-m .v3-pay-del { border: 0; border-radius: 12px; background: #eef0f4; color: #c2341f; }
+  .v3-pay-card.is-m .v3-pay-del.is-ask { background: #e5484d; color: #fff; }
+  .v3-pay-card.is-m .v3-pay-hint { font-size: 11px; color: #6b7384; }
+  @media (hover: hover) {
+    .v3-pay-card.is-m .v3-pay-cx:not(:disabled):hover { background: #d93d42; }
+    .v3-pay-card.is-m .v3-pay-acts .v3-pay-ref:not(:disabled):hover { background: #e4e7ee; }
+  }
+}
+
+/* ══ Повернення і Промокоди · телефон (design PaymentsMobileRefunds / Promo) ══ */
+@media (max-width: 767px) {
+  .v3-pay .v3-pay-pane .v3-pay-list,
+  .v3-pay .v3-pay-pane .v3-pay-aside { border: 0; border-radius: 20px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-pay .v3-pay-sec-h h2, .v3-pay .v3-pay-aside-t { font-size: 17px; font-weight: 600; color: #11151c; }
+  .v3-pay .v3-pay-sec-h p { font-size: 12px; color: #6b7384; text-wrap: pretty; }
+  .v3-pay .v3-pay-pane .v3-pay-rows { display: flex; flex-direction: column; gap: 8px; }
+  .v3-pay .v3-pay-pane .v3-pay-row { border: 0; border-radius: 14px; background: #f4f6f9; color: #11151c; }
+  .v3-pay .v3-pay-pane .v3-pay-row small { color: #6b7384; }
+  /* повернення: власний рядок телефона */
+  .v3-pay .v3-pay-row.is-ref { display: block; padding: 12px; }
+  .v3-pay .v3-pay-row.is-ref > :not(.v3-pay-rm) { display: none; }
+  .v3-pay .v3-pay-row.is-ref > .v3-pay-rm { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .v3-pay .v3-pay-rm-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .v3-pay .v3-pay-rm-who small { font-size: 12px; }
+  .v3-pay .v3-pay-rm-sum { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .v3-pay .v3-pay-rm-sum strong { color: #e5484d; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .v3-pay .v3-pay-rm-sum small { font-size: 11px; }
+  .v3-pay .v3-pay-steps { display: flex; flex-direction: column; gap: 10px; padding: 0; list-style: none; counter-reset: v3st; }
+  .v3-pay .v3-pay-steps li { display: flex; align-items: flex-start; gap: 10px; color: #11151c; font-size: 13px; line-height: 1.4; counter-increment: v3st; }
+  .v3-pay .v3-pay-steps li::before { content: counter(v3st); flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #e6edff; color: #2f5fd8; font-size: 11px; font-weight: 600; }
+  .v3-pay .v3-pay-box { border: 0; border-radius: 12px; background: #f4f6f9; color: #6b7384; font-size: 12px; }
+  .v3-pay .v3-pay-box b { color: #11151c; }
+  .v3-pay .v3-pay-go { display: none; }
+  /* промокоди */
+  .v3-pay .v3-pay-row.is-promo { padding: 12px 14px; }
+  .v3-pay .v3-pay-code strong { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; color: #11151c; }
+  .v3-pay .v3-pay-code small { font-size: 11px; }
+  .v3-pay .v3-pay-row.is-promo > strong { font-size: 16px; font-weight: 600; color: #11151c; }
+  .v3-pay .v3-pay-promo-st .v3-tag { display: none; }
+  .v3-pay .v3-pay-row.is-promo.is-dim { opacity: .6; }
+  .v3-pay .v3-pay-new .v3-field label, .v3-pay .v3-pay-new .v3-label { color: #11151c; font-size: 12px; font-weight: 600; }
+  .v3-pay .v3-pay-new .v3-pay-inp { border: 1px solid #dfe3ea; border-radius: 12px; background: #fff; color: #11151c; }
+  .v3-pay .v3-pay-new .v3-pay-inp input { color: #11151c !important; -webkit-text-fill-color: #11151c; }
+  .v3-pay .v3-pay-new .v3-pay-inp input::placeholder { color: #9aa3b2; -webkit-text-fill-color: #9aa3b2; }
+  .v3-pay .v3-pay-new .v3-date-btn, .v3-pay .v3-pay-new button[aria-haspopup] { border: 1px solid #dfe3ea; background: #fff; color: #11151c; }
+  .v3-pay .v3-pay-new .v3-pay-inp small { color: #6b7384; }
+  .v3-pay .v3-pay-new .v3-pay-dseg { border: 0; background: #eef0f4; }
+  .v3-pay .v3-pay-new .v3-pay-dseg > .v3-pill { background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-pay .v3-pay-new .v3-pay-dseg button, .v3-pay .v3-pay-new .v3-pay-dseg button.is-on { background: transparent; color: #11151c; }
+  .v3-pay .v3-pay-new .v3-btn-primary { min-height: 46px; border-radius: 12px; background: #00b24b; color: #fff; }
+  .v3-pay .v3-pay-empty { color: #6b7384; }
+  .v3-pay .v3-pay-empty strong { color: #11151c; }
+}
+
+/* ══ Оплати одного користувача · телефон (design PaymentsMobileUser) ══ */
+@media (max-width: 767px) {
+  .v3-pay .v3-pay-user { padding: 14px; border: 0; border-radius: 20px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-pay .v3-pay-user .v3-av-lg { width: 40px; height: 40px; font-size: 13px; background: #e6edff; color: #2f5fd8; }
+  .v3-pay .v3-pay-user-id { align-items: center; gap: 10px; }
+  .v3-pay .v3-pay-user-name strong { font-size: 16px; font-weight: 600; color: #11151c; }
+  .v3-pay .v3-pay-user-id span { color: #6b7384; font-size: 12px; }
+  .v3-pay .v3-pay-user-name .v3-tag { border: 0; font-size: 11px; }
+  .v3-pay .v3-pay-user-x { border: 0; background: #eef0f4; color: #11151c; }
+  .v3-pay .v3-pay-user-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-pay .v3-pay-user-acts .v3-btn { min-height: 42px; border: 0; border-radius: 12px; font-size: 13px; }
+  .v3-pay .v3-pay-user-acts .v3-btn-primary { grid-column: 1 / -1; background: #00b24b; color: #fff; }
+  .v3-pay .v3-pay-user-acts .v3-btn-ghost-dark { background: #eef0f4; color: #11151c; }
+  .v3-pay .v3-pay-user-acts .v3-pay-cx { grid-column: 1 / -1; background: #e5484d !important; color: #fff !important; }
+  .v3-pay .v3-pay-user-acts .v3-btn:disabled { opacity: .55; }
+  /* «Записати оплату» — вибір користувача */
+  .v3-pick-list button { border-radius: 14px; background: #f4f6f9; }
+  .v3-pick-nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .v3-pick-list .v3-ptag { flex-shrink: 0; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .v3-pick-list .v3-ptag.is-trial { background: #e6edff; color: #2f5fd8; }
+  .v3-pick-list .v3-ptag.is-basic { background: #e3f5ea; color: #1f8a4c; }
+  .v3-pick-list .v3-ptag.is-pro { background: #fde2df; color: #c2341f; }
+  .v3-pick-list ul, .v3-pick-list { display: flex; flex-direction: column; gap: 6px; }
+}
+@media (max-width: 767px) { .v3-pay .v3-pay-found { margin: 0; padding: 0 2px; color: #3a6df0; font-size: 12px; font-weight: 500; } }
+@media (min-width: 768px) { .v3-pay .v3-pay-found { display: none; } }
+@media (min-width: 768px) { .v3-pay .v3-pay-sums .v3-pay-due { display: none; } }
