@@ -18,7 +18,7 @@ import {
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
-  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, setAliases, similarity, STATUS_LABEL, teamsFrom,
+  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, oddsMove, setAliases, similarity, STATUS_LABEL, teamsFrom,
   type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
@@ -647,6 +647,7 @@ export default function Matches() {
         <dl className="v3-mxp-kv">
           <div><dt>Турнір</dt><dd>{[m.tournament || "не вказано", m.bo].filter(Boolean).join(" · ")}</dd></div>
           <div><dt>Початок</dt><dd>{m.day === today ? m.time : `${dayShort(m.day)} · ${m.time}`} · Київ</dd></div>
+          {m.c1 != null && m.c2 != null && <div><dt>Коефіцієнти</dt><dd className="v3-mxp-odds">{([[m.c1, m.o1, m.t1], [m.c2, m.o2, m.t2]] as const).map(([c, o, t], k) => { const mv = oddsMove(c, o); return <span key={k} aria-label={`${t}: ${mv.now}${mv.from ? `, на відкритті ${mv.from}` : ""}`}><b>{mv.now}</b>{mv.dir && <i className={`is-${mv.dir}`}>{mv.dir === "down" ? "↓" : "↑"} з {mv.from}</i>}</span>; })}</dd></div>}
           <div><dt>Джерело</dt><dd>{m.link ? <a href={m.link} target="_blank" rel="noreferrer">{m.source}<ExternalLink size={12} aria-hidden="true" /></a> : m.source}{updatedAt ? ` · оновлено ${updatedAt}` : ""}</dd></div>
           {ov && <div><dt>Правка</dt><dd>@{ov.decidedBy}</dd></div>}
         </dl>
@@ -772,6 +773,13 @@ export default function Matches() {
               <div className="v3-mxp-bars" role="group" aria-label="Останні 24 години">{hrs.map((h, k) => <button type="button" key={k} className={`is-${p.paused ? "none" : h.s}${hourFor?.p === p.name && hourFor.k === k ? " is-pick" : ""}`} aria-label={`${h.hh}:00 — ${hourText(h)}`} onClick={() => setHourFor(hourFor?.p === p.name && hourFor.k === k ? null : { p: p.name, k })} />)}</div>
               {hourFor?.p === p.name && hrs[hourFor.k] && <div key={hourFor.k} className={`v3-mxp-hour is-${hrs[hourFor.k].s}`} role="status" style={{ ["--x" as string]: `${(hourFor.k + .5) / 24 * 100}%` }}><b>{hrs[hourFor.k].hh}:00–{String((+hrs[hourFor.k].hh + 1) % 24).padStart(2, "0")}:00</b><span>{hourText(hrs[hourFor.k])}</span></div>}
               <div className="v3-mxp-axis"><span>24 год тому</span><span>зараз</span></div>
+              {/* 7 days: share of successful runs per day */}
+              {p.week && p.week.some((d) => d.ok + d.fail > 0) && (() => { const ok = p.week.reduce((a, d) => a + d.ok, 0), all = p.week.reduce((a, d) => a + d.ok + d.fail, 0), pct = Math.floor((ok / all) * 1000) / 10; return (
+                <div className="v3-mxp-week">
+                  <div className="v3-mxp-wh"><span>7 днів</span><b className={pct >= 95 ? "is-ok" : pct >= 80 ? "is-mid" : "is-bad"}>{String(pct).replace(".", ",")}% успішних запусків</b></div>
+                  <div className="v3-mxp-wd">{p.week.map((d) => { const n = d.ok + d.fail, r = n ? d.ok / n : -1; const lvl = r < 0 ? "none" : r >= .95 ? "ok" : r >= .8 ? "mid" : "bad"; const wd = new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" }); return <span key={d.day} className={`is-${lvl}`} aria-label={`${wd} ${d.day}: ${n ? `${d.ok} з ${n} успішно` : "запусків немає"}`}><i />{wd}</span>; })}</div>
+                </div>
+              ); })()}
               <div className="v3-mxp-ptiles">
                 <div><span>Збоїв за 24 год</span><b className={p.failures24h > 0 ? "is-bad" : ""}>{p.failures24h}</b></div>
                 <div><span>Останній збій</span><b>{p.lastFailure ? ago(p.lastFailure) : "—"}</b></div>

@@ -424,3 +424,25 @@
   .v3-mx .v3-mx-alert > span small { display: block; color: #6b7384; font-size: 12px; }
   .v3-mx .v3-mx-alert > b { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 34px; padding: 0 8px 0 12px; border-radius: 10px; background: #eef0f4; color: #11151c; font-size: 13px; font-weight: 600; opacity: 1; }
 }
+
+/* Матч (шторка): коефіцієнти зараз і рух від відкриття лінії */
+@media (max-width: 767px) {
+  .v3-mxp-kv dd.v3-mxp-odds { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .v3-mxp-odds span { display: inline-flex; align-items: baseline; gap: 5px; }
+  .v3-mxp-odds b { font-weight: 600; color: #11151c; font-variant-numeric: tabular-nums; }
+  .v3-mxp-odds i { font-style: normal; font-size: 12px; font-weight: 500; }
+  .v3-mxp-odds i.is-down { color: #15803d; }
+  .v3-mxp-odds i.is-up { color: #b42318; }
+}
+
+/* Парсери: стабільність за 7 днів */
+@media (max-width: 767px) {
+  .v3-mxp-week { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 12px; }
+  .v3-mxp-wh { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: #6b7384; }
+  .v3-mxp-wh b { font-weight: 600; }
+  .v3-mxp-wh b.is-ok { color: #15803d; } .v3-mxp-wh b.is-mid { color: #b45309; } .v3-mxp-wh b.is-bad { color: #b42318; }
+  .v3-mxp-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .v3-mxp-wd span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: #8a93a2; }
+  .v3-mxp-wd i { display: block; width: 100%; height: 6px; border-radius: 3px; background: #e6e9ee; }
+  .v3-mxp-wd .is-ok i { background: #1fb155; } .v3-mxp-wd .is-mid i { background: #f0a020; } .v3-mxp-wd .is-bad i { background: #e5484d; }
+}

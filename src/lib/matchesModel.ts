@@ -23,6 +23,8 @@ export interface FeedMatch {
   startDate?: string;
   coeff1?: number | null;
   coeff2?: number | null;
+  openCoeff1?: number | null;
+  openCoeff2?: number | null;
 }
 
 /** Як приходить із GET /matches-history. */
@@ -64,6 +66,8 @@ export interface Match {
   manual: boolean;
   /** Є коефіцієнти букмекера (OddsPapi / tips.gg). */
   odds?: boolean;
+  /** Коефіцієнти на перемогу зараз і на відкритті лінії (рух коефіцієнтів). */
+  c1?: number | null; c2?: number | null; o1?: number | null; o2?: number | null;
 }
 
 export const GAME_LABEL: Record<Game, string> = { cs2: "CS2", dota2: "Dota 2" };
@@ -109,6 +113,7 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : String(m.id).startsWith("lp-") ? "Liquipedia" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
     link: m.link || "",
     odds: m.coeff1 != null && m.coeff2 != null,
+    c1: m.coeff1 ?? null, c2: m.coeff2 ?? null, o1: m.openCoeff1 ?? null, o2: m.openCoeff2 ?? null,
     raw: String(m.id),
     manual: String(m.id).startsWith("manual-"),
   };
@@ -296,4 +301,12 @@ export function ago(iso: string, now = Date.now()): string {
   const h = Math.round(min / 60);
   if (h < 24) return `${h} год тому`;
   return new Date(t).toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+}
+
+/** «1,75 ↓ з 1,90» — the price now and, when it moved, which way and from what. */
+export function oddsMove(now: number | null | undefined, open: number | null | undefined): { now: string; dir: "up" | "down" | null; from: string | null } {
+  const f = (n: number) => n.toFixed(2).replace(".", ",");
+  if (now == null) return { now: "—", dir: null, from: null };
+  if (open == null || Math.abs(now - open) < 0.005) return { now: f(now), dir: null, from: null };
+  return { now: f(now), dir: now > open ? "up" : "down", from: f(open) };
 }
