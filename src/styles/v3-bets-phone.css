@@ -127,3 +127,20 @@
     .v3-dd-sheet.is-closing .v3-pm-list { opacity: 0; transition: opacity .2s; }
   }
 }
+
+/* ══ Завантаження · телефон (design BetsMobileLoading) ══ */
+@media (max-width: 767px) {
+  .v3-bt-msk { display: flex; flex-direction: column; gap: 12px; }
+  .v3-bets .v3-sk { display: block; border-radius: 999px; background: #eef0f4; }
+  .v3-bt-msk .v3-bt-mk { animation: none; }
+  .v3-bt-msk .v3-bt-mtab { display: inline-flex; align-items: center; }
+  .v3-bt-msk-sort { display: flex; align-items: center; justify-content: space-between; min-height: 42px; padding: 0 12px; border-radius: 12px; background: #fff; color: #11151c; font: 600 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bt-msk-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 92px; padding: 14px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bt-msk-row .v3-sk.is-av { width: 40px; height: 40px; border-radius: 50%; }
+  .v3-bt-msk-r { display: flex; flex-direction: column; align-items: flex-end; }
+  /* «Лише ті, хто грає»: зайві рядки плавно зникають перед згортанням */
+  .v3-bets .v3-bt-mrows > .is-leave { opacity: 0; transition: opacity .2s ease-out; pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .v3-bets .v3-bt-mrows > .is-leave { transform: translateY(8px); transition: opacity .2s ease-out, transform .2s ease-out; }
+  }
+}

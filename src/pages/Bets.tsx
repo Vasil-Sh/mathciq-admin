@@ -36,6 +36,7 @@ type Detail = { status: "loading" | "ok" | "err"; bets: AdminUserBet[]; error?: 
 
 export default function Bets() {
   const wide = useMedia("(min-width: 1180px)");
+  const phone = useMedia("(max-width: 767px)");
   const xwide = useMedia("(min-width: 1600px)");
   const online = useOnline();
   const [params] = useSearchParams();
@@ -57,6 +58,17 @@ export default function Bets() {
   const [game, setGame] = useState("all");
   const [sort, setSort] = useState<Sort>("bets");
   const [showAll, setShowAll] = useState(false);
+  // Phone «Лише ті, хто грає»: the extra rows fade out while the page scrolls up, then the list shrinks
+  const [leaving, setLeaving] = useState(false);
+  const mrowsRef = useRef<HTMLDivElement>(null);
+  const toggleAll = () => {
+    if (!showAll || wide || leaving) { setShowAll(!showAll); return; }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const top = (mrowsRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY - 140;
+    setLeaving(true);
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    window.setTimeout(() => { setShowAll(false); setLeaving(false); }, reduce ? 0 : 320);
+  };
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, Detail>>({});
@@ -361,7 +373,7 @@ export default function Bets() {
       </div>
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
       <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" prefix="Сортування:" sheet={{ title: "Сортування" }} value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: SORT_M[k] }))} />
-      {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : <div key={rk} className="v3-bt-mrows">{rows.slice(0, limit).map(({ u, s }, i) => {
+      {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : <div key={rk} ref={mrowsRef} className="v3-bt-mrows">{rows.slice(0, limit).map(({ u, s }, i) => {
         const open = openId === u.id;
         const head = (
           <button type="button" className="v3-bt-mcard" aria-expanded={open} onClick={() => toggle(u)}>
@@ -372,10 +384,10 @@ export default function Bets() {
             <span className="v3-bt-mpill">{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></span>
           </button>
         );
-        return <div key={u.id} className={open ? "v3-bt-mopen" : "v3-bt-mitem"} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
+        return <div key={u.id} className={`${open ? "v3-bt-mopen" : "v3-bt-mitem"}${leaving && !playing.includes(u) ? " is-leave" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
       })}</div>}
       {rows.length > limit && <button type="button" className="v3-bt-allbtn v3-bt-mall" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
-      {people.length > playing.length && <button type="button" className={`v3-bt-allbtn v3-bt-mall${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? "Лише ті, хто грає" : `Показати всіх · ${people.length}`}<ChevronDown size={16} aria-hidden="true" /></button>}
+      {people.length > playing.length && <button type="button" className={`v3-bt-allbtn v3-bt-mall${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={toggleAll}>{showAll ? "Лише ті, хто грає" : `Показати всіх · ${people.length}`}<ChevronDown size={16} aria-hidden="true" /></button>}
     </div>
   );
 
@@ -390,7 +402,7 @@ export default function Bets() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Ставки</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час{updatedAt ? ` · оновлено ${updatedAt}` : ""}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{loading ? "завантажуємо…" : <>{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час{updatedAt ? ` · оновлено ${updatedAt}` : ""}</>}</span></p>
         </div>
         <div className="v3-chips">
           {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
@@ -409,6 +421,14 @@ export default function Bets() {
           <strong>Не вдалося завантажити ставки</strong>
           <span>Сервер не відповідає. Спробуйте ще раз за хвилину.</span>
           <div><button type="button" className="v3-btn v3-btn-blue" onClick={() => load()}>Спробувати ще раз</button></div>
+        </div>
+      ) : loading && phone ? (
+        /* phone skeleton (design BetsMobileLoading): two KPI cards, tabs, sort, three rows */
+        <div className="v3-bt-msk" role="status" aria-label="Завантаження ставок">
+          <section className="v3-bt-mkpis">{[0, 1].map((i) => <div key={i} className="v3-bt-mk"><i className="v3-sk" style={{ width: "55%", height: 10 }} /><i className="v3-sk" style={{ width: "75%", height: 22, marginTop: 12 }} /><i className="v3-sk" style={{ width: "50%", height: 8, marginTop: 12 }} /></div>)}</section>
+          <div className="v3-bt-mtabs" aria-hidden="true"><span className="v3-bt-mtab is-on">Усі</span><span className="v3-bt-mtab">CS2</span><span className="v3-bt-mtab">Dota 2</span></div>
+          <div className="v3-bt-msk-sort" aria-hidden="true">Сортування: за кількістю ставок<ChevronDown size={14} /></div>
+          {[0, 1, 2].map((i) => <div key={i} className="v3-bt-msk-row"><i className="v3-sk is-av" /><div><i className="v3-sk" style={{ width: "55%", height: 10 }} /><i className="v3-sk" style={{ width: "80%", height: 8, marginTop: 8 }} /></div><div className="v3-bt-msk-r"><i className="v3-sk" style={{ width: 52, height: 12 }} /><i className="v3-sk" style={{ width: 52, height: 22, marginTop: 14 }} /></div></div>)}
         </div>
       ) : loading ? (
         <>
