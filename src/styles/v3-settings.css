@@ -383,3 +383,9 @@
 .v3-st-badge small { font-size: 12px; line-height: 1.4; color: #6b7384; }
 .v3-st-badge.is-on small { color: #15803d; }
 .v3-st-badge button { flex: none; min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #3a6df0; color: #fff; font: 600 13px Inter, sans-serif; }
+
+/* Stepper with a typed amount (tariff price) */
+.v3-st-step.is-edit strong input { width: auto; min-width: 2ch; max-width: 7ch; padding: 4px 2px; border: 0; border-bottom: 1px dashed currentColor; border-radius: 0; background: transparent; color: inherit; font: inherit; font-size: 18px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; outline: none; }
+.v3-st-step.is-edit strong input:focus { border-bottom: 2px solid #3a6df0; }
+@media (max-width: 767px) { .v3-st-step.is-edit strong input { font-size: 18px; } }
+.v3-st-step.is-edit strong input::placeholder { color: inherit; opacity: .4; }

@@ -70,13 +70,18 @@ const people = (n: number) => `${n} ${plural(n, "користувач", "кор�
 const LOCKED_BASIC = ["AI-аналіз матчів", "Telegram-групи"];
 
 // ───────────────────────── small parts ─────────────────────────
-function Stepper({ value, min, max, step = 1, unit, label, light, onChange }: { value: number; min: number; max: number; step?: number; unit?: string; label: string; light?: boolean; onChange: (v: number) => void }) {
+function Stepper({ value, min, max, step = 1, unit, label, light, editable, onChange }: { value: number; min: number; max: number; step?: number; unit?: string; label: string; light?: boolean; editable?: boolean; onChange: (v: number) => void }) {
   const [k, setK] = useState(0);
+  const [draft, setDraft] = useState<string | null>(null);
   const set = (v: number) => { const n = Math.min(max, Math.max(min, v)); if (n !== value) { onChange(n); setK((x) => x + 1); } };
+  // typed amount (e.g. 299): any whole number within min…max, the ± buttons still step by `step`
+  const commit = () => { if (draft === null) return; const n = parseInt(draft.replace(/\D/g, ""), 10); setDraft(null); if (Number.isFinite(n)) set(n); }; // empty = keep the old price
   return (
-    <div className={`v3-st-step${light ? " is-light" : ""}`} role="group" aria-label={label}>
+    <div className={`v3-st-step${light ? " is-light" : ""}${editable ? " is-edit" : ""}`} role="group" aria-label={label}>
       <button type="button" aria-label={`Менше · ${label}`} className={value <= min ? "is-lim" : ""} aria-disabled={value <= min} onClick={() => set(value - step)}>−</button>
-      <strong aria-live="polite"><span key={k} className="v3-st-roll">{value}</span>{unit && <small>{unit}</small>}</strong>
+      {editable
+        ? <strong><input type="text" inputMode="numeric" pattern="[0-9]*" aria-label={`${label}, ввести суму`} value={draft ?? String(value)} placeholder={String(value)} size={Math.max(3, (draft || String(value)).length)} onFocus={() => setDraft("")} onChange={(e) => setDraft(e.target.value.replace(/\D/g, "").slice(0, String(max).length))} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setDraft(null); (e.target as HTMLInputElement).blur(); } }} />{unit && <small>{unit}</small>}</strong>
+        : <strong aria-live="polite"><span key={k} className="v3-st-roll">{value}</span>{unit && <small>{unit}</small>}</strong>}
       <button type="button" aria-label={`Більше · ${label}`} className={value >= max ? "is-lim" : ""} aria-disabled={value >= max} onClick={() => set(value + step)}>+</button>
     </div>
   );
@@ -535,8 +540,8 @@ function TariffsSection({ phone, all, n, badge, cur, saved, set, settings, ov }:
           <div><strong>{isPro ? "Pro" : "Базова"}</strong><p><span className="v3-st-price"><RollingNumber key={price} text={`${price}`} /> ₴</span><small> / 30 днів</small>{changedPrice && <span className="v3-st-was">було {isPro ? saved.proPrice : saved.basicPrice} ₴</span>}</p></div>
           <button type="button" className={`v3-btn v3-st-ebtn${edit === k ? " is-on" : ""}`} aria-expanded={edit === k} onClick={() => setEdit(edit === k ? "" : k)}>{edit === k ? "Готово" : "Редагувати"}</button>
         </div>
-        {edit === k && <div className="v3-st-pedit"><span>Ціна за 30 днів</span><Stepper light label={`Ціна ${isPro ? "Pro" : "Базової"}`} value={price} min={0} max={10000} step={50} unit="₴" onChange={(v) => set(isPro ? "proPrice" : "basicPrice", v)} /></div>}
-        {phone && edit === k && <small className="v3-st-phint">крок 50 ₴ · від 0 до 10 000 ₴</small>}
+        {edit === k && <div className="v3-st-pedit"><span>Ціна за 30 днів</span><Stepper light editable label={`Ціна ${isPro ? "Pro" : "Базової"}`} value={price} min={0} max={10000} step={50} unit="₴" onChange={(v) => set(isPro ? "proPrice" : "basicPrice", v)} /></div>}
+        {phone && edit === k && <small className="v3-st-phint">торкніться суми, щоб ввести · ± крок 50 ₴ · від 0 до 10 000 ₴</small>}
         {(!phone || edit === k) && <div className="v3-st-users"><i aria-hidden="true"><b className="v3-st-grow" style={{ width: users === null ? "0%" : `${Math.max(4, (users / total) * 100)}%` }} /></i><small>{users === null ? "…" : phone ? `${users} ${plural(users, "людина", "людини", "людей")}` : people(users)}</small></div>}
         <ul className="v3-st-feat">
           {feats.map((f) => <li key={f}><span className="v3-st-ok" aria-hidden="true"><Check size={12} strokeWidth={3} /></span>{isPro && /^AI-аналіз/.test(f) ? `${f} · ${cur.aiDailyLimit} на день` : f}</li>)}

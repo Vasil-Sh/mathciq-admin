@@ -262,3 +262,16 @@
   .v3-sheet-card .v3-uc-sub .v3-uc-sub-tag { background: #24324f; color: #9dbbff; }
   .v3-sheet-card .v3-uc-sub-top, .v3-sheet-card .v3-uc-sub-meta { color: #a1a7b3; }
 }
+
+/* «Закінчуються» / «Вік ?» look like the day chips on «Матчі»: label inside, count in a corner badge */
+@media (max-width: 767px) {
+  .v3-users .v3-mfilters.is-line { padding-top: 6px; margin-top: -6px; overflow: visible; }
+  .v3-users .v3-mfilters.is-line > .v3-fchip { position: relative; overflow: visible; padding: 0 12px; background: #e3e6eb; color: #11151c; }
+  .v3-users .v3-mfilters.is-line > .v3-fchip.is-on { background: #fff; color: #11151c; font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+  .v3-users .v3-mfilters.is-line > .v3-fchip:disabled { opacity: 1; color: #8a93a2; }
+  .v3-users .v3-mfilters.is-line .v3-fchip-n { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid #e9ecf2; border-radius: 10px; background: #8a92a0; color: #fff; font-size: 10px; font-weight: 600; line-height: 14px; box-sizing: border-box; }
+  .v3-users .v3-mfilters.is-line .v3-fchip-n.is-exp { background: #e5484d; color: #fff; }
+  .v3-users .v3-mfilters.is-line .v3-fchip-n.is-age { background: #f0a020; color: #fff; }
+  .v3-users .v3-mfilters.is-line .v3-fchip.is-on .v3-fchip-n { background: #3a6df0; color: #fff; }
+  .v3-users .v3-mfilters.is-line .v3-fchip:disabled .v3-fchip-n { background: #c4c9d2; color: #fff; }
+}

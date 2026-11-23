@@ -253,7 +253,7 @@
 
 /* Команди: air between the filter row and the cards (they touched) */
 @media (max-width: 767px) {
-  .v3-mxp-bar:has(.v3-mxp-tchips) { margin-bottom: 12px; }
+  .v3-mxp-bar:has(.v3-mxp-tchips), .v3-mxp-bar:has(.v3-mxp-days.is-teams) { margin-bottom: 12px; }
   /* native time wheel (phone): looks like the other fields, value on the left */
   .v3-field input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 44px; text-align: left; }
   .v3-field input[type="time"]::-webkit-date-and-time-value { text-align: left; }

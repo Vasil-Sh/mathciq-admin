@@ -128,7 +128,10 @@ export default function Bets() {
       .sort((a, b) => (sort === "bets" ? b.s.bets - a.s.bets : sort === "staked" ? b.s.staked - a.s.staked : sort === "profit" ? b.s.profit - a.s.profit : b.s.wr - a.s.wr) || a.u.username.localeCompare(b.u.username));
   }, [people, playing, showAll, game, q, sort]);
 
-  useEffect(() => { setRk((x) => x + 1); }, [game, sort, showAll]);
+  // replay the rows' entrance on a new filter/sort, and when more rows appear — not when «Лише ті, хто грає»
+  // folds the list (the extra rows already faded out; replaying made the list blink a second time)
+  const prevAll = useRef(showAll);
+  useEffect(() => { const folded = prevAll.current && !showAll; prevAll.current = showAll; if (!folded) setRk((x) => x + 1); }, [game, sort, showAll]);
 
   // Desktop opens the first player's bets, like the design; later the admin decides.
   useEffect(() => {
