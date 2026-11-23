@@ -16,7 +16,7 @@ import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
   fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
-import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
+import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
   addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, setAliases, similarity, STATUS_LABEL, teamsFrom,
   type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
@@ -85,6 +85,8 @@ export default function Matches() {
   const [failed, setFailed] = useState<Game[]>([]);
   const [history, setHistory] = useState<Match[]>([]);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
+  const [missOpen, setMissOpen] = useState(false);
+  const [linked, setLinked] = useState<Record<string, "busy" | "done">>({});
   const [bets, setBets] = useState<UBet[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -267,6 +269,23 @@ export default function Matches() {
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
   const cntFor = (name: string, list: Match[] = todayM) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? list.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? list.filter((m) => m.source === "Liquipedia").length : f === "oddspapi" ? list.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? list.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : list.filter((m) => m.game === f && m.source === "tips.gg").length; };
   /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
+  // OddsPapi → our match: name each differing team as an alias of ours (same team, other spelling)
+  const missKey = (x: OddsMiss) => `${x.game}:${x.odds.team1}:${x.odds.team2}:${x.odds.start}`;
+  const linkMiss = async (x: OddsMiss) => {
+    if (!x.ours) return;
+    const k = missKey(x), n = (v: string) => v.toLowerCase().replace(/\b(team|esports?|gaming|club|clan|academy)\b/g, "").replace(/[^a-z0-9]/g, "");
+    const straight = n(x.odds.team1) === n(x.ours.team1) || n(x.odds.team2) === n(x.ours.team2) || !(n(x.odds.team1) === n(x.ours.team2) || n(x.odds.team2) === n(x.ours.team1));
+    const pairs: [string, string][] = straight ? [[x.ours.team1, x.odds.team1], [x.ours.team2, x.odds.team2]] : [[x.ours.team1, x.odds.team2], [x.ours.team2, x.odds.team1]];
+    setLinked((l) => ({ ...l, [k]: "busy" }));
+    try {
+      for (const [canonical, alias] of pairs) if (n(canonical) !== n(alias)) await createAlias({ game: x.game, canonical, alias });
+      setLinked((l) => ({ ...l, [k]: "done" }));
+      toast.success("Зв’язано", { description: "Коефіцієнти з’являться протягом 2 хвилин" });
+    } catch (e) {
+      setLinked((l) => { const c = { ...l }; delete c[k]; return c; });
+      toast.error("Не вдалося зв’язати", { description: errText(e) });
+    }
+  };
   const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name, p.name === "oddspapi" ? all : todayM) === 0 ? "idle" : "ok"; };
   const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });
   const issueText = (p: ParserState) => `${PARSER_NAMES[p.name] || p.name} ${PARSER_ISSUE[pState(p) as "down" | "flaky" | "idle"]}`;
@@ -759,7 +778,7 @@ export default function Matches() {
                 <div><span>Зібрано матчів</span><b>{matches ? cntFor(p.name, all) : "…"}</b></div>
               </div>
               {/* OddsPapi only adds prices: where they get lost — schedule → priced → our matches */}
-              {p.odds && !p.paused && <p className="v3-mxp-podds">У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}<small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}</small></p>}
+              {p.odds && !p.paused && <div className="v3-mxp-podds"><p>У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}</p><small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}{p.odds.nextOddsAt ? ` · наступні о ${new Date(p.odds.nextOddsAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small>{!!p.odds.unmatched?.length && <button type="button" className="v3-mxp-pmiss" onClick={() => setMissOpen(true)}><AlertTriangle size={14} aria-hidden="true" />Не знайшли наш матч: {p.odds.unmatched.length}<ChevronRight size={15} aria-hidden="true" /></button>}</div>}
               {p.open && !p.paused && <button type="button" className="v3-mxp-prun" disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>{r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}</button>}
             </div>
           );
@@ -1097,6 +1116,21 @@ export default function Matches() {
       </>}
 
       <AddMatchDialog open={addOpen} onOpenChange={setAddOpen} onDone={async (m) => { await load(); setTab("matches"); setDay(m.startDate && kyivDay(new Date(m.startDate)) === today ? "today" : "week"); setSelId(`${m.game}:${m.id}`); setRk((x) => x + 1); }} />
+
+      {phone && <Dialog open={missOpen} onOpenChange={setMissOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-mxp-miss">
+          <DialogTitle>Коефіцієнти без матчу</DialogTitle>
+          <DialogDescription>OddsPapi має ціни на ці матчі, але назви команд не збіглися з нашими. «Зв’язати» запам’ятає назву — коефіцієнти з’являться протягом 2 хвилин і надалі підтягуватимуться самі.</DialogDescription>
+          <div className="v3-mxp-mlist">{(parsers?.find((x) => x.name === "oddspapi")?.odds?.unmatched || []).map((x) => { const k = missKey(x), st = linked[k]; return (
+            <div key={k} className="v3-mxp-mi">
+              <div className="v3-mxp-mt"><span>{x.game === "cs2" ? "CS2" : "Dota 2"} · {new Date(x.odds.start).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</span><span>{x.odds.tournament}</span></div>
+              <div className="v3-mxp-mrow"><small>OddsPapi</small><strong>{x.odds.team1} — {x.odds.team2}</strong><b>{x.odds.coeff1.toFixed(2)} · {x.odds.coeff2.toFixed(2)}</b></div>
+              {x.ours ? <div className="v3-mxp-mrow"><small>Наш матч</small><strong>{x.ours.team1} — {x.ours.team2}</strong></div> : <p className="v3-mxp-mnone">Нашого матчу в цей час немає — Liquipedia його не показує.</p>}
+              {x.ours && <button type="button" className={`v3-mxp-mlink${st === "done" ? " is-done" : ""}`} disabled={!online || !!st} onClick={() => linkMiss(x)}>{st === "done" ? <><Check size={15} aria-hidden="true" />Зв’язано</> : st === "busy" ? "Зв’язуємо…" : <><Link2 size={15} aria-hidden="true" />Зв’язати</>}</button>}
+            </div>
+          ); })}</div>
+        </DialogContent>
+      </Dialog>}
 
       <Dialog open={!!logFor} onOpenChange={(o) => !o && setLogFor(null)}>
         <DialogContent className="v3-modal sm:max-w-[560px]">
