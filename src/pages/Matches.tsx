@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, History, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, History, Info, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -132,6 +132,7 @@ export default function Matches() {
   const [decided, setDecided] = useState<Set<string>>(new Set());
   const [events, setEvents] = useState<Record<string, ParserEvent[]>>({});
   const [avail, setAvail] = useState<Record<string, HourStat[]>>({});
+  const [hourFor, setHourFor] = useState<{ p: string; k: number } | null>(null);
   const [logFor, setLogFor] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id: string; st: AdminStatus; date: string; time: string; s1: string; s2: string } | null>(null);
   const [saving, setSaving] = useState<string>("");
@@ -224,7 +225,7 @@ export default function Matches() {
   const todayM = all.filter((m) => m.day === today);
   const liveN = all.filter((m) => m.status === "live").length;
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
-  const cntFor = (name: string) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? todayM.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? todayM.filter((m) => m.source === "Liquipedia").length : f === "oddspapi" ? todayM.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? todayM.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : todayM.filter((m) => m.game === f && m.source === "tips.gg").length; };
+  const cntFor = (name: string, list: Match[] = todayM) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? list.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? list.filter((m) => m.source === "Liquipedia").length : f === "oddspapi" ? list.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? list.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : list.filter((m) => m.game === f && m.source === "tips.gg").length; };
   /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
   const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name) === 0 ? "idle" : "ok"; };
   const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });
@@ -382,9 +383,6 @@ export default function Matches() {
     { k: "bets", label: "Записів на сьогодні", v: todayBets == null ? "…" : String(todayBets), n: todayBets == null ? "рахуємо зі ставок користувачів" : `на ${todayM.length} ${plural(todayM.length, "матч", "матчі", "матчів")} сьогодні`, go: undefined, on: false },
     { k: "manual", label: "Додані вручну", v: bets ? String(groups.length) : "…", n: bets ? (groups.length ? "немає в стрічках парсерів" : "усі записи на своїх матчах") : "шукаємо в записах", amber: groups.length > 0, go: () => setTab("manual"), on: tab === "manual" },
   ];
-  // Телефон: друга картка — «Ставки на сьогодні» (сума й люди), на вкладці «Парсери» — стан парсерів
-  const todayBetList = bets ? todayM.flatMap((m) => betsFor(m)) : null;
-  const betsCard = { k: "tbets", label: "Ставки на сьогодні", v: todayBetList ? String(todayBetList.length) : "…", n: todayBetList ? `${Math.round(todayBetList.reduce((a, b) => a + (Number(b.amount) || 0), 0)).toLocaleString("uk-UA")} ₴ · ${new Set(todayBetList.map((b) => b.username)).size} ${plural(new Set(todayBetList.map((b) => b.username)).size, "користувач", "користувачі", "користувачів")}` : "рахуємо зі ставок користувачів", bad: false, amber: false };
   const tabN: Record<Tab, number | null> = { matches: matches ? todayM.length : null, parsers: parsers ? down.length || parsers.length : null, manual: bets ? groups.length : null, teams: matches ? teams.length : null };
   useEffect(() => { publishMatchCounts(tabN); }, [tabN.matches, tabN.parsers, tabN.manual, tabN.teams]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -425,7 +423,7 @@ export default function Matches() {
                 </div>
                 <div className="v3-mx-ef">
                   <div className="v3-field"><label id={`ed-d-${m.id}`}>Дата</label><DateField id={`ed-date-${m.id}`} labelledBy={`ed-d-${m.id}`} value={f.date} onChange={(v) => setForm(m, { date: v })} /></div>
-                  <div className="v3-field"><label htmlFor={`ed-t-${m.id}`}>Час</label><input id={`ed-t-${m.id}`} inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
+                  <div className="v3-field"><label htmlFor={`ed-t-${m.id}`}>Час</label><input id={`ed-t-${m.id}`} {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
                   <div className="v3-field"><span className="v3-label" id={`ed-s-${m.id}`}>Рахунок</span><span className="v3-mx-sc" role="group" aria-labelledby={`ed-s-${m.id}`}><input inputMode="numeric" pattern="[0-9]{0,2}" aria-label={`Рахунок ${m.t1}`} value={f.s1} onChange={(e) => setForm(m, { s1: e.target.value.replace(/\D/g, "").slice(0, 2) })} placeholder="—" /><b aria-hidden="true">:</b><input inputMode="numeric" pattern="[0-9]{0,2}" aria-label={`Рахунок ${m.t2}`} value={f.s2} onChange={(e) => setForm(m, { s2: e.target.value.replace(/\D/g, "").slice(0, 2) })} placeholder="—" /></span></div>
                 </div>
                 <div className="v3-mx-acts2">
@@ -559,10 +557,10 @@ export default function Matches() {
           <div className="v3-mxp-eg"><span className="v3-mxp-egt">Час і статус</span>
             <div className="v3-mxp-e2">
               <div className="v3-field"><label id={`pe-d-${m.id}`}>Дата</label><DateField id={`pe-date-${m.id}`} labelledBy={`pe-d-${m.id}`} value={f.date} onChange={(v) => setForm(m, { date: v })} /></div>
-              <div className="v3-field"><label htmlFor={`pe-t-${m.id}`}>Час (Київ)</label><input id={`pe-t-${m.id}`} inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
+              <div className="v3-field"><label htmlFor={`pe-t-${m.id}`}>Час (Київ)</label><input id={`pe-t-${m.id}`} {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
             </div>
             {!ov && <span className="v3-mxp-was">Зараз {m.time} у {m.source}</span>}
-            <div className="v3-field"><span className="v3-label">Статус</span><Dropdown className="v3-mselect-dd" ariaLabel="Статус матчу" sheet={{ title: "Статус матчу" }} value={f.st} onChange={(v) => setForm(m, { st: v })} options={EDIT_ST.map((x) => ({ value: x.key, label: x.label }))} /></div>
+            <div className="v3-field"><span className="v3-label">Статус</span><Dropdown className="v3-mselect-dd" ariaLabel="Статус матчу" sheet={{ title: "Статус матчу" }} value={f.st} onChange={(v) => setForm(m, { st: v })} options={[EDIT_ST[0], { key: "live" as AdminStatus, m: "live" as MStatus, label: "Наживо" }, ...EDIT_ST.slice(1)].map((x) => ({ value: x.key, label: x.label }))} /></div>
           </div>
           <div className="v3-mxp-eg"><span className="v3-mxp-egt">Рахунок</span>
             <div className="v3-mxp-e2">
@@ -633,7 +631,9 @@ export default function Matches() {
 
   // ── Телефон: «Парсери» (design MatchesMobileParsers): картка на джерело — стан, Стоп/Запустити, 24 години, два числа ──
   const hoursOf = (name: string) => { const a = avail[name] || []; const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
-    return Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok" }; }); };
+    return Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, ok: h?.success ?? 0, bad: h?.failure ?? 0, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok" }; }); };
+  const hourText = (h: { ok: number; bad: number; s: string }) => h.s === "none" ? "запусків не було"
+    : [h.ok ? `${h.ok} ${plural(h.ok, "успішний запуск", "успішні запуски", "успішних запусків")}` : "", h.bad ? `${h.bad} ${plural(h.bad, "збій", "збої", "збоїв")}` : ""].filter(Boolean).join(" · ");
   const phoneParsers = (
     <section className="v3-mxp-ps">
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-mxp-pc is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
@@ -647,17 +647,20 @@ export default function Matches() {
                 <strong>{PARSER_NAMES[p.name] || p.name}</strong>
                 <span key={ps} className={`v3-mxp-pst is-${ps}`}><i aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "paused" ? "Зупинено" : "Працює"}</span>
                 <span className="v3-mxp-pa">
-                  {events[p.name] && <button type="button" className="v3-mxp-plog" onClick={() => setLogFor(p.name)} aria-label={`Повний лог · ${PARSER_NAMES[p.name] || p.name}`}><List size={15} aria-hidden="true" /></button>}
+                  {events[p.name] && <button type="button" className="v3-mxp-plog" onClick={() => setLogFor(p.name)} aria-label={`Інформація й лог · ${PARSER_NAMES[p.name] || p.name}`}><Info size={16} aria-hidden="true" /></button>}
                   {p.paused ? <button type="button" className="v3-mxp-pgo" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
                     : <button type="button" className="v3-mxp-pstop" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, true)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
                 </span>
               </div>
               <small className="v3-mxp-psub">{p.paused ? `${meta.game || meta.site} · зупинено вручну${p.pausedBy ? ` @${p.pausedBy}` : ""}` : ps === "down" || ps === "flaky" ? `${meta.game || meta.site} · не відповідає${p.lastFailure ? ` · ${ago(p.lastFailure)}` : ""}` : `${meta.game || meta.site} · ${matches ? `${cnt} ${plural(cnt, "матч", "матчі", "матчів")} сьогодні` : "…"}`}</small>
-              <div className="v3-mxp-bars" aria-label="Останні 24 години">{hrs.map((h, k) => <i key={k} className={`is-${p.paused ? "none" : h.s}`} title={`${h.hh}:00`} />)}</div>
+              {/* tap an hour — what happened in it */}
+              <div className="v3-mxp-bars" role="group" aria-label="Останні 24 години">{hrs.map((h, k) => <button type="button" key={k} className={`is-${p.paused ? "none" : h.s}${hourFor?.p === p.name && hourFor.k === k ? " is-pick" : ""}`} aria-label={`${h.hh}:00 — ${hourText(h)}`} onClick={() => setHourFor(hourFor?.p === p.name && hourFor.k === k ? null : { p: p.name, k })} />)}</div>
+              {hourFor?.p === p.name && hrs[hourFor.k] && <div key={hourFor.k} className={`v3-mxp-hour is-${hrs[hourFor.k].s}`} role="status" style={{ ["--x" as string]: `${(hourFor.k + .5) / 24 * 100}%` }}><b>{hrs[hourFor.k].hh}:00–{String((+hrs[hourFor.k].hh + 1) % 24).padStart(2, "0")}:00</b><span>{hourText(hrs[hourFor.k])}</span></div>}
               <div className="v3-mxp-axis"><span>24 год тому</span><span>зараз</span></div>
               <div className="v3-mxp-ptiles">
                 <div><span>Збоїв за 24 год</span><b className={p.failures24h > 0 ? "is-bad" : ""}>{p.failures24h}</b></div>
                 <div><span>Останній збій</span><b>{p.lastFailure ? ago(p.lastFailure) : "—"}</b></div>
+                <div><span>Зібрано матчів</span><b>{matches ? cntFor(p.name, all) : "…"}</b></div>
               </div>
               {p.open && !p.paused && <button type="button" className="v3-mxp-prun" disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>{r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}</button>}
             </div>
@@ -820,7 +823,8 @@ export default function Matches() {
       ); })()}
       <div className="v3-mx-acts2">
         <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online} onClick={() => setMergeFor(t)}><Plus size={15} aria-hidden="true" />Об’єднати з…</button>
-        <button type="button" className="v3-btn v3-btn-primary" disabled={!online || !t.variants.length || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? <span className="v3-mx-spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}Це одна команда</button>
+        {/* phone: no new spellings — nothing to confirm, so no greyed-out button */}
+        {(!phone || t.variants.length > 0) && <button type="button" className="v3-btn v3-btn-primary" disabled={!online || !t.variants.length || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? <span className="v3-mx-spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}Це одна команда</button>}
       </div>
       <p className="v3-mx-hint">Псевдонім — інше написання «{t.name}»: записи й матчі з будь-яким написанням рахуються як одна команда.</p>
     </div>
@@ -889,7 +893,8 @@ export default function Matches() {
       ) : <>
         <section className="v3-sums v3-pay-sums v3-mx-sums" aria-label="Підсумки">
           {/* only numbers here — the tabs below switch sections; the first card is the blue one, as on the other screens */}
-          {(phone ? [sums[0], tab === "parsers" ? sums[1] : betsCard] : sums).map((s, i) => (
+          {/* phone: the second card is always the parsers state */}
+          {(phone ? [sums[0], sums[1]] : sums).map((s, i) => (
             <div key={s.k} className={`v3-sum is-static${i === 0 ? " is-on" : ""}`}>
               <span className="v3-sum-l">{s.label}</span>
               <strong className={`v3-sum-v${s.bad && i ? " v3-mx-bad" : ""}${s.amber && i ? " v3-mx-amber" : ""}`}><RollingNumber key={`${s.k}-${s.v}`} text={s.v} /></strong>
@@ -971,7 +976,7 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
             </div>
             <div className="v3-amg"><p className="v3-amg-t v3-only-mobile">Час</p>
             <div className="v3-field"><label id="am-d">Дата</label><DateField id="am-date" labelledBy="am-d" required value={f.date} onChange={(v) => setF({ ...f, date: v })} /></div>
-            <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><input id="am-time" required inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setF({ ...f, time: hhmmInput(e.target.value) })} /></div>
+            <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><input id="am-time" required {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setF({ ...f, time: hhmmInput(e.target.value) })} /></div>
             <div className="v3-field v3-span2"><span className="v3-label" id="am-bo">Формат</span><div className="v3-chipset" role="group" aria-labelledby="am-bo">{["BO1", "BO2", "BO3", "BO5"].map((b) => <button key={b} type="button" className={f.bo === b ? "is-on" : ""} aria-pressed={f.bo === b} onClick={() => setF({ ...f, bo: b })}>{b}</button>)}</div></div>
             </div>
           </fieldset>
@@ -988,6 +993,12 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
     </Dialog>
   );
 }
+
+/** Time field: on the phone the native wheel (no keyboard — it hid the field and threw the sheet back to «Гра»);
+ * on desktop a text field that selects its value on focus, so typing replaces «19:00». */
+const timeAttrs = () => isPhoneWidth()
+  ? { type: "time" as const }
+  : { type: "text" as const, inputMode: "numeric" as const, onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.select() };
 
 /** «Об’єднати з…»: інша команда (або написання) стає псевдонімом цієї. */
 function MergeTeamDialog({ team, teams, busy, onClose, onPick }: { team: Team | null; teams: Team[]; busy: boolean; onClose: () => void; onPick: (t: Team, names: string[]) => void }) {
