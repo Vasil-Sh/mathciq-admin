@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, Download, ListFilter, Search, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, ListFilter, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/apiClient";
+import { api, setTokens } from "@/lib/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMedia } from "@/hooks/useMediaOnline";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,8 @@ import PillTrack from "@/components/PillTrack";
 import UserAvatar from "@/components/UserAvatar";
 import { Dropdown } from "@/components/ui/dropdown";
 import ExportCsvButton from "@/components/ExportCsvButton";
+import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
+import { logoutOthers } from "@/lib/adminSettingsApi";
 
 type Summary = { today: number; week: number; failed7: number; security7: number; lastFailed: Entry | null; lastSecurity: Entry | null; topActor: { name: string; week: number } | null };
 type Actor = { name: string; telegram: string | null; week: number; total: number };
@@ -22,6 +24,18 @@ const LIMIT = 30;
 const CATS: [string, string][] = [["all", "Усі"], ["users", "Користувачі"], ["payments", "Оплати"], ["banners", "Банери"], ["ads", "Реклама"], ["settings", "Налаштування"], ["security", "Безпека"]];
 const RANGES: [string, string][] = [["all", "Усі дати"], ["today", "Сьогодні"], ["7", "Останні 7 днів"], ["30", "Останні 30 днів"], ["custom", "Свій період"]];
 const kyiv = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+function datesFor(range: string, custom: { from: string; to: string }) {
+  const today = kyiv(new Date());
+  if (range === "today") return { from: today, to: today };
+  if (range === "7" || range === "30") return { from: kyiv(new Date(Date.now() - (Number(range) - 1) * 864e5)), to: today };
+  if (range === "custom" && custom.from && custom.to && custom.from <= custom.to) return custom;
+  return { from: "", to: "" };
+}
+const hm = (iso: string) => new Date(iso).toLocaleTimeString("uk-UA", { timeZone: "Europe/Kyiv", hour: "2-digit", minute: "2-digit" });
+const dmy = (iso: string) => { const k = kyiv(new Date(iso)).split("-"); return `${k[2]}.${k[1]}.${k[0].slice(2)} · ${hm(iso)}`; };
+const whenText = (iso: string) => { const k = kyiv(new Date(iso)), t = kyiv(new Date()), y = kyiv(new Date(Date.now() - 864e5)); return `${k === t ? "сьогодні" : k === y ? "вчора" : dayLabel(iso).split(" · ").pop()} о ${hm(iso)}`; };
+const PERIODS: [string, string][] = [["today", "Сьогодні"], ["7", "7 днів"], ["30", "30 днів"], ["custom", "Свій"]];
+const EX_PERIODS: [string, string][] = [["7", "7 днів"], ["30", "30 днів"], ["all", "Усе"], ["custom", "Свій"]];
 const short = (v: View, e: Entry) => `${v.verb}${v.target ? ` ${v.target}` : ""}`.replace(/^—\s*/, "") + (e.actor_name ? ` · @${e.actor_name}` : "");
 
 function group(entries: Entry[]): Item[] {
@@ -75,14 +89,51 @@ export default function AuditLog() {
   const [cleaning, setCleaning] = useState(false);
 
   useEffect(() => { const t = setTimeout(() => { setQ(draft.trim()); setPage(1); }, 350); return () => clearTimeout(t); }, [draft]);
-  const dates = useMemo(() => {
-    const today = kyiv(new Date());
-    if (range === "today") return { from: today, to: today };
-    if (range === "7" || range === "30") return { from: kyiv(new Date(Date.now() - (Number(range) - 1) * 864e5)), to: today };
-    if (range === "custom" && custom.from && custom.to && custom.from <= custom.to) return custom;
-    return { from: "", to: "" };
-  }, [range, custom]);
-  const qs = `category=${cat}&status=${status}&q=${encodeURIComponent(q)}&from=${dates.from}&to=${dates.to}&userId=${encodeURIComponent(userId)}&history=${encodeURIComponent(history)}&actor=${encodeURIComponent(actor)}`;
+  const dates = useMemo(() => datesFor(range, custom), [range, custom]);
+  const qsOf = (o: { cat: string; status: string; actor: string; from: string; to: string }) => `category=${o.cat}&status=${o.status}&q=${encodeURIComponent(q)}&from=${o.from}&to=${o.to}&userId=${encodeURIComponent(userId)}&history=${encodeURIComponent(history)}&actor=${encodeURIComponent(o.actor)}`;
+  const qs = qsOf({ cat, status, actor, ...dates });
+  // ── phone (design «Журнал дій, мобільна») ──
+  const phone = useMedia("(max-width: 767px)");
+  const pageSearch = usePageSearch("Логін, банер або № оплати");
+  const initQ = useRef(draft);
+  useEffect(() => { if (isPhoneWidth() && initQ.current) { pageSearch.setQ(initQ.current); pageSearch.setOpen(true); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isPhoneWidth()) return;
+    if (initQ.current && pageSearch.q !== initQ.current) return;
+    initQ.current = "";
+    setDraft(pageSearch.q);
+  }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [entryId, setEntryId] = useState<string | null>(null);
+  const [fOpen, setFOpen] = useState(false);
+  const [dRange, setDRange] = useState("all");
+  const [dCustom, setDCustom] = useState({ from: "", to: "" });
+  const [dStatus, setDStatus] = useState("all");
+  const [dActor, setDActor] = useState("");
+  const [dCount, setDCount] = useState<number | null>(null);
+  const [exOpen, setExOpen] = useState(false);
+  const [exRange, setExRange] = useState("30");
+  const [exCustom, setExCustom] = useState({ from: "", to: "" });
+  const [exCount, setExCount] = useState<number | null>(null);
+  const [cleanAsk, setCleanAsk] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
+  const [histTab, setHistTab] = useState<"all" | "mine" | "others">("all");
+  const [endAsk, setEndAsk] = useState(false);
+  const [endBusy, setEndBusy] = useState(false);
+  useEffect(() => { const on = () => setHistOpen(true); window.addEventListener("v3-audit-hist", on); return () => window.removeEventListener("v3-audit-hist", on); }, []);
+  useEffect(() => {
+    if (!fOpen) return;
+    let live = true;
+    const t = setTimeout(() => api.get<Resp>(`/admin/audit?page=1&limit=1&${qsOf({ cat, status: dStatus, actor: dActor, ...datesFor(dRange, dCustom) })}`).then((r) => { if (live) setDCount(r.total); }).catch(() => {}), 200);
+    return () => { live = false; clearTimeout(t); };
+  }, [fOpen, dRange, dCustom, dStatus, dActor, cat, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const exQs = qsOf({ cat, status, actor, ...datesFor(exRange === "all" ? "all" : exRange, exCustom) });
+  useEffect(() => {
+    if (!exOpen) return;
+    let live = true; setExCount(null);
+    api.get<Resp>(`/admin/audit?page=1&limit=1&${exQs}`).then((r) => { if (live) setExCount(r.total); }).catch(() => {});
+    if (me?.isOwner) { setCleanAsk(false); api.get<{ count: number }>("/admin/audit/cleanup?days=180").then((r) => { if (live) setCleanCount(r.count); }).catch(() => {}); }
+    return () => { live = false; };
+  }, [exOpen, exQs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let live = true; setLoading(true); setError("");
@@ -107,11 +158,12 @@ export default function AuditLog() {
   const reset = () => { setDraft(""); setQ(""); setCat("all"); setStatus("all"); setActor(""); setRange("all"); setPage(1); toast.info("Фільтри скинуто", { description: "Показуємо всі дії" }); };
   const owner = !!me?.isOwner;
 
-  const exportCsv = useCallback(async () => {
-    toast.info("Експорт почався", { description: `${total.toLocaleString("uk-UA")} ${plural(total, "запис", "записи", "записів")} · CSV` });
+  const exportCsv = useCallback(async (over?: { qs: string; from: string; to: string; total: number }) => {
+    const n = over ? over.total : total, eqs = over ? over.qs : qs, d = over || dates;
+    toast.info("Експорт почався", { description: `${n.toLocaleString("uk-UA")} ${plural(n, "запис", "записи", "записів")} · CSV` });
     try {
-      const blob = await api.download(`/admin/audit/export?${qs}`);
-      const name = `audit-${dates.from || "all"}${dates.to ? `_${dates.to}` : ""}.csv`;
+      const blob = await api.download(`/admin/audit/export?${eqs}`);
+      const name = `audit-${d.from || "all"}${d.to ? `_${d.to}` : ""}.csv`;
       const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
       toast.success("Файл готовий", { description: name });
     } catch (e) { toast.error("Експорт не вдався", { description: (e as Error).message }); }
@@ -134,7 +186,7 @@ export default function AuditLog() {
 
   const chips = (list: Change[]) => list.length ? <span className="v3-au-chips">{list.map((c, i) => <span key={i} className="v3-au-chg">{c.k}: {c.from !== "—" && <><s>{c.from}</s> → </>}<strong>{c.to}</strong></span>)}</span> : null;
 
-  function row(it: Item) {
+  function info(it: Item) {
     const { e, v } = it, isOpen = open === it.id, ui = KIND_UI[v.kind];
     const res = v.security && e.status === "success" ? { label: "Безпека", cls: "is-warn" } : RESULT_UI[e.status] || { label: e.status, cls: "is-warn" };
     const n = it.group?.length || 0;
@@ -147,6 +199,11 @@ export default function AuditLog() {
     const chipList = n ? [{ k: "Кожному", from: "—", to: same ? `${deltas[0] > 0 ? "+" : ""}${deltas[0]} ${plural(Math.abs(deltas[0]), "день", "дні", "днів")}` : "різний термін" }] : v.chips;
     const dm = (x: string) => x.replace(/^(\d{2}\.\d{2})\.\d{4}$/, "$1");
     const diff = n ? groupDiff : v.diff;
+    return { e, v, isOpen, ui, res, n, groupDiff, verb, target, chipList, dm, diff };
+  }
+
+  function row(it: Item) {
+    const { e, v, isOpen, ui, res, n, groupDiff, verb, target, chipList, dm, diff } = info(it);
     if (!wide) return (
       <div key={it.id} className={`v3-au-mev${e.status === "failed" ? " is-err" : v.security ? " is-warn" : ""}${isOpen ? " is-open" : ""}`} role="button" tabIndex={0} aria-expanded={isOpen}
         onClick={(ev) => { if ((ev.target as HTMLElement).closest("a, button")) return; setOpen(isOpen ? null : it.id); }}
@@ -238,6 +295,163 @@ export default function AuditLog() {
     </>
   );
 
+  // ── phone body ──
+  const rangeText = (r: string) => (r === "custom" ? (dates.from ? `${dates.from.slice(8)}.${dates.from.slice(5, 7)}–${dates.to.slice(8)}.${dates.to.slice(5, 7)}` : "Свій період") : PERIODS.find((x) => x[0] === r)?.[1] || "");
+  const extra = [range !== "all", status !== "all", !!actor].filter(Boolean).length;
+  const phoneSub = data && !loading && items.length === 0 && !q
+    ? "0 дій за обраний період"
+    : extra ? [range !== "all" && rangeText(range), status !== "all" && (RESULT_UI[status]?.label || status), actor && `@${actor}`, `${total} ${plural(total, "запис", "записи", "записів")}`].filter(Boolean).join(" · ") : "";
+  const catOrder = CATS;
+  const IN_CAT: Record<string, string> = { users: "Користувачах", payments: "Оплатах", banners: "Банерах", ads: "Рекламі", settings: "Налаштуваннях", security: "Безпеці" };
+  const entryIt = entryId ? items.find((x) => x.id === entryId) || null : null;
+  const openFilter = () => { setDRange(range); setDCustom(custom); setDStatus(status); setDActor(actor); setDCount(total); setFOpen(true); };
+  const endOthers = async () => {
+    if (!endAsk) { setEndAsk(true); window.setTimeout(() => setEndAsk(false), 3000); return; }
+    setEndBusy(true);
+    try { const r = await logoutOthers(); if (r.token && r.refreshToken) setTokens(r.token, r.refreshToken); const k = r.revoked ?? 0; toast.success("Інші сесії завершено", { description: `${k} ${plural(k, "сесію", "сесії", "сесій")} завершено` }); }
+    catch (e) { toast.error("Не вдалося завершити сесії", { description: (e as Error).message }); }
+    finally { setEndBusy(false); setEndAsk(false); }
+  };
+  const icon = (e: Entry, v: View, size = 16) => { const ui = KIND_UI[v.kind]; return <span className="v3-au-ico" style={{ background: e.status === "failed" ? "#ffe2dc" : ui.bg, color: e.status === "failed" ? "#9a2a17" : ui.fg }}><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d={ui.d} /></svg></span>; };
+  const prow = (it: Item, i: number) => {
+    const { e, v, res, n, verb, target, chipList } = info(it);
+    const tag = e.status !== "success" || v.security;
+    const mineLogin = v.security && e.action === "LOGIN_NEW_DEVICE" && e.actor_name === me?.username;
+    const go = () => setEntryId(it.id);
+    return (
+      <div key={it.id} className="v3-au-pcard" role="button" tabIndex={0} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
+        onClick={(ev) => { if ((ev.target as HTMLElement).closest("a, button")) return; go(); }}
+        onKeyDown={(ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target === ev.currentTarget) { ev.preventDefault(); go(); } }}>
+        {icon(e, v)}
+        <div className="v3-au-pbody">
+          <div className="v3-au-ptop"><span title={exactTime(e.created_at)}>{hm(e.created_at)} · @{e.actor_name}</span>{tag && <span className={`v3-au-ptag ${res.cls}`}>{res.label}</span>}</div>
+          <div className="v3-au-ptxt">{verb[0].toUpperCase() + verb.slice(1)} {target && <strong>{target}</strong>}{n > 0 && <span className="v3-au-count">×{n}</span>}</div>
+          {chipList.length > 0 && <div className="v3-au-pchips">{chipList.slice(0, 3).map((c, k) => <span key={k}>{c.k}: {c.from !== "—" && <><s>{c.from}</s> → </>}<b>{c.to}</b></span>)}</div>}
+          {mineLogin && <div className="v3-au-psec"><span>Якщо це були не ви — завершіть інші сесії</span><button type="button" className={endAsk ? "is-ask" : ""} disabled={endBusy} onClick={() => void endOthers()}>{endBusy ? "Завершуємо…" : endAsk ? "Точно?" : "Завершити"}</button></div>}
+        </div>
+      </div>
+    );
+  };
+  const histList = (data?.entries || []).filter((e) => histTab === "all" || (histTab === "mine" ? e.actor_name === me?.username : e.actor_name !== me?.username)).slice(0, 3);
+  const phoneBody = (
+    <>
+      <div className="v3-au-pbar">
+        <button type="button" className={`v3-au-pfbtn${extra ? " is-on" : ""}`} aria-label={`Фільтр${extra ? ` · ${extra} активних` : ""}`} onClick={openFilter}><Filter size={16} aria-hidden="true" />{extra > 0 && <i>{extra}</i>}</button>
+        <div className="v3-au-pcats" role="group" aria-label="Тип записів">
+          {catOrder.map(([k, l]) => <button key={k} type="button" className={cat === k ? "is-on" : ""} aria-pressed={cat === k} onClick={(ev) => { setCat(k); setPage(1); ev.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }}>{l}</button>)}
+        </div>
+      </div>
+      {extra > 0 && <div className="v3-au-pact">{["rg", "st", "ac"].map((k) => activeChips.find((c) => c.k === k)).filter((c): c is { k: string; label: string; off: () => void } => !!c).map((c) => <button key={c.k} type="button" onClick={() => { c.off(); setPage(1); }}>{c.k === "rg" ? rangeText(range) : c.label}<X size={12} aria-hidden="true" /></button>)}</div>}
+      {q && data && <p className="v3-au-pfound">Знайдено {total} · логін, банер або № оплати</p>}
+      {userId && null}
+      {error && !data ? (
+        <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити журнал</strong><span>{error}. Записи не втрачено — спробуйте ще раз.</span><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => setRev((x) => x + 1)}>Спробувати ще раз</button></div></div>
+      ) : loading && !data ? (
+        <div className="v3-au-plist" role="status" aria-label="Завантаження журналу">{[0, 1, 2, 3].map((i) => <div key={i} className="v3-au-pcard is-skel" aria-hidden="true"><i /><div><i /><i /></div></div>)}</div>
+      ) : items.length === 0 ? (
+        <div className="v3-au-pnone">
+          <span className="v3-au-pico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l3 2" /></svg></span>
+          <strong>{filtered ? "Записів немає" : "Журнал поки порожній"}</strong>
+          <span>{q ? `За «${q}» дій не знайдено. Спробуйте інший запит.` : cat !== "all" ? `За цей період дій у «${IN_CAT[cat] || CATS.find((c) => c[0] === cat)?.[1]}» не було. Змініть період або тип.` : filtered ? "За цей період дій не було. Змініть період або фільтри." : "Сюди потраплятимуть зміни користувачів, оплати, банери, реклама й налаштування."}</span>
+          {filtered && <button type="button" className="v3-au-pbtn" onClick={() => { reset(); pageSearch.setQ(""); pageSearch.setOpen(false); }}>Скинути фільтри</button>}
+        </div>
+      ) : (
+        <div className="v3-au-plist" key={`${cat}-${rev}`}>
+          {days.map((d) => <section key={d.key}><p className="v3-au-pday">{d.label}</p><div className="v3-au-pgrp">{d.items.map(prow)}</div></section>)}
+          {data?.hasMore && <button type="button" className="v3-au-pmore" disabled={loading} onClick={() => { setMore(entries); setPage(page + 1); }}>{loading ? "Завантажуємо…" : `Показати ще ${Math.min(LIMIT, total - entries.length)}`}</button>}
+        </div>
+      )}
+
+      <Dialog open={!!entryIt} onOpenChange={(o) => { if (!o) setEntryId(null); }}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-au-sheet">
+          {entryIt && (() => {
+            const { e, v, res, n, verb, target, diff } = info(entryIt);
+            const d = e.details || {};
+            const user = v.username || e.target_username || "";
+            const inDiff = (k: string) => diff.some((f) => f.k === k);
+            const dev = inDiff("Пристрій") ? "" : typeof d.device === "string" ? d.device : typeof d.userAgent === "string" ? d.userAgent : "";
+            const ip = inDiff("IP") ? "" : typeof d.ip === "string" ? d.ip : "";
+            return <>
+              <div className="v3-au-sh">{icon(e, v, 18)}<div><DialogTitle>{verb[0].toUpperCase() + verb.slice(1)} {target.split(" · ")[0]}{n > 0 ? ` ×${n}` : ""}</DialogTitle><DialogDescription>{whenText(e.created_at)} · @{e.actor_name}</DialogDescription></div></div>
+              <span className={`v3-au-ptag ${res.cls} v3-au-shtag`}>{res.label}</span>
+              {diff.length > 0 ? <>
+                <p className="v3-au-shl">Що змінилось</p>
+                <div className="v3-au-shdiff">{diff.map((f, i) => <div key={i}><span>{f.k}</span><s className={f.from === "—" ? "is-none" : ""}>{f.from}</s><b>{f.to}</b></div>)}</div>
+              </> : <p className="v3-au-shnone">{v.meta || "Без зміни значень"}</p>}
+              <dl className="v3-au-shdl">
+                {user && <div><dt>Користувач</dt><dd><Link to={`/users?q=${encodeURIComponent(user)}`}>@{user} →</Link></dd></div>}
+                {dev && <div><dt>Пристрій</dt><dd>{dev}</dd></div>}
+                {ip && <div><dt>IP</dt><dd>{ip}</dd></div>}
+                {!user && !dev && !ip && <div><dt>Час</dt><dd>{exactTime(e.created_at)}</dd></div>}
+              </dl>
+              <div className={`v3-au-shacts${user ? "" : " is-one"}`}>
+                <button type="button" className="v3-au-shbtn" onClick={() => { setActor(e.actor_name); setPage(1); setEntryId(null); }}>Усі дії @{e.actor_name}</button>
+                {user && <Link className="v3-au-shbtn is-green" to={v.kind === "pay" ? `/payments?user=${encodeURIComponent(user)}` : `/users?q=${encodeURIComponent(user)}`}>{v.kind === "pay" ? "Відкрити оплату" : "Відкрити користувача"}</Link>}
+              </div>
+            </>;
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={fOpen} onOpenChange={setFOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-au-sheet v3-au-fsheet">
+          <div className="v3-au-fh"><DialogTitle>Фільтр</DialogTitle>{(dRange !== "all" || dStatus !== "all" || dActor) && <button type="button" onClick={() => { setDRange("all"); setDStatus("all"); setDActor(""); }}>Скинути</button>}</div>
+          <DialogDescription className="sr-only">Період, результат і автор</DialogDescription>
+          <p className="v3-au-shl">Період</p>
+          <div className="v3-au-seg is-4" role="group" aria-label="Період"><PillTrack active={dRange} />{PERIODS.map(([k, l]) => <button key={k} type="button" className={dRange === k ? "is-on" : ""} aria-pressed={dRange === k} onClick={() => setDRange(dRange === k ? "all" : k)}>{l}</button>)}</div>
+          {dRange === "custom" && <div className="v3-au-pdates"><label>З <input type="date" value={dCustom.from} onChange={(e) => setDCustom({ ...dCustom, from: e.target.value })} /></label><label>По <input type="date" value={dCustom.to} min={dCustom.from || undefined} onChange={(e) => setDCustom({ ...dCustom, to: e.target.value })} /></label></div>}
+          <p className="v3-au-shl">Результат</p>
+          <div className="v3-au-seg is-3" role="group" aria-label="Результат"><PillTrack active={dStatus} />{([["all", "Усі"], ["success", "Виконано"], ["failed", "Помилка"]] as const).map(([k, l]) => <button key={k} type="button" className={dStatus === k ? "is-on" : ""} aria-pressed={dStatus === k} onClick={() => setDStatus(k)}>{l}</button>)}</div>
+          <p className="v3-au-shl">Автор</p>
+          <div className="v3-au-actors" role="group" aria-label="Автор">
+            <button type="button" className={dActor === "" ? "is-on" : ""} aria-pressed={dActor === ""} onClick={() => setDActor("")}><span>Усі автори</span>{dActor === "" && <Check size={16} strokeWidth={2.6} aria-hidden="true" />}</button>
+            {(data?.actors || []).map((a) => <button key={a.name} type="button" className={dActor === a.name ? "is-on" : ""} aria-pressed={dActor === a.name} onClick={() => setDActor(a.name)}><span>@{a.name}{a.name === "system" ? <small> · автоматично</small> : null}</span>{dActor === a.name ? <Check size={16} strokeWidth={2.6} aria-hidden="true" /> : <b>{a.total}</b>}</button>)}
+          </div>
+          <button type="button" className="v3-au-apply" onClick={() => { setRange(dRange); setCustom(dCustom); setStatus(dStatus); setActor(dActor); setPage(1); setFOpen(false); }}>Показати{dCount != null ? ` ${dCount.toLocaleString("uk-UA")} ${plural(dCount, "запис", "записи", "записів")}` : ""}</button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exOpen} onOpenChange={setExOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-au-sheet v3-au-xsheet">
+          <div className="v3-au-xh"><DialogTitle>Експорт журналу</DialogTitle><DialogDescription>CSV-файл · відкривається в Excel і Google Таблицях</DialogDescription></div>
+          <p className="v3-au-shl">Період</p>
+          <div className="v3-au-seg is-4" role="group" aria-label="Період експорту"><PillTrack active={exRange} />{EX_PERIODS.map(([k, l]) => <button key={k} type="button" className={exRange === k ? "is-on" : ""} aria-pressed={exRange === k} onClick={() => setExRange(k)}>{l}</button>)}</div>
+          {exRange === "custom" && <div className="v3-au-pdates"><label>З <input type="date" value={exCustom.from} onChange={(e) => setExCustom({ ...exCustom, from: e.target.value })} /></label><label>По <input type="date" value={exCustom.to} min={exCustom.from || undefined} onChange={(e) => setExCustom({ ...exCustom, to: e.target.value })} /></label></div>}
+          <dl className="v3-au-shdl">
+            <div><dt>Записів</dt><dd>{exCount == null ? "рахуємо…" : exCount.toLocaleString("uk-UA")}</dd></div>
+            <div><dt>Фільтри</dt><dd>{[cat === "all" ? "усі типи" : (CATS.find((c) => c[0] === cat)?.[1] || cat).toLowerCase(), actor ? `@${actor}` : "усі автори", status !== "all" ? (RESULT_UI[status]?.label || "").toLowerCase() : ""].filter(Boolean).join(" · ")}</dd></div>
+          </dl>
+          <button type="button" className="v3-au-apply" disabled={!exCount} onClick={() => { const d2 = datesFor(exRange, exCustom); void exportCsv({ qs: exQs, ...d2, total: exCount || 0 }); setExOpen(false); }}><Download size={16} aria-hidden="true" />Завантажити CSV</button>
+          {owner && <div className="v3-au-old">
+            <strong>Старі записи</strong>
+            <span>Записи, старші за 180 днів, можна видалити. Лише для овнера, дію не можна скасувати.</span>
+            <button type="button" className={`v3-au-clean${cleanAsk ? " is-ask" : ""}`} disabled={cleaning || cleanCount === 0} onClick={() => { if (!cleanAsk) { setCleanDays(180); setCleanAsk(true); window.setTimeout(() => setCleanAsk(false), 3500); return; } void cleanup().then(() => setExOpen(false)); }}>
+              {cleaning ? "Видаляємо…" : cleanCount === 0 ? "Старших за 180 днів немає" : cleanAsk ? `Точно видалити ${cleanCount ?? ""} ${plural(cleanCount ?? 0, "запис", "записи", "записів")}?` : "Очистити старші за 180 днів"}
+            </button>
+          </div>}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-au-sheet v3-au-hsheet">
+          <DialogTitle>Журнал дій</DialogTitle>
+          <DialogDescription className="sr-only">Останні дії адмінів</DialogDescription>
+          <div className="v3-au-seg is-3" role="group" aria-label="Чиї дії"><PillTrack active={histTab} />{([["all", "Усі"], ["mine", "Мої"], ["others", "Інших адмінів"]] as const).map(([k, l]) => <button key={k} type="button" className={histTab === k ? "is-on" : ""} aria-pressed={histTab === k} onClick={() => setHistTab(k)}>{l}</button>)}</div>
+          <div className="v3-au-hlist" key={histTab}>
+            {histList.length ? histList.map((e, i) => { const v = describe(e); const user = v.username || e.target_username || ""; return (
+              <div key={e.id} className="v3-au-hcard" style={{ animationDelay: `${i * 40}ms` }}>
+                <small>{dmy(e.created_at)}</small>
+                <b>{v.verb[0].toUpperCase() + v.verb.slice(1)} {v.target.split(" · ")[0]}</b>
+                <span>@{e.actor_name}{user ? ` · @${user}` : ""}{v.meta ? ` · ${v.meta}` : ""}</span>
+                {v.kind === "pay" && user && <Link className="v3-au-apply" to={`/payments?user=${encodeURIComponent(user)}`} onClick={() => setHistOpen(false)}>Відкрити оплату</Link>}
+              </div>); })
+              : <p className="v3-au-shnone">{histTab === "mine" ? "Ваших дій тут ще немає." : "Дій ще немає."}</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+
   const failedNote = sum?.lastFailed ? short(describe(sum.lastFailed), sum.lastFailed) : "усе виконано";
   const secNote = sum?.lastSecurity ? short(describe(sum.lastSecurity), sum.lastSecurity) : "подій немає";
 
@@ -246,12 +460,14 @@ export default function AuditLog() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Журнал дій</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Хто, що і коли змінив: користувачі, оплати, банери, реклама, налаштування. Паролі й токени не записуються.</span><span className="v3-only-mobile">{sum ? `${sum.today} ${plural(sum.today, "дія", "дії", "дій")} сьогодні · ${sum.failed7} ${plural(sum.failed7, "помилка", "помилки", "помилок")}` : "Хто, що і коли змінив"}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Хто, що і коли змінив: користувачі, оплати, банери, реклама, налаштування. Паролі й токени не записуються.</span><span className="v3-only-mobile">{phone && phoneSub ? phoneSub : sum ? `${sum.today} ${plural(sum.today, "дія", "дії", "дій")} сьогодні · ${sum.failed7} ${plural(sum.failed7, "помилка", "помилки", "помилок")}` : "Хто, що і коли змінив"}</span></p>
         </div>
         <div className="v3-chips">
           {owner && <button type="button" className="v3-chip v3-hide-mobile" onClick={() => setCleanOpen(true)}>Очистити старі записи</button>}
-          <ExportCsvButton className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!total} onClick={exportCsv} />
-          <ExportCsvButton className="v3-au-mexp v3-only-mobile" iconOnly size={18} disabled={!total} onClick={exportCsv} />
+          <ExportCsvButton className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!total} onClick={() => exportCsv()} />
+          {phone
+            ? <button type="button" className="v3-au-hbtn" aria-label="Експорт журналу" onClick={() => { setExRange("30"); setExOpen(true); }}><Download size={18} aria-hidden="true" /></button>
+            : <ExportCsvButton className="v3-au-mexp v3-only-mobile" iconOnly size={18} disabled={!total} onClick={() => exportCsv()} />}
         </div>
       </section>
 
@@ -272,7 +488,7 @@ export default function AuditLog() {
         </div>
       )}
 
-      {error && !data ? (
+      {phone ? phoneBody : error && !data ? (
         <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити журнал</strong><span>{error}. Записи не втрачено — спробуйте ще раз.</span><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => setRev((x) => x + 1)}>Спробувати ще раз</button></div></div>
       ) : (
         <section className={wide ? "v3-wcard v3-au-card" : "v3-au-mcard"} aria-busy={loading}>

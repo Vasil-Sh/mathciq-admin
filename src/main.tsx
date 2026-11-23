@@ -26,6 +26,7 @@ import "./styles/v3-bets-phone.css";
 import "./styles/v3-matches-phone.css";
 import "./styles/v3-ads-phone.css";
 import "./styles/v3-support-phone.css";
+import "./styles/v3-audit-phone.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

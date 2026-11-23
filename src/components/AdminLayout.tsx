@@ -138,7 +138,7 @@ function AdminShell() {
     </span>
   );
   const auditButton = (
-    <Link to="/audit" className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
+    <Link to="/audit" onClick={(ev) => { if (onAudit && isPhoneWidth()) { ev.preventDefault(); window.dispatchEvent(new Event("v3-audit-hist")); } }} className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
       <History size={19} aria-hidden="true" />
       {auditCount && !onAudit && <span className="v3-count v3-count-float">{auditCount}</span>}
     </Link>
@@ -146,7 +146,7 @@ function AdminShell() {
 
   return (
     // phone: the light screens set the light canvas from the URL at once — not after their lazy chunk loads (no dark flash between screens)
-    <div className="v3-shell" data-light={/^\/(dashboard|users|payments|matches|bets|banners)(\/|$)/.test(pathname) ? "" : undefined}>
+    <div className="v3-shell" data-light={/^\/(dashboard|users|payments|matches|bets|banners|support|audit)(\/|$)/.test(pathname) ? "" : undefined}>
       {/* Фон «Зоряний пил»: рідкі крихітні точки ледь мерехтять (дизайн «Основа · фон застосунку») */}
       <StarField />
       <a href="#main-content" className="skip-link">Перейти до вмісту</a>
