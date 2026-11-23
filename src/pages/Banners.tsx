@@ -21,6 +21,7 @@ const TABS: { id: Tab; label: string }[] = [{ id: "banners", label: "Банер�
 
 export default function Banners() {
   const wide = useMedia("(min-width: 1180px)");
+  const phone = useMedia("(max-width: 767px)");
   const online = useOnline();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.id === params.get("tab"))?.id || "banners") as Tab;
@@ -92,15 +93,18 @@ export default function Banners() {
     <div className="v3-page v3-ads">
       <section className="v3-hero v3-hero-row">
         <div>
-          <h1 className="v3-title">Реклама</h1>
+          <h1 className="v3-title">{phone && tab === "stats" ? "Статистика" : "Реклама"}</h1>
           <p className="v3-subtitle"><span className="v3-hide-mobile">Банери в застосунку, Telegram-групи й букмекери-партнери. На кожному місці — мітка «Реклама · 21+», її не вимкнути. Час — київський.</span><span className="v3-only-mobile">{sub}</span></p>
         </div>
         <div className="v3-chips">
           {tab === "stats" && <>
             <button type="button" className="v3-chip v3-hide-mobile" onClick={() => statsActions.current.rep?.()}><span key={repName || "-"} className="v3-bn-tagw">{repName ? `Звіт · ${repName} · CSV` : "Звіт для партнера · CSV"}</span></button>
             <ExportCsvButton className="v3-btn v3-btn-primary v3-hide-mobile" onClick={() => statsActions.current.exp?.()} />
-            <ExportCsvButton className="v3-fab v3-only-mobile" iconOnly size={20} onClick={() => statsActions.current.exp?.()} />
+            {!phone && <ExportCsvButton className="v3-fab v3-only-mobile" iconOnly size={20} onClick={() => statsActions.current.exp?.()} />}
           </>}
+          {/* phone (design AdsMobile*): «Статистика» is a white button in the header, not a tab */}
+          {phone && <button type="button" className={`v3-ad-hbtn${tab === "stats" ? " is-on" : ""}`} aria-label="Статистика" aria-pressed={tab === "stats"} onClick={() => setParams(tab === "stats" ? {} : { tab: "stats" })}><BarChart3 size={18} aria-hidden="true" /></button>}
+          {phone && tab === "stats" && <ExportCsvButton className="v3-ad-hbtn" iconOnly size={18} onClick={() => statsActions.current.exp?.()} />}
           {newAction && <>
             <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={17} aria-hidden="true" />{newAction.label}</button>
             <button type="button" className="v3-fab v3-only-mobile" aria-label={newAction.label} disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={20} strokeWidth={2.4} aria-hidden="true" /></button>
@@ -126,9 +130,9 @@ export default function Banners() {
 
       <div className="v3-ptabs v3-ads-tabs" role="tablist" aria-label="Розділи реклами">
         <PillTrack active={tab} />
-        {TABS.map((t) => {
+        {TABS.filter((t) => !(phone && t.id === "stats")).map((t) => {
           const n = t.id === "banners" ? (banners ? `${occupied}/2` : "") : t.id === "telegram" ? (promos ? String(promos.filter((p) => !["rejected", "done"].includes(promoStatus(p, today))).length) : "") : t.id === "bookmakers" ? (bms ? String(bmLive.length) : "") : "";
-          return <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`v3-ptab${tab === t.id ? " is-on" : ""}`} onClick={() => setParams(t.id === "banners" ? {} : { tab: t.id })}>{t.label}{n ? <span>{n}</span> : t.id === "stats" ? <BarChart3 size={15} aria-hidden="true" /> : null}</button>;
+          return <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`v3-ptab${tab === t.id ? " is-on" : ""}`} onClick={() => setParams(t.id === "banners" ? {} : { tab: t.id })}>{phone ? <>{t.id === "telegram" ? "Telegram" : t.label}{n ? ` · ${n}` : ""}</> : <>{t.label}{n ? <span>{n}</span> : t.id === "stats" ? <BarChart3 size={15} aria-hidden="true" /> : null}</>}</button>;
         })}
       </div>
 

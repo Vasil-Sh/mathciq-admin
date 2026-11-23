@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, Megaphone, WifiOff } from "lucide-react";
+import { ChevronDown, ChevronRight, Megaphone, WifiOff } from "lucide-react";
+import { useMedia } from "@/hooks/useMediaOnline";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import BannerEditor from "@/components/banners/BannerEditor";
@@ -62,6 +63,11 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
   const pickable = useMemo(() => list.filter((b) => (b.screen || "matches") === screen && !["live", "sched"].includes(statusOf(b, today))), [list, screen, today]);
 
   const [hot, setHot] = useState(0);
+  // Phone (design BannersMobile): a slot folds to its header; an empty slot starts folded
+  const phone = useMedia("(max-width: 767px)");
+  const [fold, setFold] = useState<Record<number, boolean>>({});
+  const folded = (n: number, empty: boolean) => phone && (fold[n] ?? empty);
+  const foldBtn = (n: number, empty: boolean) => phone ? <button type="button" className={`v3-bn-fold${folded(n, empty) ? "" : " is-open"}`} aria-expanded={!folded(n, empty)} aria-label={folded(n, empty) ? `Розгорнути «${slotName(n)}»` : `Згорнути «${slotName(n)}»`} onClick={() => setFold((f) => ({ ...f, [n]: !folded(n, empty) }))}><ChevronDown size={16} aria-hidden="true" /></button> : null;
   async function toggle(b: Banner, undo = false) {
     const on = !b.active;
     try {
@@ -101,7 +107,8 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     const s = st[n - 1], b = s.current;
     if (!b) return (
       <article key={n} className="v3-wcard v3-bn-slot" onMouseEnter={() => setHot(n)} onMouseLeave={() => setHot(0)}>
-        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div>{tag("free")}</div>
+        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div>{tag("free")}{foldBtn(n, true)}</div>
+        {!folded(n, true) && <>
         <button type="button" className={`v3-bn-free v3-bn-freebtn${screen === "matches" && ph(n) ? "" : " is-hidden"}`} disabled={!online} onClick={() => (pickable.length ? setPickSlot(n) : openNew(n))} aria-label={`Обрати банер для «${slotName(n)}»`}>
           {screen === "matches" && ph(n) ? <><strong>Слот вільний</strong><span>Користувачі бачать плейсхолдер реклами</span></> : <><strong>У застосунку слот прихований</strong><span>Користувачі не бачать нічого на цьому місці</span></>}
           <em className="v3-bn-freecta">{pickable.length ? `Обрати банер · ${pickable.length}` : "Створити банер"}</em>
@@ -114,12 +121,14 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
           {screen === "matches" ? <label className="v3-bn-sw"><input type="checkbox" role="switch" className="v3-switch" checked={ph(n)} disabled={!online} onChange={() => togglePh(n)} />{wide ? "Плейсхолдер «Тут може бути ваша реклама»" : ph(n) ? "Плейсхолдер увімкнено" : "Плейсхолдер вимкнено"}</label> : <span className="v3-bn-muted">Без плейсхолдера на цьому екрані</span>}
           <button type="button" className="v3-btn v3-btn-primary v3-btn-sm" disabled={!online} onClick={() => openNew(n)}>+ Додати</button>
         </div>
+        </>}
       </article>
     );
     const t = timeline(b, today), on = t.st === "live" || t.st === "sched";
     return (
       <article key={n} className="v3-wcard v3-bn-slot" onMouseEnter={() => setHot(n)} onMouseLeave={() => setHot(0)}>
-        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div><span key={`${b.id}-${t.st}`} className="v3-bn-tagw">{tag(t.st)}</span></div>
+        <div className="v3-bn-slot-h"><div><strong>{slotName(n)}</strong><span>{slotWhere(screen, n)}</span></div><span key={`${b.id}-${t.st}`} className="v3-bn-tagw">{tag(t.st)}</span>{foldBtn(n, false)}</div>
+        {!folded(n, false) && <>
         <div className={`v3-bn-img${t.st === "done" || t.st === "off" ? " is-dim" : ""}`}>{b.imageUrl ? <img src={b.imageUrl} alt={b.title} /> : <span>Без зображення</span>}</div>
         <div className="v3-bn-title"><strong>{b.title}</strong></div>
         <div className="v3-bn-prog"><div><span>{periodText(b)}</span><b>{t.left}</b></div><i><span style={{ width: `${t.prog}%` }} className={on ? "" : "is-gray"} /></i></div>
@@ -131,8 +140,10 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
         ) : (
           <>
             <dl className="v3-bn-dl">
+              {phone && <div><dt>Період</dt><dd>{periodText(b)}</dd></div>}
               <div><dt>Посилання</dt><dd className="is-link">{b.href ? b.href.replace(/^https?:\/\//, "") : "—"}</dd></div>
               <div><dt>Оновив</dt><dd>{b.updatedBy ? `@${b.updatedBy}` : "—"}{b.changedAt || b.updatedAt ? ` · ${shortDay((b.changedAt || b.updatedAt)!.slice(0, 10))}` : ""}</dd></div>
+              {phone && <div><dt>Далі в слоті</dt><dd className={s.upcoming ? "" : "is-muted"}>{s.upcoming ? `${s.upcoming.title}${s.upcoming.startsOn ? ` · з ${shortDay(s.upcoming.startsOn)}` : ""}${s.upcoming.active ? "" : " · вимкнено"}` : "нічого не заплановано"}</dd></div>}
             </dl>
             <div className="v3-bn-next"><span>Далі в слоті</span><strong>{s.upcoming ? s.upcoming.title : "нічого не заплановано"}</strong><span>{s.upcoming ? `${s.upcoming.startsOn ? `з ${shortDay(s.upcoming.startsOn)}` : ""}${s.upcoming.active ? "" : " · вимкнено"}` : "—"}</span></div>
             <div className="v3-bn-slot-f">
@@ -141,6 +152,7 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
             </div>
           </>
         )}
+        </>}
       </article>
     );
   }

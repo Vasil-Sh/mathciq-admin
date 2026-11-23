@@ -1,0 +1,96 @@
+/* ══ Реклама · телефон, світлий дизайн (23.11) ══
+   Лише ≤ 767 px і лише сторінка «Реклама» (.v3-ads). Комп’ютер не змінюється. */
+@media (max-width: 767px) {
+  body:has(.v3-ads), .v3-shell:has(.v3-ads) { background: #e9ecf2; }
+  .v3-shell:has(.v3-ads) .v3-stars { display: none; }
+  .v3-ads { color: #11151c; }
+  .v3-ads .v3-hero { position: relative; display: block; margin-bottom: 2px; }
+  .v3-ads .v3-hero .v3-chips { position: absolute; top: 0; right: 0; display: flex; gap: 8px; margin: 0; }
+  .v3-ads .v3-hero .v3-title { padding-right: 100px; font-size: 30px; font-weight: 400; letter-spacing: -.03em; line-height: 1.1; color: #11151c; }
+  .v3-ads .v3-subtitle { margin-top: 4px; font-size: 12px; line-height: 1.4; color: #6b7384; }
+  .v3-ad-hbtn { display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 0; border: 0; border-radius: 12px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .06); }
+  .v3-ad-hbtn.is-on { background: #3a6df0; color: #fff; }
+  .v3-ads .v3-fab { position: static; width: 40px; height: 40px; border-radius: 12px; background: #00b24b; box-shadow: none; }
+
+  /* підсумки */
+  .v3-ads .v3-ad-mkpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .v3-ads .v3-ad-mkpis > div { display: flex; flex-direction: column; gap: 4px; min-height: 104px; padding: 14px; border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-mkpis > div.is-blue { background: linear-gradient(160deg, #4a7cff, #3a64e0); color: #fff; }
+  .v3-ads .v3-ad-mkpis span { font-size: 13px; font-weight: 500; color: inherit; }
+  .v3-ads .v3-ad-mkpis b { font-size: 26px; font-weight: 400; letter-spacing: -.02em; color: inherit; font-variant-numeric: tabular-nums; }
+  .v3-ads .v3-ad-mkpis b.is-warn { color: #e5600d; }
+  .v3-ads .v3-ad-mkpis small { margin-top: auto; font-size: 11px; line-height: 1.35; color: #6b7384; }
+  .v3-ads .v3-ad-mkpis .is-blue small { color: rgba(255, 255, 255, .9); }
+
+  /* вкладки */
+  .v3-ads .v3-ads-tabs { display: flex; gap: 0; padding: 4px; border: 0; border-radius: 14px; background: #fff; overflow: visible; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ads-tabs > .v3-pill { top: 4px; bottom: 4px; border-radius: 10px; background: #3a6df0; box-shadow: none; }
+  .v3-ads .v3-ads-tabs .v3-ptab { flex: 1; justify-content: center; min-height: 38px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; }
+  .v3-ads .v3-ads-tabs .v3-ptab.is-on { color: #fff; font-weight: 600; }
+  .v3-ads .v3-ads-tabs:not(.has-pill) .v3-ptab.is-on { background: #3a6df0; }
+
+  /* слоти */
+  .v3-ads .v3-bn-slot { border: 0; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-bn-slot-h { align-items: center; gap: 8px; }
+  .v3-ads .v3-bn-slot-h strong { font-size: 17px; font-weight: 600; }
+  .v3-ads .v3-bn-slot-h span { font-size: 12px; color: #6b7384; }
+  .v3-bn-fold { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
+  .v3-bn-fold svg { transition: transform .25s cubic-bezier(.2, 0, 0, 1); }
+  .v3-bn-fold.is-open svg { transform: rotate(180deg); }
+  .v3-ads .v3-bn-slot .v3-bn-prog, .v3-ads .v3-bn-slot .v3-bn-next { display: none; }
+  .v3-ads .v3-bn-dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f4; font-size: 12px; }
+  .v3-ads .v3-bn-dl dt { color: #6b7384; }
+  .v3-ads .v3-bn-dl dd { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 600; color: #11151c; }
+  .v3-ads .v3-bn-dl dd.is-link { color: #3a6df0; }
+  .v3-ads .v3-bn-dl dd.is-muted { font-weight: 400; color: #9aa3b2; }
+  .v3-ads .v3-bn-slot-f .v3-btn-dark { min-height: 36px; border-radius: 10px; background: #11151c; color: #fff; }
+  .v3-ads .v3-bn-sw { font-size: 14px; font-weight: 500; color: #11151c; }
+  .v3-ads .v3-bn-free { border: 1.5px dashed #c9ced8; border-radius: 14px; background: #f4f6f9; color: #11151c; }
+  .v3-ads .v3-bn-free span { color: #6b7384; }
+  .v3-ads .v3-bn-freecta { color: #3a6df0; }
+  .v3-ads .v3-bn-done { border: 0; border-radius: 12px; background: #fff3dc; color: #6b4a00; }
+
+  /* усі кампанії */
+  .v3-ads .v3-bn-mcamp-h { color: #11151c; }
+  .v3-ads .v3-bn-mcamp-h span { color: #6b7384; }
+  .v3-ads .v3-bn-mcamp { border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-bn-mrow { color: #11151c; }
+  .v3-ads .v3-bn-mrow + .v3-bn-mrow { border-top-color: #eef0f4; }
+  .v3-ads .v3-bn-mrow img, .v3-ads .v3-bn-mrow > i { background: #eef0f4; }
+  .v3-ads .v3-bn-mrow small, .v3-ads .v3-bn-mrow svg { color: #6b7384; }
+  .v3-ads .v3-bn-mrow .v3-bn-tag.is-off { background: #eef0f4; color: #6b7384; }
+  .v3-ads .v3-seg { border: 0; background: #e3e6eb; }
+}
+.v3-ad-barv { display: none; }
+
+/* ══ Статистика · телефон (design AdsMobileStats / StatsData) ══ */
+@media (max-width: 767px) {
+  .v3-ads .v3-ads-tabs { margin: 0; overflow: visible; }
+  .v3-ads .v3-ad-sums { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .v3-ads .v3-ad-sum { display: flex; flex-direction: column; min-height: 104px; padding: 14px; border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-sum.is-blue { background: linear-gradient(160deg, #4a7cff, #3a64e0); color: #fff; }
+  .v3-ads .v3-ad-sum .l { font-size: 13px; font-weight: 500; color: inherit; }
+  .v3-ads .v3-ad-sum .v { margin-top: 6px; font-size: 26px; font-weight: 400; color: inherit; }
+  .v3-ads .v3-ad-sum .v.is-sm { font-size: 22px; }
+  .v3-ads .v3-ad-sum .n { margin-top: auto; padding-top: 6px; font-size: 11px; line-height: 1.35; color: #6b7384; }
+  .v3-ads .v3-ad-sum.is-blue .n { color: rgba(255, 255, 255, .9); }
+  .v3-ads .v3-ad-chart { border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-chart-h span { color: #6b7384; }
+  .v3-ads .v3-ad-seg { background: #eef0f4; }
+  .v3-ads .v3-ad-seg > .v3-pill { background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-ads .v3-ad-seg button { color: #3c4350; }
+  .v3-ads .v3-ad-seg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-ads .v3-ad-seg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-ads .v3-ad-custom { color: #3c4350; }
+  .v3-ads .v3-ad-cf .v3-date-btn { border-color: #e3e6eb; background: #fff; color: #11151c; }
+  .v3-ads .v3-ad-bars { gap: 4px; }
+  .v3-ads .v3-ad-bar { position: relative; }
+  .v3-ads .v3-ad-bar span { background: #dbe5ff; }
+  .v3-ads .v3-ad-bar.is-max span { background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
+  .v3-ads .v3-ad-barv { display: block; margin-bottom: 4px; text-align: center; font-size: 11px; font-weight: 600; color: #3a6df0; }
+  .v3-ads .v3-ad-axis { color: #9aa3b2; }
+  .v3-ads .v3-ad-table, .v3-ads .v3-ad-places { border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-mcard { border: 0; border-radius: 14px; background: #f4f6f9; color: #11151c; }
+  .v3-ads .v3-ad-mcard small { color: #6b7384; }
+  .v3-ads .v3-ad-note { color: #6b7384; }
+}

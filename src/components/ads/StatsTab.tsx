@@ -108,7 +108,7 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
         ) : (
           <>
             <div key={`${stats.daily[0]?.day}-${stats.daily.length}`} className="v3-ad-bars" role="img" aria-label={`Кліки по днях, максимум ${maxClicks}`}>
-              {stats.daily.map((d, i) => <div key={d.day} className="v3-ad-bar" style={{ ["--i" as string]: Math.min(i, 20) }} title={`${dmy(d.day)}: ${nf(d.clicks)} кліків · ${nf(d.impressions)} показів`}><span style={{ height: `${Math.max(d.clicks ? 3 : 0, (d.clicks / maxClicks) * 100)}%` }} /></div>)}
+              {stats.daily.map((d, i) => { const top = d.clicks > 0 && d.clicks === maxClicks; return <div key={d.day} className={`v3-ad-bar${top ? " is-max" : ""}`} style={{ ["--i" as string]: Math.min(i, 20) }} title={`${dmy(d.day)}: ${nf(d.clicks)} кліків · ${nf(d.impressions)} показів`}>{top && <b className="v3-ad-barv">{nf(d.clicks)}</b>}<span style={{ height: `${Math.max(d.clicks ? 3 : 0, (d.clicks / maxClicks) * 100)}%` }} /></div>; })}
             </div>
             <div className="v3-ad-axis">{stats.daily.map((d, i) => <span key={d.day}>{len <= 16 || i % Math.ceil(len / 15) === 0 ? Number(d.day.slice(8)) : ""}</span>)}</div>
           </>

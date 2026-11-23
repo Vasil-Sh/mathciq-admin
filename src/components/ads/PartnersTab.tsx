@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useMedia } from "@/hooks/useMediaOnline";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export default function PartnersTab({ list, error, stats, settings, wide, online, reload, setList, setSettings, creating, setCreating }: Props) {
+  const phone = useMedia("(max-width: 767px)");
   const [selId, setSelId] = useState<string | null>(null);
   const [f, setF] = useState<BookmakerInput>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -159,7 +161,7 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
 
   return (
     <>
-      {places}
+      {!phone && places}
       <section className="v3-ad-main">
         <div className="v3-wcard v3-ad-table">
           <div className="v3-ad-table-h"><h2>Букмекери-партнери</h2><p>Показуємо лише ліцензованих PlayCity. Без чинної ліцензії партнер автоматично зникає з застосунку.</p></div>
@@ -183,6 +185,8 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
         </div>
         {editor}
       </section>
+      {/* phone (design AdsMobilePartners): partners first, then the places */}
+      {phone && places}
       {!wide && <div className="v3-ad-note"><AdLabel /><span>додається до кожного розміщення автоматично</span></div>}
       <ConfirmDialog open={!!delAsk} busy={delBusy} onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && remove(delAsk)}
         title={`Видалити «${delAsk?.name || "партнера"}»?`} confirm="Видалити" busyText="Видаляємо…"
