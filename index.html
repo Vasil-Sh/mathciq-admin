@@ -23,7 +23,7 @@
       .mq-splash { position: fixed; inset: 0; z-index: 9999; transform: translateZ(0); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #0a0d13; font-family: Inter, system-ui, -apple-system, sans-serif; }
       .mq-splash-mark { position: relative; display: grid; place-items: center; width: 76px; height: 76px; border-radius: 22px; background: #00b24b; box-shadow: 0 14px 40px rgba(0, 178, 75, .35); animation: mq-pop .6s cubic-bezier(.2, .9, .25, 1.4) both; }
       .mq-splash-mark::after { content: ""; position: absolute; inset: -8px; border-radius: 28px; border: 2px solid rgba(0, 178, 75, .45); animation: mq-halo 1.8s ease-out .4s infinite; }
-      .mq-splash-mark svg { width: 46px; height: 46px; overflow: visible; }
+      .mq-splash-mark svg { width: 40px; height: 40px; overflow: visible; }
       .mq-b { transform-box: fill-box; transform-origin: 50% 100%; animation: mq-bar 1.2s ease-in-out infinite; }
       .mq-b2 { animation-delay: .15s; } .mq-b3 { animation-delay: .3s; }
       .mq-splash-name { color: #f4f6fa; font-size: 20px; font-weight: 700; letter-spacing: -.02em; animation: mq-in .5s ease-out .2s both; }
@@ -35,12 +35,14 @@
       .mq-splash.is-out { opacity: 0; transition: opacity .35s ease; pointer-events: none; }
       /* iPhone could paint the fixed tab bar over the launch screen: keep it hidden until the launch screen starts to fade */
       body:has(.mq-splash:not(.is-out)) .v3-tabbar { visibility: hidden; }
+      /* …and keep the page under it dark: iOS paints the body colour into the home-indicator strip below a fixed layer */
+      html:has(.mq-splash), body:has(.mq-splash) { background: #0a0d13 !important; }
       @media (prefers-reduced-motion: reduce) { .mq-splash, .mq-splash *, .mq-splash-mark::after { animation: none !important; } }
     </style>
   </head>
   <body class="bg-canvas text-ink antialiased">
     <div id="root"></div>
-    <div id="mq-splash" class="mq-splash" role="status" aria-label="MatchIQ завантажується"><div class="mq-splash-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(5,6)" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16"/><path d="M3 8h16" class="mq-ax"/><path class="mq-b mq-b1" d="M8 19v-4"/><path class="mq-b mq-b2" d="M14 19V7"/><path class="mq-b mq-b3" d="M20 19v-8"/></g></svg></div><div class="mq-splash-name">MatchIQ <span>Admin</span></div></div>
+    <div id="mq-splash" class="mq-splash" role="status" aria-label="MatchIQ завантажується"><div class="mq-splash-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" class="mq-ax"/><path class="mq-b mq-b1" d="M8 17v-3"/><path class="mq-b mq-b2" d="M13 17V5"/><path class="mq-b mq-b3" d="M18 17V9"/></g></svg></div><div class="mq-splash-name">MatchIQ <span>Admin</span></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

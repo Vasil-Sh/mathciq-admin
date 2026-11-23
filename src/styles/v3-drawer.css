@@ -89,3 +89,10 @@
   /* Налаштування: розділи вже є в меню, окремий список «Розділ:» не дублюємо */
   .v3-st-mdd { display: none !important; }
 }
+
+/* Phone: the light screens (Дашборд, Користувачі, Оплати) — light canvas from the first frame of the route, also while its chunk loads */
+@media (max-width: 767px) {
+  body:has(.v3-shell[data-light]),
+  .v3-shell[data-light] { background: #e9ecf2; }
+  .v3-shell[data-light] .v3-stars { display: none; }
+}

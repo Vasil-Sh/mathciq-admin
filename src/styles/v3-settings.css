@@ -336,3 +336,21 @@
 .v3-st-item .v3-st-dirty { margin-left: auto; }
 @media (max-width: 639px) { .v3-st-grid3.is-ai { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3-st-grid3.is-ai > .v3-st-f { grid-column: 1 / -1; } .v3-settings .v3-st-stat p { font-size: 22px; flex-wrap: wrap; gap: 4px 8px; } }
 .v3-modal-ico.is-amber { background: #fdf0d8; color: #8a5a00; }
+
+/* Налаштування → Навігація (phone): the tab bar preview and the section picker */
+.v3-st-navprev { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 10px 4px; border-radius: 18px; background: #141416; color: #a1a3aa; }
+.v3-st-navtab { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.v3-st-navtab small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.v3-st-navtab.is-set { color: #fff; animation: v3-st-navpop .3s cubic-bezier(.3, 1.4, .5, 1); }
+.v3-st-navtab.is-empty i { width: 20px; height: 20px; border-radius: 6px; border: 1.5px dashed #4a4c52; }
+@keyframes v3-st-navpop { from { transform: scale(.8); opacity: 0; } }
+.v3-st-navhint { margin: 10px 2px 12px; color: var(--v3-ink-muted); font-size: 13px; line-height: 1.45; }
+.v3-st-navlist { display: flex; flex-direction: column; gap: 6px; }
+.v3-st-navopt { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 1px solid var(--st-line, #e3e6ec); border-radius: 14px; background: #fff; color: var(--v3-ink); font: 500 15px Inter, sans-serif; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: border-color .2s, background-color .2s; }
+.v3-st-navopt span { flex: 1; }
+.v3-st-navopt b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #c9d0db; font-size: 12px; font-weight: 600; color: #fff; }
+.v3-st-navopt.is-on { border-color: #3a8bff; background: #f2f7ff; }
+.v3-st-navopt.is-on b { border-color: #3a8bff; background: #3a8bff; }
+.v3-st-navopt:disabled { opacity: .45; cursor: default; }
+.v3-st-navreset { margin-top: 12px; padding: 10px 0; border: 0; background: none; color: #3a8bff; font: 500 14px Inter, sans-serif; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .v3-st-navtab.is-set { animation: none; } }

@@ -3,6 +3,7 @@ import { Lock } from "lucide-react";
 import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { isoToday } from "@/lib/usersModel";
+import { isPhoneWidth } from "@/lib/pageSearch";
 import type { AdminUserOverview, AppSettings } from "@/types";
 
 export type Plan = "trial" | "basic" | "pro";
@@ -86,14 +87,15 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
 
   return (
     <Dialog open={open} onOpenChange={dlg}>
-      <DialogContent className="v3-modal v3-modal-lg v3-ufd sm:max-w-[620px]">
+      {/* phone: opens without the keyboard — the login field waits for a tap */}
+      <DialogContent className="v3-modal v3-modal-lg v3-ufd sm:max-w-[620px]" onOpenAutoFocus={(e) => { if (isPhoneWidth()) e.preventDefault(); }}>
         <DialogTitle className="v3-modal-title">{mode === "create" ? "Новий користувач" : `Редагувати @${user?.username}`}</DialogTitle>
         <DialogDescription className="v3-modal-sub">{mode === "create" ? <><span className="v3-hide-mobile">Створіть обліковий запис і налаштуйте доступ до MatchIQ.</span><span className="v3-only-mobile">Обліковий запис і доступ до MatchIQ</span></> : "Логін, Telegram, план, дати, вік і роль."}</DialogDescription>
         <form className="v3-form" noValidate onSubmit={(e) => { e.preventDefault(); if (check()) onSave({ ...f, username: f.username.trim(), telegram: f.telegram.trim() }); }}>
           <fieldset disabled={busy} className="v3-form-sec">
             <legend>Основна інформація</legend>
             <div className="v3-form-grid">
-              <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create"} required aria-invalid={!!err.login} aria-describedby={err.login ? "uf-login-err" : undefined} value={f.username} onChange={(e) => { setF({ ...f, username: e.target.value }); if (err.login) setErr({ ...err, login: undefined }); }} placeholder="Логін без @" autoComplete="off" />{err.login ? <small id="uf-login-err" className="v3-field-err" role="alert">{err.login}</small> : <small className="v3-hint">Використовується для входу</small>}</div>
+              <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create" && !isPhoneWidth()} required aria-invalid={!!err.login} aria-describedby={err.login ? "uf-login-err" : undefined} value={f.username} onChange={(e) => { setF({ ...f, username: e.target.value }); if (err.login) setErr({ ...err, login: undefined }); }} placeholder="Логін без @" autoComplete="off" />{err.login ? <small id="uf-login-err" className="v3-field-err" role="alert">{err.login}</small> : <small className="v3-hint">Використовується для входу</small>}</div>
               <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} aria-invalid={!!err.tg} aria-describedby={err.tg ? "uf-tg-err" : undefined} onChange={(e) => { setF({ ...f, telegram: e.target.value }); if (err.tg) setErr({ ...err, tg: undefined }); }} placeholder="@username або t.me/username" />{err.tg ? <small id="uf-tg-err" className="v3-field-err" role="alert">{err.tg}</small> : <small className="v3-hint">Контакт для зв’язку</small>}</div>
             </div>
           </fieldset>

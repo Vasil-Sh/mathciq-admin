@@ -412,7 +412,7 @@ export default function Dashboard() {
     { icon: Wallet, label: "Отримані оплати", short: "Отримані оплати", value: money(view.paid), note: isEmpty ? "оплат ще не додано" : `${periodLabel} · ${view.paidCount} ${payWord(view.paidCount)}`, delta: view.paidDelta, deltaAbs: view.paidAbs, deltaNote: period !== "year" ? `до ${MONTHS_GEN[monthIdx(prevKey(period))]}` : "", to: "/payments", hero: !isEmpty },
     { icon: TrendingUp, label: "Вартість підписок / міс.", short: "Підписки / міс.", value: money(stats.mrr), note: isEmpty ? "немає активних підписок" : "розрахунок за тарифами", to: "/users?status=paid" },
     { icon: Users, label: "Активні користувачі", short: "Активні", value: String(stats.activeUsers), note: isEmpty ? "без адміністраторів" : `з ${regularUsers}`, to: "/users?status=all" },
-    { icon: UserPlus, label: "Нові цього місяця", short: "Нові цього місяця", value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?status=all&sort=new" },
+    { icon: UserPlus, label: "Нові цього місяця", short: `Нові в ${MONTHS_LOC[monthIdx(now.key)]}`, value: String(stats.newThisMonth), note: isEmpty ? "реєстрацій ще немає" : `${view.prevReg} у ${MONTHS_LOC[prevMonthIdx]}`, to: "/users?status=all&sort=new" },
   ];
   const chartEmpty = view.total === 0;
   const barCmp = (i: number) => {

@@ -273,7 +273,7 @@ export default function Payments() {
           </div>
           <div className="v3-pay-cxrow"><button type="button" className={`v3-btn v3-btn-ghost-dark v3-pay-cx${cx === "busy" ? " is-busy" : ""}`} disabled={!online || cx === "busy"} onClick={() => setConfirmFor({ kind: "cx", p })}>{cx === "busy" ? "Скасовуємо…" : "Скасувати запис"}</button><button type="button" className="v3-pay-del" disabled={!online || del === "busy"} onClick={() => setConfirmFor({ kind: "del", p })} aria-label={`Видалити запис №${p.id} повністю`} title="Видалити запис повністю"><Trash2 size={16} aria-hidden="true" /></button></div>
           <p className="v3-pay-hint">«Скасувати запис» — помилкова оплата (дубль). «Повернути гроші» — коли ви повернули кошти людині.</p>
-        </> : <div className="v3-pay-closed"><p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p><button type="button" className={`v3-pay-del${del === "ask" ? " is-ask" : ""}`} disabled={!online || del === "busy"} onClick={() => deleteRecord(p)} aria-label={del === "ask" ? `Підтвердити видалення запису №${p.id}` : `Видалити запис №${p.id} повністю`} title="Видалити запис повністю">{del === "ask" ? "Видалити?" : <Trash2 size={16} aria-hidden="true" />}</button></div>}
+        </> : <div className="v3-pay-closed"><p className="v3-pay-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p><button type="button" className="v3-pay-del" disabled={!online || del === "busy"} onClick={() => setConfirmFor({ kind: "del", p })} aria-label={`Видалити запис №${p.id} повністю`} title="Видалити запис повністю"><Trash2 size={16} aria-hidden="true" /></button></div>}
       </div>
     );
   };
@@ -499,7 +499,7 @@ export default function Payments() {
 
       <PickUserDialog open={pick} users={users} onOpenChange={setPick} onPick={(u) => { setPick(false); setPayStep(true); setPayFor(u); }} />
       {payFor && <AddPaymentDialog open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} userId={payFor.id} username={payFor.username} endDate={payFor.endDate} priceMonth={String(payFor.priceMonth || "")} planLabel={planCell(payFor, null).plan} step={payStep ? "Крок 2 з 2" : undefined}
-        onSaved={async () => { const before = new Set(all.map((p) => p.id)); if (!who) setMonth(kyivMonth()); const r = await fetchPayments(who ? "" : kyivMonth()).catch(() => null); if (r) { const got = who ? r.payments.filter((p) => (p.username || "").toLowerCase() === who.toLowerCase()) : r.payments; setRows(got); r.payments = got; const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
+        onSaved={async () => { const before = new Set(all.map((p) => p.id)); /* phone: a payment recorded from the user card closes the card — back to all payments, the new one lit */ const w = phone ? "" : who; if (phone && who) clearWho(); if (!w) setMonth(kyivMonth()); const r = await fetchPayments(w ? "" : kyivMonth()).catch(() => null); if (r) { const got = w ? r.payments.filter((p) => (p.username || "").toLowerCase() === w.toLowerCase()) : r.payments; setRows(got); r.payments = got; const n = r.payments.find((p) => !before.has(p.id)); if (n) { setFresh(n.id); setSelId(n.id); setFilt("all"); setQ(""); window.setTimeout(() => setFresh(null), 2000); } } fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
       {refundFor && userOf(refundFor) && <RefundDialog user={userOf(refundFor)!} payment={asPayment(refundFor)} open={!!refundFor} onOpenChange={(o) => { if (!o) setRefundFor(null); }} onDone={() => { load({ quiet: true }); loadSide(); }} />}
       {whoUser && <GrantProDialog user={whoUser} open={userDlg === "pro"} onOpenChange={(o) => setUserDlg(o ? "pro" : null)} onDone={() => fetchUsersOverview().then(setUsers).catch(() => {})} />}
       {whoUser && <RefundDialog user={whoUser} payment={lastRecorded ? asPayment(lastRecorded) : null} open={userDlg === "refund"} onOpenChange={(o) => setUserDlg(o ? "refund" : null)} onDone={() => { load({ quiet: true }); loadSide(); fetchUsersOverview().then(setUsers).catch(() => {}); }} />}
@@ -521,17 +521,19 @@ export default function Payments() {
 function PickUserDialog({ open, users, onOpenChange, onPick }: { open: boolean; users: AdminUserOverview[]; onOpenChange: (o: boolean) => void; onPick: (u: AdminUserOverview) => void }) {
   const [q, setQ] = useState("");
   useEffect(() => { if (open) setQ(""); }, [open]);
+  const phone = isPhoneWidth();
   const s = q.trim().toLowerCase().replace(/^@/, "");
-  const list = users.filter((u) => !isAdmin(u) && (!s || (u.username || "").toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s))).slice(0, 8);
+  const list = users.filter((u) => !isAdmin(u) && (!s || (u.username || "").toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s))).slice(0, phone ? undefined : 8);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="v3-modal sm:max-w-[480px]">
+      {/* phone: opens without the keyboard — the search field waits for a tap; the list scrolls */}
+      <DialogContent className="v3-modal sm:max-w-[480px]" onOpenAutoFocus={(e) => { if (phone) e.preventDefault(); }}>
         <DialogTitle className="v3-modal-title">Записати оплату</DialogTitle>
         <DialogDescription className="v3-modal-sub">Кому записати оплату? Гроші вже отримано поза адмінкою — тут лише запис.</DialogDescription>
-        <label className="v3-search v3-pick-search"><Search size={16} aria-hidden="true" /><input autoFocus type="search" aria-label="Пошук користувача" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} /></label>
+        <label className="v3-search v3-pick-search"><Search size={16} aria-hidden="true" /><input autoFocus={!phone} type="search" aria-label="Пошук користувача" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} /></label>
         <ul className="v3-pick-list" role="listbox" aria-label="Користувачі">
           {list.length ? list.map((u, i) => (
-            <li key={u.id} style={{ animationDelay: `${i * 30}ms` }}><button type="button" role="option" aria-selected="false" onClick={() => onPick(u)}>
+            <li key={u.id} style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}><button type="button" role="option" aria-selected="false" onClick={() => onPick(u)}>
               <UserAvatar username={u.username} telegram={u.telegram} />
               <span><span className="v3-pick-nm"><strong>@{u.username}</strong>{(() => { const c = u.plan === "trial" ? "trial" : u.plan === "pro" ? "pro" : u.plan === "basic" ? "basic" : ""; return c ? <span className={`v3-ptag is-${c} v3-only-mobile`}>{planCell(u, null).plan}</span> : null; })()}</span><small><span className="v3-hide-mobile">{planCell(u, null).plan} · </span>до {dShort(u.endDate)}</small></span>
               <ArrowRight size={15} aria-hidden="true" />

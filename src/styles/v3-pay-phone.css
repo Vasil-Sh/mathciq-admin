@@ -175,6 +175,9 @@
   .v3-pick-list .v3-ptag.is-basic { background: #e3f5ea; color: #1f8a4c; }
   .v3-pick-list .v3-ptag.is-pro { background: #fde2df; color: #c2341f; }
   .v3-pick-list ul, .v3-pick-list { display: flex; flex-direction: column; gap: 6px; }
+  /* all users, scrolled inside the sheet; buttons keep their height */
+  .v3-pick-list { max-height: min(52dvh, 440px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .v3-pick-list li { flex-shrink: 0; }
 }
 @media (max-width: 767px) { .v3-pay .v3-pay-found { margin: 0; padding: 0 2px; color: #3a6df0; font-size: 12px; font-weight: 500; } }
 @media (min-width: 768px) { .v3-pay .v3-pay-found { display: none; } }
@@ -231,3 +234,8 @@
   .v3-ap .v3-modal-actions .v3-btn-primary { width: 100%; min-height: 48px; border-radius: 14px; background: #00b24b; color: #fff; font-size: 15px; }
 }
 @media (max-width: 767px) { .v3-ap .v3-apg > .v3-ap-note { order: 9; } }
+/* «Згенерувати» on the light promo form: a visible blue button, not a faint white-on-white chip */
+@media (max-width: 767px) {
+  .v3-pay .v3-pay-gen { margin-right: -6px; background: #e6edff; color: #2f5fd8; font-weight: 600; }
+  .v3-pay .v3-pay-gen:active { background: #d6e2ff; }
+}

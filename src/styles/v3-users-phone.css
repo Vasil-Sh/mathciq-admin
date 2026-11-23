@@ -74,7 +74,7 @@
   .v3-users .v3-mcard > .v3-st-trial { background: #e6edff; color: #2f5fd8; }
 
   /* кільце днів до кінця підписки */
-  .v3-users .v3-mring { position: relative; display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; }
+  .v3-users .v3-mring { position: relative; display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; }
   .v3-users .v3-mring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
   .v3-users .v3-mring circle { fill: none; stroke-width: 3; }
   .v3-users .v3-mring-t { stroke: #eef0f4; }
@@ -82,7 +82,10 @@
   .v3-users .v3-mring.is-green .v3-mring-p { stroke: #1f9d55; }
   .v3-users .v3-mring.is-amber .v3-mring-p { stroke: #f0a03c; }
   .v3-users .v3-mring.is-red .v3-mring-p { stroke: #e5484d; }
-  .v3-users .v3-mring b { position: relative; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #11151c; }
+  .v3-users .v3-mring b { position: relative; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #11151c; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .v3-users .v3-mring b small { margin-top: 1px; font-size: 8.5px; font-weight: 600; color: #6b7280; letter-spacing: .01em; }
+  /* «Закінчуються» count — red, as the urgent ring */
+  .v3-users .v3-fchip:not(.is-on) .v3-fchip-n.is-exp { background: #e5484d; color: #fff; }
 
   .v3-users .v3-mcard-empty { border-radius: 20px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
   .v3-users .v3-btn-ghost-dark.v3-btn-block { border: 0; background: #11151c; color: #fff; }

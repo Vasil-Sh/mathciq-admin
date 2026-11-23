@@ -76,11 +76,19 @@ export default function Admin() {
   const [sort, setSort] = useSessionFilter<Sort>("users.sort3", "new", SORTS);
   // Phone: the search lives in the header (design 22.11) — its query drives the same list filter.
   const pageSearch = usePageSearch("Логін або Telegram");
+  // A link with ?q= (from Оплати, Дашборд…) opens the header search with that query — the filter is never active with an empty, hidden header.
+  // Until the header shows the same query, the list does not take the header's value (so it is not wiped by the empty header on mount).
   const searchSynced = useRef(false);
   useEffect(() => {
-    if (!searchSynced.current) { searchSynced.current = true; if (isPhoneWidth() && q) { pageSearch.setQ(q); pageSearch.setOpen(true); } return; }
-    if (isPhoneWidth()) setQ(pageSearch.q);
+    if (!isPhoneWidth()) return;
+    if (!searchSynced.current) { if (pageSearch.q === q) searchSynced.current = true; return; }
+    setQ(pageSearch.q);
   }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isPhoneWidth() || searchSynced.current) return;
+    if (!q) { searchSynced.current = true; return; }
+    pageSearch.setQ(q); pageSearch.setOpen(true);
+  }, [q, pageSearch.q, pageSearch.open]); // eslint-disable-line react-hooks/exhaustive-deps
   const [page, setPage] = useState(1);
   const [mobileShown, setMobileShown] = useState(PAGE_SIZE);
   const [showErr, setShowErr] = useState(false);
@@ -125,10 +133,10 @@ export default function Admin() {
   }, []);
   // Links from other screens: ?q=, ?status=expired|active
   useEffect(() => {
-    const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); }
+    const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); if (isPhoneWidth()) { pageSearch.setQ(qq); pageSearch.setOpen(true); } }
     // ?status= is any list filter (all, paid, trial, basic, pro, ended, cancelled, closed, expiring); older links: active → paid, expired → closed
     const f = filterFromParam(urlParams.get("status"));
-    if (f) { setFilter(f); setAgeOnly(false); setTab("users"); if (!qq) setQ(""); }
+    if (f) { setFilter(f); setAgeOnly(false); setTab("users"); if (!qq) { setQ(""); if (isPhoneWidth()) { pageSearch.setQ(""); pageSearch.setOpen(false); } } }
     const so = urlParams.get("sort"); if (so && (SORTS as string[]).includes(so)) setSort(so as Sort);
   }, [urlParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -380,7 +388,7 @@ export default function Admin() {
       <div className="v3-mfilters is-line">
         <Dropdown className="v3-mselect-dd" ariaLabel="План" prefix="План:" value={filter} onChange={(v) => setFilter(v as UFilter)} options={[...segs.map((s) => ({ value: s.key as UFilter, label: `${s.label} · ${counts[s.key]}` })), ...(filter === "paid" ? [{ value: "paid" as UFilter, label: `Платні · ${counts.paid}` }] : []), ...(filter === "closed" ? [{ value: "closed" as UFilter, label: `Закінчилась або скасована · ${counts.closed}` }] : []), ...(filter === "expiring" ? [{ value: "expiring" as UFilter, label: `Закінчуються · ${counts.expiring}` }] : [])]} />
         <button type="button" className={`v3-fchip${filter === "expiring" ? " is-on" : ""}`} aria-pressed={filter === "expiring"} disabled={!counts.expiring && filter !== "expiring"} title={counts.expiring ? undefined : `Ні в кого підписка не закінчується найближчі ${getExpiringWindow()} ${plural(getExpiringWindow(), "день", "дні", "днів")}`} onClick={() => { setAgeOnly(false); setFilter(filter === "expiring" ? "all" : "expiring"); }}><span className={`v3-fchip-n${counts.expiring ? " is-exp" : ""}`}>{counts.expiring}</span>Закінчуються{filter === "expiring" && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>
-        {noAge > 0 && <button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => { if (filter === "expiring") setFilter("all"); setAgeOnly(!ageOnly); }}><span className="v3-fchip-n is-age">{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
+        {<button type="button" className={`v3-fchip${ageOnly ? " is-on" : ""}`} aria-pressed={ageOnly} disabled={!noAge && !ageOnly} title={noAge ? undefined : "Вік підтвердили всі"} aria-label={`Вік не підтверджено: ${noAge}`} onClick={() => { if (filter === "expiring") setFilter("all"); setAgeOnly(!ageOnly); }}><span className={`v3-fchip-n${noAge ? " is-age" : ""}`}>{noAge}</span>Вік ?{ageOnly && <X size={14} className="v3-fchip-x" aria-hidden="true" />}</button>}
         <button type="button" className={`v3-msort${sort === "name" ? " is-on" : ""}`} aria-pressed={sort === "name"} aria-label={`Сортування: ${sort === "name" ? "за логіном" : "нові спочатку"}. Змінити`} title={sort === "name" ? "За логіном" : "Нові спочатку"} onClick={() => { const next = sort === "name" ? "new" : "name"; setSort(next); toast.info(next === "name" ? "Сортування: за логіном" : "Сортування: нові спочатку", { id: "users-sort" }); }}>{sort === "name" ? <ArrowUpNarrowWide size={17} aria-hidden="true" /> : <ArrowDownWideNarrow size={17} aria-hidden="true" />}</button>
       </div>
       {q.trim() && list.length > 0 && <p className="v3-mfound" role="status">Знайдено {list.length}</p>}
@@ -413,7 +421,7 @@ export default function Admin() {
                 {admin ? <span className="v3-mrole"><Shield size={12} aria-hidden="true" />{u.isOwner ? "Овнер" : "Адмін"}</span>
                   : ring ? <span className={`v3-mring ${ringCls}`} role="img" aria-label={d === 0 ? "закінчується сьогодні" : `ще ${d} ${plural(d, "день", "дні", "днів")}`}>
                       <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" className="v3-mring-t" /><circle cx="18" cy="18" r="15.5" className="v3-mring-p" pathLength={100} strokeDasharray={`${Math.max(4, Math.min(100, (d / period) * 100))} 100`} /></svg>
-                      <b>{d}</b>
+                      <b>{d}<small>дн.</small></b>
                     </span>
                   : <span className={`v3-tag ${ui.cls}`}>{ui.label}</span>}
               </button>

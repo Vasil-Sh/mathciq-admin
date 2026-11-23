@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Tag, UserCog, Users, LogOut } from "lucide-react";
+import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Smartphone, Tag, UserCog, Users, LogOut } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { useMatchCounts } from "@/lib/navCounts";
+import { TAB_OPTIONS, useTabs } from "@/lib/tabbar";
 
 type Badges = { usersExpiring?: number; supportOpen?: number; matchesError?: boolean; matchesStopped?: boolean; matchesErrorText?: string };
 type Sub = { label: string; to: string; key: string; icon: typeof Users };
@@ -11,7 +12,7 @@ type Item = { label: string; to: string; icon: typeof Users; group?: "ads" | "ma
 
 const SETTINGS: Sub[] = ([
   ["tariffs", "Тарифи", Tag], ["trial", "Пробний період", Gift], ["ai", "AI-аналіз", Bot], ["texts", "Тексти й дисклеймери", FileText], ["alerts", "Попередження", Bell],
-  ["receipt", "Чек оплати", Receipt], ["templates", "Шаблони повідомлень", MessageCircle], ["account", "Мій акаунт", UserCog], ["banners", "Банери", Image],
+  ["receipt", "Чек оплати", Receipt], ["templates", "Шаблони повідомлень", MessageCircle], ["account", "Мій акаунт", UserCog], ["banners", "Банери", Image], ["nav", "Навігація", Smartphone],
 ] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: `/settings#${k}` }));
 
 const ITEMS: Item[] = [
@@ -100,15 +101,11 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
   );
 }
 
-/** Phone tab bar: Меню · Дашборд · Користувачі · Оплати · Матчі (as on the design). */
+/** Phone tab bar: «Меню» + four sections chosen in Налаштування → Навігація (Дашборд · Користувачі · Оплати · Матчі by default). */
 export function MobileTabBar({ onMenu, menuOpen }: { onMenu: () => void; menuOpen: boolean }) {
   const { pathname } = useLocation();
-  const tabs = [
-    { to: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
-    { to: "/users", label: "Користувачі", icon: Users },
-    { to: "/payments", label: "Оплати", icon: CreditCard },
-    { to: "/matches", label: "Матчі", icon: Gamepad2 },
-  ];
+  const chosen = useTabs();
+  const tabs = chosen.map((k) => TAB_OPTIONS.find((o) => o.key === k)!);
   return (
     <nav className="v3-tabbar" aria-label="Швидкі розділи">
       <button type="button" className={`v3-tab${menuOpen ? " is-on" : ""}`} onClick={onMenu} aria-expanded={menuOpen}>

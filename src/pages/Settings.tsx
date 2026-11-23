@@ -22,9 +22,10 @@ import {
 } from "@/lib/settingsModel";
 import type { AppSettings } from "@/types";
 import { forgetReceiptTexts } from "@/lib/paymentReceipt";
+import { DEFAULT_TABS, TAB_OPTIONS, TAB_SLOTS, saveTabs, useTabs, type TabKey } from "@/lib/tabbar";
 import { setExpiringWindow } from "@/lib/usersModel";
 
-type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners";
+type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners" | "nav";
 const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: string; dark?: boolean }[] = [
   { key: "tariffs", label: "Тарифи", icon: CreditCard, badge: "оновлено" },
   { key: "trial", label: "Пробний період", icon: Clock, badge: "нове" },
@@ -35,6 +36,8 @@ const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: strin
   { key: "templates", label: "Шаблони повідомлень", icon: MessageSquare, badge: "нове", dark: true },
   { key: "account", label: "Мій акаунт", icon: Lock, badge: "нове" },
   { key: "banners", label: "Банери", icon: Megaphone, dark: true },
+  // phone only: the bottom tab bar
+  { key: "nav", label: "Навігація", icon: Smartphone, badge: "нове" },
 ];
 const SEEN_KEY = "settingsSeen";
 /** Which menu item a draft field belongs to (for the orange «unsaved» dot). */
@@ -104,6 +107,8 @@ function CopyButton({ text, dark }: { text: string; dark?: boolean }) {
 export default function Settings() {
   const { user } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
+  const phone = useMedia("(max-width: 767px)");
+  const secs = SECS.filter((x) => x.key !== "nav" || phone);
   const online = useOnline();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [meta, setMeta] = useState<SettingsMeta>({});
@@ -341,7 +346,8 @@ export default function Settings() {
       <p className="v3-st-meta"><span>{meta.bannerSpecText ? `Остання зміна: ${meta.bannerSpecText.by ? `@${meta.bannerSpecText.by} · ` : ""}${shortDay(meta.bannerSpecText.at)}` : ""}</span><span className={cur.bannerSpecText.length > 1900 ? "is-warn" : ""}>{cur.bannerSpecText.length} / 2000</span></p>
     </Section>
   );
-  const body = [tariffs, trial, ai, texts, alerts, receipt, templates, account, banners];
+  const nav = phone && show("nav") && <NavSection key="nav" all={all} n={n("nav")} badge={badgeOf("nav")} />;
+  const body = [tariffs, trial, ai, texts, alerts, receipt, templates, account, banners, nav];
 
   return (
     <div className="v3-page v3-settings">
@@ -358,15 +364,15 @@ export default function Settings() {
             <button type="button" className={`v3-st-all${all ? " is-on" : ""}`} aria-pressed={all} onClick={() => setSec(all ? here : "all")}><LayoutGrid size={16} aria-hidden="true" />Показати все</button>
             {all ? (
               <div className="v3-st-here">
-                <span><small>Ви тут</small><small>{n(here)} з {SECS.length}</small></span>
+                <span><small>Ви тут</small><small>{n(here)} з {secs.length}</small></span>
                 <strong>{SECS.find((x) => x.key === here)?.label}</strong>
-                <i aria-hidden="true"><b style={{ width: `${(n(here) / SECS.length) * 100}%` }} /></i>
+                <i aria-hidden="true"><b style={{ width: `${(n(here) / secs.length) * 100}%` }} /></i>
                 <small>Підсвічений пункт у меню — розділ на екрані. Клік — перейти до нього.</small>
               </div>
             ) : <hr />}
             <div ref={listRef} className="v3-st-list">
               {pill && <span className={`v3-st-pill${all ? " is-here" : ""}`} style={{ transform: `translateY(${pill.y}px)`, height: pill.h }} aria-hidden="true" />}
-              {SECS.map((s) => { const on = activeKey === s.key; const dirtyHere = changed.some((k) => SEC_OF[k] === s.key); const b = dirtyHere ? undefined : badgeOf(s.key); return (
+              {secs.map((s) => { const on = activeKey === s.key; const dirtyHere = changed.some((k) => SEC_OF[k] === s.key); const b = dirtyHere ? undefined : badgeOf(s.key); return (
                 <button key={s.key} data-k={s.key} type="button" className={`v3-st-item${on ? (all ? " is-here" : " is-on") : ""}`} aria-current={on ? (all ? "location" : "page") : undefined} onClick={() => pick(s.key)}>
                   <s.icon size={16} aria-hidden="true" /><span>{s.label}</span>{b && <small>{b}</small>}
                   {dirtyHere && <i className="v3-st-dirty" title="Є незбережені зміни" aria-label="є незбережені зміни" />}
@@ -379,7 +385,7 @@ export default function Settings() {
         </div>
       ) : (
         <div className="v3-st-m">
-          <Dropdown className="v3-st-mdd" ariaLabel="Розділ налаштувань" prefix="Розділ:" value={mSec} onChange={(v) => { setMSec(v); if (v !== "all") markSeen(v); }} options={[{ value: "all" as const, label: "Усі розділи" }, ...SECS.map((s) => ({ value: s.key, label: s.label }))]} />
+          <Dropdown className="v3-st-mdd" ariaLabel="Розділ налаштувань" prefix="Розділ:" value={mSec} onChange={(v) => { setMSec(v); if (v !== "all") markSeen(v); }} options={[{ value: "all" as const, label: "Усі розділи" }, ...secs.map((s) => ({ value: s.key, label: s.label }))]} />
           <div key={`m-${mSec}`} className="v3-st-main">{body}</div>
         </div>
       )}
@@ -650,6 +656,44 @@ function TemplatesSection({ all, n, badge, cur, set, wide }: { all: boolean; n: 
           </div>
         </div>
       </div>
+    </Section>
+  );
+}
+
+// ───────────────────────── nav (phone) ─────────────────────────
+/** Which four sections sit in the phone tab bar next to «Меню». Saved on this phone. */
+function NavSection({ all, n, badge }: { all: boolean; n: number; badge?: string }) {
+  const tabs = useTabs();
+  const full = tabs.length >= TAB_SLOTS;
+  const [pick, setPick] = useState<TabKey[]>(tabs);
+  useEffect(() => { setPick(tabs); }, [tabs]);
+  const toggle = (k: TabKey) => {
+    const on = pick.includes(k);
+    if (on) { setPick(pick.filter((x) => x !== k)); return; }
+    if (pick.length >= TAB_SLOTS) return;
+    const next = [...pick, k];
+    setPick(next);
+    if (next.length === TAB_SLOTS) { saveTabs(next); toast.success("Нижню панель оновлено"); }
+  };
+  const isDefault = tabs.join() === DEFAULT_TABS.join();
+  return (
+    <Section id="nav" n={n} all={all} title="Навігація" badge={badge} sub="Чотири розділи в нижній панелі поруч із «Меню». Діє на цьому телефоні.">
+      <div className="v3-st-navprev" aria-hidden="true">
+        <span className="v3-st-navtab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg><small>Меню</small></span>
+        {Array.from({ length: TAB_SLOTS }, (_, i) => { const o = TAB_OPTIONS.find((x) => x.key === pick[i]); return o
+          ? <span key={o.key} className="v3-st-navtab is-set"><o.icon size={20} strokeWidth={1.6} /><small>{o.label}</small></span>
+          : <span key={`e${i}`} className="v3-st-navtab is-empty"><i /><small>{i + 1}</small></span>; })}
+      </div>
+      <p className="v3-st-navhint">{pick.length < TAB_SLOTS ? `Оберіть ще ${TAB_SLOTS - pick.length} — панель оновиться, щойно буде ${TAB_SLOTS}.` : "Торкніться розділу, щоб прибрати його, і оберіть інший."}</p>
+      <div className="v3-st-navlist" role="group" aria-label="Розділи нижньої панелі">
+        {TAB_OPTIONS.map((o) => { const i = pick.indexOf(o.key); const on = i >= 0; const off = !on && pick.length >= TAB_SLOTS; return (
+          <button key={o.key} type="button" className={`v3-st-navopt${on ? " is-on" : ""}`} aria-pressed={on} disabled={off} onClick={() => toggle(o.key)}>
+            <o.icon size={18} aria-hidden="true" /><span>{o.label}</span>
+            <b aria-hidden="true">{on ? i + 1 : ""}</b>
+          </button>
+        ); })}
+      </div>
+      {(!isDefault || !full) && <button type="button" className="v3-st-navreset" onClick={() => { saveTabs(DEFAULT_TABS); setPick(DEFAULT_TABS); }}>Повернути стандартні</button>}
     </Section>
   );
 }

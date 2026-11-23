@@ -103,6 +103,8 @@
   .v3-dash .v3-ret-bar { background: #e4e6eb; }
   .v3-dash .v3-ret-bar.is-on, .v3-dash .v3-ret-bar.is-cur { background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
   .v3-dash .v3-ret-list > * { border-radius: 14px; background: #f1f3f7; border: 0; }
+  /* same inner padding as «Ризик відтоку» rows — the avatar and «Написати» do not touch the edges */
+  .v3-dash .v3-ret-list li { padding: 12px 14px; gap: 10px; grid-template-columns: 38px minmax(0, 1fr) auto; }
   .v3-dash .v3-ret-who strong { color: #11151c; }
   .v3-dash .v3-av-dark { background: #fff; color: #2b4a99; }
 
