@@ -153,3 +153,100 @@
   .v3-sheet.v3-mx-sheet > button.v3-modal-x, .v3-sheet.v3-mxp-filt > button.v3-modal-x { display: grid; place-items: center; top: 22px; right: 18px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
   .v3-mxp-filt { padding-top: 26px !important; }
 }
+
+/* ══ «Додати матч» — групи як у дизайні (MatchesMobileAdd); на комп’ютері групи «прозорі» ══ */
+.v3-am .v3-amg { display: contents; }
+@media (max-width: 767px) {
+  .v3-am { background: #fff !important; color: #11151c; }
+  .v3-am .v3-modal-title { font-size: 20px; font-weight: 600; color: #11151c; }
+  .v3-am .v3-modal-sub { font-size: 12px; color: #6b7384; }
+  .v3-am .v3-form-grid { display: flex; flex-direction: column; gap: 10px; }
+  .v3-am .v3-amg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; padding: 12px; border-radius: 16px; background: #f4f6f9; }
+  .v3-am .v3-amg > .v3-span2, .v3-am .v3-amg > .v3-amg-t { grid-column: 1 / -1; }
+  .v3-am .v3-amg-t { margin: 0; font-size: 12px; font-weight: 500; color: #6b7384; }
+  .v3-am .v3-field { gap: 4px; min-width: 0; }
+  .v3-am .v3-field > label, .v3-am .v3-field > .v3-label { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-am .v3-field input, .v3-am .v3-date-btn { min-height: 42px; border: 1px solid #e3e6eb; border-radius: 12px; background: #fff; color: #11151c; font-size: 16px; }
+  .v3-am .v3-amg:first-child .v3-chipset { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-am .v3-amg:first-child .v3-chipset button { min-height: 42px; padding: 0 12px; border: 1px solid #e3e6eb; border-radius: 12px; background: #fff; color: #11151c; text-align: left; font-weight: 600; }
+  .v3-am .v3-amg:first-child .v3-chipset button.is-on { border-color: #3a6df0; box-shadow: 0 0 0 1px #3a6df0; background: #fff; color: #11151c; }
+  .v3-am .v3-amg:last-child .v3-chipset { display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; border-radius: 12px; background: #e9ecf1; }
+  .v3-am .v3-amg:last-child .v3-chipset button { min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font-weight: 500; }
+  .v3-am .v3-amg:last-child .v3-chipset button.is-on { background: #fff; color: #11151c; font-weight: 600; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-am .v3-modal-foot { display: flex; flex-direction: column-reverse; gap: 8px; }
+  .v3-am .v3-modal-foot .v3-hint { align-self: center; font-size: 12px; color: #6b7384; }
+  .v3-am .v3-modal-actions { width: 100%; }
+  .v3-am .v3-modal-actions .v3-btn-ghost { display: none; }
+  .v3-am .v3-modal-actions .v3-btn-primary { width: 100%; min-height: 48px; border-radius: 14px; background: #00b24b; color: #fff; font-size: 15px; }
+}
+
+/* ══ Парсери · телефон (design MatchesMobileParsers) ══ */
+@media (max-width: 767px) {
+  .v3-mxp-ps { display: flex; flex-direction: column; gap: 10px; }
+  .v3-mxp-pc { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); animation: v3-bt-in .4s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-mxp-pc.is-skel { gap: 10px; animation: none; }
+  .v3-mxp-ph { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .v3-mxp-ph > strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; }
+  .v3-mxp-pst { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .v3-mxp-pst i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .v3-mxp-pst.is-ok { background: #e3f5ea; color: #1f8a4c; }
+  .v3-mxp-pst.is-down { background: #fde2df; color: #c2341f; }
+  .v3-mxp-pst.is-flaky, .v3-mxp-pst.is-idle { background: #fff3dc; color: #8a5a00; }
+  .v3-mxp-pst.is-paused { background: #eef0f4; color: #6b7384; }
+  .v3-mxp-pa { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
+  .v3-mxp-plog { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #e3e6eb; border-radius: 10px; background: #fff; color: #11151c; }
+  .v3-mxp-pstop { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; }
+  .v3-mxp-pstop i { display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #e5484d; color: #fff; }
+  .v3-mxp-pgo { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #00b24b; color: #fff; font: 600 13px Inter, sans-serif; }
+  .v3-mxp-pa button:disabled { opacity: .55; }
+  .v3-mxp-psub { margin-top: -4px; font-size: 12px; color: #6b7384; }
+  .v3-mxp-bars { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 3px; height: 18px; margin-top: 2px; }
+  .v3-mxp-bars i { border-radius: 3px; background: #e3e6eb; }
+  .v3-mxp-bars i.is-ok { background: #1f9d55; } .v3-mxp-bars i.is-bad { background: #e5484d; } .v3-mxp-bars i.is-mix { background: #f0a020; }
+  @media (prefers-reduced-motion: no-preference) { .v3-mxp-bars i { animation: v3-bt-in .3s ease-out backwards; } }
+  .v3-mxp-axis { display: flex; justify-content: space-between; font-size: 11px; color: #9aa3b2; }
+  .v3-mxp-ptiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-mxp-ptiles > div { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-mxp-ptiles span { font-size: 11px; color: #6b7384; }
+  .v3-mxp-ptiles b { font-size: 15px; font-weight: 600; color: #11151c; }
+  .v3-mxp-ptiles b.is-bad { color: #e5484d; }
+  .v3-mxp-prun { min-height: 42px; border: 0; border-radius: 12px; background: #00b24b; color: #fff; font: 600 14px Inter, sans-serif; }
+  .v3-mxp-pc.is-paused .v3-mxp-bars i { background: #eef0f4; }
+}
+
+/* ══ Вручну · телефон (design MatchesMobileManual) ══ */
+@media (max-width: 767px) {
+  .v3-mxp-man { display: flex; flex-direction: column; gap: 10px; }
+  .v3-mxp-mg { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); animation: v3-bt-in .36s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-mxp-mgh { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7384; }
+  .v3-mxp-mst { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 8px; border-radius: 999px; background: #fff3dc; color: #8a5a00; font-size: 11px; font-weight: 600; }
+  .v3-mxp-mst i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .v3-mxp-mst.is-none { background: #eef0f4; color: #6b7384; }
+  .v3-mxp-mbox { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-mxp-mbox small { font-size: 11px; color: #6b7384; }
+  .v3-mxp-mbox strong { font-size: 14px; font-weight: 600; }
+  .v3-mxp-mbox.is-off { background: #eef2ff; }
+  .v3-mxp-mbox.is-off small { color: #3a6df0; }
+  .v3-mxp-mbox.is-empty { background: #f4f6f9; }
+  .v3-mxp-mbox.is-empty small, .v3-mxp-mbox.is-empty strong { color: #6b7384; font-weight: 500; }
+  .v3-mxp-acts .is-dark { background: #11151c; color: #fff; }
+}
+
+/* ══ Команди · телефон (design MatchesMobileTeams) ══ */
+@media (max-width: 767px) {
+  .v3-mxp-tchips { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .v3-mxp-tchips button { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #e3e6eb; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; }
+  .v3-mxp-tchips button.is-on { background: #3a6df0; color: #fff; font-weight: 600; }
+  .v3-mxp-tchips b { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #f0a020; color: #fff; font-size: 11px; }
+  .v3-mx .v3-mx-mtools { margin-bottom: 2px; }
+  .v3-mx .v3-mx-tgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .v3-mx .v3-mx-tgrid .v3-mx-mcard { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 120px; padding: 14px 10px; text-align: center; }
+  .v3-mx .v3-mx-tgrid .v3-mx-mcard-l { align-items: center; }
+  .v3-mx .v3-mx-tgrid .v3-mx-mcard-l small { justify-content: center; }
+  .v3-mx .v3-mx-mcard { border: 0; border-radius: 16px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-mx .v3-mx-mcard strong { color: #11151c; }
+  .v3-mx .v3-mx-mcard small { color: #6b7384; }
+  .v3-mx .v3-mx-mcard .v3-mx-lg { border-radius: 50%; background: #f1f3f7; }
+  .v3-mx .v3-mx-mcard .v3-mx-lg.is-ini { display: grid; place-items: center; background: #11151c; color: #fff; font-size: 11px; font-weight: 700; }
+  .v3-mx .v3-mx-mmore { border: 0; border-radius: 14px; background: #fff; color: #11151c; }
+}

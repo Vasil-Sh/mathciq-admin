@@ -116,7 +116,7 @@ export default function Matches() {
   const [tg, setTg] = useState<"all" | Game>("all");
   const [tLimit, setTLimit] = useState(80);
   // Телефон: команди списком або блоками по дві в ряд (запам’ятовуємо вибір)
-  const [tView, setTView] = useState<"list" | "grid">(() => { try { return localStorage.getItem("mx-team-view") === "grid" ? "grid" : "list"; } catch { return "list"; } });
+  const [tView, setTView] = useState<"list" | "grid">(() => { try { const v = localStorage.getItem("mx-team-view"); return v === "grid" || v === "list" ? v : isPhoneWidth() ? "grid" : "list"; } catch { return "list"; } });
   const flipView = () => setTView((v) => { const n = v === "list" ? "grid" : "list"; try { localStorage.setItem("mx-team-view", n); } catch { /* private mode */ } return n; });
   useEffect(() => setTLimit(80), [tq, tf, tg]);
   // Усі команди з пакетів логотипів — довідник не тільки з тих, що грали останні 30 днів
@@ -631,8 +631,42 @@ export default function Matches() {
     </div>
   );
 
+  // ── Телефон: «Парсери» (design MatchesMobileParsers): картка на джерело — стан, Стоп/Запустити, 24 години, два числа ──
+  const hoursOf = (name: string) => { const a = avail[name] || []; const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
+    return Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok" }; }); };
+  const phoneParsers = (
+    <section className="v3-mxp-ps">
+      {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-mxp-pc is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
+        : !parsers.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Activity size={20} /></span><strong>Парсерів немає</strong><span>Бекенд не повідомив про жодне джерело матчів. Щойно парсер запуститься, він з’явиться тут.</span></div>
+        : parsers.map((p, i) => {
+          const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
+          const ps = pState(p), r = running[p.name], cnt = cntFor(p.name), hrs = hoursOf(p.name);
+          return (
+            <div key={p.name} className={`v3-mxp-pc${ps === "paused" ? " is-paused" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
+              <div className="v3-mxp-ph">
+                <strong>{PARSER_NAMES[p.name] || p.name}</strong>
+                <span key={ps} className={`v3-mxp-pst is-${ps}`}><i aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "paused" ? "Зупинено" : "Працює"}</span>
+                <span className="v3-mxp-pa">
+                  {events[p.name] && <button type="button" className="v3-mxp-plog" onClick={() => setLogFor(p.name)} aria-label={`Повний лог · ${PARSER_NAMES[p.name] || p.name}`}><List size={15} aria-hidden="true" /></button>}
+                  {p.paused ? <button type="button" className="v3-mxp-pgo" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
+                    : <button type="button" className="v3-mxp-pstop" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, true)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
+                </span>
+              </div>
+              <small className="v3-mxp-psub">{p.paused ? `${meta.game || meta.site} · зупинено вручну${p.pausedBy ? ` @${p.pausedBy}` : ""}` : ps === "down" || ps === "flaky" ? `${meta.game || meta.site} · не відповідає${p.lastFailure ? ` · ${ago(p.lastFailure)}` : ""}` : `${meta.game || meta.site} · ${matches ? `${cnt} ${plural(cnt, "матч", "матчі", "матчів")} сьогодні` : "…"}`}</small>
+              <div className="v3-mxp-bars" aria-label="Останні 24 години">{hrs.map((h, k) => <i key={k} className={`is-${p.paused ? "none" : h.s}`} title={`${h.hh}:00`} />)}</div>
+              <div className="v3-mxp-axis"><span>24 год тому</span><span>зараз</span></div>
+              <div className="v3-mxp-ptiles">
+                <div><span>Збоїв за 24 год</span><b className={p.failures24h > 0 ? "is-bad" : ""}>{p.failures24h}</b></div>
+                <div><span>Останній збій</span><b>{p.lastFailure ? ago(p.lastFailure) : "—"}</b></div>
+              </div>
+              {p.open && !p.paused && <button type="button" className="v3-mxp-prun" disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>{r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}</button>}
+            </div>
+          );
+        })}
+    </section>
+  );
   // ── Парсери ──
-  const parsersTab = (
+  const parsersTab = phone ? phoneParsers : (
     <section className="v3-mx-parsers">
       {(() => { const focus = down[0]?.name || (avail.hltv_scraper ? "hltv_scraper" : Object.keys(avail)[0]); const a = focus ? avail[focus] : undefined; if (!a) return null;
         const byHour = new Map(a.map((h) => [h.hour.slice(11, 13), h]));
@@ -740,6 +774,22 @@ export default function Matches() {
       </div>
       <aside className="v3-dcard v3-pay-aside">{g && groupDetail(g)}</aside>
     </section>
+  ) : phone ? (
+    /* design MatchesMobileManual: the comparison and the two buttons right in the card */
+    <section className="v3-mxp-man">
+      <p className="v3-mxp-gh">Матчі, яких немає в стрічках · 14 днів</p>
+      {groups.map((x, i) => (
+        <div key={x.key} className="v3-mxp-mg" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>
+          <div className="v3-mxp-mgh">{gChip(x.game)}<span>{x.day === today ? "сьогодні" : dayShort(x.day)} · {x.bets.length} {plural(x.bets.length, "запис", "записи", "записів")}</span><span className={`v3-mxp-mst${x.official ? "" : " is-none"}`}><i aria-hidden="true" />{x.official ? "Чекає" : "Без пари"}</span></div>
+          <div className="v3-mxp-mbox"><small>Як ввів користувач · @{x.bets[0]?.username}</small><strong>{x.t1} vs {x.t2}</strong></div>
+          <div className={`v3-mxp-mbox is-off${x.official ? "" : " is-empty"}`}><small>{x.official ? "Схожий офіційний" : "Схожого офіційного немає"}</small><strong>{x.official ? `${x.official.t1} — ${x.official.t2}${x.official.tournament ? ` · ${x.official.tournament}` : ""} · ${x.official.time}` : "Чекаємо, поки з’явиться в стрічках"}</strong></div>
+          <div className="v3-mxp-acts">
+            <button type="button" className="is-grey" disabled={!online || !!saving} onClick={() => decide(x, "unlink")}>{saving === `unlink:${x.key}` ? "Зберігаємо…" : "Інший матч"}</button>
+            <button type="button" className="is-dark" disabled={!online || !x.official || !!saving} onClick={() => decide(x, "merge")}>{saving === `merge:${x.key}` ? "Об’єднуємо…" : "Об’єднати"}</button>
+          </div>
+        </div>
+      ))}
+    </section>
   ) : (
     <ul className="v3-pay-mlist a">{groups.map((x, i) => (
       <li key={x.key} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-mx-mcard" onClick={() => { setSelGroup(x.key); setSheet(true); }}>
@@ -780,9 +830,14 @@ export default function Matches() {
     <section className={wide ? "v3-pay-main" : "v3-pay-m"}>
       <div className={wide ? "v3-wcard v3-pay-list" : ""}>
         <div className={wide ? "v3-pay-tools" : "v3-mx-mtools"}>
-          {(() => { const sb = <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
+          {phone ? (
+            <div className="v3-mxp-bar">
+              <div className="v3-mxp-tchips" role="group" aria-label="Фільтр">{([["all", "Усі", null], ["logo", "Без лого", tfOpts[2].n], ["dup", "Дублікати", tfOpts[1].n]] as [typeof tf, string, number | null][]).map(([k, l, n]) => <button key={k} type="button" className={tf === k ? "is-on" : ""} aria-pressed={tf === k} onClick={() => setTf(k)}>{n ? <b>{n}</b> : null}{l}</button>)}</div>
+              <div className="v3-mxp-view" role="group" aria-label="Вигляд"><button type="button" className={tView === "list" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} aria-hidden="true" /></button><button type="button" className={tView === "grid" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Плитками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} aria-hidden="true" /></button></div>
+            </div>
+          ) : (() => { const sb = <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
             return wide ? sb : <div className="v3-mx-srow">{sb}<button type="button" className="v3-mx-vbtn" onClick={flipView} aria-label={tView === "list" ? "Показати блоками" : "Показати списком"} title={tView === "list" ? "Блоки" : "Список"}><span key={tView} className="v3-mx-vico">{tView === "list" ? <LayoutGrid size={18} /> : <List size={18} />}</span></button></div>; })()}
-          {wide ? <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр"><PillTrack active={tf} />{tfOpts.map((f) => <button key={f.key} type="button" className={tf === f.key ? "is-on" : ""} aria-pressed={tf === f.key} onClick={() => setTf(f.key)}>{f.label} <span className="v3-seg-n">{f.n}</span></button>)}</div>
+          {phone ? null : wide ? <div className="v3-seg v3-seg-soft" role="group" aria-label="Фільтр"><PillTrack active={tf} />{tfOpts.map((f) => <button key={f.key} type="button" className={tf === f.key ? "is-on" : ""} aria-pressed={tf === f.key} onClick={() => setTf(f.key)}>{f.label} <span className="v3-seg-n">{f.n}</span></button>)}</div>
             : <div className="v3-pay-mf"><Dropdown className="v3-mselect-dd" ariaLabel="Фільтр" value={tf} onChange={(v) => setTf(v)} options={tfOpts.map((f) => ({ value: f.key, label: `${f.label} · ${f.n}` }))} /><Dropdown className="v3-mselect-dd" ariaLabel="Гра" align="right" value={tg} onChange={(v) => setTg(v)} options={tgOpts} /></div>}
           {wide && <Dropdown className="is-light" ariaLabel="Гра" value={tg} onChange={(v) => setTg(v)} options={tgOpts} />}
         </div>
@@ -901,18 +956,24 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="v3-modal sm:max-w-[520px]">
+      <DialogContent className="v3-modal v3-am sm:max-w-[520px]">
         <DialogTitle className="v3-modal-title">Додати матч</DialogTitle>
-        <DialogDescription className="v3-modal-sub">Для матчу, якого немає в tips.gg і HLTV. Застосунок покаже його в розкладі разом з іншими.</DialogDescription>
+        <DialogDescription className="v3-modal-sub"><span className="v3-hide-mobile">Для матчу, якого немає в tips.gg і HLTV. Застосунок покаже його в розкладі разом з іншими.</span><span className="v3-only-mobile">Якого ще немає в стрічках</span></DialogDescription>
         <form onSubmit={save} className="v3-form">
           <fieldset disabled={busy} className="v3-form-grid">
+            <div className="v3-amg">
             <div className="v3-field v3-span2"><span className="v3-label" id="am-g">Гра</span><div className="v3-chipset" role="group" aria-labelledby="am-g">{(["cs2", "dota2"] as Game[]).map((g) => <button key={g} type="button" className={f.game === g ? "is-on" : ""} aria-pressed={f.game === g} onClick={() => setF({ ...f, game: g })}>{GAME_LABEL[g]}</button>)}</div></div>
+            </div>
+            <div className="v3-amg"><p className="v3-amg-t v3-only-mobile">Команди</p>
             <div className="v3-field"><label htmlFor="am-t1">Команда 1</label><input id="am-t1" required maxLength={200} value={f.t1} onChange={(e) => setF({ ...f, t1: e.target.value })} placeholder="NAVI" autoComplete="off" /></div>
             <div className="v3-field"><label htmlFor="am-t2">Команда 2</label><input id="am-t2" required maxLength={200} value={f.t2} onChange={(e) => setF({ ...f, t2: e.target.value })} placeholder="FaZe" autoComplete="off" /></div>
             <div className="v3-field v3-span2"><label htmlFor="am-tour">Турнір</label><input id="am-tour" maxLength={500} value={f.tour} onChange={(e) => setF({ ...f, tour: e.target.value })} placeholder="Необов’язково" autoComplete="off" /></div>
+            </div>
+            <div className="v3-amg"><p className="v3-amg-t v3-only-mobile">Час</p>
             <div className="v3-field"><label id="am-d">Дата</label><DateField id="am-date" labelledBy="am-d" required value={f.date} onChange={(v) => setF({ ...f, date: v })} /></div>
             <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><input id="am-time" required inputMode="numeric" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setF({ ...f, time: hhmmInput(e.target.value) })} /></div>
             <div className="v3-field v3-span2"><span className="v3-label" id="am-bo">Формат</span><div className="v3-chipset" role="group" aria-labelledby="am-bo">{["BO1", "BO2", "BO3", "BO5"].map((b) => <button key={b} type="button" className={f.bo === b ? "is-on" : ""} aria-pressed={f.bo === b} onClick={() => setF({ ...f, bo: b })}>{b}</button>)}</div></div>
+            </div>
           </fieldset>
           {err && <span className="v3-field-error" role="alert">{err}</span>}
           <div className="v3-modal-foot">
