@@ -12,6 +12,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { api, getRefreshToken } from "@/lib/apiClient";
 import { plural } from "@/lib/dashboardInsights";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { setIconBadge } from "@/lib/appBadge";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import StarField from "./StarField";
 import MobileDrawer, { MobileTabBar } from "@/components/MobileDrawer";
@@ -118,6 +119,9 @@ function AdminShell() {
     if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label={badges.matchesErrorText || "Помилка парсера"} title={badges.matchesErrorText || "Помилка парсера"}>!</span>;
     return null;
   };
+  // the home-screen icon carries the same alerts as the menu badges
+  const iconCount = (badges.supportOpen || 0) + (badges.auditUnseen || 0) + (badges.usersExpiring || 0) + (badges.matchesError ? 1 : 0);
+  useEffect(() => { setIconBadge(iconCount); }, [iconCount]);
   const auditCount = badges.auditUnseen ? (badges.auditMore ? `${badges.auditUnseen}+` : String(badges.auditUnseen)) : "";
 
   // Швидкий пошук: Ctrl K / ⌘K з будь-якої сторінки

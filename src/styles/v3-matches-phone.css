@@ -372,3 +372,7 @@
   .v3-mxp-view.is-off { background: #e3e6eb; box-shadow: none; }
   .v3-mxp-view.is-off button { color: #a1a7b3; cursor: default; }
 }
+@media (max-width: 767px) {
+  /* day chip counts: centred in their pill on iOS too */
+  .v3-mxp-days button b { display: inline-grid; place-items: center; height: 18px; padding: 0 5px; line-height: 1; font-variant-numeric: tabular-nums; }
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, ListFilter, Search, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, History, ListFilter, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, setTokens } from "@/lib/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -445,7 +445,7 @@ export default function AuditLog() {
                 <span>@{e.actor_name}{user ? ` · @${user}` : ""}{v.meta ? ` · ${v.meta}` : ""}</span>
                 {v.kind === "pay" && user && <Link className="v3-au-apply" to={`/payments?user=${encodeURIComponent(user)}`} onClick={() => setHistOpen(false)}>Відкрити оплату</Link>}
               </div>); })
-              : <p className="v3-au-shnone">{histTab === "mine" ? "Ваших дій тут ще немає." : "Дій ще немає."}</p>}
+              : <div className="v3-au-shnone"><History size={20} aria-hidden="true" /><strong>{histTab === "mine" ? "Ваших дій ще немає" : histTab === "others" ? "Інші адміни ще нічого не змінювали" : "Дій ще немає"}</strong><span>Тут з’являться останні зміни в адмінці.</span></div>}
           </div>
         </DialogContent>
       </Dialog>

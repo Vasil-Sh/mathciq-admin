@@ -295,3 +295,51 @@
   .v3-bed-foot .v3-btn-primary { background: #00b24b; color: #fff; }
   .v3-bed-foot .v3-btn-primary:disabled { opacity: .5; }
 }
+
+/* 23.11 fixes (phone) */
+@media (max-width: 767px) {
+  /* empty slot: «Створити банер» was blue text on a blue pill */
+  .v3-ads .v3-bn-freecta { align-items: center; justify-content: center; min-height: 36px; padding: 0 16px; border-radius: 10px; background: #3a6df0; color: #fff; font: 600 13px Inter, sans-serif; font-style: normal; }
+  .v3-ads .v3-bn-free.is-hidden .v3-bn-freecta { background: #3a6df0; color: #fff; }
+  /* slot header: title + where on the left, status and fold on the right, air under it */
+  .v3-ads .v3-bn-slot-h { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: start; gap: 8px; padding-bottom: 12px; }
+  .v3-ads .v3-bn-slot-h > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .v3-ads .v3-bn-slot-h > .v3-bn-tag { margin-top: 2px; }
+  .v3-ads .v3-bn-slot-h span { line-height: 1.35; }
+  /* status chips: clear colours, a coloured dot */
+  .v3-ads .v3-bn-tag { gap: 6px; height: 26px; min-height: 26px; padding: 0 10px; font-size: 12px; }
+  .v3-ads .v3-bn-tag i { width: 6px; height: 6px; }
+  .v3-ads .v3-bn-tag.is-live { background: #e3f6ea; color: #15803d; } .v3-ads .v3-bn-tag.is-live i { background: #1fb155; }
+  .v3-ads .v3-bn-tag.is-sched { background: #e8efff; color: #2f5fd8; } .v3-ads .v3-bn-tag.is-sched i { background: #3a6df0; }
+  .v3-ads .v3-bn-tag.is-off { background: #eef0f4; color: #5f6878; } .v3-ads .v3-bn-tag.is-off i { background: #9aa1ad; }
+
+  /* banner editor: «Увімкнути показ» as a card with its state */
+  .v3-bed-toggle { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 12px 14px; border: 1.5px solid #e3e6eb; border-radius: 14px; background: #fff; font-size: 14px; font-weight: 600; color: #11151c; transition: border-color .2s, background-color .2s; }
+  .v3-bed-toggle.is-on { border-color: #1fb155; background: #effaf3; }
+  .v3-bed-toggle > span { display: flex; flex-direction: column; gap: 2px; }
+  .v3-bed-toggle small { font-size: 12px; font-weight: 400; color: #6b7384; }
+  .v3-bed-toggle.is-on small { color: #15803d; }
+  /* «Перегляд»: tiles light, one per row */
+  .v3-bed-tiles { grid-template-columns: 1fr; gap: 6px; }
+  .v3-bed-tiles > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 12px; background: #fff; }
+  .v3-bed-tiles span { color: #6b7384; font-size: 13px; }
+  .v3-bed-tiles strong { margin: 0; color: #11151c; font-size: 14px; text-align: right; }
+  .v3-bed-tiles .is-live { color: #15803d; } .v3-bed-tiles .is-sched { color: #2f5fd8; } .v3-bed-tiles .is-off { color: #5f6878; } .v3-bed-tiles .is-done { color: #9a5b00; }
+
+  /* Telegram placement: the app switch as a card, delete as a clear button */
+  .v3-ad-card .v3-ad-csw { justify-content: space-between; padding: 12px 14px; border: 1.5px solid #e3e6eb; border-radius: 14px; background: #fff; font-weight: 600; }
+  .v3-ad-card .v3-ad-csw.is-on { border-color: #1fb155; background: #effaf3; }
+  .v3-ad-card .v3-ad-csw > span { display: flex; flex-direction: column; gap: 2px; }
+  .v3-ad-card .v3-ad-csw small { font-size: 12px; font-weight: 400; color: #6b7384; }
+  .v3-ad-card .v3-ad-csw.is-on small { color: #15803d; }
+  .v3-ad-card .v3-ad-del { align-self: stretch; display: inline-flex; justify-content: center; min-height: 46px; border: 1px solid #f3c4c1; border-radius: 14px; background: #fff5f5; color: #d23b36; font: 600 14px Inter, sans-serif; }
+
+  /* partner: optional licence */
+  .v3-ad-opt { margin-left: 4px; font-size: 11px; font-weight: 500; color: #8a92a0; }
+
+  /* stats «Свій» period: one column, the button full width */
+  .v3-ads .v3-ad-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+  .v3-ads .v3-ad-custom .v3-ad-cf { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-ads .v3-ad-custom .v3-ad-cf > :last-child { width: 100%; }
+  .v3-ads .v3-ad-custom > button { grid-column: 1 / -1; min-height: 42px; border-radius: 12px; }
+}

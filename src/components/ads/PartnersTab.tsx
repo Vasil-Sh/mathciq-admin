@@ -55,7 +55,8 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
   const [shake, setShake] = useState(0);
   async function save(draft = false) {
     if (!f.name.trim()) { toast.error("Вкажіть назву партнера"); return; }
-    if (!draft && !f.licenseNumber.trim()) { setShake((n) => n + 1); toast.error("Вкажіть номер ліцензії", { description: "Перевіримо його в реєстрі PlayCity — без ліцензії не показуємо", action: { label: "Зберегти чернетку", onClick: () => { void save(true); } } }); return; }
+    // phone: the licence is optional to save — without it the partner is kept as a draft (not shown), see the note under the field
+    if (!draft && !phone && !f.licenseNumber.trim()) { setShake((n) => n + 1); toast.error("Вкажіть номер ліцензії", { description: "Перевіримо його в реєстрі PlayCity — без ліцензії не показуємо", action: { label: "Зберегти чернетку", onClick: () => { void save(true); } } }); return; }
     if (linkBad) { toast.error("Посилання має починатися з https://"); return; }
     if (issues.rules.length) { toast.error("Текст не пройшов перевірку", { description: "Приберіть «бонус», «безплатно» і обіцянки заробітку" }); return; }
     setSaving(true);
@@ -117,10 +118,10 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
     <EditorPanel wide={wide} open={editing} paneKey={creating ? "new" : sel?.id} title={creating ? "Новий партнер" : sel?.name || ""} sub={creating ? "Букмекер з ліцензією PlayCity" : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
       <div className="v3-ad-f"><label htmlFor="bm-name">Назва <span>*</span></label><input id="bm-name" className="v3-ad-in" value={f.name} maxLength={100} placeholder="Наприклад, Favbet" onChange={(e) => set({ name: e.target.value })} /></div>
       <div className="v3-ad-row2">
-        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() || (phone && creating && !f.name.trim()) ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder={phone ? "№" : "Не вказано"} onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
+        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity {phone ? <small className="v3-ad-opt">необов’язково</small> : <span>*</span>}</label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() || phone ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder={phone ? "№" : "Не вказано"} onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
         <div className="v3-ad-f"><label id="bm-until-l">Діє до</label><DateField id="bm-until" labelledBy="bm-until-l" yearNav value={f.licenseUntil || ""} onChange={(v) => set({ licenseUntil: v || null })} /></div>
       </div>
-      {!f.licenseNumber.trim() ? (phone && creating && !f.name.trim() ? null : <span className="v3-ad-msg is-bad">Рекламувати можна лише ліцензованих організаторів. Без номера партнер збережеться як чернетка й не з’явиться в застосунку.</span>)
+      {!f.licenseNumber.trim() ? (phone ? <span className="v3-ad-msg">Без номера партнер збережеться чернеткою й не з’явиться в застосунку — рекламувати можна лише ліцензованих організаторів.</span> : <span className="v3-ad-msg is-bad">Рекламувати можна лише ліцензованих організаторів. Без номера партнер збережеться як чернетка й не з’явиться в застосунку.</span>)
         : licenseState(f).st === "soon" ? <span className="v3-ad-msg is-warn">Ліцензія діє до {dmy(f.licenseUntil!)} — через {licenseState(f).left} {plural(licenseState(f).left!, "день", "дні", "днів")}. Після цієї дати партнер зникне з застосунку автоматично.</span>
         : licenseState(f).st === "expired" ? <span className="v3-ad-msg is-bad">Ліцензія минула — партнер не показується. Внесіть нову дату.</span>
         : <span className="v3-ad-msg">Перевірте номер у реєстрі PlayCity перед збереженням. Після дати «Діє до» партнер зникне автоматично.</span>}

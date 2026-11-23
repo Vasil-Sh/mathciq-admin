@@ -1076,7 +1076,7 @@ export default function Matches() {
         <div className={`v3-mx-tabsw${tabFade.l ? " fade-l" : ""}${tabFade.r ? " fade-r" : ""}`} onScroll={(e) => edgeFade(e.currentTarget)} ref={(el) => { if (el && !tabsEl.current) { tabsEl.current = el; edgeFade(el); } }}>
           <div className="v3-pay-tabs v3-mx-tabs" role="tablist" aria-label="Розділи матчів">
             <PillTrack active={tab} />
-            {TABS.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}${t.key === "parsers" && down.length ? " is-err" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{tabN[t.key] ?? "…"}</span><span className={phone ? "v3-hide-mobile" : undefined}>{t.label}</span>{phone && <span>{t.key === "manual" ? "Вручну" : t.label}{(t.key === "matches" || t.key === "manual") && tabN[t.key] != null ? ` · ${tabN[t.key]}` : ""}</span>}</button>)}
+            {TABS.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}${t.key === "parsers" && down.length ? " is-err" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{(phone && t.key === "matches" && matches ? all.filter((m) => game === "all" || m.game === game).length : tabN[t.key]) ?? "…"}</span><span className={phone ? "v3-hide-mobile" : undefined}>{t.label}</span>{phone && <span>{t.key === "manual" ? "Вручну" : t.label}{(t.key === "matches" || t.key === "manual") && tabN[t.key] != null ? ` · ${tabN[t.key]}` : ""}</span>}</button>)}
           </div>
         </div>
 

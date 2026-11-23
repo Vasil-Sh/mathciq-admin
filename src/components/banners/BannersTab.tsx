@@ -80,8 +80,11 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
   }
   async function togglePh(n: number) {
     const cur = ph(n);
+    // optimistic: the switch flips at once, the server confirms (or it flips back)
+    const before = slots;
+    setSlots((s) => { const x = s.find((y) => y.slot === n); return x ? s.map((y) => (y.slot === n ? { ...y, placeholderEnabled: !cur } : y)) : s; });
     try { const r = await updateBannerSlot(n, !cur); setSlots((s) => [...s.filter((x) => x.slot !== n), r]); toast.success(cur ? "Плейсхолдер вимкнено" : "Плейсхолдер увімкнено", { description: cur ? `Слот ${n} у застосунку прихований, поки немає банера` : `У слоті ${n} — «Тут може бути ваша реклама»` }); }
-    catch (e) { toast.error("Не вдалося змінити плейсхолдер", { description: (e as Error).message }); }
+    catch (e) { setSlots(() => before); toast.error("Не вдалося змінити плейсхолдер", { description: (e as Error).message }); }
   }
   async function doDelete(target?: Banner) {
     const b = target || deleting;

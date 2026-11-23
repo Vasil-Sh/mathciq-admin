@@ -22,6 +22,7 @@ import {
 } from "@/lib/settingsModel";
 import type { AppSettings } from "@/types";
 import { forgetReceiptTexts } from "@/lib/paymentReceipt";
+import { askBadgePermission, isStandalone, useBadgePermission } from "@/lib/appBadge";
 import { DEFAULT_TABS, TAB_OPTIONS, TAB_SLOTS, saveTabs, useTabs, type TabKey } from "@/lib/tabbar";
 import { setExpiringWindow } from "@/lib/usersModel";
 import { fetchServerErrors, resolveServerError, type ServerError } from "@/lib/serverErrorsApi";
@@ -655,7 +656,7 @@ function TextsSection({ phone, all, n, badge, settings, meta, online, onSaved }:
             <li key={x.key}><span><strong>{x.title}</strong><small className={just === x.key ? "is-new" : ""}>{just === x.key ? "✓ змінено щойно" : x.where.replace("Футер усіх сторінок", "футер усіх сторінок")}</small></span>
               <button type="button" className="v3-st-pgrey is-sm" onClick={() => { setOpen(x.key); setVal(settings[x.key] || ""); }}>Редагувати</button></li>
           ))}
-          <li><span><strong>Мітка «Реклама · 21+»</strong><small>на кожному банері · вимкнути не можна</small></span><span className="v3-st-preq">обов’язкова</span></li>
+          <li><span><strong>Мітка «Реклама · 21+»</strong><small>на кожному банері · вимкнути не можна</small></span><span className="v3-st-preq"><Lock size={13} aria-hidden="true" />Обов’язкова</span></li>
         </ul>
         <Dialog open={!!t} onOpenChange={(o) => { if (!o && !st) setOpen(null); }}>
           <DialogContent className="v3-sheet v3-pay-sheet v3-st-sheet">
@@ -886,8 +887,26 @@ function NavSection({ phone, all, n, badge }: { phone?: boolean; all: boolean; n
           </button>
         ); })}
       </div></div>
+      <IconBadgeRow />
       {(!isDefault || !full) && <button type="button" className="v3-st-navreset" onClick={() => { saveTabs(DEFAULT_TABS); setPick(DEFAULT_TABS); }}>Повернути стандартні</button>}
     </Section>
+  );
+}
+
+/** «Значок на іконці»: the number of alerts on the home-screen icon (iPhone needs notifications allowed for the app). */
+function IconBadgeRow() {
+  const perm = useBadgePermission();
+  const standalone = isStandalone();
+  const text = perm === "unsupported" ? "Цей браузер не показує число на іконці."
+    : perm === "granted" ? "Увімкнено — на іконці число звернень, нових записів журналу, підписок, що закінчуються, і збою джерела матчів."
+    : perm === "denied" ? "Сповіщення для MatchIQ заборонені. Дозвольте їх у Параметрах iPhone → Сповіщення → Admin MatchIQ."
+    : !standalone ? "Спершу додайте адмінку на початковий екран (Поділитися → На початковий екран) і відкрийте з іконки."
+    : "Покаже число сповіщень на іконці адмінки — як у звичайних застосунках.";
+  return (
+    <div className={`v3-st-badge${perm === "granted" ? " is-on" : ""}`}>
+      <span><strong>Число на іконці</strong><small>{text}</small></span>
+      {perm === "default" && standalone && <button type="button" onClick={() => void askBadgePermission()}>Увімкнути</button>}
+    </div>
   );
 }
 

@@ -374,3 +374,12 @@
 .v3-st-errd > div button { min-height: 42px; border: 0; border-radius: 12px; background: #e3e6eb; color: #11151c; font: 600 14px Inter, sans-serif; }
 .v3-st-errd > div button.is-ok { background: #1fb155; color: #fff; }
 .v3-st-errd > div button:disabled { opacity: .55; }
+
+/* Навігація → «Число на іконці» */
+.v3-st-badge { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border: 1.5px solid #e3e6eb; border-radius: 14px; background: #fff; }
+.v3-st-badge.is-on { border-color: #1fb155; background: #effaf3; }
+.v3-st-badge > span { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.v3-st-badge strong { font-size: 14px; font-weight: 600; color: #11151c; }
+.v3-st-badge small { font-size: 12px; line-height: 1.4; color: #6b7384; }
+.v3-st-badge.is-on small { color: #15803d; }
+.v3-st-badge button { flex: none; min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #3a6df0; color: #fff; font: 600 13px Inter, sans-serif; }

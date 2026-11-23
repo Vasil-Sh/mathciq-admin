@@ -378,7 +378,8 @@ export default function Admin() {
     setPull(56); setRefreshing(true);
     try { await load(); } finally { setRefreshing(false); setPull(0); }
   };
-  const pressStart = (id: number) => { touch.current.long = false; setPressId(id); touch.current.t = window.setTimeout(() => { touch.current.long = true; touch.current.t = null; setPressId(null); setMenuId(id); if (navigator.vibrate) navigator.vibrate(10); }, 500); };
+  // press highlight only — the long-press menu (Telegram / open card) was removed: a tap opens the card
+  const pressStart = (id: number) => { touch.current.long = false; setPressId(id); };
   const pressEnd = () => { if (touch.current.t) { window.clearTimeout(touch.current.t); touch.current.t = null; } setPressId(null); };
   const menuUser = all.find((u) => u.id === menuId) || null;
 
@@ -409,7 +410,7 @@ export default function Admin() {
             const ringCls = d <= 2 ? "is-red" : isExpiring(u) ? "is-amber" : "is-green";
             return (
               <li key={u.id} className={`v3-mitem${menuId === u.id ? " is-lifted" : ""}`}><button type="button" className={`v3-mcard${pressId === u.id ? " is-press" : ""}`}
-                onTouchStart={() => pressStart(u.id)} onTouchEnd={pressEnd} onTouchCancel={pressEnd} onContextMenu={(e) => { e.preventDefault(); setMenuId(u.id); }}
+                onTouchStart={() => pressStart(u.id)} onTouchEnd={pressEnd} onTouchCancel={pressEnd} onContextMenu={(e) => e.preventDefault()}
                 onClick={() => { if (touch.current.long) { touch.current.long = false; return; } openCard(u); }}>
                 <span className="v3-mcard-lp" aria-hidden="true" />
                 <span className="v3-mcard-av"><UserAvatar username={u.username} telegram={u.telegram} />{ageWarn && <span className="v3-mcard-warn" aria-hidden="true">!</span>}</span>

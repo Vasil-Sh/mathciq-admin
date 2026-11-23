@@ -186,7 +186,7 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
             </div>
             {(clash || badDates) && <div id="b-overlap" role="alert" className="v3-bed-alert"><AlertTriangle size={16} aria-hidden="true" /><span>{badDates ? "Останній день не може бути раніше початку." : `Перетинається з «${clash!.title}» (${periodText(clash!)}) у цьому ж слоті. Змініть дати або вимкніть ту кампанію.`}</span></div>}
             <span className="v3-bed-hint">За часом Києва, включно з останнім днем. Без дат — без обмежень. Після завершення банер зникне з застосунку автоматично.</span>
-            <label className="v3-bed-toggle"><input type="checkbox" role="switch" className="v3-switch" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />Увімкнути показ у вибраний період</label>
+            <label className={`v3-bed-toggle${f.active ? " is-on" : ""}`}><input type="checkbox" role="switch" className="v3-switch" checked={f.active} onChange={(e) => set({ active: e.target.checked })} /><span>Увімкнути показ у вибраний період<small className="v3-only-mobile">{f.active ? "Банер з’явиться в застосунку у вибрані дні" : "Вимкнено — збережеться, але не показуватиметься"}</small></span></label>
           </section>
 
           {!online && <div className="v3-bed-alert is-warn" role="status"><AlertTriangle size={16} aria-hidden="true" /><span>Немає інтернету. Зміни банерів не збережуться — дочекайтесь з’єднання.</span></div>}

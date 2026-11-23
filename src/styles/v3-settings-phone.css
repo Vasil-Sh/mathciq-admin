@@ -240,3 +240,8 @@
   .v3-settings.is-phone .v3-st-navprev .v3-st-navtab:first-child { color: #fff; }
   .v3-settings.is-phone .v3-st-pwrow { flex-wrap: wrap; }
 }
+
+/* 23.11: «Обов’язкова» — same size as «Редагувати», text centred, a lock */
+@media (max-width: 767px) {
+  .v3-st-preq { align-self: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 10px; background: #eef0f4; color: #5f6878; font-size: 12px; font-weight: 600; line-height: 1; }
+}

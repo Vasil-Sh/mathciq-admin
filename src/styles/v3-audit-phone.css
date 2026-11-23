@@ -134,3 +134,11 @@
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   .v3-au-pcard, .v3-au-pnone, .v3-au-hcard, .v3-au-pfbtn i { animation: none !important; }
 }
+
+/* 23.11: the empty card ends above the tab bar; the history sheet's empty state centred */
+@media (max-width: 767px) {
+  .v3-au-pnone { min-height: max(300px, calc(100dvh - 400px)); }
+  .v3-au-shnone { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 8px 0 4px; padding: 22px 16px; border-radius: 14px; background: #f4f6f9; color: #6b7384; font-size: 13px; text-align: center; }
+  .v3-au-shnone svg { color: #3a6df0; }
+  .v3-au-shnone strong { font-size: 15px; font-weight: 600; color: #11151c; }
+}

@@ -178,7 +178,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
             <button type="button" className="is-grey" disabled={!online} onClick={() => setPhoneEdit(true)}><Pencil size={14} aria-hidden="true" />Редагувати</button>
           </div>
           <button type="button" className="v3-ad-crep" onClick={() => setReport({ kind: "telegram", p: sel })}><Download size={16} aria-hidden="true" />Звіт для партнера</button>
-          <label className="v3-ad-csw"><input type="checkbox" role="switch" className="v3-switch" checked={sel.active} disabled={!online || sel.reviewStatus !== "approved"} onChange={() => toggleActive(sel)} />Показувати в застосунку</label>
+          <label className={`v3-ad-csw${sel.active ? " is-on" : ""}`}><span>Показувати в застосунку<small>{sel.reviewStatus !== "approved" ? "Спершу схваліть текст" : sel.active ? "Увімкнено — показується у вибрані дні" : "Вимкнено — у застосунку не видно"}</small></span><input type="checkbox" role="switch" className="v3-switch" checked={sel.active} disabled={!online || sel.reviewStatus !== "approved"} onChange={() => toggleActive(sel)} /></label>
           <button type="button" className="v3-ad-del" disabled={!online} onClick={() => setDelAsk(sel)}><Trash2 size={15} aria-hidden="true" />Видалити розміщення</button>
         </>}
       </DialogContent>

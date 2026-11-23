@@ -188,3 +188,9 @@
   .v3-sp-sheet .v3-sp-aside.is-sheet, .v3-sp-sheet .v3-sp-chips, .v3-sp-sheet .v3-sp-acts > * { min-width: 0; }
   .v3-sp-sheet .v3-sp-acts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+
+/* 23.11: empty cards end above the tab bar */
+@media (max-width: 767px) {
+  .v3-sp-pnone { min-height: max(280px, calc(100dvh - 420px)); }
+  .v3-sp-pnone.is-g { min-height: max(320px, calc(100dvh - 380px)); }
+}
