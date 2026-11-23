@@ -241,3 +241,24 @@
   .v3-ufd .v3-modal-actions .v3-btn-ghost { display: none; }
   .v3-ufd .v3-modal-actions .v3-btn-blue { width: 100%; min-height: 48px; border-radius: 14px; background: #00b24b; border-color: #00b24b; color: #fff; font-size: 15px; font-weight: 600; }
 }
+
+/* 23.11 · variant В: the subscription card is dark (no big blue block); the ring keeps the status colour */
+@media (max-width: 767px) {
+  .v3-uc-msub { background: #11151c; color: #fff; }
+  .v3-uc-msub::after { display: none; }
+  .v3-uc-msub-plan { background: #24324f; color: #9dbbff; border-radius: 999px; padding: 3px 10px; }
+  .v3-uc-msub-price, .v3-uc-msub-dates dt, .v3-uc-msub-ring small, .v3-uc-msub-tiles dt { color: #a1a7b3; }
+  .v3-uc-msub-ring { color: #5b8cff; }
+  .v3-uc-msub.is-amber .v3-uc-msub-ring { color: #f0a020; }
+  .v3-uc-msub.is-red .v3-uc-msub-ring { color: #e5484d; }
+  .v3-uc-msub-ring strong { color: #fff; }
+  .v3-uc-msub-st { background: #173a28; color: #7ee2a8; }
+  .v3-uc-msub.is-amber .v3-uc-msub-st { background: #3d2c0c; color: #ffc861; }
+  .v3-uc-msub.is-red .v3-uc-msub-st { background: #3f1715; color: #ff8f88; }
+  .v3-uc-msub-tiles > div { background: #1d232e; }
+}
+@media (max-width: 767px) {
+  .v3-sheet-card .v3-uc-sub { background: #11151c; }
+  .v3-sheet-card .v3-uc-sub .v3-uc-sub-tag { background: #24324f; color: #9dbbff; }
+  .v3-sheet-card .v3-uc-sub-top, .v3-sheet-card .v3-uc-sub-meta { color: #a1a7b3; }
+}

@@ -119,8 +119,8 @@ export default function UserCardPanel({ user, settings, extendDays, online, dele
           <div className="v3-uc-msub-main">
             <div className="v3-uc-msub-ring" role="img" aria-label={dl === null ? "Без дати" : `${Math.max(0, dl)} ${plural(Math.max(0, dl), "день", "дні", "днів")} до кінця`}>
               <svg width="88" height="88" viewBox="0 0 120 120" aria-hidden="true">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="9" />
-                <circle className="v3-uc-msub-p" cx="60" cy="60" r="50" fill="none" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeDasharray="314" strokeDashoffset={ringOff} transform="rotate(-90 60 60)" />
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#2a3140" strokeWidth="9" />
+                <circle className="v3-uc-msub-p" cx="60" cy="60" r="50" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeDasharray="314" strokeDashoffset={ringOff} transform="rotate(-90 60 60)" />
               </svg>
               <span aria-hidden="true"><strong key={dl ?? "x"}>{dl === null ? "—" : Math.max(0, dl)}</strong><small>{dl === null ? "без дати" : plural(Math.max(0, dl), "день", "дні", "днів")}</small></span>
             </div>
