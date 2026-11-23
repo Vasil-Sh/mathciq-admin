@@ -177,6 +177,12 @@ test.describe("Журнал дій", () => {
     await expect(page.getByRole("heading", { name: "Журнал дій" })).toBeVisible();
     await expect(page.getByText(/видалив запис оплати/i).first()).toBeVisible();
     await expect(page.locator("main select")).toHaveCount(0);
+    if (isPhone(page)) {
+      // phone (design 23.11): type chips + a «Фільтр» sheet instead of dropdowns
+      await page.getByRole("button", { name: "Фільтр" }).first().click();
+      await expect(page.getByRole("dialog").getByText("Фільтр", { exact: true })).toBeVisible();
+      return;
+    }
     await page.locator(".v3-au-mdd .v3-dd-btn, .v3-au-wdd .v3-dd-btn").first().click();
     await expect(page.getByRole("listbox").or(page.getByRole("menu")).first()).toBeVisible();
   });
@@ -184,10 +190,10 @@ test.describe("Журнал дій", () => {
   test("phone: tap a record to open its details; the header has the journal button", async ({ page }) => {
     test.skip(!isPhone(page), "phone layout");
     await page.goto("/audit");
-    const row = page.locator(".v3-au-mev").first();
-    await row.click();
-    await expect(row).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator(".v3-header-end a.v3-audit")).toBeVisible();
+    // phone (design 23.11): a tap on a card opens the entry sheet
+    await page.locator(".v3-au-pcard").first().click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.locator("header a.v3-audit").filter({ visible: true }).first()).toBeAttached();
   });
 
   test("a user's history: banner with «Увесь журнал» button", async ({ page }) => {
