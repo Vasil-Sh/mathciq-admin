@@ -15,6 +15,7 @@ import ExportCsvButton from "@/components/ExportCsvButton";
 import { Dropdown } from "@/components/ui/dropdown";
 import AllBetsDialog, { legMark } from "@/components/bets/AllBetsDialog";
 import { openTelegram } from "@/lib/telegram";
+import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 
 const isAdminU = (u: AdminUserOverview) => u.role === "admin" || u.role === "owner" || !!u.isOwner;
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
@@ -43,6 +44,16 @@ export default function Bets() {
   const [busy, setBusy] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
   const [q, setQ] = useState(params.get("q") || "");
+  // Phone: the 🔍 in the header searches the list (design BetsMobileSearch)
+  const pageSearch = usePageSearch("Логін або Telegram");
+  const initQ = useRef(q);
+  useEffect(() => { if (isPhoneWidth() && initQ.current) { pageSearch.setQ(initQ.current); pageSearch.setOpen(true); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isPhoneWidth()) return;
+    if (initQ.current && pageSearch.q !== initQ.current) return; // wait until the ?q= value reaches the header
+    initQ.current = "";
+    setQ(pageSearch.q); setLimit(PAGE);
+  }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
   const [game, setGame] = useState("all");
   const [sort, setSort] = useState<Sort>("bets");
   const [showAll, setShowAll] = useState(false);
@@ -218,10 +229,25 @@ export default function Bets() {
     );
     if (mobile) return (
       <div className="v3-bt-mxp">
-        <div className="v3-bt-mtiles">
-          <div className="v3-bt-tile"><div className="k">Банк: старт → зараз</div><div className="v">{money(u.initialBank).replace(" ₴", "")} → {money(u.currentBank)}</div>{usdBank(u) && <div className="v v3-bt-v2">{money(u.initialBankUsd || 0, "USD").replace(" $", "")} → {money(u.currentBankUsd || 0, "USD")}</div>}</div>
-          <div className="v3-bt-tile"><div className="k">Обіг · ROI</div><div className="v">{money(s.staked)} · <span className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</span></div>{usdS(u) && <div className="v v3-bt-v2">{money(usdS(u)!.staked, "USD")} · <span className={usdS(u)!.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(usdS(u)!.roi)}</span></div>}</div>
-        </div>
+        {/* design BetsMobileOpen: «У гривнях · N ставок» Профіт / Обіг / ROI, then the same in dollars */}
+        {(() => { const ux = usdS(u); const uahBets = Math.max(0, s.bets - (ux?.bets || 0)); return <>
+          {(uahBets > 0 || !ux) && <>
+            <div className="v3-bt-mcap">У гривнях · {uahBets.toLocaleString("uk-UA")} {plural(uahBets, "ставка", "ставки", "ставок")}</div>
+            <div className="v3-bt-mtiles is-3">
+              <div className="v3-bt-tile"><div className="k">Профіт</div><div className={`v ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(s.profit)}</div></div>
+              <div className="v3-bt-tile"><div className="k">Обіг</div><div className="v">{money(s.staked)}</div></div>
+              <div className="v3-bt-tile"><div className="k">ROI</div><div className={`v ${s.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(s.roi)}</div></div>
+            </div>
+          </>}
+          {ux && <>
+            <div className="v3-bt-mcap">У доларах · {ux.bets.toLocaleString("uk-UA")} {plural(ux.bets, "ставка", "ставки", "ставок")}</div>
+            <div className="v3-bt-mtiles is-3">
+              <div className="v3-bt-tile"><div className="k">Профіт</div><div className={`v ${ux.profit >= 0 ? "is-pos" : "is-neg"}`}>{usd(ux.profit)}</div></div>
+              <div className="v3-bt-tile"><div className="k">Обіг</div><div className="v">{money(ux.staked, "USD")}</div></div>
+              <div className="v3-bt-tile"><div className="k">ROI</div><div className={`v ${ux.profit >= 0 ? "is-pos" : "is-neg"}`}>{signedPct(ux.roi)}</div></div>
+            </div>
+          </>}
+        </>; })()}
         <div className="v3-bt-mcap">Останні ставки</div>
         {shown.map((b, j) => { const v = betView(b); return (
           <div key={b.id} className="v3-bt-mbet" style={{ animationDelay: `${120 + j * 50}ms` }}>
@@ -330,11 +356,11 @@ export default function Bets() {
     <div className="v3-bt-mobile">
       <div className="v3-bt-mtabs" role="group" aria-label="Фільтр за грою">
         <PillTrack active={game} />
-        <button type="button" className={`v3-bt-mtab${game === "all" ? " is-on" : ""}`} aria-pressed={game === "all"} onClick={() => setGame("all")}><span className="v3-bt-mtab-n">{playing.length}</span>Усі</button>
-        {gameCounts.map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}</button>)}
+        <button type="button" className={`v3-bt-mtab${game === "all" ? " is-on" : ""}`} aria-pressed={game === "all"} onClick={() => setGame("all")}><span className="v3-bt-mtab-n">{playing.length}</span>Усі<span className="v3-bt-mtab-c">· {playing.length}</span></button>
+        {gameCounts.map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}<span className="v3-bt-mtab-c">· {n}</span></button>)}
       </div>
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
-      <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" prefix="Сортування:" value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: SORT_M[k] }))} />
+      <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" prefix="Сортування:" sheet={{ title: "Сортування" }} value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: SORT_M[k] }))} />
       {rows.length === 0 ? <div className="v3-wcard">{filteredEmpty}</div> : <div key={rk} className="v3-bt-mrows">{rows.slice(0, limit).map(({ u, s }, i) => {
         const open = openId === u.id;
         const head = (
@@ -364,7 +390,7 @@ export default function Bets() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Ставки</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час{updatedAt ? ` · оновлено ${updatedAt}` : ""}</span></p>
         </div>
         <div className="v3-chips">
           {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}

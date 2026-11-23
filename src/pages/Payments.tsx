@@ -353,8 +353,8 @@ export default function Payments() {
     <div className="v3-pay-m">
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук оплат" placeholder="№, логін або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>
       <div className={`v3-pay-mf${who ? " is-one" : ""}`}>
-        {!who && <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => ({ value: m, label: monthName(m) }))} />}
-        <Dropdown className="v3-mselect-dd" ariaLabel="Статус" value={filt} onChange={(v) => { setFilt(v as Filt); setRk((x) => x + 1); }} options={segs.map((s) => ({ value: s.key, label: `${s.key === "all" ? "Усі статуси" : s.label} · ${cnt(s.key)}` }))} />
+        {!who && <Dropdown className="v3-mselect-dd" ariaLabel="Місяць" sheet={{ title: "Місяць", note: "оплати за обраний місяць" }} value={month} onChange={(v) => { setMonth(v); setRk((x) => x + 1); }} options={months.map((m) => { const ok = (rows || []).filter((p) => p.status === "recorded" && (p.paidOn || "").startsWith(m)); return { value: m, label: monthName(m), hint: ok.length ? `${money(sumOf(ok))} · ${ok.length}` : money(0) }; })} />}
+        <Dropdown className="v3-mselect-dd" ariaLabel="Статус" sheet={{ title: "Статус", note: "які записи показати" }} value={filt} onChange={(v) => { setFilt(v as Filt); setRk((x) => x + 1); }} options={segs.map((s) => ({ value: s.key, label: `${s.key === "all" ? "Усі статуси" : s.label} · ${cnt(s.key)}` }))} />
       </div>
       {q.trim() && <p className="v3-pay-found" role="status">Знайдено {list.length} · за логіном, № або промокодом</p>}
       <ul className={`v3-pay-mlist ${rk % 2 ? "a" : "b"}`}>

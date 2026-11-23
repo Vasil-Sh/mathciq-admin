@@ -47,7 +47,7 @@ export default function AllBetsDialog({ user, bets, open, onOpenChange }: { user
   shown.forEach(({ b, v }) => {
     const day = (b.date || "").slice(0, 10);
     const delay = `${Math.min(i, 10) * 35}ms`;
-    if (day !== lastDay) { items.push(<div key={`d-${day}-${b.id}`} className="v3-ab-day" style={{ animationDelay: delay }}>{dayLabel(day)}</div>); lastDay = day; i++; }
+    if (day !== lastDay) { items.push(<div key={`d-${day}-${b.id}`} className="v3-ab-day" style={{ animationDelay: delay }}><span>{dayLabel(day)}</span>{(() => { const d = shown.filter((x) => (x.b.date || "").slice(0, 10) === day && x.v.res !== "pending"); if (!d.length) return null; const t = d.reduce((acc, x) => acc + (Number(x.b.profit) || 0), 0); return <b className={`v3-ab-daysum ${t > 0 ? "is-pos-d" : t < 0 ? "is-neg-d" : ""}`}>{signedMoney(t)}</b>; })()}</div>); lastDay = day; i++; }
     items.push(
       <div key={b.id} className="v3-ab-bet" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>
         <div className="v3-ab-h"><strong>{v.title}</strong><span className={`v3-ab-res is-${v.res}`} style={{ animationDelay: `${150 + Math.min(i, 10) * 35}ms` }}><i />{v.status}</span></div>

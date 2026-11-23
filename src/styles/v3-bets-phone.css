@@ -1,0 +1,129 @@
+/* ══ Ставки · телефон, світлий дизайн (23.11) ══
+   Лише ≤ 767 px і лише сторінка «Ставки» (.v3-bets). Комп’ютер не змінюється. */
+.v3-bt-mtab-c { display: none; }
+@media (max-width: 767px) {
+  body:has(.v3-bets),
+  .v3-shell:has(.v3-bets) { background: #e9ecf2; }
+  .v3-shell:has(.v3-bets) .v3-stars { display: none; }
+  .v3-bets { color: #11151c; }
+
+  /* заголовок + біла кнопка «Оновити» */
+  .v3-bets .v3-hero { position: relative; display: block; margin-bottom: 2px; }
+  .v3-bets .v3-hero .v3-bt-mtop { position: absolute; top: 0; right: 0; margin: 0; }
+  .v3-bets .v3-hero .v3-title { padding-right: 52px; font-size: 30px; font-weight: 400; letter-spacing: -.03em; line-height: 1.1; color: #11151c; }
+  .v3-bets .v3-subtitle { margin-top: 4px; font-size: 12px; line-height: 1.4; color: #6b7384; }
+  .v3-bets .v3-bt-rfb { width: 40px; height: 40px; border: 0; border-radius: 12px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .06); }
+  .v3-bets .v3-bt-rfb svg { width: 17px; height: 17px; }
+
+  /* підсумки: синя «Ставок всього» + біла «Загальний профіт» */
+  .v3-bets .v3-bt-mkpis { gap: 10px; }
+  .v3-bets .v3-bt-mk { display: flex; flex-direction: column; min-height: 112px; padding: 14px; border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bets .v3-bt-mk.is-blue { background: linear-gradient(160deg, #4a7cff, #3a64e0); color: #fff; }
+  .v3-bets .v3-bt-mk .l { font-size: 13px; font-weight: 500; color: #11151c; }
+  .v3-bets .v3-bt-mk.is-blue .l { color: #fff; }
+  .v3-bets .v3-bt-mk .v { font-size: 26px; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .v3-bets .v3-bt-mk .v.is-pos { color: #1f9d55; }
+  .v3-bets .v3-bt-mk .v.is-neg { color: #e5484d; }
+  .v3-bets .v3-bt-mk .n { margin-top: auto; padding-top: 6px; font-size: 11px; line-height: 1.35; color: #6b7384; }
+  .v3-bets .v3-bt-mk.is-blue .n { color: rgba(255, 255, 255, .9); }
+  .v3-bets .v3-bt-mk .is-pos-d { color: #1f9d55; }
+  .v3-bets .v3-bt-mk .is-neg-d { color: #e5484d; }
+
+  /* вкладки: біла доріжка, синя пігулка, «Усі · 7» */
+  .v3-bets .v3-bt-mtabs { gap: 0; padding: 4px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bets .v3-bt-mtabs > .v3-pill { top: 4px; bottom: 4px; border-radius: 10px; background: #3a6df0; box-shadow: none; }
+  .v3-bets .v3-bt-mtab, .v3-bets .v3-bt-mtab.is-on { justify-content: center; gap: 4px; min-height: 38px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; }
+  .v3-bets .v3-bt-mtab.is-on { color: #fff; font-weight: 600; }
+  .v3-bets .v3-bt-mtabs:not(.has-pill) .v3-bt-mtab.is-on { background: #3a6df0; }
+  .v3-bets .v3-bt-mtab-n { display: none; }
+  .v3-bets .v3-bt-mtab-c { display: inline; }
+
+  /* пошук — у шапці (🔍) */
+  .v3-bets .v3-bt-mobile > .v3-msearch { display: none; }
+
+  /* сортування */
+  .v3-bets .v3-mselect-dd .v3-dd-btn { min-height: 42px; height: 42px; padding: 0 12px; border: 0; border-radius: 12px; background: #fff; color: #11151c; font: 600 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+
+  /* «Показати всіх» / «Показати ще» */
+  .v3-bets .v3-bt-mall { border: 0; border-radius: 14px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bets .v3-bt-mall.is-on { background: #11151c; color: #fff; }
+  @media (hover: hover) {
+    .v3-bets .v3-bt-mall:hover { background: #f4f6f9; }
+    .v3-bets .v3-bt-mall.is-on:hover { background: #262b33; }
+    .v3-bets .v3-bt-rfb:not(:disabled):hover { background: #f4f6f9; }
+  }
+}
+.v3-bt-mtiles.is-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ══ Розгорнута картка · телефон (design BetsMobileOpen) ══ */
+@media (max-width: 767px) {
+  .v3-bets .v3-bt-mopen { border: 0; border-radius: 18px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-bets .v3-bt-mopen .v3-bt-mcard { background: transparent; color: #11151c; }
+  .v3-bets .v3-bt-mopen .v3-bt-mwho > span:not(.v3-bt-wl), .v3-bets .v3-bt-mopen .v3-bt-mright small { color: #6b7384; }
+  .v3-bets .v3-bt-mopen .is-pos-d { color: #1f9d55; }
+  .v3-bets .v3-bt-mopen .is-neg-d { color: #e5484d; }
+  .v3-bets .v3-bt-mopen .v3-bt-stk { background: #fde2df; color: #c2341f; }
+  .v3-bets .v3-bt-mopen .v3-bt-mpill { background: #11151c; color: #fff; }
+  .v3-bets .v3-bt-mxp { padding: 0 14px 14px; gap: 8px; }
+  .v3-bets .v3-bt-mcap { padding: 4px 2px 0; font-size: 12px; font-weight: 600; color: #3c4350; }
+  .v3-bets .v3-bt-mtiles { gap: 6px; }
+  .v3-bets .v3-bt-mtiles .v3-bt-tile { padding: 9px 10px; border: 0; border-radius: 12px; background: #f4f6f9; color: #11151c; }
+  .v3-bets .v3-bt-mtiles .k { font-size: 11px; color: #3a6df0; }
+  .v3-bets .v3-bt-mtiles .v { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; color: #11151c; font-variant-numeric: tabular-nums; }
+  .v3-bets .v3-bt-mtiles .v.is-pos { color: #1f9d55; }
+  .v3-bets .v3-bt-mtiles .v.is-neg { color: #e5484d; }
+  .v3-bets .v3-bt-mbet { border: 0; border-radius: 14px; background: #f4f6f9; color: #11151c; }
+  .v3-bets .v3-bt-mbet-h strong { font-weight: 600; color: #11151c; }
+  .v3-bets .v3-bt-mbet-m { color: #6b7384; }
+  .v3-bets .v3-bt-mbet .v3-bt-g { background: #fff; color: #11151c; }
+  .v3-bets .v3-bt-mbet-f span { font-weight: 600; }
+  .v3-bets .v3-bt-mbet-f .is-pos { color: #1f9d55; }
+  .v3-bets .v3-bt-mbet-f .is-neg { color: #e5484d; }
+  .v3-bets .v3-bt-mbet-f .is-dim { color: #9aa3b2; }
+  .v3-bets .v3-bt-mbet .v3-bt-res { border: 0; }
+  .v3-bets .v3-bt-mbet .v3-bt-res.is-win { background: #e3f5ea; color: #1f8a4c; }
+  .v3-bets .v3-bt-mbet .v3-bt-res.is-loss { background: #fde2df; color: #c2341f; }
+  .v3-bets .v3-bt-mbet .v3-bt-res.is-pending { background: #fff3dc; color: #8a5a00; }
+  .v3-bets .v3-bt-mlegs { background: #fff; color: #3c4350; }
+  .v3-bets .v3-bt-mlegs > div + div { border-top-color: #eef0f4; }
+  .v3-bets .v3-bt-mlegs .v3-dim { color: #6b7384; }
+  .v3-bets .v3-bt-mxp .v3-bt-allbtn { border: 0; border-radius: 14px; background: #11151c; color: #fff; }
+  .v3-bets .v3-bt-mopen .v3-bt-xp-state, .v3-bets .v3-bt-mopen .v3-bt-xp-load { color: #3c4350; }
+  @media (hover: hover) {
+    .v3-bets .v3-bt-mxp .v3-bt-allbtn:hover { background: #262b33; }
+  }
+}
+
+/* ══ Усі ставки (шторка) · телефон (design BetsMobileSheet) ══ */
+.v3-ab-day { display: flex; justify-content: space-between; gap: 8px; }
+.v3-ab-daysum { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 767px) {
+  .v3-ab .v3-ab-cur { font-size: 12px; font-weight: 600; color: #3c4350; }
+  .v3-ab .v3-ab-stats { gap: 6px; }
+  .v3-ab .v3-ab-stats > div { padding: 9px 10px; border-radius: 12px; background: #f4f6f9; }
+  .v3-ab .v3-ab-stats span { font-size: 11px; color: #3a6df0; }
+  .v3-ab .v3-ab-stats b { margin-top: 2px; font-size: 14px; }
+  .v3-ab .v3-ab-f4 { border-radius: 12px; background: #eef0f4; }
+  .v3-ab .v3-ab-f4 > .v3-pill { border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-ab .v3-ab-f4 button { min-height: 42px; border-radius: 9px; }
+  .v3-ab .v3-ab-f4 button.is-on, .v3-ab .v3-ab-f4 button.is-on b { color: #11151c; }
+  .v3-ab .v3-ab-f4 button.is-on { color: #3a6df0; }
+  .v3-ab .v3-ab-f4:not(.has-pill) button.is-on { background: #fff; }
+  .v3-ab .v3-ab-day { padding-top: 4px; font-size: 12px; font-weight: 500; color: #6b7384; }
+  .v3-ab .is-pos-d { color: #1f9d55; }
+  .v3-ab .is-neg-d { color: #e5484d; }
+}
+
+/* ══ Список-шторка (Dropdown sheet) · телефон ══ */
+@media (max-width: 767px) {
+  .v3-dd-sheet .v3-pm-list button > span:first-child { display: block; }
+  .v3-dd-sheet .v3-pm-list button > span:first-child::first-letter { text-transform: uppercase; }
+  .v3-dd-sheet-r { display: inline-flex; align-items: center; gap: 8px; color: #6b7384; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .v3-dd-sheet .v3-pm-list button.is-on .v3-dd-sheet-r { color: #3a6df0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .v3-dd-sheet.is-closing .v3-pm-list { transform: translateY(100%); transition: transform .24s cubic-bezier(.4, 0, 1, 1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .v3-dd-sheet.is-closing .v3-pm-list { opacity: 0; transition: opacity .2s; }
+  }
+}
