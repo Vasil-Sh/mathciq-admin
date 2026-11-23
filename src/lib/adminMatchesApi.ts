@@ -99,3 +99,39 @@ export async function fetchTeamCatalog(): Promise<CatalogTeam[]> {
   const res = await api.get<{ teams: CatalogTeam[] }>("/admin/teams/catalog");
   return (res.teams || []).map((t) => ({ ...t, logo: absLogo(t.logo, API_BASE) }));
 }
+
+// ── «Команди → Змінити логотип»: the admin's own logo for a team (wins over packs and feeds) ──
+/** Same normalization as the backend: lower-case letters and digits only. */
+export const logoNorm = (name: string) => String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+/** game:norm → absolute URL */
+export async function fetchTeamLogos(): Promise<Record<string, string>> {
+  const res = await api.get<{ logos: { game: Game; norm: string; url: string }[] }>("/admin/team-logos");
+  const out: Record<string, string> = {};
+  for (const l of res.logos || []) { const u = absLogo(l.url, API_BASE); if (u) out[`${l.game}:${l.norm}`] = u; }
+  return out;
+}
+export async function saveTeamLogo(b: { game: Game; names: string[]; dataUrl: string }): Promise<string> {
+  const r = await api.post<{ url: string }>("/admin/team-logos", b);
+  return absLogo(r.url, API_BASE) || r.url;
+}
+export const deleteTeamLogo = (game: Game, names: string[]) =>
+  api.delete(`/admin/team-logos?game=${game}${names.map((n) => `&name=${encodeURIComponent(n)}`).join("")}`);
+
+/** A picked image → a square ≤256 px WebP (PNG where WebP is not supported) data URL, under the backend's 300 KB. */
+export async function logoFileToDataUrl(file: File): Promise<string> {
+  if (!/^image\/(png|jpeg|webp|gif|svg\+xml)$/.test(file.type)) throw new Error("Оберіть зображення: PNG, JPEG або WebP");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Файл завеликий — до 8 МБ");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("Не вдалося відкрити зображення")); i.src = url; });
+    const side = 256, k = Math.min(1, side / Math.max(img.naturalWidth || side, img.naturalHeight || side));
+    const w = Math.max(1, Math.round((img.naturalWidth || side) * k)), h = Math.max(1, Math.round((img.naturalHeight || side) * k));
+    const c = document.createElement("canvas"); c.width = side; c.height = side;
+    const ctx = c.getContext("2d"); if (!ctx) throw new Error("Браузер не дав намалювати зображення");
+    ctx.drawImage(img, (side - w) / 2, (side - h) / 2, w, h); // centred, transparent around
+    let out = c.toDataURL("image/webp", 0.9);
+    if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
+    if (out.length * 0.75 > 300 * 1024) out = c.toDataURL("image/webp", 0.7);
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}

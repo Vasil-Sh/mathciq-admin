@@ -340,7 +340,9 @@
   .v3-mxt-chip button { display: grid; place-items: center; width: 20px; height: 20px; margin-right: -6px; border: 0; border-radius: 50%; background: none; color: #6b7384; }
   .v3-mxt-add { height: 30px; padding: 0 12px; border: 1.5px dashed #3a6df0; border-radius: 999px; background: #fff; color: #3a6df0; font: 600 13px Inter, sans-serif; }
   .v3-mxt > .v3-csheet-note { align-self: stretch; }
-  .v3-mxt-acts { align-self: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .v3-mxt-acts { align-self: stretch; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin-top: 14px; }
+  .v3-mxt-acts > button { padding: 0 10px; font-size: 14px; white-space: nowrap; }
+  .v3-mxt-link { margin-top: 6px; padding: 8px 12px; border: 0; background: none; color: #3a6df0; font: 500 13px Inter, sans-serif; }
   .v3-mxt-hide { margin-top: 12px; padding: 10px 16px; border: 0; background: none; color: #e5484d; font: 600 14px Inter, sans-serif; }
   .v3-mxt button:disabled { opacity: .5; }
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -14,7 +14,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchHiddenTeams, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
@@ -123,7 +123,7 @@ export default function Matches() {
   const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
   // Команди, видалені з довідника (розпалися, але лишились у пакеті логотипів)
   const [hidden, setHidden] = useState<HiddenTeam[]>([]);
-  useEffect(() => { fetchHiddenTeams().then(setHidden).catch(() => {}); fetchDistinct().then(setDistinct).catch(() => {}); }, []);
+  useEffect(() => { fetchHiddenTeams().then(setHidden).catch(() => {}); fetchDistinct().then(setDistinct).catch(() => {}); fetchTeamLogos().then(setOwnLogos).catch(() => {}); }, []);
   useEffect(() => { let off = false; fetchTeamCatalog().then((c) => { if (!off) setCatalog(c); }).catch(() => {}); return () => { off = true; }; }, []);
   const [selTeam, setSelTeam] = useState<string | null>(null);
   // Адмінські дані: псевдоніми, правки, рішення, журнал парсерів
@@ -145,6 +145,10 @@ export default function Matches() {
   const [mergeAsk, setMergeAsk] = useState<{ x: ManualGroup; target: Match } | null>(null);
   const [pickFor, setPickFor] = useState<ManualGroup | null>(null);
   const [distinct, setDistinct] = useState<DistinctPair[]>([]);
+  // «Змінити логотип»: game:norm → URL of the admin's own logo
+  const [ownLogos, setOwnLogos] = useState<Record<string, string>>({});
+  const logoInput = useRef<HTMLInputElement>(null);
+  const [logoFor, setLogoFor] = useState<Team | null>(null);
 
   const load = useCallback(async (opts: { force?: boolean } = {}) => {
     try {
@@ -225,8 +229,37 @@ export default function Matches() {
   const teams = useMemo(() => {
     const off = new Set(hidden.map((h) => `${h.game}:${normTeam(h.name)}`));
     const not = new Set(distinct.map((d) => `${d.game}:${normTeam(d.name)}|${d.variant}`));
-    return mergeCatalog(teamsFrom(known), catalog).filter((t) => !off.has(t.key)).map((t) => (t.variants.some((v) => not.has(`${t.key}|${v}`)) ? { ...t, variants: t.variants.filter((v) => !not.has(`${t.key}|${v}`)) } : t));
-  }, [known, catalog, aliases, hidden, distinct]);
+    const own = (t: Team) => [t.name, ...t.aliases, ...t.variants].map((n) => ownLogos[`${t.game}:${logoNorm(n)}`]).find(Boolean);
+    return mergeCatalog(teamsFrom(known), catalog).filter((t) => !off.has(t.key)).map((t) => {
+      const v = t.variants.some((x) => not.has(`${t.key}|${x}`)) ? t.variants.filter((x) => !not.has(`${t.key}|${x}`)) : t.variants;
+      const lg = own(t);
+      return v === t.variants && !lg ? t : { ...t, variants: v, logo: lg || t.logo, ownLogo: !!lg };
+    });
+  }, [known, catalog, aliases, hidden, distinct, ownLogos]);
+  /** Upload the picked image as this team's logo — for every spelling the directory knows. */
+  const uploadLogo = async (t: Team, file: File) => {
+    setSaving(`logo:${t.key}`);
+    try {
+      const dataUrl = await logoFileToDataUrl(file);
+      const names = [t.name, ...t.aliases, ...t.variants, ...aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name)).map((a) => a.alias)];
+      const url = await saveTeamLogo({ game: t.game, names, dataUrl });
+      setOwnLogos((m) => { const n = { ...m }; for (const x of names) n[`${t.game}:${logoNorm(x)}`] = url; return n; });
+      toast.success("Логотип оновлено", { description: `${t.name} — у матчах, історії й профілях застосунку` });
+      load();
+    } catch (e) { toast.error("Не вдалося змінити логотип", { description: errText(e) }); }
+    setSaving("");
+  };
+  const resetLogo = async (t: Team) => {
+    setSaving(`logo:${t.key}`);
+    try {
+      const names = [t.name, ...t.aliases, ...t.variants].filter((n) => ownLogos[`${t.game}:${logoNorm(n)}`]);
+      await deleteTeamLogo(t.game, names);
+      setOwnLogos((m) => { const n = { ...m }; for (const x of names) delete n[`${t.game}:${logoNorm(x)}`]; return n; });
+      toast.success("Повернуто логотип із пакета", { description: t.name });
+      load();
+    } catch (e) { toast.error("Не вдалося повернути логотип", { description: errText(e) }); }
+    setSaving("");
+  };
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
@@ -901,10 +934,12 @@ export default function Matches() {
           </div>
         </div>
         {t.variants.length > 0 && <p className="v3-csheet-note"><b aria-hidden="true">!</b><span>Нове написання з джерел — {t.variants.map((v) => `«${v}»`).join(", ")} · підтвердьте «Це одна команда»</span></p>}
-        {t.variants.length > 0 && <div className="v3-mxt-acts">
-          <button type="button" className="v3-csheet-no" disabled={!online || !!saving} onClick={() => notSame(t, t.variants[0])}>Різні команди</button>
-          <button type="button" className="v3-csheet-go is-green" disabled={!online || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>
-        </div>}
+        <div className="v3-mxt-acts">
+          <button type="button" className="v3-csheet-no" disabled={!online || saving === `logo:${t.key}`} onClick={() => { setLogoFor(t); logoInput.current?.click(); }}><Upload size={16} aria-hidden="true" />{saving === `logo:${t.key}` ? "Завантажуємо…" : "Змінити логотип"}</button>
+          {t.variants.length > 0 && <button type="button" className="v3-csheet-go is-green" disabled={!online || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>}
+        </div>
+        {t.variants.length > 0 && <button type="button" className="v3-mxt-link" disabled={!online || !!saving} onClick={() => notSame(t, t.variants[0])}>Це різні команди</button>}
+        {(t as Team & { ownLogo?: boolean }).ownLogo && <button type="button" className="v3-mxt-link" disabled={!online || !!saving} onClick={() => resetLogo(t)}>Повернути логотип із пакета</button>}
         <button type="button" className="v3-mxt-hide" disabled={!online || saving === t.key} onClick={() => setDelTeam(t)}>Приховати команду</button>
       </div>
     );
@@ -1046,6 +1081,8 @@ export default function Matches() {
           <div className="is-off"><small>Офіційний · {mergeAsk.target.source}</small><strong>{mergeAsk.target.t1} — {mergeAsk.target.t2}{mergeAsk.target.tournament ? ` · ${mergeAsk.target.tournament}` : ""} · {mergeAsk.target.time}</strong></div>
         </div>}
       </ConfirmSheet>
+      {/* «Змінити логотип»: the system picker (photos or files) */}
+      <input ref={logoInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && logoFor) uploadLogo(logoFor, f); }} />
       <PickMatchSheet group={pickFor} known={known} today={today} busy={!!pickFor && saving === `merge:${pickFor.key}`} onClose={() => setPickFor(null)} onPick={(x, m) => decide(x, "merge", m)} />
 
       {phone ? <ConfirmSheet open={!!delTeam} icon={<Trash2 size={22} />} title={`Приховати ${delTeam?.name || "команду"}?`}
