@@ -472,6 +472,8 @@ export default function Matches() {
     { k: "manual", label: "Додані вручну", v: bets ? String(groups.length) : "…", n: bets ? (groups.length ? "немає в стрічках парсерів" : "усі записи на своїх матчах") : "шукаємо в записах", amber: groups.length > 0, go: () => setTab("manual"), on: tab === "manual" },
   ];
   const tabN: Record<Tab, number | null> = { matches: matches ? todayM.length : null, parsers: parsers ? down.length || parsers.length : null, manual: bets ? groups.length : null, teams: matches ? teams.length : null };
+  // phone: «Матчі · N» counts every match in the feed (all days), not just today
+  const tabCount = (k: Tab) => (phone && k === "matches" && matches ? all.filter((m) => game === "all" || m.game === game).length : tabN[k]);
   useEffect(() => { publishMatchCounts(tabN); }, [tabN.matches, tabN.parsers, tabN.manual, tabN.teams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Деталі матчу (бічна панель / шторка) ──
@@ -1076,7 +1078,7 @@ export default function Matches() {
         <div className={`v3-mx-tabsw${tabFade.l ? " fade-l" : ""}${tabFade.r ? " fade-r" : ""}`} onScroll={(e) => edgeFade(e.currentTarget)} ref={(el) => { if (el && !tabsEl.current) { tabsEl.current = el; edgeFade(el); } }}>
           <div className="v3-pay-tabs v3-mx-tabs" role="tablist" aria-label="Розділи матчів">
             <PillTrack active={tab} />
-            {TABS.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}${t.key === "parsers" && down.length ? " is-err" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{(phone && t.key === "matches" && matches ? all.filter((m) => game === "all" || m.game === game).length : tabN[t.key]) ?? "…"}</span><span className={phone ? "v3-hide-mobile" : undefined}>{t.label}</span>{phone && <span>{t.key === "manual" ? "Вручну" : t.label}{(t.key === "matches" || t.key === "manual") && tabN[t.key] != null ? ` · ${tabN[t.key]}` : ""}</span>}</button>)}
+            {TABS.map((t) => <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`v3-pay-tab${tab === t.key ? " is-on" : ""}${t.key === "parsers" && down.length ? " is-err" : ""}`} onClick={() => setTab(t.key)}><span className="v3-pay-tab-n">{tabCount(t.key) ?? "…"}</span><span className={phone ? "v3-hide-mobile" : undefined}>{t.label}</span>{phone && <span>{t.key === "manual" ? "Вручну" : t.label}{(t.key === "matches" || t.key === "manual") && tabCount(t.key) != null ? ` · ${tabCount(t.key)}` : ""}</span>}</button>)}
           </div>
         </div>
 

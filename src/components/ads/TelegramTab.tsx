@@ -69,12 +69,14 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
     finally { setSaving(false); }
   }
   async function toggleActive(p: Promo) {
+    // optimistic: the switch flips at once; back if the server refuses
+    setList((l) => l.map((x) => (x.id === p.id ? { ...x, active: !p.active } : x)));
     try {
       const saved = await savePromo(p.id, { active: !p.active });
       setList((l) => l.map((x) => (x.id === saved.id ? saved : x)));
       if (!saved.active) toast.success("Розміщення вимкнено", { description: `${saved.name} більше не показується`, action: { label: "Увімкнути", onClick: () => toggleActive(saved) } });
       else toast.success("Розміщення увімкнено", { description: saved.name });
-    } catch (e) { toast.error("Не вдалося змінити розміщення", { description: (e as Error).message }); }
+    } catch (e) { setList((l) => l.map((x) => (x.id === p.id ? { ...x, active: p.active } : x))); toast.error("Не вдалося змінити розміщення", { description: (e as Error).message }); }
   }
   const [delAsk, setDelAsk] = useState<Promo | null>(null);
   const [delBusy, setDelBusy] = useState(false);

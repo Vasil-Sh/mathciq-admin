@@ -379,7 +379,7 @@ export default function Admin() {
     try { await load(); } finally { setRefreshing(false); setPull(0); }
   };
   // press highlight only — the long-press menu (Telegram / open card) was removed: a tap opens the card
-  const pressStart = (id: number) => { touch.current.long = false; setPressId(id); };
+  const pressStart = (_id: number) => { touch.current.long = false; }; // no press animation
   const pressEnd = () => { if (touch.current.t) { window.clearTimeout(touch.current.t); touch.current.t = null; } setPressId(null); };
   const menuUser = all.find((u) => u.id === menuId) || null;
 

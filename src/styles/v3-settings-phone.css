@@ -245,3 +245,8 @@
 @media (max-width: 767px) {
   .v3-st-preq { align-self: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 10px; background: #eef0f4; color: #5f6878; font-size: 12px; font-weight: 600; line-height: 1; }
 }
+@media (max-width: 767px) {
+  /* «Обов’язкова»: the lock and the word in one row */
+  .v3-st-ptexts li > span.v3-st-preq { display: inline-flex; flex-direction: row; align-items: center; flex-wrap: nowrap; white-space: nowrap; min-width: auto; }
+  .v3-st-preq svg { flex: none; }
+}
