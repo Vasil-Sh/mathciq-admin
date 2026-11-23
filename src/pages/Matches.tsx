@@ -446,7 +446,8 @@ export default function Matches() {
 
   // ── Команди: псевдоніми ──
   const addAliases = async (t: Team, names: string[]) => {
-    const list = [...new Set(names.map((n) => n.trim()).filter((n) => n && baseNorm(n) !== baseNorm(t.name)))];
+    // exact spelling: «Parivision» for «PARIVISION» differs only in case, and is still a spelling to record
+    const list = [...new Set(names.map((n) => n.trim()).filter((n) => n && n !== t.name))];
     if (!list.length) return;
     setSaving(`team:${t.key}`);
     try {
@@ -573,7 +574,7 @@ export default function Matches() {
   const phoneMatchesTab = (
     <div className="v3-mxp">
       <div className="v3-mxp-bar">
-        <div className="v3-mxp-days" role="group" aria-label="День">{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => { setDay(d.key); setShown(12); setRk((x) => x + 1); }}>{d.label}</button>)}</div>
+        <div className="v3-mxp-days" role="group" aria-label="День">{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => { setDay(d.key); setShown(12); setRk((x) => x + 1); }}>{d.label}{matches && <b>{dayN(d.key)}</b>}</button>)}</div>
         <button type="button" className={`v3-mxp-fbtn${game !== "all" || st !== "all" ? " is-on" : ""}`} aria-label="Фільтр" aria-haspopup="dialog" onClick={() => setFiltOpen(true)}><Filter size={16} aria-hidden="true" /></button>
         <div className="v3-mxp-view" role="group" aria-label="Вигляд"><button type="button" className={mView === "list" ? "is-on" : ""} aria-pressed={mView === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} aria-hidden="true" /></button><button type="button" className={mView === "grid" ? "is-on" : ""} aria-pressed={mView === "grid"} aria-label="Плитками" onClick={() => pickView("grid")}><LayoutGrid size={15} aria-hidden="true" /></button></div>
       </div>
@@ -647,7 +648,9 @@ export default function Matches() {
               <div className="v3-field"><label htmlFor={`pe-t-${m.id}`}>Час (Київ)</label><input id={`pe-t-${m.id}`} {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
             </div>
             {!ov && <span className="v3-mxp-was">Зараз {m.time} у {m.source}</span>}
-            <div className="v3-field"><span className="v3-label">Статус</span><Dropdown className="v3-mselect-dd" ariaLabel="Статус матчу" sheet={{ title: "Статус матчу" }} value={f.st} onChange={(v) => setForm(m, { st: v })} options={[EDIT_ST[0], { key: "live" as AdminStatus, m: "live" as MStatus, label: "Наживо" }, ...EDIT_ST.slice(1)].map((x) => ({ value: x.key, label: x.label }))} /></div>
+            <div className="v3-field v3-mxp-stf"><span className="v3-label" id={`pe-st-${m.id}`}>Статус</span>
+              {/* chips right in the sheet — a second sheet on top of this one glitched on the phone */}
+              <div className="v3-mxp-stchips" role="radiogroup" aria-labelledby={`pe-st-${m.id}`}>{[EDIT_ST[0], { key: "live" as AdminStatus, m: "live" as MStatus, label: "Наживо" }, ...EDIT_ST.slice(1)].map((x) => <button key={x.key} type="button" role="radio" aria-checked={f.st === x.key} className={f.st === x.key ? "is-on" : ""} onClick={() => setForm(m, { st: x.key })}>{x.label}</button>)}</div></div>
           </div>
           <div className="v3-mxp-eg"><span className="v3-mxp-egt">Рахунок</span>
             <div className="v3-mxp-e2">
@@ -900,10 +903,14 @@ export default function Matches() {
   const tn = tq.trim().toLowerCase();
   const teamsG = tg === "all" ? teams : teams.filter((t) => t.game === tg);
   /** Last finished matches of a team, oldest → newest: W (перемога) / L (поразка) / D (нічия). */
-  const teamForm = (t: Team) => { const tn = normTeam(t.name);
-    return known.filter((m) => m.game === t.game && m.status === "done" && m.s1 != null && m.s2 != null && (normTeam(m.t1) === tn || normTeam(m.t2) === tn))
-      .sort((a, b) => b.ts - a.ts).filter((m, i, xs) => xs.findIndex((y) => y.id === m.id) === i).slice(0, 5).reverse()
-      .map((m) => { const mine = normTeam(m.t1) === tn ? m.s1! - m.s2! : m.s2! - m.s1!; return mine > 0 ? "W" : mine < 0 ? "L" : "D"; }); };
+  /** Last 5 finished matches, newest first: result, opponent, score from this team's side, day. */
+  const teamLast = (t: Team) => { const tn = normTeam(t.name);
+    return known.filter((m) => m.game === t.game && m.status === "done" && m.s1 != null && m.s2 != null && (m.s1 || m.s2) && (normTeam(m.t1) === tn || normTeam(m.t2) === tn))
+      .sort((a, b) => b.ts - a.ts).filter((m, i, xs) => xs.findIndex((y) => y.id === m.id) === i).slice(0, 5)
+      .map((m) => { const first = normTeam(m.t1) === tn; const a = first ? m.s1! : m.s2!, b = first ? m.s2! : m.s1!;
+        return { id: m.id, r: (a > b ? "W" : a < b ? "L" : "D") as "W" | "L" | "D", opp: first ? m.t2 : m.t1, oppLogo: first ? m.logo2 : m.logo1, score: `${a}:${b}`, day: m.day, tour: m.tournament }; }); };
+  /** The same as letters, oldest → newest (the last one on the right). */
+  const teamForm = (t: Team) => teamLast(t).reverse().map((x) => x.r);
   /** Where a spelling came from: the first match in the feeds that used it. */
   const spellingFrom = (t: Team, v: string) => { const m = known.filter((x) => x.game === t.game && (x.t1 === v || x.t2 === v)).sort((a, b) => a.ts - b.ts)[0]; return m ? `${m.source} · з ${dayShort(m.day)}` : "зі стрічок"; };
   const notSame = async (t: Team, v: string) => {
@@ -948,7 +955,16 @@ export default function Matches() {
         <Logo src={t.logo} name={t.name} size={56} />
         <h2>{t.name}</h2>
         <p>{[GAME_LABEL[t.game], t.rank != null ? `#${t.rank} у рейтингу` : "", t.last ? (t.last === today ? "останній матч сьогодні" : `останній матч ${dayShort(t.last)}`) : `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}`].filter(Boolean).join(" · ")}</p>
-        {f.length > 0 && <span className="v3-mx-form is-lg" aria-label={`Останні матчі: ${f.join("-")}`}>{f.map((x, k) => <i key={k} className={`is-${x}`}>{x}</i>)}</span>}
+        {f.length > 0 && <div className="v3-mxt-last">
+          <small>Останні матчі · нові зверху</small>
+          <ul>{teamLast(t).map((x) => (
+            <li key={x.id}>
+              <i className={`is-${x.r}`} aria-label={x.r === "W" ? "перемога" : x.r === "L" ? "поразка" : "нічия"}>{x.r}</i>
+              <span><strong>vs {x.opp}</strong><small>{x.day === today ? "сьогодні" : dayShort(x.day)}{x.tour ? ` · ${x.tour}` : ""}</small></span>
+              <b>{x.score}</b>
+            </li>
+          ))}</ul>
+        </div>}
         <div className="v3-mxt-al">
           <small>Псевдоніми — так команду називають джерела</small>
           <div>
@@ -976,7 +992,8 @@ export default function Matches() {
           {phone ? (
             <div className="v3-mxp-bar">
               <div className="v3-mxp-tchips" role="group" aria-label="Фільтр">{([["all", "Усі", null], ["logo", "Без лого", tfOpts[2].n], ["dup", "Дублікати", tfOpts[1].n]] as [typeof tf, string, number | null][]).map(([k, l, n]) => <button key={k} type="button" className={tf === k ? "is-on" : ""} aria-pressed={tf === k} onClick={() => setTf(k)}>{n ? <b>{n}</b> : null}{l}</button>)}</div>
-              <div className="v3-mxp-view" role="group" aria-label="Вигляд"><button type="button" className={tView === "list" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} aria-hidden="true" /></button><button type="button" className={tView === "grid" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Плитками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} aria-hidden="true" /></button></div>
+              {/* «Дублікати» are pair cards — no list / tiles there, so the switch is greyed out */}
+              <div className={`v3-mxp-view${tf === "dup" ? " is-off" : ""}`} role="group" aria-label="Вигляд" title={tf === "dup" ? "У «Дублікатах» лише картки пар" : undefined}><button type="button" disabled={tf === "dup"} className={tView === "list" && tf !== "dup" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} aria-hidden="true" /></button><button type="button" disabled={tf === "dup"} className={tView === "grid" && tf !== "dup" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Плитками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} aria-hidden="true" /></button></div>
             </div>
           ) : (() => { const sb = <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
             return wide ? sb : <div className="v3-mx-srow">{sb}<button type="button" className="v3-mx-vbtn" onClick={flipView} aria-label={tView === "list" ? "Показати блоками" : "Показати списком"} title={tView === "list" ? "Блоки" : "Список"}><span key={tView} className="v3-mx-vico">{tView === "list" ? <LayoutGrid size={18} /> : <List size={18} />}</span></button></div>; })()}

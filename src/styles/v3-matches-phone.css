@@ -346,3 +346,29 @@
   .v3-mxt-hide { margin-top: 12px; padding: 10px 16px; border: 0; background: none; color: #e5484d; font: 600 14px Inter, sans-serif; }
   .v3-mxt button:disabled { opacity: .5; }
 }
+
+/* 23.11: day chips with counts, status chips in the edit sheet, last matches in the team card, greyed view switch */
+@media (max-width: 767px) {
+  .v3-mxp-days button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; }
+  .v3-mxp-days button b { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(17, 21, 28, .08); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; }
+  .v3-mxp-days button.is-on b { background: #3a6df0; color: #fff; }
+
+  .v3-mxp-stf { grid-column: 1 / -1; }
+  .v3-mxp-stchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .v3-mxp-stchips button { flex: 1 1 calc(33.33% - 6px); min-width: 0; height: 40px; padding: 0 8px; border: 1.5px solid transparent; border-radius: 12px; background: #fff; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; transition: border-color .2s, background-color .2s; }
+  .v3-mxp-stchips button.is-on { border-color: #3a6df0; background: #eef3ff; color: #2f5fd8; font-weight: 600; }
+
+  .v3-mxt-last { align-self: stretch; display: flex; flex-direction: column; gap: 6px; margin-top: 14px; text-align: left; }
+  .v3-mxt-last > small { font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-mxt-last ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .v3-mxt-last li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-mxt-last li > i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; }
+  .v3-mxt-last li > i.is-W { background: #1f9d55; } .v3-mxt-last li > i.is-L { background: #e5484d; } .v3-mxt-last li > i.is-D { background: #9aa1ad; }
+  .v3-mxt-last li span { display: flex; flex-direction: column; min-width: 0; }
+  .v3-mxt-last li strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; color: #11151c; }
+  .v3-mxt-last li small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #6b7384; }
+  .v3-mxt-last li b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: #11151c; }
+
+  .v3-mxp-view.is-off { background: #e3e6eb; box-shadow: none; }
+  .v3-mxp-view.is-off button { color: #a1a7b3; cursor: default; }
+}
