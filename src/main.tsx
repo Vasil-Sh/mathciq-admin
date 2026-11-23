@@ -22,6 +22,7 @@ import "./styles/v3-dash-phone.css";
 import "./styles/v3-users-phone.css";
 import "./styles/v3-pay-phone.css";
 import "./styles/v3-bets-phone.css";
+import "./styles/v3-matches-phone.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
