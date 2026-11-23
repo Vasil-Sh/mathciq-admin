@@ -354,3 +354,23 @@
 .v3-st-navopt:disabled { opacity: .45; cursor: default; }
 .v3-st-navreset { margin-top: 12px; padding: 10px 0; border: 0; background: none; color: #3a8bff; font: 500 14px Inter, sans-serif; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .v3-st-navtab.is-set { animation: none; } }
+
+/* Налаштування → Помилки сервера (phone) */
+.v3-st-errnone { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 4px 2px; color: var(--v3-ink-muted); font-size: 14px; }
+.v3-st-errnone.is-ok { color: #1f9d55; }
+.v3-st-errnone button { padding: 0; border: 0; background: none; color: #3a8bff; font: 500 14px Inter, sans-serif; }
+.v3-st-errs { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.v3-st-errs > li { border-radius: 14px; background: #f4f6f9; overflow: hidden; }
+.v3-st-errh { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; width: 100%; padding: 11px 14px; border: 0; background: none; color: #11151c; text-align: left; font: inherit; cursor: pointer; }
+.v3-st-errh strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.v3-st-errs > li.is-open .v3-st-errh strong { white-space: normal; overflow-wrap: anywhere; }
+.v3-st-errh small { grid-column: 2; font-size: 12px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-st-errsrc { align-self: start; margin-top: 1px; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+.v3-st-errsrc.is-api { background: #fdecec; color: #c0362c; } .v3-st-errsrc.is-process { background: #fff1d6; color: #9a5b00; } .v3-st-errsrc.is-console { background: #e6edff; color: #2f5fd8; }
+.v3-st-errd { padding: 0 14px 12px; }
+.v3-st-errd pre { max-height: 220px; margin: 0 0 8px; padding: 10px; overflow: auto; border-radius: 10px; background: #11151c; color: #d7dbe3; font: 11px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
+.v3-st-errd p { margin: 0 0 10px; font-size: 12px; color: #6b7384; }
+.v3-st-errd > div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v3-st-errd > div button { min-height: 42px; border: 0; border-radius: 12px; background: #e3e6eb; color: #11151c; font: 600 14px Inter, sans-serif; }
+.v3-st-errd > div button.is-ok { background: #1fb155; color: #fff; }
+.v3-st-errd > div button:disabled { opacity: .55; }

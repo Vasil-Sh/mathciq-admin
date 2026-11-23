@@ -11,6 +11,12 @@ describe("parser health", () => {
   it("closed, but failed minutes ago → flaky (not «Працює»)", () => {
     expect(parserHealth(p({ failures: 2, failures24h: 23, lastFailure: "2026-11-20T10:51:00Z" }), NOW)).toBe("flaky");
   });
+  it("failed minutes ago but succeeded after it → ok (recovered)", () => {
+    expect(parserHealth(p({ failures24h: 2, lastFailure: "2026-11-20T10:44:00Z", lastSuccess: "2026-11-20T10:50:00Z" }), NOW)).toBe("ok");
+  });
+  it("succeeded, then failed again → flaky", () => {
+    expect(parserHealth(p({ failures24h: 2, lastFailure: "2026-11-20T10:51:00Z", lastSuccess: "2026-11-20T10:45:00Z" }), NOW)).toBe("flaky");
+  });
   it("last failure long ago → ok", () => {
     expect(parserHealth(p({ failures24h: 3, lastFailure: "2026-11-20T08:00:00Z" }), NOW)).toBe("ok");
     expect(parserHealth(p({}), NOW)).toBe("ok");

@@ -112,7 +112,7 @@ export const streakText = (n: number) => `${n} ${plural(n, "програш", "п
 
 // ── Attention sources ──
 
-export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; paused?: boolean; pausedBy?: string; pausedAt?: string }
+export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string }
 export interface SupportTicket { id: string; username: string; subject: string; createdAt: string }
 
 export const PARSER_NAMES: Record<string, string> = {
@@ -135,6 +135,9 @@ export function parserHealth(p: ParserState, now = Date.now()): ParserHealth {
   if (p.paused) return "ok"; // зупинено вручну — це рішення адміна, а не збій: без «!» і без «Потребує уваги»
   if (p.open) return "down";
   const t = p.lastFailure ? Date.parse(p.lastFailure) : NaN;
+  // a success after the failure: the parser recovered — not «зі збоями»
+  const ok = p.lastSuccess ? Date.parse(p.lastSuccess) : NaN;
+  if (Number.isFinite(t) && Number.isFinite(ok) && ok > t) return "ok";
   return Number.isFinite(t) && now - t < FLAKY_WINDOW_MIN * 60_000 ? "flaky" : "ok";
 }
 export const PARSER_ISSUE: Record<"down" | "flaky" | "idle", string> = { down: "не відповідає", flaky: "працює зі збоями", idle: "не повертає матчів" };

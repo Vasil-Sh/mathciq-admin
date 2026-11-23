@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  AlertTriangle, Bell, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
+  AlertTriangle, Bell, Bug, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -24,8 +24,9 @@ import type { AppSettings } from "@/types";
 import { forgetReceiptTexts } from "@/lib/paymentReceipt";
 import { DEFAULT_TABS, TAB_OPTIONS, TAB_SLOTS, saveTabs, useTabs, type TabKey } from "@/lib/tabbar";
 import { setExpiringWindow } from "@/lib/usersModel";
+import { fetchServerErrors, resolveServerError, type ServerError } from "@/lib/serverErrorsApi";
 
-type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners" | "nav";
+type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners" | "nav" | "errors";
 const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: string; dark?: boolean }[] = [
   { key: "tariffs", label: "Тарифи", icon: CreditCard, badge: "оновлено" },
   { key: "trial", label: "Пробний період", icon: Clock, badge: "нове" },
@@ -38,6 +39,8 @@ const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: strin
   { key: "banners", label: "Банери", icon: Megaphone, dark: true },
   // phone only: the bottom tab bar
   { key: "nav", label: "Навігація", icon: Smartphone, badge: "нове" },
+  // phone only: errors kept by the backend
+  { key: "errors", label: "Помилки сервера", icon: Bug },
 ];
 const SEEN_KEY = "settingsSeen";
 /** Which menu item a draft field belongs to (for the orange «unsaved» dot). */
@@ -108,7 +111,7 @@ export default function Settings() {
   const { user } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
   const phone = useMedia("(max-width: 767px)");
-  const secs = SECS.filter((x) => x.key !== "nav" || phone);
+  const secs = SECS.filter((x) => (x.key !== "nav" && x.key !== "errors") || phone);
   const online = useOnline();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [meta, setMeta] = useState<SettingsMeta>({});
@@ -347,7 +350,8 @@ export default function Settings() {
     </Section>
   );
   const nav = phone && show("nav") && <NavSection key="nav" all={all} n={n("nav")} badge={badgeOf("nav")} />;
-  const body = [tariffs, trial, ai, texts, alerts, receipt, templates, account, banners, nav];
+  const errorsSec = phone && show("errors") && <ErrorsSection key="errors" all={all} n={n("errors")} />;
+  const body = [tariffs, trial, ai, texts, alerts, receipt, templates, account, banners, nav, errorsSec];
 
   return (
     <div className="v3-page v3-settings">
@@ -694,6 +698,54 @@ function NavSection({ all, n, badge }: { all: boolean; n: number; badge?: string
         ); })}
       </div>
       {(!isDefault || !full) && <button type="button" className="v3-st-navreset" onClick={() => { saveTabs(DEFAULT_TABS); setPick(DEFAULT_TABS); }}>Повернути стандартні</button>}
+    </Section>
+  );
+}
+
+// ───────────────────────── server errors (phone) ─────────────────────────
+const ERR_SRC: Record<ServerError["source"], string> = { api: "API", process: "процес", console: "лог" };
+const errAgo = (iso: string) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? "щойно" : m < 60 ? `${m} хв тому` : m < 1440 ? `${Math.round(m / 60)} год тому` : new Date(iso).toLocaleDateString("uk-UA", { day: "numeric", month: "short" }); };
+/** Errors the backend kept (Railway's log scrolls away): one row per kind, how often, when; share or mark as fixed. */
+function ErrorsSection({ all, n }: { all: boolean; n: number }) {
+  const [list, setList] = useState<ServerError[] | null>(null);
+  const [err, setErr] = useState("");
+  const [open, setOpen] = useState<number | null>(null);
+  const [busy, setBusy] = useState<number | "all" | null>(null);
+  const load = useCallback(() => { setErr(""); fetchServerErrors().then(setList).catch((e) => { setErr(e instanceof Error ? e.message : "Сервер не відповів"); setList([]); }); }, []);
+  useEffect(() => { load(); }, [load]);
+  const resolve = async (id: number | "all") => {
+    setBusy(id);
+    try { await resolveServerError(id); setList((xs) => (id === "all" ? [] : (xs || []).filter((x) => x.id !== id))); toast.success(id === "all" ? "Список очищено" : "Позначено як вирішене"); }
+    catch (e) { toast.error("Не вдалося", { description: e instanceof Error ? e.message : "" }); }
+    setBusy(null);
+  };
+  const share = async (e: ServerError) => {
+    const text = [`MatchIQ · помилка сервера (${ERR_SRC[e.source]})`, e.message, e.path ? `Маршрут: ${e.path}` : "", `${e.count} раз(и) · перша ${new Date(e.firstAt).toLocaleString("uk-UA")} · остання ${new Date(e.lastAt).toLocaleString("uk-UA")}`, e.detail ? `\n${e.detail}` : ""].filter(Boolean).join("\n");
+    try { if (navigator.share) { await navigator.share({ title: "Помилка сервера", text }); return; } } catch (x) { if ((x as Error)?.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(text); toast.success("Скопійовано"); } catch { toast.error("Не вдалося скопіювати"); }
+  };
+  return (
+    <Section id="errors" n={n} all={all} title="Помилки сервера" sub="Що падало на бекенді за 30 днів. Однакові помилки зведені в одну з лічильником.">
+      {list === null ? <p className="v3-st-errnone">Завантажуємо…</p>
+        : err ? <div className="v3-st-errnone"><span>Не вдалося завантажити: {err}</span><button type="button" onClick={load}>Спробувати ще раз</button></div>
+        : !list.length ? <p className="v3-st-errnone is-ok">Помилок немає — бекенд працює чисто.</p>
+        : <>
+          <ul className="v3-st-errs">{list.map((e) => (
+            <li key={e.id} className={open === e.id ? "is-open" : ""}>
+              <button type="button" className="v3-st-errh" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>
+                <span className={`v3-st-errsrc is-${e.source}`}>{ERR_SRC[e.source]}</span>
+                <strong>{e.message}</strong>
+                <small>{e.count > 1 ? `${e.count} разів · ` : ""}{errAgo(e.lastAt)}{e.path ? ` · ${e.path}` : ""}</small>
+              </button>
+              {open === e.id && <div className="v3-st-errd">
+                {e.detail && <pre>{e.detail}</pre>}
+                <p>Уперше {new Date(e.firstAt).toLocaleString("uk-UA")}</p>
+                <div><button type="button" onClick={() => share(e)}>Надіслати</button><button type="button" className="is-ok" disabled={busy === e.id} onClick={() => resolve(e.id)}>{busy === e.id ? "Зберігаємо…" : "Вирішено"}</button></div>
+              </div>}
+            </li>
+          ))}</ul>
+          <button type="button" className="v3-st-navreset" disabled={busy === "all"} onClick={() => resolve("all")}>Очистити все</button>
+        </>}
     </Section>
   );
 }

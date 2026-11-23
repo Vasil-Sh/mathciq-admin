@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Smartphone, Tag, UserCog, Users, LogOut } from "lucide-react";
+import { Activity, BarChart3, Bell, Bot, CalendarDays, ChevronDown, ChevronRight, CircleDollarSign, CreditCard, FileText, Gamepad2, Gift, Hand, History, Image, LayoutDashboard, List, Megaphone, MessageCircle, Receipt, Send, Settings2, Smartphone, Bug, Tag, UserCog, Users, LogOut } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { useMatchCounts } from "@/lib/navCounts";
 import { TAB_OPTIONS, useTabs } from "@/lib/tabbar";
@@ -12,7 +12,7 @@ type Item = { label: string; to: string; icon: typeof Users; group?: "ads" | "ma
 
 const SETTINGS: Sub[] = ([
   ["tariffs", "Тарифи", Tag], ["trial", "Пробний період", Gift], ["ai", "AI-аналіз", Bot], ["texts", "Тексти й дисклеймери", FileText], ["alerts", "Попередження", Bell],
-  ["receipt", "Чек оплати", Receipt], ["templates", "Шаблони повідомлень", MessageCircle], ["account", "Мій акаунт", UserCog], ["banners", "Банери", Image], ["nav", "Навігація", Smartphone],
+  ["receipt", "Чек оплати", Receipt], ["templates", "Шаблони повідомлень", MessageCircle], ["account", "Мій акаунт", UserCog], ["banners", "Банери", Image], ["nav", "Навігація", Smartphone], ["errors", "Помилки сервера", Bug],
 ] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: `/settings#${k}` }));
 
 const ITEMS: Item[] = [
