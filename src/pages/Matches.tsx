@@ -573,6 +573,8 @@ export default function Matches() {
     return [["Наживо", live], [day === "today" ? "Сьогодні" : "Заплановані", plan], ["Завершені", rest]] as [string, Match[]][];
   };
   const fCount = (g: "all" | Game, s: "all" | MStatus) => all.filter((m) => inDay(m, day) && (g === "all" || m.game === g) && (s === "all" || m.status === s) && (!needle || `${m.t1} ${m.t2} ${m.tournament}`.toLowerCase().includes(needle))).length;
+  /** How many cards the tiles show for «shown»: cut groups are rounded up to an even count. */
+  const shownGrid = (() => { let left = shown, n = 0; for (const [, xs] of groupsOf(list)) { if (!xs.length || left <= 0) continue; let k = Math.min(left, xs.length); if (k < xs.length && k % 2) k++; left -= k; n += k; } return n; })();
   const phoneMatchesTab = (
     <div className="v3-mxp">
       <div className="v3-mxp-bar">
@@ -591,11 +593,13 @@ export default function Matches() {
               : day !== "week" ? <button type="button" onClick={() => { setDay("week"); setRk((x) => x + 1); }}>Тиждень</button> : null}
           </div>
         : <div key={rk} className={`v3-mxp-list${mView === "grid" ? " is-grid" : ""}`}>{(() => { let i = 0; const out: ReactNode[] = []; let left = shown;
-            for (const [title, xs] of groupsOf(list)) { if (!xs.length || left <= 0) continue; const part = xs.slice(0, left); left -= part.length;
+            for (const [title, xs] of groupsOf(list)) { if (!xs.length || left <= 0) continue;
+              // tiles: a cut group keeps an even number of cards, so the last row has no hole
+              let part = xs.slice(0, left); if (mView === "grid" && part.length < xs.length && part.length % 2) part = xs.slice(0, part.length + 1); left -= part.length;
               out.push(<p key={`h-${title}`} className="v3-mxp-gh">{title}</p>);
               out.push(<div key={`g-${title}`} className="v3-mxp-grp">{part.map((m) => mCard(m, i++))}</div>); }
             return out; })()}</div>}
-      {list.length > shown && <button type="button" className="v3-mxp-more" onClick={() => setShown(shown + 12)}>Показати ще {Math.min(12, list.length - shown)}</button>}
+      {(() => { const vis = Math.min(list.length, mView === "grid" ? shownGrid : shown); return list.length > vis && <button type="button" className="v3-mxp-more" onClick={() => setShown(vis + 12)}>Показати ще {Math.min(12, list.length - vis)}</button>; })()}
       <Dialog open={filtOpen} onOpenChange={setFiltOpen}>
         <DialogContent className="v3-sheet v3-pay-sheet v3-mxp-filt">
           <div className="v3-mxp-fh"><DialogTitle>Фільтр</DialogTitle>{(game !== "all" || st !== "all") && <button type="button" onClick={() => { setGame("all"); setSt("all"); setRk((x) => x + 1); }}>Скинути</button>}</div>

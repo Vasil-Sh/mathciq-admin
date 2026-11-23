@@ -569,7 +569,7 @@ export default function Dashboard() {
               <span className="v3-only-mobile">{view.refundAmount ? `повернено ${money(view.refundAmount)}` : "без повернень"}</span>
             </span>
           </Link>
-          {stats.aiUsage && <Link to="/settings" className="v3-kpi v3-kpi-wide-sm v3-kpi-ai">
+          {stats.aiUsage && <Link to="/settings#ai" className="v3-kpi v3-kpi-wide-sm v3-kpi-ai">
             <span className="v3-kpi-l"><span className="v3-kpi-ico"><Sparkles size={16} aria-hidden="true" /></span>Витрата AI<span className="v3-only-mobile v3-kpi-l-tail">· {periodShort.toLowerCase()}</span></span>
             <strong className="v3-kpi-v">{rate ? <>≈ <RollingNumber key={`ai-${period}-${Math.round(view.ai * rate)}`} text={Math.round(view.ai * rate).toLocaleString("uk-UA")} /><small className="v3-kpi-unit"> ₴</small></> : usd(view.ai)}</strong>
             <span className="v3-kpi-n">
