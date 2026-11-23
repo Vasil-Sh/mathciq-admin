@@ -112,7 +112,7 @@ export const streakText = (n: number) => `${n} ${plural(n, "програш", "п
 
 // ── Attention sources ──
 
-export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string }
+export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string; odds?: { used: number; budget: number; scheduled: number; priced: number; matched: number; fixturesAt: string; oddsAt: string } }
 export interface SupportTicket { id: string; username: string; subject: string; createdAt: string }
 
 export const PARSER_NAMES: Record<string, string> = {

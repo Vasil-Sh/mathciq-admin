@@ -257,6 +257,12 @@
   /* native time wheel (phone): looks like the other fields, value on the left */
   .v3-field input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 44px; text-align: left; }
   .v3-field input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+  /* iOS drew the value high and thin next to «Дата»: fixed height + line-height centre it, same padding and weight as the date button */
+  .v3-mxp-ed .v3-field input[type="time"] { height: 42px; min-height: 42px; padding: 0 14px; line-height: 40px; font-weight: 500; }
+  .v3-mxp-ed .v3-field input[type="time"]::-webkit-date-and-time-value { margin: 0; padding: 0; line-height: 40px; min-height: 0; }
+  .v3-mxp-ed .v3-field input[type="time"]::-webkit-datetime-edit { padding: 0; line-height: 40px; }
+  .v3-mxp-podds { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; font-size: 13px; font-weight: 600; color: #11151c; }
+  .v3-mxp-podds small { font-size: 11px; font-weight: 500; color: #6b7384; }
 }
 
 /* Команди → card of a team in the light sheet (phone): was the desktop dark panel on white */
