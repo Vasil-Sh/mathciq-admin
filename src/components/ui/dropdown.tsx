@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, X } from "lucide-react";
 import { isPhoneWidth } from "@/lib/pageSearch";
 
-export interface DropdownOption<T extends string> { value: T; label: ReactNode; /** right-side note in the phone sheet, e.g. «225 ₴ · 2» */ hint?: ReactNode; }
+export interface DropdownOption<T extends string> { value: T; label: ReactNode; /** right-side note in the phone sheet, e.g. «225 ₴ · 2» */ hint?: ReactNode; /** what the phone sheet shows instead of `label` (e.g. a status tag with its meaning) */ sheetLabel?: ReactNode; }
 
 interface Props<T extends string> {
   value: T;
@@ -14,7 +14,7 @@ interface Props<T extends string> {
   className?: string;
   align?: "left" | "right";
   /** On the phone, open as a bottom sheet with this title (design «Сортування», «Місяць»). */
-  sheet?: { title: string; note?: string };
+  sheet?: { title: string; note?: string; /** extra class on the sheet layer, for a screen-specific look */ cls?: string };
 }
 
 /**
@@ -63,7 +63,7 @@ export function Dropdown<T extends string>({ value, options, onChange, ariaLabel
         {prefix && <span className="v3-dd-pre">{prefix}</span>}<span className="v3-dd-val">{cur?.label}</span><ChevronDown size={14} strokeWidth={2.4} className="v3-dd-chev" aria-hidden="true" />
       </button>
       {state !== "closed" && asSheet && sheet && createPortal(
-        <div className={`v3-pm-layer v3-dd-sheet${state === "closing" ? " is-closing" : ""}`}>
+        <div className={`v3-pm-layer v3-dd-sheet${sheet.cls ? ` ${sheet.cls}` : ""}${state === "closing" ? " is-closing" : ""}`}>
           <div className="v3-pm-scrim" aria-hidden="true" onClick={() => close()} />
           <ul id={listId} className="v3-pm-list" role="listbox" aria-label={ariaLabel}>
             <li aria-hidden="true" className="v3-pm-grab-row"><span className="v3-pm-grab" /></li>
@@ -71,7 +71,7 @@ export function Dropdown<T extends string>({ value, options, onChange, ariaLabel
             {options.map((o) => (
               <li key={o.value} role="option" aria-selected={o.value === value}>
                 <button type="button" className={o.value === value ? "is-on" : ""} onClick={() => pick(o.value)}>
-                  <span>{o.label}</span><span className="v3-dd-sheet-r">{o.hint}{o.value === value && <Check size={16} strokeWidth={2.6} aria-hidden="true" />}</span>
+                  <span>{o.sheetLabel ?? o.label}</span><span className="v3-dd-sheet-r">{o.hint}{o.value === value && <Check size={16} strokeWidth={2.6} aria-hidden="true" />}</span>
                 </button>
               </li>
             ))}

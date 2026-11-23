@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Check, ExternalLink, RefreshCw, Search, Send, WifiOff, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ExternalLink, RefreshCw, Search, Send, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -10,6 +10,8 @@ import UndoRing from "@/components/UndoRing";
 import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { useAuth } from "@/contexts/AuthContext";
 import { plural } from "@/lib/dashboardInsights";
+import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
+import { openTelegram } from "@/lib/telegram";
 import {
   DEFAULT_TEMPLATES, GVIEW, KIND, fetchGroup, gView, PLAN, REASONS, STATUS, ago, approveGroup, bubbleTime, fetchGroups, fetchTemplates, fetchTicket, fetchTickets,
   minutesText, patchTicket, rejectGroup, replyTicket,
@@ -23,6 +25,9 @@ type GFilter = GStatus | "all" | "errors";
 const GFILTERS: { key: GFilter; label: string }[] = [{ key: "all", label: "Усі" }, { key: "pending", label: "Перевірити" }, { key: "errors", label: "Помилки" }, { key: "rejected", label: "Заблоковані" }];
 const STATUS_OPTS: TStatus[] = ["open", "in_progress", "waiting", "resolved"];
 const NOBODY = "—";
+/** What each status means — the phone «Статус» sheet shows it next to the tag. */
+const STATUS_NOTE = (s: TStatus, user: string) => ({ open: "щойно надійшло, ніхто не взяв", in_progress: "адмін розбирається", waiting: "відповіли, чекаємо користувача", resolved: `закрито — @${user} отримає сповіщення`, closed: "закрито" })[s];
+const initials = (name: string) => name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "TG";
 
 /** Phone: a sheet; wide screen: the dark panel on the right that re-enters when the selection changes. */
 function Pane({ wide, open, paneKey, label, onClose, children }: { wide: boolean; open: boolean; paneKey: string; label: string; onClose: () => void; children: React.ReactNode }) {
@@ -47,11 +52,12 @@ function SendButton({ busy, done, onClick, disabled }: { busy: boolean; done: bo
 }
 
 // ───────────────────────── one ticket ─────────────────────────
-function TicketPane({ d, templates, me, assignees, online, onUpdate }: {
-  d: TicketDetail; templates: Template[]; me: string; assignees: string[]; online: boolean;
+function TicketPane({ d, templates, me, assignees, load = {}, online, onUpdate }: {
+  d: TicketDetail; templates: Template[]; me: string; assignees: string[]; load?: Record<string, number>; online: boolean;
   onUpdate: (patch: { status?: TStatus; assignee?: string | null; message?: TMessage }) => void;
 }) {
   const t = d.ticket;
+  const phone = useMedia("(max-width: 767px)");
   const [text, setText] = useState("");
   const [tpl, setTpl] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
@@ -123,8 +129,15 @@ function TicketPane({ d, templates, me, assignees, online, onUpdate }: {
         placeholder="Відповідь — прийде в застосунок і в Telegram" value={text} onChange={(e) => { setText(e.target.value); if (tpl) setTpl(null); }} />
     </div>
     <div className="v3-sp-acts">
-      <Dropdown className="v3-ad-dd" ariaLabel="Статус" value={t.status === "closed" ? "resolved" : t.status} onChange={(v) => setStatus(v as TStatus)} options={STATUS_OPTS.map((s) => ({ value: s, label: STATUS[s].label }))} />
-      <Dropdown className="v3-ad-dd" ariaLabel="Відповідальний" value={t.assignee ? `@${t.assignee}` : NOBODY} onChange={setAssignee} options={[...assignees.map((a) => ({ value: `@${a}`, label: `@${a}${a === me ? " (я)" : ""}` })), { value: NOBODY, label: NOBODY }]} />
+      <Dropdown className="v3-ad-dd" ariaLabel="Статус" value={t.status === "closed" ? "resolved" : t.status} onChange={(v) => setStatus(v as TStatus)}
+        sheet={{ title: "Статус", note: `№${t.id} · ${t.subject}`, cls: "v3-sp-ddsheet" }}
+        options={STATUS_OPTS.map((s) => ({ value: s, label: STATUS[s].label, sheetLabel: <span className="v3-sp-sopt"><span className={`v3-tag ${STATUS[s].cls}`}>{STATUS[s].label}</span><small>{STATUS_NOTE(s, t.username)}</small></span> }))} />
+      <Dropdown className="v3-ad-dd" ariaLabel="Відповідальний" value={t.assignee ? `@${t.assignee}` : NOBODY} onChange={setAssignee}
+        sheet={{ title: "Відповідальний", note: `Хто веде звернення №${t.id}`, cls: "v3-sp-ddsheet" }}
+        options={[
+          ...assignees.map((a) => ({ value: `@${a}`, label: phone ? `@${a}` : `@${a}${a === me ? " (я)" : ""}`, sheetLabel: <span className="v3-sp-aopt"><i aria-hidden="true">{initials(a)}</i><b>@{a}</b><small>{a === me ? "я · " : ""}в роботі {load[a] ?? 0}</small></span> })),
+          { value: NOBODY, label: phone ? "Ніхто" : NOBODY, sheetLabel: <span className="v3-sp-aopt"><i aria-hidden="true">—</i><b>Ніхто</b><small>зняти</small></span> },
+        ]} />
       <SendButton busy={send === "busy"} done={send === "done"} disabled={!online} onClick={doSend} />
     </div>
   </>;
@@ -147,6 +160,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
   useEffect(() => () => window.clearTimeout(askT.current), []);
   const view = gView(g); const st = GVIEW[view];
   const people = g.people || 1;
+  const phone = useMedia("(max-width: 767px)");
   const texts = det?.group.flaggedTexts || [];
   async function act(next: GStatus) {
     const was = g.moderationStatus, wasReason = g.rejectReason;
@@ -175,6 +189,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
   };
   return <>
     <div className="v3-sp-head">
+      {phone && <span className="v3-sp-gav v3-sp-hav" aria-hidden="true">{initials(g.name)}</span>}
       <div><div className="v3-sp-title">{g.name}</div><span className="v3-sp-kicker">{[g.link?.replace(/^https?:\/\//, ""), g.game, g.addedBy ? `додав @${g.addedBy}${people > 1 ? ` +${people - 1}` : ""}` : ""].filter(Boolean).join(" · ")}</span></div>
       <span key={view} className={`v3-tag ${st.cls} v3-sp-flip`}>{st.label}</span>
     </div>
@@ -185,6 +200,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
     </>}
     {!texts.length && g.comment && view !== "error" && <><span className="v3-sp-lbl">Опис від користувача</span><div className="v3-sp-post">«{g.comment}»<small>додано {bubbleTime(g.createdAt)}</small></div></>}
     {view === "error" && <div className="v3-sp-errb"><strong>{g.linkProblem ? g.linkProblem[0].toUpperCase() + g.linkProblem.slice(1) : "Розбір не працює"}</strong><span>{ERR_HOW[g.linkState || "none"]}</span></div>}
+    {phone && view === "error" && g.addedBy && <button type="button" className="v3-btn v3-sp-write" disabled={!online} onClick={() => openTelegram(g.addedBy!)}><Send size={15} aria-hidden="true" />Написати @{g.addedBy}</button>}
     {view === "ok" && <div className="v3-sp-gstats">
       <div><span>Прогнозів · 7 дн.</span><b>{g.bets7d ?? 0}</b></div>
       <div style={{ animationDelay: "60ms" }}><span>Влучність</span><b>{g.hitRate != null ? `${g.hitRate}%` : "—"}</b></div>
@@ -197,13 +213,15 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
       <div className="v3-sp-reason"><span className="v3-sp-lbl">Причина блокування</span>
         <div className="v3-seg v3-sp-seg" role="group" aria-label="Причина блокування">
           <PillTrack active={reason} />
-          {REASONS.map((r, i) => <button key={r} type="button" className={reason === i ? "is-on" : ""} aria-pressed={reason === i} onClick={() => setReason(i)}>{r}</button>)}
+          {REASONS.map((r, i) => <button key={r} type="button" className={reason === i ? "is-on" : ""} aria-pressed={reason === i} onClick={() => setReason(i)}>{phone ? r.split(" ")[0] : r}</button>)}
         </div>
       </div>
-      <span className="v3-sp-hint">Після блокування група зникне в усіх, хто її додав ({people} {plural(people, "людина", "людини", "людей")}), розбір зупиниться.{g.addedBy ? ` Користувачу @${g.addedBy} прийде пояснення.` : ""}</span>
+      <span className="v3-sp-hint">{phone
+        ? `Група зникне в усіх, хто її додав (${people} ${plural(people, "людина", "людини", "людей")}), розбір зупиниться.${g.addedBy ? ` @${g.addedBy} отримає пояснення.` : ""}`
+        : `Після блокування група зникне в усіх, хто її додав (${people} ${plural(people, "людина", "людини", "людей")}), розбір зупиниться.${g.addedBy ? ` Користувачу @${g.addedBy} прийде пояснення.` : ""}`}</span>
       <div className={`v3-sp-gacts${g.moderationStatus === "pending" ? "" : " is-one"}`}>
         {g.moderationStatus === "pending" && <button type="button" className="v3-btn v3-btn-ghost-dark" disabled={!online || busy} onClick={() => act("approved")}>Усе гаразд</button>}
-        <button type="button" className={`v3-btn v3-btn-red${ask ? " v3-pay-cx is-ask" : ""}${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={block}>{busy ? "Блокуємо…" : ask ? "Точно заблокувати?" : "Заблокувати групу"}</button>
+        <button type="button" className={`v3-btn v3-btn-red${ask ? " v3-pay-cx is-ask" : ""}${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={block}>{busy ? "Блокуємо…" : ask ? "Точно заблокувати?" : phone ? "Заблокувати" : "Заблокувати групу"}</button>
       </div>
     </>}
   </>;
@@ -212,6 +230,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
 // ───────────────────────── page ─────────────────────────
 export default function Support() {
   const wide = useMedia("(min-width: 1180px)");
+  const phone = useMedia("(max-width: 767px)");
   const online = useOnline();
   const { user } = useAuth();
   const me = user?.username || "";
@@ -236,6 +255,17 @@ export default function Support() {
   const [gErr, setGErr] = useState("");
   const [gSel, setGSel] = useState<string | null>(null);
   const [gSheet, setGSheet] = useState(false);
+  // phone: one «Звернення» sheet for state and type (design SupportMobileFilter)
+  const [filtOpen, setFiltOpen] = useState(false);
+  const [fDraft, setFDraft] = useState<TFilter>("open");
+  const [kDraft, setKDraft] = useState<TKind | "all">("all");
+  const [draftN, setDraftN] = useState<number | null>(null);
+  // phone: the 🔍 in the header searches the current tab
+  const pageSearch = usePageSearch(tab === "tickets" ? "Тема або логін" : "Назва або хто додав");
+  useEffect(() => {
+    if (!isPhoneWidth()) return;
+    if (tab === "tickets") { setQ(pageSearch.q); setGq(""); } else { setGq(pageSearch.q); setQ(""); }
+  }, [pageSearch.q, tab]);
 
   const loadTickets = useCallback(async () => {
     try { setList(await fetchTickets(filter, kind === "all" ? "" : kind, q)); setErr(""); }
@@ -248,6 +278,12 @@ export default function Support() {
   useEffect(() => { const id = window.setTimeout(loadTickets, q ? 250 : 0); return () => window.clearTimeout(id); }, [loadTickets, q]);
   useEffect(() => { const id = window.setTimeout(loadGroups, gq ? 250 : 0); return () => window.clearTimeout(id); }, [loadGroups, gq]);
   useEffect(() => { fetchTemplates().then(setTemplates).catch(() => {}); }, []);
+  useEffect(() => {
+    if (!filtOpen) return;
+    let live = true;
+    fetchTickets(fDraft, kDraft === "all" ? "" : kDraft, q).then((x) => { if (live) setDraftN(x.tickets.filter((t) => fDraft !== "open" || !["resolved", "closed"].includes(t.status)).length); }).catch(() => {});
+    return () => { live = false; };
+  }, [filtOpen, fDraft, kDraft, q]);
 
   const tickets = list?.tickets || [];
   // wide: keep a ticket open on the right
@@ -270,6 +306,7 @@ export default function Support() {
     return [...s];
   }, [me, tickets, list, detail]);
 
+  const load = useMemo(() => Object.fromEntries((list?.stats.inWorkBy || []).map((a) => [a.assignee, a.count])), [list]);
   function updateTicket(patch: { status?: TStatus; assignee?: string | null; message?: TMessage }) {
     setDetail((d) => d ? { ...d, ticket: { ...d.ticket, ...(patch.status ? { status: patch.status } : {}), ...(patch.assignee !== undefined ? { assignee: patch.assignee } : {}) }, messages: patch.message ? [...d.messages, patch.message] : d.messages } : d);
     setList((l) => l ? { ...l, tickets: l.tickets.map((t) => t.id === selId ? { ...t, ...(patch.status ? { status: patch.status } : {}), ...(patch.assignee !== undefined ? { assignee: patch.assignee } : {}) } : t) } : l);
@@ -286,7 +323,7 @@ export default function Support() {
   const gc = groups?.counts;
   const gs = groups?.summary;
   const visible = tickets.filter((t) => filter !== "open" || !["resolved", "closed"].includes(t.status));
-  const sub = tab === "tickets" ? (s ? `${s.new} ${plural(s.new, "нове", "нові", "нових")} · ${s.inWork} в роботі` : "…") : (gc ? `${gc.pending} на перевірці · ${gc.errors ?? 0} з помилкою` : "…");
+  const sub = tab === "tickets" ? (s ? `${s.new} ${plural(s.new, "нове", "нові", "нових")} · ${s.inWork} в роботі` : "Завантажуємо…") : (gc ? `${gc.pending} на перевірці · ${gc.errors ?? 0} з помилкою` : "Завантажуємо…");
 
   const sums = tab === "tickets" ? [
     { k: "n", l: "Нові", v: s ? String(s.new) : "—", n: s?.oldestNewAt ? `найстаріше — ${ago(s.oldestNewAt)}` : "нових немає", on: true, go: () => { setFilter("new"); setRk((x) => x + 1); } },
@@ -317,7 +354,7 @@ export default function Support() {
       <div className="v3-wcard v3-sp-zero-card">
         <span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Check size={24} strokeWidth={2.6} /></span>
         <strong>Звернень поки немає</strong>
-        <p>Коли користувач надішле «Проблему чи побажання» з профілю, воно з’явиться тут з контекстом: план, пристрій, екран. Нові звернення видно й на дашборді.</p>
+        <p>Коли користувач надішле «Проблему чи побажання» з профілю, воно з’явиться тут з контекстом: план, пристрій, екран.<span className="v3-hide-mobile"> Нові звернення видно й на дашборді.</span></p>
       </div>
       <div className="v3-dcard v3-sp-zero-st">
         <strong>Статуси</strong>
@@ -382,10 +419,62 @@ export default function Support() {
     </div>
   );
 
+  // ── phone (design «Підтримка, мобільна») ──
+  const KYIV_DAY = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(new Date(iso));
+  const dayTitle = (iso: string) => {
+    const d = KYIV_DAY(iso), now = Date.now();
+    if (d === KYIV_DAY(new Date(now).toISOString())) return "Сьогодні";
+    if (d === KYIV_DAY(new Date(now - 864e5).toISOString())) return "Вчора";
+    return new Intl.DateTimeFormat("uk-UA", { timeZone: "Europe/Kyiv", day: "numeric", month: "long" }).format(new Date(iso));
+  };
+  const byDay = (() => {
+    const out: [string, typeof visible][] = [];
+    visible.forEach((t) => { const k = dayTitle(t.updatedAt || t.createdAt); const last = out[out.length - 1]; if (last && last[0] === k) last[1].push(t); else out.push([k, [t]]); });
+    return out;
+  })();
+  const resetTickets = () => { setFilter("open"); setKind("all"); setQ(""); pageSearch.setQ(""); pageSearch.setOpen(false); setRk((x) => x + 1); };
+  const openFilt = () => { setFDraft(filter); setKDraft(kind); setDraftN(visible.length); setFiltOpen(true); };
+  const fLabel = FILTERS.find((f) => f.key === filter)?.label || "Відкриті";
+  const msk = (n: number) => Array.from({ length: n }, (_, i) => <li key={i} className="v3-sp-pcard is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></li>);
+  const ticketsPhone = (
+    <div className="v3-sp-m">
+      {list && <div className="v3-sp-pf">
+        <button type="button" className="v3-sp-fbtn" aria-haspopup="dialog" onClick={openFilt}><span>{fLabel}{c ? ` · ${c[filter] ?? 0}` : ""}</span><ChevronDown size={16} strokeWidth={2.4} aria-hidden="true" /></button>
+        <button type="button" className="v3-sp-fbtn" aria-haspopup="dialog" onClick={openFilt}><span>{KINDS.find((k) => k.value === kind)?.label}</span><ChevronDown size={16} strokeWidth={2.4} aria-hidden="true" /></button>
+      </div>}
+      {!list ? <ul className="v3-sp-plist">{msk(4)}</ul>
+        : visible.length ? <div key={rk} className="v3-sp-plist">{byDay.map(([day, xs]) => <section key={day} className="v3-sp-pday">
+            <p className="v3-sp-gh"><span>{day}</span><span>{xs.length}</span></p>
+            <ul>{xs.map((t, i) => (
+              <li key={t.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-sp-pcard" onClick={() => { setSelId(t.id); setSheet(true); }}>
+                <span className="v3-sp-pr1">{t.status === "open" && <i className="v3-sp-dot" aria-hidden="true" />}<strong>{t.subject}</strong><span className={`v3-tag ${STATUS[t.status].cls}`}>{STATUS[t.status].label}</span></span>
+                <span className="v3-sp-pr2"><small>{[KIND[t.kind], `@${t.username}`, t.plan ? PLAN[t.plan] || t.plan : ""].filter(Boolean).join(" · ")}{t.assignee && <> · <b>@{t.assignee}</b></>}</small><small>{ago(t.updatedAt || t.createdAt).replace(" тому", "")}</small></span>
+              </button></li>
+            ))}</ul>
+          </section>)}</div>
+        : <div className="v3-sp-pnone"><span className="v3-sp-pico" aria-hidden="true"><Search size={18} /></span><strong>{q.trim() ? `За «${q.trim()}» звернень немає` : "Немає звернень у цьому фільтрі"}</strong><span>Змініть фільтр або подивіться всі відкриті.</span><button type="button" className="v3-sp-pbtn" onClick={resetTickets}>Показати відкриті</button></div>}
+      <Dialog open={filtOpen} onOpenChange={setFiltOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-sp-filt">
+          <div className="v3-sp-fh"><DialogTitle>Звернення</DialogTitle><DialogDescription>Які показати</DialogDescription></div>
+          <span className="v3-sp-fl">Стан</span>
+          <div className="v3-sp-fsts" role="group" aria-label="Стан">{FILTERS.map((f) => (
+            <button key={f.key} type="button" className={fDraft === f.key ? "is-on" : ""} aria-pressed={fDraft === f.key} onClick={() => setFDraft(f.key)}><span>{f.label}</span><b>{c ? c[f.key] ?? 0 : ""}</b><i aria-hidden="true">{fDraft === f.key && <Check size={16} strokeWidth={2.6} />}</i></button>
+          ))}</div>
+          <span className="v3-sp-fl">Тип</span>
+          <div className="v3-sp-fseg" role="group" aria-label="Тип"><PillTrack active={kDraft} />{KINDS.map((k) => <button key={k.value} type="button" className={kDraft === k.value ? "is-on" : ""} aria-pressed={kDraft === k.value} onClick={() => setKDraft(k.value)}>{k.value === "all" ? "Усі" : k.label}</button>)}</div>
+          <button type="button" className="v3-sp-apply" onClick={() => { setFilter(fDraft); setKind(kDraft); setRk((x) => x + 1); setFiltOpen(false); }}>Показати{draftN != null ? ` ${draftN}` : ""}</button>
+        </DialogContent>
+      </Dialog>
+      <Pane wide={false} open={sheet && !!detail} paneKey={detail?.ticket.id || "-"} label={detail ? `Звернення №${detail.ticket.id}` : "Звернення"} onClose={() => { setSheet(false); }}>
+        {detail && <TicketPane d={detail} templates={templates} me={me} assignees={assignees} load={load} online={online} onUpdate={updateTicket} />}
+      </Pane>
+    </div>
+  );
+
   // no groups at all → a proper empty state; nothing in this filter / search → a way back to all
   const noGroupsAtAll = !!groups && (groups.counts?.all ?? groups.groups.length) === 0;
   const gEmpty = noGroupsAtAll
-    ? <div className="v3-sp-gzero"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Груп ще немає</strong><span>Коли користувач Pro додасть свою Telegram-групу зі ставками, вона з’явиться тут на перевірку: посилання, хто додав, що знайшов парсер.</span></div>
+    ? <div className="v3-sp-gzero"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Груп ще немає</strong><span>Коли користувач Pro додасть свою Telegram-групу зі ставками, {phone ? "вона з’явиться тут. Підозрілі ми позначимо — їх варто переглянути." : "вона з’явиться тут на перевірку: посилання, хто додав, що знайшов парсер."}</span></div>
     : <div className="v3-sp-gzero"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Search size={22} /></span><strong>Нічого не знайдено</strong><span>{gq.trim() ? `За «${gq.trim()}» груп немає.` : "У цьому фільтрі груп немає."}</span><button type="button" className="v3-btn v3-btn-primary" onClick={() => { setGf("all"); setGq(""); setRk((x) => x + 1); }}>Показати всі</button></div>;
   const groupRow = (g: TgGroup, i: number) => {
     const v = gView(g); const st = GVIEW[v]; const on = g.id === gSel;
@@ -415,6 +504,30 @@ export default function Support() {
             </button></li>
           )) : <li className="v3-wcard v3-pay-mnone">{gEmpty}</li>}
       </ul>
+      <Pane wide={false} open={gSheet && !!gCur} paneKey={gCur?.id || "-"} label={gCur ? gCur.name : "Група"} onClose={() => setGSheet(false)}>
+        {gCur && <GroupPane g={gCur} online={online} onChange={changeGroup} />}
+      </Pane>
+    </div>
+  );
+  const gMeta = (g: TgGroup) => {
+    const v = gView(g); const who = g.addedBy ? `@${g.addedBy}${(g.people || 1) > 1 ? ` +${(g.people || 1) - 1}` : ""}` : "";
+    const what = v === "pending" ? (g.flagReason ? `схоже: ${g.flagReason.toLowerCase()}` : "на перевірці") : v === "error" ? g.linkProblem : v === "ok" ? `${g.bets7d ?? 0} за 7 днів` : (g.rejectReason || "").toLowerCase();
+    return [who, what].filter(Boolean).join(" · ");
+  };
+  const groupsPhone = (
+    <div className="v3-sp-m">
+      {groups && !noGroupsAtAll && <Dropdown className="v3-mselect-dd v3-sp-gdd" ariaLabel="Фільтр груп" value={gf} onChange={(v) => { setGf(v as GFilter); setRk((x) => x + 1); }}
+        sheet={{ title: "Групи", note: "Які показати", cls: "v3-sp-ddsheet" }}
+        options={GFILTERS.map((f) => ({ value: f.key, label: `${f.label}${gc ? ` · ${gc[f.key] ?? 0}` : ""}`, sheetLabel: f.label, hint: gc ? String(gc[f.key] ?? 0) : undefined }))} />}
+      {!groups ? <ul className="v3-sp-plist">{msk(4)}</ul>
+        : gList.length ? <ul key={rk} className="v3-sp-plist">{gList.map((g, i) => (
+          <li key={g.id} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-sp-pcard is-g" onClick={() => { setGSel(g.id); setGSheet(true); }}>
+            <span className="v3-sp-gav" aria-hidden="true">{initials(g.name)}</span>
+            <span className="v3-sp-mcard-l"><strong>{g.name}</strong><small>{gMeta(g)}</small></span>
+            <span className={`v3-tag ${GVIEW[gView(g)].cls}`}>{GVIEW[gView(g)].label}</span>
+          </button></li>
+        ))}</ul>
+        : <div className="v3-sp-pnone is-g">{gEmpty}</div>}
       <Pane wide={false} open={gSheet && !!gCur} paneKey={gCur?.id || "-"} label={gCur ? gCur.name : "Група"} onClose={() => setGSheet(false)}>
         {gCur && <GroupPane g={gCur} online={online} onChange={changeGroup} />}
       </Pane>
@@ -450,11 +563,24 @@ export default function Support() {
 
       {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Відповіді й зміни не збережуться — дочекайтесь з’єднання.</span></div>}
 
+      {phone && !(tab === "tickets" && noTicketsAtAll) && !(tab === "groups" && noGroupsAtAll) && (
+        <section key={`mk-${tab}`} className="v3-sp-mkpis" aria-label="Підсумки">
+          {(tab === "tickets" ? !list : !groups) ? [0, 1].map((i) => <div key={i} className="is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>)
+            : (tab === "tickets" ? [sums[0], sums[1]] : [{ ...sums[0], l: "Груп у Pro" }, sums[3]]).map((x, i) => (
+              <button key={x.k} type="button" className={i === 0 ? "is-blue" : ""} onClick={x.go} disabled={!x.go}>
+                <span>{x.l}</span>
+                <b className={x.k === "p" && x.v !== "0" ? "is-bad" : ""}><RollingNumber key={`${x.k}-${x.v}`} text={x.v} /></b>
+                <small>{x.n}</small>
+              </button>
+            ))}
+        </section>
+      )}
+
       <div className="v3-mx-tabsw v3-sp-tabsw">
         <div className="v3-pay-tabs v3-mx-tabs v3-sp-tabs" role="tablist" aria-label="Розділи підтримки">
           <PillTrack active={tab} />
-          <button type="button" role="tab" aria-selected={tab === "tickets"} className={`v3-pay-tab${tab === "tickets" ? " is-on" : ""}`} onClick={() => setParams({})}><span className="v3-pay-tab-n">{c ? c.open : "…"}</span>Звернення</button>
-          <button type="button" role="tab" aria-selected={tab === "groups"} className={`v3-pay-tab${tab === "groups" ? " is-on" : ""}${gc?.pending ? " is-err" : ""}`} onClick={() => setParams({ tab: "groups" })}><span className="v3-pay-tab-n">{gc ? gc.pending || gc.all : "…"}</span>Telegram-групи Pro</button>
+          <button type="button" role="tab" aria-selected={tab === "tickets"} className={`v3-pay-tab${tab === "tickets" ? " is-on" : ""}`} onClick={() => setParams({})}><span className="v3-pay-tab-n">{c ? c.open : "…"}</span>Звернення{phone && c?.open ? <span className="v3-sp-tc">· {c.open}</span> : null}</button>
+          <button type="button" role="tab" aria-selected={tab === "groups"} className={`v3-pay-tab${tab === "groups" ? " is-on" : ""}${gc?.pending ? " is-err" : ""}`} onClick={() => setParams({ tab: "groups" })}><span className="v3-pay-tab-n">{gc ? gc.pending || gc.all : "…"}</span>{phone ? "Telegram-групи" : "Telegram-групи Pro"}{phone && gc && (gc.pending || gc.all) ? <span className="v3-sp-tc">· {gc.pending || gc.all}</span> : null}</button>
         </div>
       </div>
 
@@ -472,8 +598,8 @@ export default function Support() {
 
       <div key={`pane-${tab}`} className="v3-pay-pane">
         {tab === "tickets"
-          ? (err && !list ? errorCard(err, loadTickets) : noTicketsAtAll ? emptyAll : wide ? ticketsDesk : ticketsMobile)
-          : (gErr && !groups ? errorCard(gErr, loadGroups) : wide ? groupsView : groupsMobile)}
+          ? (err && !list ? errorCard(err, loadTickets) : noTicketsAtAll ? emptyAll : wide ? ticketsDesk : phone ? ticketsPhone : ticketsMobile)
+          : (gErr && !groups ? errorCard(gErr, loadGroups) : wide ? groupsView : phone ? groupsPhone : groupsMobile)}
       </div>
       {tab === "tickets" && !list && !err && <span className="sr-only" role="status">Завантаження звернень…</span>}
     </div>

@@ -177,3 +177,4 @@
 .v3-sp-zero-card > .v3-ue-ico.v3-float { animation: v3-float 3.2s ease-in-out infinite; }
 .v3-ue-ico.v3-halo { position: relative; }
 @media (prefers-reduced-motion: reduce) { .v3-sp-zero-card > .v3-ue-ico.v3-float { animation: none; } }
+.v3-sp-tc { display: none; }
