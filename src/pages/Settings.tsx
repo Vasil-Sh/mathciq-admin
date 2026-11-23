@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  AlertTriangle, Bell, Bug, Check, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Smartphone, Sparkles, TextQuote, WifiOff, X,
+  AlertTriangle, Bell, Bug, Check, ChevronDown, Clock, Copy, CreditCard, Eye, EyeOff, Info, LayoutGrid, Lock, Megaphone, MessageSquare, Monitor, Receipt, RefreshCw, Send, Smartphone, Sparkles, TextQuote, WifiOff, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -42,6 +42,20 @@ const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: strin
   // phone only: errors kept by the backend
   { key: "errors", label: "Помилки сервера", icon: Bug },
 ];
+/** Phone: short tab label, page title and subtitle per section (design «Налаштування, мобільна»). */
+const PHONE: Record<SecKey, [string, string, string]> = {
+  tariffs: ["Тарифи", "Тарифи", "Назва, ціна й функції плану. Зміни діють одразу — без релізу."],
+  trial: ["Пробний", "Пробний період", "Що отримує новий користувач і на скільки продовжує кнопка «+N днів»."],
+  ai: ["AI-аналіз", "AI-аналіз", "Ліміти й правила формулювань. Доступно лише на Pro."],
+  texts: ["Тексти", "Тексти й дисклеймери", "Змінюються в застосунку без релізу. Кожна зміна — у журналі дій."],
+  alerts: ["Попередження", "Попередження й ризики", "Коли підписка потрапляє в «Потребує уваги», а користувач — у «Ризик відтоку»."],
+  receipt: ["Чек", "Чек оплати", "Що бачить користувач на зображенні чека після запису оплати."],
+  templates: ["Шаблони", "Шаблони повідомлень", "Текст для кнопки «Написати» на дашборді, у ризиках і після оплати."],
+  account: ["Акаунт", "Мій акаунт і безпека", ""],
+  banners: ["Банери", "Вимоги до банера", "Текст для рекламодавців — копіюється одним кліком на сторінці «Банери»."],
+  nav: ["Навігація", "Навігація", "Чотири розділи в нижній панелі поруч із «Меню». Діє на цьому телефоні."],
+  errors: ["Помилки", "Помилки сервера", "Що падало на бекенді за 30 днів. Однакові помилки зведені в одну з лічильником."],
+};
 const SEEN_KEY = "settingsSeen";
 /** Which menu item a draft field belongs to (for the orange «unsaved» dot). */
 const SEC_OF: Record<DraftKey, SecKey> = {
@@ -134,6 +148,11 @@ export default function Settings() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [hash]); // eslint-disable-line react-hooks/exhaustive-deps
   const [here, setHere] = useState<SecKey>("tariffs");
+  // phone: keep the chosen section chip in view
+  useEffect(() => {
+    const box = document.querySelector<HTMLElement>(".v3-st-ptabs"), b = box?.querySelector<HTMLElement>(".is-on");
+    if (box && b) box.scrollTo({ left: b.offsetLeft - (box.clientWidth - b.clientWidth) / 2, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [mSec, loading]);
   const [seen, setSeen] = useState<SecKey[]>(() => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch { return []; } });
   const [barKick, setBarKick] = useState(0);
 
@@ -279,7 +298,11 @@ export default function Settings() {
   }
 
   const all = sec === "all";
-  const show = (k: SecKey) => (wide ? all || sec === k : mSec === "all" || mSec === k);
+  const pSec: SecKey = mSec === "all" ? "tariffs" : mSec;
+  const show = (k: SecKey) => (wide ? all || sec === k : phone ? pSec === k : mSec === "all" || mSec === k);
+  const loginAt = Number(localStorage.getItem("loginAt") || 0);
+  const lastIn = loginAt ? `вхід ${new Date(loginAt).toDateString() === new Date().toDateString() ? "сьогодні" : shortDay(new Date(loginAt).toISOString())} о ${new Date(loginAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}` : "";
+  const pSub = pSec === "account" ? [`@${user?.username || ""}`, user?.isOwner ? "Овнер" : "Адміністратор", lastIn].filter(Boolean).join(" · ") : PHONE[pSec][2];
   const n = (k: SecKey) => SECS.findIndex((x) => x.key === k) + 1;
   const proPeople = ov?.plans.pro ?? 0;
   const perAnalysisUah = ov && ov.ai.month > 0 ? ov.ai.monthUah / ov.ai.month : 0;
@@ -292,7 +315,7 @@ export default function Settings() {
   const bar = showBar && (
     <div key={`bar-${barKick}`} className={`v3-st-bar${!dirty && save === "done" ? " is-clean" : ""}${save === "fail" ? " is-fail" : ""}${barKick ? " is-kick" : ""}`} role="status" aria-live="polite">
       <span className={`v3-st-dot${!dirty && save === "done" ? " is-ok" : save === "fail" ? " is-bad" : ""}`} aria-hidden="true" />
-      <span className="v3-st-bar-t"><strong>{!dirty && save === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" /> {barTitle}</> : barTitle}</strong>{barNote && <span className="v3-hide-mobile"> · {barNote}</span>}</span>
+      <span className="v3-st-bar-t"><strong>{!dirty && save === "done" ? <><Check size={14} strokeWidth={3} aria-hidden="true" /> {barTitle}</> : phone && dirty && save !== "fail" ? `${changed.length} ${plural(changed.length, "зміна", "зміни", "змін")}` : barTitle}</strong>{phone && dirty && save !== "fail" && " · не збережено"}{barNote && <span className="v3-hide-mobile"> · {barNote}</span>}</span>
       {dirty && <>
         <button type="button" className="v3-btn v3-st-cancel" onClick={onCancel} disabled={save === "busy"}>Скасувати</button>
         <button type="button" className={`v3-btn v3-btn-primary${save === "busy" ? " is-busy" : ""}`} disabled={save === "busy" || !online} onClick={onSave}>{save === "busy" ? "Зберігаємо…" : save === "fail" ? "Повторити" : "Зберегти"}</button>
@@ -301,8 +324,50 @@ export default function Settings() {
   );
 
   // ───────── sections ─────────
-  const tariffs = show("tariffs") && <TariffsSection key="tariffs" all={all} n={n("tariffs")} badge={badgeOf("tariffs")} cur={cur} saved={saved} set={set} settings={settings!} ov={ov} />;
-  const trial = show("trial") && (
+  const tariffs = show("tariffs") && <TariffsSection key="tariffs" phone={phone} all={all} n={n("tariffs")} badge={badgeOf("tariffs")} cur={cur} saved={saved} set={set} settings={settings!} ov={ov} />;
+  const sw = (on: boolean, label: string, onClick?: () => void) => onClick
+    ? <button type="button" role="switch" aria-checked={on} aria-label={label} className={`v3-st-sw${on ? " is-on" : ""}`} onClick={onClick}><span aria-hidden="true" /></button>
+    : <span role="switch" aria-checked={on} aria-disabled="true" aria-label={`${label} · завжди`} title="Завжди увімкнено" className={`v3-st-sw is-fixed${on ? " is-on" : ""}`}><span aria-hidden="true" /></span>;
+  const trialPhone = phone && show("trial") && (
+    <Section key="trial" id="trial" n={n("trial")} all={all} title="Пробний період і продовження" badge={badgeOf("trial")} sub="">
+      <div className="v3-st-mc">
+        <div className="v3-st-prow"><span><strong>Пробний період</strong><small>{ov ? (ov.trial.now ? `зараз на пробному: ${ov.trial.now} ${plural(ov.trial.now, "людина", "людини", "людей")}` : "зараз ніхто не на пробному") : "рахуємо…"}</small></span>{sw(cur.trialEnabled, "Пробний період", () => set("trialEnabled", !cur.trialEnabled))}</div>
+        <div className={`v3-st-prow${cur.trialEnabled ? "" : " is-dim"}`}><strong>Тривалість</strong><span className="v3-st-pstep"><Stepper light label="Тривалість пробного" value={cur.trialDays} min={1} max={30} onChange={(v) => set("trialDays", v)} /><small>{plural(cur.trialDays, "день", "дні", "днів")}</small></span></div>
+        <div className={`v3-st-prow${cur.trialEnabled ? "" : " is-dim"}`}><strong>План під час пробного</strong><Dropdown className="v3-st-dd" align="right" ariaLabel="План під час пробного" value={cur.trialPlan === "basic" ? "basic" : "pro"} onChange={(v) => set("trialPlan", v)} sheet={{ title: "План під час пробного" }} options={[{ value: "basic", label: "Базова" }, { value: "pro", label: "Pro" }]} /></div>
+        <div className="v3-st-prow"><span><strong>Один пробний на людину</strong><small>перевіряємо за Telegram</small></span>{sw(true, "Один пробний на людину")}</div>
+      </div>
+      <div className="v3-st-mc"><strong className="v3-st-mch">Крок «+N днів»</strong>
+        <div className="v3-seg v3-st-segs" role="group" aria-label="Крок продовження">
+          <PillTrack active={cur.trialStepDays} />
+          {[7, 14, 30].map((d) => <button key={d} type="button" className={cur.trialStepDays === d ? "is-on" : ""} aria-pressed={cur.trialStepDays === d} onClick={() => set("trialStepDays", d)}>{d} днів</button>)}
+        </div>
+      </div>
+    </Section>
+  );
+  const alertsPhone = phone && show("alerts") && (
+    <Section key="alerts" id="alerts" n={n("alerts")} all={all} title="Попередження й ризики" badge={badgeOf("alerts")} sub="">
+      <div className="v3-st-mc">
+        <div className="v3-st-prow"><span><strong>Підписка закінчується за</strong><small>блок «Потребує уваги»</small></span><span className="v3-st-pstep"><Stepper light label="Підписка закінчується за" value={cur.expiringDays} min={1} max={30} onChange={(v) => set("expiringDays", v)} /><small>дн.</small></span></div>
+        <div className="v3-st-prow"><span><strong>Неактивний після</strong><small>без нових ставок</small></span><span className="v3-st-pstep"><Stepper light label="Неактивний після" value={cur.churnInactiveDays} min={3} max={60} onChange={(v) => set("churnInactiveDays", v)} /><small>дн.</small></span></div>
+        <div className="v3-st-prow"><span><strong>Серія програшів від</strong><small>позначка в «Ставках»</small></span><span className="v3-st-pstep"><Stepper light label="Серія програшів від" value={cur.churnLossStreak} min={2} max={20} onChange={(v) => set("churnLossStreak", v)} /><small aria-hidden="true" /></span></div>
+      </div>
+      <div className="v3-st-ptiles" aria-label="Зараз під ці правила потрапляють">
+        <div><small>Закінчуються</small><b>{ov ? <RollingNumber key={`e${ov.alerts.expiring}`} text={String(ov.alerts.expiring)} /> : "—"}</b></div>
+        <div><small>Неактивні</small><b>{ov ? <RollingNumber key={`i${ov.alerts.inactive}`} text={String(ov.alerts.inactive)} /> : "—"}</b></div>
+        <div><small>Серія</small><b>{ov ? <RollingNumber key={`l${ov.alerts.lossStreak}`} text={String(ov.alerts.lossStreak)} /> : "—"}</b></div>
+      </div>
+    </Section>
+  );
+  const bannersPhone = phone && show("banners") && (
+    <Section key="banners" id="banners" n={n("banners")} all={all} title="Вимоги до банера" sub="">
+      <div className="v3-st-mc">
+        <textarea className="v3-st-pta" rows={8} maxLength={2000} aria-label="Текст для рекламодавців" value={cur.bannerSpecText} onChange={(e) => set("bannerSpecText", e.target.value)} placeholder="Розмір, формат, куди веде посилання, контакт…" />
+        <small className={`v3-st-pcnt${cur.bannerSpecText.length > 1900 ? " is-warn" : ""}`}>{cur.bannerSpecText.length} / 2000</small>
+        <div className="v3-st-pbtns"><CopyButton text={cur.bannerSpecText} /><button type="button" className={`v3-st-pgreen${save === "busy" ? " is-busy" : ""}`} disabled={!changed.includes("bannerSpecText") || save === "busy" || !online} onClick={onSave}>{save === "busy" ? "Зберігаємо…" : "Зберегти"}</button></div>
+      </div>
+    </Section>
+  );
+  const trial = !phone && show("trial") && (
     <Section key="trial" id="trial" n={n("trial")} all={all} title="Пробний період і продовження" badge={badgeOf("trial")} sub="Що отримує новий користувач і на скільки продовжує кнопка «+N днів».">
       <label className="v3-st-swrow">
         <button type="button" role="switch" aria-checked={cur.trialEnabled} className={`v3-st-sw${cur.trialEnabled ? " is-on" : ""}`} onClick={() => set("trialEnabled", !cur.trialEnabled)}><span aria-hidden="true" /></button>
@@ -324,9 +389,9 @@ export default function Settings() {
       <div className="v3-st-note"><Lock size={16} aria-hidden="true" /><span><strong>Один пробний період на людину</strong><small>Перевіряємо за Telegram: якщо він уже є в іншому акаунті, пробний не дамо — форма запропонує Базову або Pro.</small></span></div>
     </Section>
   );
-  const ai = show("ai") && <AiSection key="ai" all={all} n={n("ai")} badge={badgeOf("ai")} cur={cur} set={set} ov={ov} proPeople={proPeople} perAnalysisUah={perAnalysisUah} monthName={monthName} />;
-  const texts = show("texts") && settings && <TextsSection key="texts" all={all} n={n("texts")} badge={badgeOf("texts")} settings={settings} meta={meta} online={online} onSaved={(s, m) => { setSettings(s); setMeta(m); }} />;
-  const alerts = show("alerts") && (
+  const ai = show("ai") && <AiSection key="ai" phone={phone} all={all} n={n("ai")} badge={badgeOf("ai")} cur={cur} set={set} ov={ov} proPeople={proPeople} perAnalysisUah={perAnalysisUah} monthName={monthName} />;
+  const texts = show("texts") && settings && <TextsSection key="texts" phone={phone} all={all} n={n("texts")} badge={badgeOf("texts")} settings={settings} meta={meta} online={online} onSaved={(s, m) => { setSettings(s); setMeta(m); }} />;
+  const alerts = !phone && show("alerts") && (
     <Section key="alerts" id="alerts" n={n("alerts")} all={all} dark title="Попередження й ризики" badge={badgeOf("alerts")} sub="Коли підписка потрапляє в «Потребує уваги», а користувач — у «Ризик відтоку».">
       <div className="v3-st-grid3">
         <div className="v3-st-f"><span className="v3-st-l">Підписка закінчується за</span><Stepper label="Підписка закінчується за" value={cur.expiringDays} min={1} max={30} unit={plural(cur.expiringDays, "день", "дні", "днів")} onChange={(v) => set("expiringDays", v)} /><small className="v3-st-hint">Блок «Потребує уваги» на дашборді</small></div>
@@ -338,10 +403,10 @@ export default function Settings() {
       </p>
     </Section>
   );
-  const receipt = show("receipt") && <ReceiptSection key="receipt" all={all} n={n("receipt")} badge={badgeOf("receipt")} cur={cur} saved={saved} set={set} next={ov?.receiptNext} wide={wide} />;
-  const templates = show("templates") && <TemplatesSection key="templates" all={all} n={n("templates")} badge={badgeOf("templates")} cur={cur} set={set} wide={wide} />;
-  const account = show("account") && <AccountSection key="account" all={all} n={n("account")} badge={badgeOf("account")} me={user?.username || ""} owner={!!user?.isOwner} online={online} />;
-  const banners = show("banners") && (
+  const receipt = show("receipt") && <ReceiptSection key="receipt" phone={phone} all={all} n={n("receipt")} badge={badgeOf("receipt")} cur={cur} saved={saved} set={set} next={ov?.receiptNext} wide={wide} />;
+  const templates = show("templates") && <TemplatesSection key="templates" phone={phone} all={all} n={n("templates")} badge={badgeOf("templates")} cur={cur} set={set} wide={wide} />;
+  const account = show("account") && <AccountSection key="account" phone={phone} all={all} n={n("account")} badge={badgeOf("account")} me={user?.username || ""} owner={!!user?.isOwner} online={online} />;
+  const banners = !phone && show("banners") && (
     <Section key="banners" id="banners" n={n("banners")} all={all} dark title="Вимоги до банера" sub="Текст для рекламодавців — копіюється одним кліком на сторінці «Банери»." aside={<CopyButton dark text={cur.bannerSpecText} />}>
       <label className="v3-st-f"><span className="v3-st-l">Текст для рекламодавців</span>
         <textarea className="v3-st-ta is-dark" rows={7} maxLength={2000} value={cur.bannerSpecText} onChange={(e) => set("bannerSpecText", e.target.value)} placeholder="Розмір, формат, куди веде посилання, контакт…" />
@@ -349,16 +414,20 @@ export default function Settings() {
       <p className="v3-st-meta"><span>{meta.bannerSpecText ? `Остання зміна: ${meta.bannerSpecText.by ? `@${meta.bannerSpecText.by} · ` : ""}${shortDay(meta.bannerSpecText.at)}` : ""}</span><span className={cur.bannerSpecText.length > 1900 ? "is-warn" : ""}>{cur.bannerSpecText.length} / 2000</span></p>
     </Section>
   );
-  const nav = phone && show("nav") && <NavSection key="nav" all={all} n={n("nav")} badge={badgeOf("nav")} />;
+  const nav = phone && show("nav") && <NavSection key="nav" phone={phone} all={all} n={n("nav")} badge={badgeOf("nav")} />;
   const errorsSec = phone && show("errors") && <ErrorsSection key="errors" all={all} n={n("errors")} />;
-  const body = [tariffs, trial, ai, texts, alerts, receipt, templates, account, banners, nav, errorsSec];
+  const body = [tariffs, trial || trialPhone, ai, texts, alerts || alertsPhone, receipt, templates, account, banners || bannersPhone, nav, errorsSec];
 
   return (
-    <div className="v3-page v3-settings">
-      <section className="v3-hero">
+    <div className={`v3-page v3-settings${phone ? " is-phone" : ""}`}>
+      {phone ? <section className="v3-hero v3-st-phero" key={`h-${pSec}`}>
+        <p className="v3-st-eyb">Налаштування</p>
+        <h1 className="v3-title">{PHONE[pSec][1]}</h1>
+        {pSub && <p className="v3-subtitle">{pSub}</p>}
+      </section> : <section className="v3-hero">
         <h1 className="v3-title">Налаштування</h1>
         <p className="v3-subtitle"><span className="v3-hide-mobile">Значення за замовчуванням для всієї адмінки. Зміни діють для нових дій — наявні підписки не змінюються.</span><span className="v3-only-mobile">Діють для нових дій — наявні підписки не змінюються.</span></p>
-      </section>
+      </section>}
       {!online && <div className="v3-offline-users" role="status"><WifiOff size={16} aria-hidden="true" /><span>Немає інтернету. Зміни не збережуться — дочекайтесь з’єднання.</span></div>}
       {bar}
 
@@ -388,7 +457,15 @@ export default function Settings() {
           <div key={`main-${sec}`} className={`v3-st-main${all ? " is-all" : ""}`}>{body}</div>
         </div>
       ) : (
+        phone ? (
         <div className="v3-st-m">
+          <div className="v3-st-ptabs" role="tablist" aria-label="Розділ налаштувань">
+            {secs.map((x) => <button key={x.key} type="button" role="tab" aria-selected={pSec === x.key} className={pSec === x.key ? "is-on" : ""}
+              onClick={() => { setMSec(x.key); markSeen(x.key); history.replaceState(null, "", `#${x.key}`); }}>{PHONE[x.key][0]}{changed.some((k) => SEC_OF[k] === x.key) && <i className="v3-st-dirty" aria-label="є незбережені зміни" />}</button>)}
+          </div>
+          <div key={`m-${pSec}`} className="v3-st-main">{body}</div>
+        </div>
+        ) : <div className="v3-st-m">
           <Dropdown className="v3-st-mdd" ariaLabel="Розділ налаштувань" prefix="Розділ:" value={mSec} onChange={(v) => { setMSec(v); if (v !== "all") markSeen(v); }} options={[{ value: "all" as const, label: "Усі розділи" }, ...secs.map((s) => ({ value: s.key, label: s.label }))]} />
           <div key={`m-${mSec}`} className="v3-st-main">{body}</div>
         </div>
@@ -429,7 +506,7 @@ export default function Settings() {
 type SetFn = <K extends DraftKey>(k: K, v: Draft[K]) => void;
 
 // ───────────────────────── tariffs ─────────────────────────
-function TariffsSection({ all, n, badge, cur, saved, set, settings, ov }: { all: boolean; n: number; badge?: string; cur: Draft; saved: Draft; set: SetFn; settings: AppSettings; ov: SettingsOverview | null }) {
+function TariffsSection({ phone, all, n, badge, cur, saved, set, settings, ov }: { phone?: boolean; all: boolean; n: number; badge?: string; cur: Draft; saved: Draft; set: SetFn; settings: AppSettings; ov: SettingsOverview | null }) {
   const [edit, setEdit] = useState<"" | "basic" | "pro">("");
   const total = ov ? Math.max(1, ov.plans.basic + ov.plans.pro) : 1;
   const plan = (k: "basic" | "pro") => {
@@ -445,7 +522,8 @@ function TariffsSection({ all, n, badge, cur, saved, set, settings, ov }: { all:
           <button type="button" className={`v3-btn v3-st-ebtn${edit === k ? " is-on" : ""}`} aria-expanded={edit === k} onClick={() => setEdit(edit === k ? "" : k)}>{edit === k ? "Готово" : "Редагувати"}</button>
         </div>
         {edit === k && <div className="v3-st-pedit"><span>Ціна за 30 днів</span><Stepper light label={`Ціна ${isPro ? "Pro" : "Базової"}`} value={price} min={0} max={10000} step={50} unit="₴" onChange={(v) => set(isPro ? "proPrice" : "basicPrice", v)} /></div>}
-        <div className="v3-st-users"><i aria-hidden="true"><b className="v3-st-grow" style={{ width: users === null ? "0%" : `${Math.max(4, (users / total) * 100)}%` }} /></i><small>{users === null ? "…" : people(users)}</small></div>
+        {phone && edit === k && <small className="v3-st-phint">крок 50 ₴ · від 0 до 10 000 ₴</small>}
+        {(!phone || edit === k) && <div className="v3-st-users"><i aria-hidden="true"><b className="v3-st-grow" style={{ width: users === null ? "0%" : `${Math.max(4, (users / total) * 100)}%` }} /></i><small>{users === null ? "…" : phone ? `${users} ${plural(users, "людина", "людини", "людей")}` : people(users)}</small></div>}
         <ul className="v3-st-feat">
           {feats.map((f) => <li key={f}><span className="v3-st-ok" aria-hidden="true"><Check size={12} strokeWidth={3} /></span>{isPro && /^AI-аналіз/.test(f) ? `${f} · ${cur.aiDailyLimit} на день` : f}</li>)}
           {!isPro && LOCKED_BASIC.map((f) => <li key={f} className="is-off"><span className="v3-st-no" aria-hidden="true"><X size={11} strokeWidth={3} /></span><span><span className="sr-only">Немає: </span>{f}</span></li>)}
@@ -456,13 +534,19 @@ function TariffsSection({ all, n, badge, cur, saved, set, settings, ov }: { all:
   return (
     <Section id="tariffs" n={n} all={all} title="Тарифи" badge={badge} sub="Назва, ціна й функції плану. Зміни діють одразу в застосунку — без релізу.">
       <div className="v3-st-plans">{plan("basic")}{plan("pro")}</div>
-      <p className="v3-st-foot">Нова ціна — для нових оплат. Поточні підписки доживають до кінця за старою ціною. Оплати поки вносяться вручну.</p>
+      {phone ? <p className="v3-st-pnote"><b aria-hidden="true">!</b><span>{(() => {
+        const k = cur.proPrice !== saved.proPrice ? "pro" : cur.basicPrice !== saved.basicPrice ? "basic" : "";
+        if (!k) return "Нова ціна — для нових оплат. Поточні підписки доживають до кінця за старою ціною.";
+        const n2 = ov ? ov.plans[k] : 0, was = k === "pro" ? saved.proPrice : saved.basicPrice, now = k === "pro" ? cur.proPrice : cur.basicPrice;
+        return `${ov ? `${n2} ${plural(n2, "людина", "людини", "людей")} на ${k === "pro" ? "Pro" : "Базовій"} доживають до кінця за ${was} ₴. ` : ""}Нова ціна ${now} ₴ — з наступної оплати.`;
+      })()}</span></p>
+        : <p className="v3-st-foot">Нова ціна — для нових оплат. Поточні підписки доживають до кінця за старою ціною. Оплати поки вносяться вручну.</p>}
     </Section>
   );
 }
 
 // ───────────────────────── AI ─────────────────────────
-function AiSection({ all, n, badge, cur, set, ov, proPeople, perAnalysisUah, monthName }: { all: boolean; n: number; badge?: string; cur: Draft; set: SetFn; ov: SettingsOverview | null; proPeople: number; perAnalysisUah: number; monthName: string }) {
+function AiSection({ phone, all, n, badge, cur, set, ov, proPeople, perAnalysisUah, monthName }: { phone?: boolean; all: boolean; n: number; badge?: string; cur: Draft; set: SetFn; ov: SettingsOverview | null; proPeople: number; perAnalysisUah: number; monthName: string }) {
   const [adding, setAdding] = useState(false);
   const [word, setWord] = useState("");
   const [fresh, setFresh] = useState("");
@@ -479,6 +563,43 @@ function AiSection({ all, n, badge, cur, set, ov, proPeople, perAnalysisUah, mon
     toast(`Слово «${w}» прибрано`, { description: "Збережеться разом з іншими змінами", action: { label: "Повернути", onClick: () => set("aiStopWords", was) } });
   };
   const est = perAnalysisUah > 0 && proPeople > 0 ? Math.round(cur.aiDailyLimit * 30 * proPeople * perAnalysisUah) : 0;
+  const [wSheet, setWSheet] = useState(false);
+  const [nw, setNw] = useState("");
+  if (phone) {
+    const addNw = () => { const w = nw.trim().toLowerCase(); if (!w) return; if (!cur.aiStopWords.includes(w)) { set("aiStopWords", [...cur.aiStopWords, w]); setFresh(w); } setNw(""); setWSheet(false); };
+    return (
+      <Section id="ai" n={n} all={all} title="AI-аналіз" badge={badge} sub="">
+        <div className="v3-st-mc">
+          <div className="v3-st-prow is-top"><span><strong>Ліміт для Pro</strong><small>аналізів на день на людину</small></span><Stepper light label="Ліміт аналізів на день" value={cur.aiDailyLimit} min={1} max={50} onChange={(v) => set("aiDailyLimit", v)} /></div>
+          <div className="v3-st-ptiles is-2">
+            <div><small>Сьогодні</small><b>{ov ? <><RollingNumber key={`t${ov.ai.today}`} text={String(ov.ai.today)} /> {plural(ov.ai.today, "аналіз", "аналізи", "аналізів")}</> : "—"}</b></div>
+            <div><small>{monthName[0].toUpperCase() + monthName.slice(1)}</small><b>{ov ? `≈ ${ov.ai.monthUah.toLocaleString("uk-UA")} ₴` : "—"}</b></div>
+          </div>
+          {est > 0 && <small className="v3-st-phint">до ≈ {est.toLocaleString("uk-UA")} ₴/міс на {people(proPeople)}</small>}
+        </div>
+        <div className="v3-st-mc">
+          <span><strong className="v3-st-mch">Заборонені слова</strong><small className="v3-st-msub">Відповідь із ними перепишеться</small></span>
+          <div className="v3-st-pwords" role="group" aria-label="Заборонені слова">
+            {cur.aiStopWords.map((w) => <span key={w} className={`v3-st-pword${w === fresh ? " is-new" : ""}`}>{w}<button type="button" aria-label={`Прибрати «${w}»`} onClick={() => remove(w)}><X size={12} strokeWidth={2.5} /></button></span>)}
+            <button type="button" className="v3-st-pwadd" onClick={() => { setNw(""); setWSheet(true); }}>+ слово</button>
+          </div>
+        </div>
+        <label className="v3-st-mc"><strong className="v3-st-mch">Правило формулювань</strong><small className="v3-st-msub">AI тримається його в кожній відповіді</small>
+          <textarea className="v3-st-pta" rows={4} maxLength={1000} value={cur.aiWordingRule} onChange={(e) => set("aiWordingRule", e.target.value)} />
+        </label>
+        <Dialog open={wSheet} onOpenChange={setWSheet}>
+          <DialogContent className="v3-sheet v3-pay-sheet v3-st-sheet">
+            <DialogTitle>Заборонене слово</DialogTitle>
+            <DialogDescription>AI перепише відповідь, якщо воно трапиться</DialogDescription>
+            <label className="v3-st-sf"><span>Слово або фраза</span><input value={nw} maxLength={40} placeholder="Наприклад, «без ризику»" autoComplete="off" onChange={(e) => setNw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNw(); } }} /></label>
+            <small className="v3-st-phint">Без різниці, великі чи малі літери. Знайдемо й форми слова.</small>
+            {cur.aiStopWords.length > 0 && <><span className="v3-st-sl">Уже в списку</span><div className="v3-st-pwords is-ro">{cur.aiStopWords.map((w) => <span key={w} className="v3-st-pword">{w}</span>)}</div></>}
+            <div className="v3-st-pbtns"><button type="button" className="v3-st-pgrey" onClick={() => setWSheet(false)}>Скасувати</button><button type="button" className="v3-st-pgreen" disabled={!nw.trim()} onClick={addNw}>Додати</button></div>
+          </DialogContent>
+        </Dialog>
+      </Section>
+    );
+  }
   return (
     <Section id="ai" n={n} all={all} dark title="AI-аналіз" badge={badge} sub="Ліміти й правила формулювань. Аналіз доступний лише на Pro.">
       <div className="v3-st-grid3 is-ai">
@@ -507,7 +628,7 @@ const TEXTS = [
   { key: "addictionHelp", title: "Допомога при залежності", where: "Профіль → Відповідальна гра", max: 300 },
   { key: "beforeAiText", title: "Перед AI-аналізом", where: "Деталі матчу · кнопка «AI-аналіз»", max: 300 },
 ] as const;
-function TextsSection({ all, n, badge, settings, meta, online, onSaved }: { all: boolean; n: number; badge?: string; settings: AppSettings; meta: SettingsMeta; online: boolean; onSaved: (s: AppSettings, m: SettingsMeta) => void }) {
+function TextsSection({ phone, all, n, badge, settings, meta, online, onSaved }: { phone?: boolean; all: boolean; n: number; badge?: string; settings: AppSettings; meta: SettingsMeta; online: boolean; onSaved: (s: AppSettings, m: SettingsMeta) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [val, setVal] = useState("");
   const [st, setSt] = useState<"" | "busy">("");
@@ -524,6 +645,35 @@ function TextsSection({ all, n, badge, settings, meta, online, onSaved }: { all:
       window.setTimeout(() => setJust((j) => (j === key ? null : j)), 4000);
     } catch (e) { toast.error("Не вдалося зберегти текст", { description: (e as Error).message }); }
     finally { setSt(""); }
+  }
+  if (phone) {
+    const t = TEXTS.find((x) => x.key === open);
+    return (
+      <Section id="texts" n={n} all={all} title="Тексти й дисклеймери" badge={badge} sub="">
+        <ul className="v3-st-mc v3-st-ptexts">
+          {TEXTS.map((x) => (
+            <li key={x.key}><span><strong>{x.title}</strong><small className={just === x.key ? "is-new" : ""}>{just === x.key ? "✓ змінено щойно" : x.where.replace("Футер усіх сторінок", "футер усіх сторінок")}</small></span>
+              <button type="button" className="v3-st-pgrey is-sm" onClick={() => { setOpen(x.key); setVal(settings[x.key] || ""); }}>Редагувати</button></li>
+          ))}
+          <li><span><strong>Мітка «Реклама · 21+»</strong><small>на кожному банері · вимкнути не можна</small></span><span className="v3-st-preq">обов’язкова</span></li>
+        </ul>
+        <Dialog open={!!t} onOpenChange={(o) => { if (!o && !st) setOpen(null); }}>
+          <DialogContent className="v3-sheet v3-pay-sheet v3-st-sheet">
+            {t && <>
+              <DialogTitle>{t.title}</DialogTitle>
+              <DialogDescription>{t.key === "footerDisclaimer" ? "Футер усіх сторінок застосунку" : t.key === "beforeAiText" ? "Деталі матчу · над кнопкою «AI-аналіз»" : t.where}</DialogDescription>
+              <textarea ref={ta} className="v3-st-pta is-on" rows={4} maxLength={t.max} value={val} aria-label={t.title} onChange={(e) => setVal(e.target.value)} />
+              <small className="v3-st-pcnt is-left">{val.length} / {t.max}</small>
+              <span className="v3-st-sl">{t.key === "footerDisclaimer" ? "Як виглядає у футері" : t.key === "beforeAiText" ? "Як виглядає в деталях матчу" : "Як виглядає в профілі"}</span>
+              {t.key === "footerDisclaimer" ? <div className="v3-st-pv is-foot">{val || "…"}</div>
+                : t.key === "beforeAiText" ? <div className="v3-st-pv is-ai"><span><Sparkles size={13} aria-hidden="true" />AI-аналіз · NAVI — G2</span><p>{val || "…"}</p><b>Отримати аналіз</b></div>
+                : <div className="v3-st-pv is-help">{linkify(val || "…")}</div>}
+              <div className="v3-st-pbtns"><button type="button" className="v3-st-pgrey" disabled={!!st} onClick={() => setOpen(null)}>Скасувати</button><button type="button" className={`v3-st-pgreen${st ? " is-busy" : ""}`} disabled={!!st || !online || val.trim() === (settings[t.key] || "")} onClick={() => void saveOne(t.key)}>{st ? "Зберігаємо…" : "Зберегти"}</button></div>
+            </>}
+          </DialogContent>
+        </Dialog>
+      </Section>
+    );
   }
   return (
     <Section id="texts" n={n} all={all} title="Тексти й дисклеймери" badge={badge} sub="Змінюються в застосунку без релізу. Кожна зміна — у журналі дій.">
@@ -566,7 +716,7 @@ function linkify(text: string): ReactNode {
 }
 
 // ───────────────────────── receipt ─────────────────────────
-function ReceiptSection({ all, n, badge, cur, saved, set, next, wide }: { all: boolean; n: number; badge?: string; cur: Draft; saved: Draft; set: SetFn; next?: number; wide: boolean }) {
+function ReceiptSection({ phone, all, n, badge, cur, saved, set, next, wide }: { phone?: boolean; all: boolean; n: number; badge?: string; cur: Draft; saved: Draft; set: SetFn; next?: number; wide: boolean }) {
   const num = `${(cur.receiptPrefix || "MIQ").toUpperCase()}-${next ?? "…"}`;
   const today = new Date().toLocaleDateString("uk-UA");
   const sup = cur.receiptSupport.trim() ? `@${cur.receiptSupport.trim().replace(/^@/, "")}` : "@…";
@@ -574,6 +724,23 @@ function ReceiptSection({ all, n, badge, cur, saved, set, next, wide }: { all: b
   const flash = (k: DraftKey) => (cur[k] !== saved[k] ? "v3-st-flash" : "");
   const badSup = cur.receiptSupport.trim() !== "" && !/^@?[a-zA-Z0-9_]{5,32}$/.test(cur.receiptSupport.trim());
   const badPre = cur.receiptPrefix.trim() !== "" && !/^[A-Za-z0-9]{1,6}$/.test(cur.receiptPrefix.trim());
+  if (phone) return (
+    <Section id="receipt" n={n} all={all} title="Чек оплати" badge={badge} sub="">
+      <div className="v3-st-mc">
+        <label className="v3-st-sf"><span>Telegram підтримки</span><input className={badSup ? "is-bad" : ""} value={cur.receiptSupport} maxLength={33} onChange={(e) => set("receiptSupport", e.target.value)} aria-invalid={badSup} />{badSup && <small className="v3-st-phint is-bad">@логін — 5–32 латинські літери, цифри або _</small>}</label>
+        <label className="v3-st-sf"><span>Фраза подяки</span><input value={cur.receiptThanks} maxLength={80} onChange={(e) => set("receiptThanks", e.target.value)} /></label>
+        <label className="v3-st-sf"><span>Префікс номера чека</span><input className={badPre ? "is-bad" : ""} value={cur.receiptPrefix} maxLength={6} onChange={(e) => set("receiptPrefix", e.target.value.toUpperCase())} aria-invalid={badPre} />{badPre && <small className="v3-st-phint is-bad">1–6 латинських літер або цифр</small>}</label>
+      </div>
+      <span className="v3-st-sl">Прев’ю · жовтим те, що змінюється</span>
+      <div className="v3-st-prc"><div key={printKey} className="v3-st-prc-in" aria-label="Прев’ю чека">
+        <strong>MatchIQ</strong>
+        <small>Чек № <mark>{(cur.receiptPrefix || "MIQ").toUpperCase()}</mark>-{next ?? "…"} · {today}</small>
+        <b>{cur.proPrice.toLocaleString("uk-UA", { minimumFractionDigits: 2 })} грн</b>
+        <small>Підтримка: <mark>{sup}</mark></small>
+        <mark className="is-ty">{cur.receiptThanks || "…"}</mark>
+      </div></div>
+    </Section>
+  );
   return (
     <Section id="receipt" n={n} all={all} title="Чек оплати" badge={badge} sub="Що бачить користувач на зображенні чека після запису оплати.">
       <div className={`v3-st-rc${wide ? "" : " is-m"}`}>
@@ -604,7 +771,7 @@ function ReceiptSection({ all, n, badge, cur, saved, set, next, wide }: { all: b
 }
 
 // ───────────────────────── templates ─────────────────────────
-function TemplatesSection({ all, n, badge, cur, set, wide }: { all: boolean; n: number; badge?: string; cur: Draft; set: SetFn; wide: boolean }) {
+function TemplatesSection({ phone, all, n, badge, cur, set, wide }: { phone?: boolean; all: boolean; n: number; badge?: string; cur: Draft; set: SetFn; wide: boolean }) {
   const [i, setI] = useState(0);
   const [sample, setSample] = useState<{ login: string; endDate: string; plan: string; amount: string; idleDays: number }>({ login: "maksym_k", endDate: "10.11.2026", plan: "Базову", amount: `${cur.basicPrice} ₴`, idleDays: 9 });
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -634,6 +801,26 @@ function TemplatesSection({ all, n, badge, cur, set, wide }: { all: boolean; n: 
   };
   const fix = () => { if (bad) set(t.key, text.replace(bad, closestVar(bad))); };
   const preview = fillTemplate(text, sample);
+  if (phone) {
+    const SHORT = ["Закінчується", "Без ставок", "Оплата", "Не продовжив"];
+    return (
+      <Section id="templates" n={n} all={all} title="Шаблони повідомлень" badge={badge} sub="">
+        <div className="v3-seg v3-st-tseg" role="tablist" aria-label="Шаблони"><PillTrack active={i} />{TEMPLATES.map((x, k) => <button key={x.key} type="button" role="tab" aria-selected={k === i} className={k === i ? "is-on" : ""} title={x.title} onClick={() => { setI(k); setJustVar(-1); }}>{SHORT[k]}{unknownVar(cur[x.key]) && <i className="v3-st-dirty is-bad" aria-label="є помилка" />}</button>)}</div>
+        <div key={t.key} className="v3-st-mc v3-st-tpled">
+          <label className="v3-st-mch" htmlFor="st-tpl">Текст повідомлення</label>
+          <div className={`v3-st-tpx${bad ? " is-bad" : ""}`}>
+            <div ref={mirror} className="v3-st-tpx-m" aria-hidden="true">{parts.map((p, k) => <span key={k} className={p.v ? `v3-st-var${p.bad ? " is-bad" : ""}${k === justVar ? " is-just" : ""}` : ""}>{p.t}</span>)}{"\n"}</div>
+            <textarea id="st-tpl" ref={ta} value={text} maxLength={1000} rows={4} spellCheck={false} aria-invalid={!!bad} aria-describedby={bad ? "st-tpl-err" : undefined}
+              onChange={(e) => { set(t.key, e.target.value); setJustVar(-1); }} onScroll={(e) => { if (mirror.current) mirror.current.scrollTop = e.currentTarget.scrollTop; }} />
+          </div>
+          {bad && <div id="st-tpl-err" className="v3-st-tplerr" role="alert"><span>Змінної {bad} немає. Можливо, <strong>{closestVar(bad)}</strong>?</span><button type="button" className="v3-st-pgrey is-sm" onClick={fix}>Замінити</button></div>}
+          <div className="v3-st-vars"><span>Вставити:</span>{TEMPLATE_VARS.map((v) => <button key={v} type="button" className="v3-st-vbtn" onClick={() => insert(v)}>{v}</button>)}</div>
+        </div>
+        <span className="v3-st-sl">Прев’ю для @{sample.login} · Telegram</span>
+        <div key={preview.length % 2} className="v3-st-pbub">{preview}</div>
+      </Section>
+    );
+  }
   return (
     <Section id="templates" n={n} all={all} dark title="Шаблони повідомлень" badge={badge} sub="Текст, який відкривається кнопкою «Написати» на дашборді, у ризиках відтоку й після оплати.">
       <div className={`v3-st-tpl${wide ? "" : " is-m"}`}>
@@ -666,7 +853,7 @@ function TemplatesSection({ all, n, badge, cur, set, wide }: { all: boolean; n: 
 
 // ───────────────────────── nav (phone) ─────────────────────────
 /** Which four sections sit in the phone tab bar next to «Меню». Saved on this phone. */
-function NavSection({ all, n, badge }: { all: boolean; n: number; badge?: string }) {
+function NavSection({ phone, all, n, badge }: { phone?: boolean; all: boolean; n: number; badge?: string }) {
   const tabs = useTabs();
   const full = tabs.length >= TAB_SLOTS;
   const [pick, setPick] = useState<TabKey[]>(tabs);
@@ -682,13 +869,15 @@ function NavSection({ all, n, badge }: { all: boolean; n: number; badge?: string
   const isDefault = tabs.join() === DEFAULT_TABS.join();
   return (
     <Section id="nav" n={n} all={all} title="Навігація" badge={badge} sub="Чотири розділи в нижній панелі поруч із «Меню». Діє на цьому телефоні.">
+      <div className="v3-st-mc"><span className="v3-st-sl">Нижня панель</span>
       <div className="v3-st-navprev" aria-hidden="true">
         <span className="v3-st-navtab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg><small>Меню</small></span>
         {Array.from({ length: TAB_SLOTS }, (_, i) => { const o = TAB_OPTIONS.find((x) => x.key === pick[i]); return o
           ? <span key={o.key} className="v3-st-navtab is-set"><o.icon size={20} strokeWidth={1.6} /><small>{o.label}</small></span>
           : <span key={`e${i}`} className="v3-st-navtab is-empty"><i /><small>{i + 1}</small></span>; })}
       </div>
-      <p className="v3-st-navhint">{pick.length < TAB_SLOTS ? `Оберіть ще ${TAB_SLOTS - pick.length} — панель оновиться, щойно буде ${TAB_SLOTS}.` : "Торкніться розділу, щоб прибрати його, і оберіть інший."}</p>
+      <p className="v3-st-navhint">{pick.length < TAB_SLOTS ? `Оберіть ще ${TAB_SLOTS - pick.length} — панель оновиться, щойно буде ${TAB_SLOTS}.` : "Торкніться розділу, щоб прибрати його, і оберіть інший."}</p></div>
+      <div className="v3-st-mc"><span className="v3-st-sl">Розділи · {pick.length} з {TAB_SLOTS}</span>
       <div className="v3-st-navlist" role="group" aria-label="Розділи нижньої панелі">
         {TAB_OPTIONS.map((o) => { const i = pick.indexOf(o.key); const on = i >= 0; const off = !on && pick.length >= TAB_SLOTS; return (
           <button key={o.key} type="button" className={`v3-st-navopt${on ? " is-on" : ""}`} aria-pressed={on} disabled={off} onClick={() => toggle(o.key)}>
@@ -696,7 +885,7 @@ function NavSection({ all, n, badge }: { all: boolean; n: number; badge?: string
             <b aria-hidden="true">{on ? i + 1 : ""}</b>
           </button>
         ); })}
-      </div>
+      </div></div>
       {(!isDefault || !full) && <button type="button" className="v3-st-navreset" onClick={() => { saveTabs(DEFAULT_TABS); setPick(DEFAULT_TABS); }}>Повернути стандартні</button>}
     </Section>
   );
@@ -728,30 +917,36 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
     <Section id="errors" n={n} all={all} title="Помилки сервера" sub="Що падало на бекенді за 30 днів. Однакові помилки зведені в одну з лічильником.">
       {list === null ? <p className="v3-st-errnone">Завантажуємо…</p>
         : err ? <div className="v3-st-errnone"><span>Не вдалося завантажити: {err}</span><button type="button" onClick={load}>Спробувати ще раз</button></div>
-        : !list.length ? <p className="v3-st-errnone is-ok">Помилок немає — бекенд працює чисто.</p>
+        : !list.length ? <div className="v3-st-errz"><i aria-hidden="true"><Check size={22} strokeWidth={2.6} /></i><b>Помилок немає</b><span>Бекенд працює чисто — за 30 днів нічого не падало. Нові помилки з’являться тут самі.</span></div>
         : <>
-          <ul className="v3-st-errs">{list.map((e) => (
-            <li key={e.id} className={open === e.id ? "is-open" : ""}>
+          <p className="v3-st-errsum"><span><b>{list.length} {plural(list.length, "помилка", "помилки", "помилок")}</b> · за 30 днів</span><span>{list.reduce((a, e) => a + e.count, 0)} {plural(list.reduce((a, e) => a + e.count, 0), "падіння", "падіння", "падінь")}</span></p>
+          <ul className="v3-st-errs">{list.map((e, i) => (
+            <li key={e.id} className={open === e.id ? "is-open" : ""} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
               <button type="button" className="v3-st-errh" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>
                 <span className={`v3-st-errsrc is-${e.source}`}>{ERR_SRC[e.source]}</span>
                 <strong>{e.message}</strong>
-                <small>{e.count > 1 ? `${e.count} разів · ` : ""}{errAgo(e.lastAt)}{e.path ? ` · ${e.path}` : ""}</small>
+                <small>{e.count > 1 && <span className="v3-st-errn">×{e.count}</span>}{errAgo(e.lastAt)}{e.path ? ` · ${e.path}` : ""}</small>
+                <ChevronDown size={16} className="v3-st-errchev" aria-hidden="true" />
               </button>
               {open === e.id && <div className="v3-st-errd">
                 {e.detail && <pre>{e.detail}</pre>}
-                <p>Уперше {new Date(e.firstAt).toLocaleString("uk-UA")}</p>
-                <div><button type="button" onClick={() => share(e)}>Надіслати</button><button type="button" className="is-ok" disabled={busy === e.id} onClick={() => resolve(e.id)}>{busy === e.id ? "Зберігаємо…" : "Вирішено"}</button></div>
+                <dl>
+                  <div><dt>Уперше</dt><dd>{new Date(e.firstAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
+                  <div><dt>Востаннє</dt><dd>{new Date(e.lastAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
+                  {e.path && <div><dt>Маршрут</dt><dd>{e.path}</dd></div>}
+                </dl>
+                <div className="v3-st-pbtns"><button type="button" className="v3-st-pgrey" onClick={() => share(e)}><Send size={15} aria-hidden="true" />Надіслати</button><button type="button" className="v3-st-pgreen" disabled={busy === e.id} onClick={() => resolve(e.id)}>{busy === e.id ? "Зберігаємо…" : <><Check size={15} strokeWidth={2.6} aria-hidden="true" />Вирішено</>}</button></div>
               </div>}
             </li>
           ))}</ul>
-          <button type="button" className="v3-st-navreset" disabled={busy === "all"} onClick={() => resolve("all")}>Очистити все</button>
+          <AskButton className="v3-st-errclr" label="Очистити все" ask={`Точно очистити всі ${list.length}?`} busy={busy === "all"} onYes={() => void resolve("all")} />
         </>}
     </Section>
   );
 }
 
 // ───────────────────────── account ─────────────────────────
-function AccountSection({ all, n, badge, me, owner, online }: { all: boolean; n: number; badge?: string; me: string; owner: boolean; online: boolean }) {
+function AccountSection({ phone, all, n, badge, me, owner, online }: { phone?: boolean; all: boolean; n: number; badge?: string; me: string; owner: boolean; online: boolean }) {
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [eye1, setEye1] = useState(false);
@@ -810,12 +1005,12 @@ function AccountSection({ all, n, badge, me, owner, online }: { all: boolean; n:
               <button type="button" className="v3-st-eye" aria-label={eye1 ? "Сховати пароль" : "Показати пароль"} aria-pressed={eye1} onClick={() => setEye1(!eye1)}>{eye1 ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
           </label>
           <label className="v3-st-f"><span className="v3-st-l">Новий пароль</span>
-            <span key={`n${shake}`} className={`v3-st-in${pwErr && !/поточн/i.test(pwErr) ? " is-bad v3-st-shake" : ""}`}><input type={eye2 ? "text" : "password"} autoComplete="new-password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwErr(""); }} aria-describedby="st-pw-s" />
+            <span key={`n${shake}`} className={`v3-st-in${pwErr && !/поточн/i.test(pwErr) ? " is-bad v3-st-shake" : ""}`}><input type={eye2 ? "text" : "password"} autoComplete="new-password" placeholder={phone ? "Щонайменше 10 символів" : undefined} value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwErr(""); }} aria-describedby="st-pw-s" />
               <button type="button" className="v3-st-eye" aria-label={eye2 ? "Сховати пароль" : "Показати пароль"} aria-pressed={eye2} onClick={() => setEye2(!eye2)}>{eye2 ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
           </label>
-          <div className={`v3-st-bars is-${strength.score}`} aria-hidden="true"><i /><i /><i /><i /></div>
+          {!phone && <div className={`v3-st-bars is-${strength.score}`} aria-hidden="true"><i /><i /><i /><i /></div>}
           <div className="v3-st-pwrow">
-            <small id="st-pw-s" className={`v3-st-hint is-s${strength.score}`} aria-live="polite">{pwErr || (strength.label ? `${strength.label} · щонайменше 10 символів` : "Щонайменше 10 символів: літери, цифри й знак")}</small>
+            <small id="st-pw-s" className={`v3-st-hint is-s${strength.score}`} aria-live="polite">{pwErr || (strength.label ? `${strength.label} · щонайменше 10 символів` : phone ? "літери, цифри й знак ·" : "Щонайменше 10 символів: літери, цифри й знак")}</small>
             <button type="button" className="v3-st-gen" onClick={() => { setNewPw(generatePassword()); setEye2(true); setPwErr(""); }}>згенерувати</button>
           </div>
           <button type="submit" className={`v3-btn v3-btn-dark${pwSt === "busy" ? " is-busy" : ""}${pwSt === "done" ? " is-done" : ""}`} disabled={pwSt === "busy" || !online}>{pwSt === "busy" ? "Оновлюємо…" : pwSt === "done" ? <><Check size={15} strokeWidth={3} aria-hidden="true" />Оновлено</> : "Оновити пароль"}</button>
@@ -828,13 +1023,13 @@ function AccountSection({ all, n, badge, me, owner, online }: { all: boolean; n:
                 <li key={s.id} className={`v3-st-sesr${s.current ? " is-cur" : ""}${out === s.id ? " is-out" : ""}`}>
                   <span className="v3-st-dev" aria-hidden="true">{d.phone ? <Smartphone size={16} /> : <Monitor size={16} />}</span>
                   <span className="v3-st-sesi"><strong>{d.name}</strong><small>{[s.ip, agoText(s.lastSeenAt || s.createdAt)].filter(Boolean).join(" · ")}</small></span>
-                  {s.current ? <span className="v3-st-thisdev">Цей пристрій</span> : <AskButton className="v3-btn v3-st-end" label="Завершити" ask="Точно?" busy={out === s.id} onYes={() => void end(s)} />}
+                  {s.current ? <span className="v3-st-thisdev">{phone ? "це ви" : "Цей пристрій"}</span> : <AskButton className="v3-btn v3-st-end" label="Завершити" ask="Точно?" busy={out === s.id} onYes={() => void end(s)} />}
                 </li>
               ); })}
             </ul>
           )}
           {sessions && (others > 0
-            ? <AskButton className="v3-btn v3-st-allout" label="Вийти на всіх інших пристроях" ask="Точно вийти на всіх?" busy={allBusy} onYes={() => void endAll()} />
+            ? <AskButton className="v3-btn v3-st-allout" label={phone ? `Завершити всі інші · ${others}` : "Вийти на всіх інших пристроях"} ask={phone ? "Точно завершити всі?" : "Точно вийти на всіх?"} busy={allBusy} onYes={() => void endAll()} />
             : <span className="v3-st-onlyme"><Check size={14} strokeWidth={3} aria-hidden="true" />Ви увійшли лише на цьому пристрої</span>)}
         </div>
       </div>

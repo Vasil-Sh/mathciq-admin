@@ -1,0 +1,242 @@
+/* ══ Налаштування · телефон, світлий дизайн (дошки SettingsMobile*) ══
+   Лише ≤ 767 px і лише сторінка «Налаштування» (.v3-settings.is-phone). Комп’ютер не змінюється. */
+@media (max-width: 767px) {
+  body:has(.v3-settings), .v3-shell:has(.v3-settings) { background: #e9ecf2; }
+  .v3-shell:has(.v3-settings) .v3-stars { display: none; }
+  .v3-settings.is-phone { gap: 12px; color: #11151c; padding-bottom: 80px; }
+
+  /* шапка */
+  .v3-st-phero { margin: 0; animation: v3-st-in .3s cubic-bezier(.2, .8, .2, 1) both; }
+  .v3-st-eyb { margin: 0 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7384; }
+  .v3-settings.is-phone .v3-title { font-size: 30px; font-weight: 400; letter-spacing: -.03em; line-height: 1.15; color: #11151c; }
+  .v3-settings.is-phone .v3-subtitle { margin-top: 4px; font-size: 12px; line-height: 1.45; color: #6b7384; }
+
+  /* розділи */
+  .v3-settings.is-phone .v3-st-m { gap: 12px; margin-top: 0; }
+  .v3-st-ptabs { display: flex; gap: 6px; margin: 0 -16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .v3-st-ptabs::-webkit-scrollbar { display: none; }
+  .v3-st-ptabs button { position: relative; flex: none; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #e3e6eb; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; transition: background-color .2s, color .2s; }
+  .v3-st-ptabs button.is-on { background: #3a6df0; color: #fff; font-weight: 600; }
+  .v3-st-ptabs .v3-st-dirty { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #f0a020; }
+
+  /* картки */
+  .v3-settings.is-phone .v3-st-main { display: flex; flex-direction: column; gap: 10px; }
+  .v3-settings.is-phone .v3-st-sec { display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #11151c; }
+  .v3-settings.is-phone .v3-st-sech { display: none; }
+  .v3-st-mc { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 14px; border-radius: 18px; background: #fff; color: #11151c; list-style: none; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); animation: v3-st-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-st-mc + .v3-st-mc { animation-delay: .05s; }
+  .v3-st-mch { display: block; font-size: 14px; font-weight: 600; color: #11151c; }
+  .v3-st-msub { display: block; margin-top: 2px; font-size: 11px; color: #6b7384; }
+  .v3-st-sl { font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-st-phint { font-size: 11px; line-height: 1.45; color: #6b7384; }
+  .v3-st-phint.is-bad { color: #c2341f; }
+  .v3-st-prow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 10px 0; border-bottom: 1px solid #eef0f4; }
+  .v3-st-prow:first-child { padding-top: 0; }
+  .v3-st-prow:last-child { padding-bottom: 0; border-bottom: 0; }
+  .v3-st-prow.is-top { align-items: flex-start; min-height: 0; padding-bottom: 0; border-bottom: 0; }
+  .v3-st-prow > span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .v3-st-prow strong { font-size: 14px; font-weight: 600; color: #11151c; }
+  .v3-st-prow small { font-size: 11px; color: #6b7384; }
+  .v3-st-prow.is-dim { opacity: .45; }
+  .v3-st-pstep { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+  .v3-st-pstep > small { min-width: 22px; font-size: 12px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-step { grid-template-columns: 38px 34px 38px; min-height: 40px; border: 0; border-radius: 12px; background: #f1f3f6; flex: none; }
+  .v3-settings.is-phone .v3-st-step button { height: 40px; border-radius: 10px; color: #11151c; font-size: 18px; }
+  .v3-settings.is-phone .v3-st-step strong { font-size: 15px; font-weight: 600; color: #11151c; }
+  .v3-settings.is-phone .v3-st-prow .v3-st-dd { width: auto; flex: none; }
+  .v3-settings.is-phone .v3-st-prow .v3-st-dd .v3-dd-btn { min-width: 124px; min-height: 40px; padding: 0 12px; border: 1px solid #dde1e7; border-radius: 12px; background: #fff; font-size: 14px; }
+  .v3-st-sw.is-fixed { cursor: default; }
+  .v3-settings.is-phone .v3-seg.v3-st-segs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 12px; background: #eef0f4; }
+  .v3-settings.is-phone .v3-st-segs > .v3-pill { top: 3px; bottom: 3px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-settings.is-phone .v3-st-segs button { position: relative; z-index: 1; min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font: 500 13px Inter, sans-serif; box-shadow: none; }
+  .v3-settings.is-phone .v3-st-segs button.is-on { color: #11151c; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-segs:not(.has-pill) button.is-on { background: #fff; }
+
+  /* плитки */
+  .v3-st-ptiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .v3-st-ptiles.is-2 { grid-template-columns: 1fr 1fr; }
+  .v3-st-ptiles > div { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-st-mc .v3-st-ptiles > div { background: #f4f6f9; box-shadow: none; }
+  .v3-st-ptiles small { font-size: 11px; color: #6b7384; }
+  .v3-st-ptiles b { font-size: 16px; font-weight: 600; color: #11151c; font-variant-numeric: tabular-nums; }
+
+  /* кнопки */
+  .v3-st-pbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .v3-st-pgrey, .v3-st-pgreen, .v3-settings.is-phone .v3-st-pbtns .v3-st-copy { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 0 12px; border: 0; border-radius: 14px; background: #eef0f4; color: #11151c; font: 600 14px Inter, sans-serif; box-shadow: none; transition: transform .15s ease-out; }
+  .v3-st-pgreen { background: #00b24b; color: #fff; }
+  .v3-st-pgrey.is-sm { min-height: 34px; padding: 0 12px; border-radius: 10px; font-size: 13px; }
+  .v3-st-pgrey:active, .v3-st-pgreen:not(:disabled):active { transform: scale(.96); }
+  .v3-st-pgreen:disabled { opacity: .5; }
+
+  /* тарифи */
+  .v3-settings.is-phone .v3-st-plans { display: flex; flex-direction: column; gap: 10px; }
+  .v3-settings.is-phone .v3-st-plan { gap: 10px; padding: 14px; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-settings.is-phone .v3-st-plan.is-edit { box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-settings.is-phone .v3-st-plan-h { align-items: flex-start; }
+  .v3-settings.is-phone .v3-st-plan-h > div { flex: 1; min-width: 0; }
+  .v3-settings.is-phone .v3-st-plan-h strong { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; background: #e3f5ea; color: #1f8a4c; font-size: 11px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-plan.is-pro .v3-st-plan-h strong { background: #fde2df; color: #c2341f; }
+  .v3-settings.is-phone .v3-st-plan-h p { margin-top: 12px; }
+  .v3-settings.is-phone .v3-st-price { font-size: 34px; font-weight: 300; letter-spacing: -.02em; }
+  .v3-settings.is-phone .v3-st-plan-h p > small { margin-left: 4px; font-size: 12px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-was { margin-left: auto; color: #9aa3b2; font-weight: 400; text-decoration: line-through; }
+  .v3-settings.is-phone .v3-st-ebtn { min-height: 34px; padding: 0 14px; border: 0; border-radius: 10px; background: #eef0f4; color: #11151c; font: 600 13px Inter, sans-serif; }
+  .v3-settings.is-phone .v3-st-ebtn.is-on { background: #11151c; color: #fff; }
+  .v3-settings.is-phone .v3-st-pedit { flex-direction: row; align-items: center; justify-content: space-between; margin: 0 -14px; padding: 10px 14px; border-radius: 0; background: #f4f6f9; }
+  .v3-settings.is-phone .v3-st-pedit > span { font-size: 14px; color: #11151c; }
+  .v3-settings.is-phone .v3-st-pedit .v3-st-step { grid-template-columns: 38px auto 38px; background: #fff; border: 1px solid #dde1e7; }
+  .v3-settings.is-phone .v3-st-pedit .v3-st-step strong { padding: 0 6px; font-size: 17px; }
+  .v3-settings.is-phone .v3-st-users small { font-size: 11px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-plan .v3-st-users b { background: #e5484d; }
+  .v3-settings.is-phone .v3-st-feat { gap: 6px; }
+  .v3-settings.is-phone .v3-st-feat li { gap: 8px; color: #11151c; }
+  .v3-settings.is-phone .v3-st-feat li.is-off { color: #9aa3b2; }
+  .v3-settings.is-phone .v3-st-ok, .v3-settings.is-phone .v3-st-no { width: 14px; height: 14px; background: transparent; }
+  .v3-settings.is-phone .v3-st-ok { color: #1f9d55; }
+  .v3-settings.is-phone .v3-st-no { color: #b3b9c4; }
+  .v3-st-pnote { display: flex; gap: 8px; margin: 0; padding: 12px 14px; border-radius: 14px; background: #fff3dc; color: #8a5a00; font-size: 12px; line-height: 1.5; animation: v3-st-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-st-pnote b { font-weight: 700; }
+
+  /* AI */
+  .v3-st-pwords { display: flex; flex-wrap: wrap; gap: 6px; }
+  .v3-st-pword { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 6px 0 10px; border-radius: 999px; background: #fde2df; color: #c2341f; font-size: 12px; font-weight: 600; }
+  .v3-st-pwords.is-ro .v3-st-pword { padding-right: 10px; }
+  .v3-st-pword.is-new { animation: v3-tag-pop .35s cubic-bezier(.3, 1.5, .5, 1) backwards; }
+  .v3-st-pword button { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; }
+  .v3-st-pwadd { min-height: 28px; padding: 0 12px; border: 1px dashed #9db5f5; border-radius: 999px; background: transparent; color: #3a6df0; font: 600 12px Inter, sans-serif; }
+  .v3-st-pta { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #dde1e7; border-radius: 12px; background: #fff; color: #11151c; font: 400 16px/1.5 Inter, sans-serif; resize: vertical; outline: 0; transition: border-color .2s, box-shadow .2s; }
+  .v3-st-pta:focus, .v3-st-pta.is-on { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
+  .v3-st-pcnt { align-self: flex-start; margin-top: -4px; font-size: 11px; color: #6b7384; font-variant-numeric: tabular-nums; }
+  .v3-st-pcnt.is-warn { color: #8a5a00; }
+
+  /* шторки */
+  .v3-st-sheet { display: flex; flex-direction: column; gap: 8px; padding-top: 26px !important; background: #fff !important; color: #11151c; }
+  .v3-sheet.v3-st-sheet > button.v3-modal-x { display: grid; place-items: center; top: 22px; right: 18px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
+  .v3-st-sheet h2 { margin: 0; padding-right: 44px; font-size: 20px; font-weight: 600; color: #11151c; }
+  .v3-st-sheet h2 + p { margin: -4px 0 4px; font-size: 12px; color: #6b7384; }
+  .v3-st-sf { display: flex; flex-direction: column; gap: 6px; }
+  .v3-st-sf > span { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-st-sf input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #dde1e7; border-radius: 12px; background: #fff; color: #11151c; font: 400 16px Inter, sans-serif; outline: 0; }
+  .v3-st-sf input:focus { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
+  .v3-st-sf input.is-bad { border-color: #e5484d; }
+  .v3-st-pv { padding: 12px 14px; border-radius: 12px; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+  .v3-st-pv.is-foot { background: #11151c; color: #c3c9d4; }
+  .v3-st-pv.is-help { background: #f4f6f9; color: #11151c; }
+  .v3-st-pv.is-help a { color: #3a6df0; }
+  .v3-st-pv.is-ai { display: flex; flex-direction: column; gap: 8px; background: #f4f6f9; }
+  .v3-st-pv.is-ai > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; }
+  .v3-st-pv.is-ai > p { margin: 0; padding: 10px 12px; border-radius: 10px; background: #fff3dc; color: #8a5a00; }
+  .v3-st-pv.is-ai > b { display: grid; place-items: center; min-height: 40px; border-radius: 10px; background: #11151c; color: #fff; font-size: 13px; }
+
+  /* тексти */
+  .v3-st-ptexts { gap: 0; padding-top: 4px; padding-bottom: 4px; }
+  .v3-st-ptexts li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 58px; padding: 10px 0; border-bottom: 1px solid #eef0f4; }
+  .v3-st-ptexts li:last-child { border-bottom: 0; }
+  .v3-st-ptexts li > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .v3-st-ptexts strong { font-size: 14px; font-weight: 600; }
+  .v3-st-ptexts small { font-size: 11px; color: #6b7384; }
+  .v3-st-ptexts small.is-new { color: #1f8a4c; }
+  .v3-st-ptexts .v3-st-pgrey { flex: none; }
+  .v3-st-preq { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #eef0f4; color: #3c4350; font-size: 11px; font-weight: 600; }
+
+  /* чек */
+  .v3-st-prc { padding: 12px; border-radius: 18px; background: #dfe3ea; }
+  .v3-st-prc-in { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px; border-radius: 14px; background: #fff; text-align: center; animation: v3-st-in .3s cubic-bezier(.2, .8, .2, 1) both; }
+  .v3-st-prc-in > strong { font-size: 15px; font-weight: 700; color: #3a6df0; }
+  .v3-st-prc-in > small { font-size: 11px; color: #6b7384; }
+  .v3-st-prc-in > b { font-size: 22px; font-weight: 700; color: #11151c; }
+  .v3-st-prc-in mark { padding: 0 3px; border-radius: 3px; background: #ffe58f; color: #11151c; font-weight: 600; }
+  .v3-st-prc-in mark.is-ty { font-size: 11px; }
+
+  /* шаблони */
+  .v3-settings.is-phone .v3-st-tseg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 3px; border-radius: 12px; background: #e3e6eb; }
+  .v3-settings.is-phone .v3-st-tseg > .v3-pill { top: 3px; bottom: 3px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-settings.is-phone .v3-st-tseg button { position: relative; z-index: 1; min-height: 34px; padding: 0 2px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font: 500 11.5px Inter, sans-serif; white-space: nowrap; box-shadow: none; }
+  .v3-settings.is-phone .v3-st-tseg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-tseg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-settings.is-phone .v3-st-tpx { border: 1px solid #dde1e7; border-radius: 12px; background: #fff; }
+  .v3-settings.is-phone .v3-st-tpx-m { color: #11151c; }
+  .v3-settings.is-phone .v3-st-tpx textarea { caret-color: #11151c; font-size: 16px; }
+  .v3-settings.is-phone .v3-st-tpx-m, .v3-settings.is-phone .v3-st-tpx textarea { font-size: 16px; }
+  .v3-settings.is-phone .v3-st-var { background: #e6edff; color: #2f5fd8; box-shadow: 0 0 0 2px #e6edff; }
+  .v3-settings.is-phone .v3-st-var.is-bad { background: #fde2df; color: #c2341f; box-shadow: 0 0 0 2px #fde2df; }
+  .v3-settings.is-phone .v3-st-vars { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-vbtn { min-height: 26px; border: 0; border-radius: 6px; background: #e6edff; color: #2f5fd8; font-size: 11px; }
+  .v3-settings.is-phone .v3-st-tplerr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #fde2df; color: #c2341f; font-size: 12px; }
+  .v3-settings.is-phone .v3-st-tplerr span { flex: 1; }
+  .v3-st-pbub { align-self: flex-start; max-width: 88%; padding: 12px 14px; border-radius: 16px 16px 16px 6px; background: #fff; color: #11151c; font-size: 13px; line-height: 1.5; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+
+  /* акаунт */
+  .v3-settings.is-phone .v3-st-acc { display: flex; flex-direction: column; gap: 10px; }
+  .v3-settings.is-phone .v3-st-pw, .v3-settings.is-phone .v3-st-ses { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-settings.is-phone .v3-st-subh { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 600; color: #11151c; }
+  .v3-settings.is-phone .v3-st-ses .v3-st-subh small { font-size: 12px; font-weight: 600; color: #d64545; }
+  .v3-settings.is-phone .v3-st-f { gap: 6px; }
+  .v3-settings.is-phone .v3-st-l { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-settings.is-phone .v3-st-in { min-height: 44px; padding: 0 12px; border: 1px solid #dde1e7; border-radius: 12px; background: #fff; }
+  .v3-settings.is-phone .v3-st-in input { font-weight: 400; color: #11151c; }
+  .v3-settings.is-phone .v3-st-pwrow { display: flex; align-items: center; gap: 4px; }
+  .v3-settings.is-phone .v3-st-pwrow small { font-size: 11px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-gen { min-height: 0; padding: 0; border: 0; background: none; color: #3a6df0; font-size: 11px; text-decoration: none; }
+  .v3-settings.is-phone .v3-st-pw button[type="submit"] { min-height: 46px; border: 0; border-radius: 14px; background: #00b24b; color: #fff; font-size: 14px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-ses ul { margin: 0; padding: 0; list-style: none; }
+  .v3-settings.is-phone .v3-st-sesr { gap: 10px; padding: 10px 0; border-radius: 0; background: transparent; border-bottom: 1px solid #eef0f4; }
+  .v3-settings.is-phone .v3-st-sesr.is-cur { background: transparent; border-bottom-color: #eef0f4; }
+  .v3-settings.is-phone .v3-st-dev { display: none; }
+  .v3-settings.is-phone .v3-st-sesi strong { font-size: 13px; font-weight: 600; color: #11151c; }
+  .v3-settings.is-phone .v3-st-sesi small { font-size: 11px; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-thisdev { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: #e3f5ea; color: #1f8a4c; font-size: 11px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-end { min-height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: #fde2df; color: #c2341f; font-size: 11px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-end.is-ask { background: #e5484d; color: #fff; }
+  .v3-settings.is-phone .v3-st-allout { min-height: 46px; border: 0; border-radius: 14px; background: #e5484d; color: #fff; font-size: 14px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-allout.is-ask { background: #c8282d; }
+
+  /* навігація */
+  .v3-settings.is-phone .v3-st-navprev { border-radius: 16px; }
+  .v3-settings.is-phone .v3-st-navhint { margin: 0; font-size: 12px; color: #6b7384; }
+
+  /* помилки сервера */
+  .v3-st-errsum { display: flex; justify-content: space-between; align-items: baseline; margin: 0 2px; font-size: 12px; color: #6b7384; }
+  .v3-st-errsum b { color: #11151c; }
+  .v3-settings.is-phone .v3-st-errs { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .v3-settings.is-phone .v3-st-errs > li { border: 0; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); overflow: hidden; animation: v3-st-in .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-settings.is-phone .v3-st-errh { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: start; gap: 4px 10px; width: 100%; padding: 12px 14px; border: 0; background: none; color: #11151c; font: inherit; text-align: left; }
+  .v3-settings.is-phone .v3-st-errh strong { grid-column: 2; font-size: 13px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .v3-settings.is-phone .v3-st-errs > li.is-open .v3-st-errh strong { -webkit-line-clamp: unset; }
+  .v3-settings.is-phone .v3-st-errh small { grid-column: 2; display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; color: #6b7384; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v3-st-errn { display: inline-flex; align-items: center; height: 16px; padding: 0 5px; border-radius: 999px; background: #11151c; color: #fff; font-size: 10px; font-weight: 700; }
+  .v3-st-errchev { grid-column: 3; grid-row: 1 / 3; align-self: center; color: #9aa3b2; transition: transform .25s cubic-bezier(.2, 0, 0, 1); }
+  .v3-st-errs > li.is-open .v3-st-errchev { transform: rotate(180deg); }
+  .v3-settings.is-phone .v3-st-errsrc { grid-row: 1 / 3; justify-self: start; display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .v3-settings.is-phone .v3-st-errsrc.is-api { background: #e6edff; color: #2f5fd8; }
+  .v3-settings.is-phone .v3-st-errsrc.is-process { background: #fde2df; color: #c2341f; }
+  .v3-settings.is-phone .v3-st-errsrc.is-console { background: #eef0f4; color: #3c4350; }
+  .v3-settings.is-phone .v3-st-errd { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 14px; }
+  .v3-settings.is-phone .v3-st-errd pre { margin: 0; max-height: 150px; padding: 10px 12px; border-radius: 10px; background: #11151c; color: #c3c9d4; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; overflow: auto; overscroll-behavior: contain; }
+  .v3-settings.is-phone .v3-st-errd dl { margin: 0; }
+  .v3-settings.is-phone .v3-st-errd dl div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #eef0f4; font-size: 12px; }
+  .v3-settings.is-phone .v3-st-errd dl div:last-child { border-bottom: 0; }
+  .v3-settings.is-phone .v3-st-errd dt { color: #6b7384; }
+  .v3-settings.is-phone .v3-st-errd dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+  .v3-st-errclr { min-height: 44px; border: 0; border-radius: 12px; background: #fff; color: #c2341f; font: 600 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); transition: background-color .15s, color .15s; }
+  .v3-st-errclr.is-ask { background: #e5484d; color: #fff; }
+  .v3-st-errz { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 420px; padding: 28px 22px; border-radius: 20px; background: #fff; text-align: center; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); animation: v3-st-in .35s cubic-bezier(.2, .8, .2, 1) both; }
+  .v3-st-errz i { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 6px; border-radius: 50%; background: #e3f5ea; color: #1f8a4c; }
+  .v3-st-errz b { font-size: 15px; font-weight: 600; }
+  .v3-st-errz span { max-width: 280px; font-size: 12px; line-height: 1.5; color: #6b7384; }
+  .v3-settings.is-phone .v3-st-errnone { padding: 14px; border-radius: 18px; background: #fff; }
+
+  /* смуга «не збережено» */
+  .v3-settings.is-phone .v3-st-bar { position: fixed; left: 12px; right: 12px; top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 40; display: flex; margin: 0; padding: 6px 6px 6px 14px; min-height: 52px; border: 0; border-radius: 16px; background: #11151c; color: #fff; box-shadow: 0 10px 30px rgba(16, 24, 40, .25); }
+  .v3-settings.is-phone .v3-st-bar .v3-st-dot { display: none; }
+  .v3-settings.is-phone .v3-st-bar-t { flex: 1; font-size: 12px; color: #c3c9d4; }
+  .v3-settings.is-phone .v3-st-bar-t strong { color: #fff; font-size: 12px; }
+  .v3-settings.is-phone .v3-st-bar .v3-btn { min-height: 38px; padding: 0 14px; border: 0; border-radius: 10px; font-size: 13px; font-weight: 600; }
+  .v3-settings.is-phone .v3-st-bar .v3-st-cancel { background: #2a303c; color: #fff; }
+  .v3-settings.is-phone .v3-st-bar .v3-btn-primary { background: #00b24b; color: #fff; }
+}
+@media (max-width: 767px) {
+  .v3-settings.is-phone .v3-st-pw button[type="submit"], .v3-settings.is-phone .v3-st-allout { width: 100%; justify-content: center; }
+  .v3-settings.is-phone .v3-st-navprev .v3-st-navtab:first-child { color: #fff; }
+  .v3-settings.is-phone .v3-st-pwrow { flex-wrap: wrap; }
+}
