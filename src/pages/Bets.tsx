@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowUp, BarChart3, Check, ChevronDown, Clock, ListFilter, RefreshCw, Search, Send, WifiOff } from "lucide-react";
+import { ArrowUp, BarChart3, Check, ChevronDown, Clock, Dices, RefreshCw, Search, Send, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -142,8 +142,15 @@ export default function Bets() {
     try { const bets = await fetchUserBets(u.id); setDetails((d) => ({ ...d, [u.id]: { status: "ok", bets } })); }
     catch (e) { setDetails((d) => ({ ...d, [u.id]: { status: "err", bets: [], error: (e as Error).message } })); }
   }
+  // Phone list: a closing card keeps its body while it folds (grid rows 1fr → 0fr), then unmounts
+  const [closingId, setClosingId] = useState<number | null>(null);
+  const fold = (id: number) => {
+    if (wide || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setClosingId(id); window.setTimeout(() => setClosingId((c) => (c === id ? null : c)), 300);
+  };
   function toggle(u: AdminUserOverview) {
-    if (openId === u.id) { setOpenId(null); return; }
+    if (openId === u.id) { fold(u.id); setOpenId(null); return; }
+    if (openId !== null) fold(openId);
     setOpenId(u.id);
     const d = details[u.id];
     if (!d || d.status === "err") { if (online) loadDetail(u); else setDetails((x) => ({ ...x, [u.id]: { status: "err", bets: [], error: "offline" } })); }
@@ -200,12 +207,22 @@ export default function Bets() {
     </div>
   );
 
-  const filteredEmpty = (
+  // Empty states (designs BetsMobileNoResults / BetsMobileGameEmpty)
+  const otherGames = (g: string) => ["CS2", "Dota 2"].filter((x) => x !== g);
+  const clearSearch = () => { setQ(""); pageSearch.setQ(""); pageSearch.setOpen(false); };
+  const filteredEmpty = q.trim() ? (
     <div className="v3-bt-empty">
-      <span className="v3-bt-empty-ico" aria-hidden="true"><ListFilter size={22} /></span>
-      <strong>Ставок не знайдено</strong>
-      <span>{q.trim() && game !== "all" ? `За запитом «${q.trim()}» немає ставок у ${game}. Змініть гру або скиньте пошук.` : q.trim() ? `За запитом «${q.trim()}» нікого не знайдено.` : `У ${game} ще ніхто не ставив.`}</span>
-      <button type="button" className="v3-btn v3-btn-ghost" onClick={resetFilters}>Скинути фільтри</button>
+      <span className="v3-bt-empty-ico" aria-hidden="true"><Search size={20} /></span>
+      <strong>Нікого не знайдено</strong>
+      <span>{game !== "all" ? `За запитом «${q.trim()}» у ${game} нікого немає.` : `За запитом «${q.trim()}» серед гравців нікого немає.`}</span>
+      <button type="button" className="v3-btn v3-btn-ghost v3-bt-empty-btn" onClick={clearSearch}>Скинути пошук</button>
+    </div>
+  ) : (
+    <div className="v3-bt-empty">
+      <span className="v3-bt-empty-ico" aria-hidden="true"><Dices size={20} /></span>
+      <strong>На {game} ставок немає</strong>
+      <span>Ніхто з гравців ще не ставив на {game}. Перемкніться на «Усі»{otherGames(game).length ? ` або ${otherGames(game).join(", ")}` : ""}.</span>
+      <button type="button" className="v3-btn v3-btn-ghost v3-bt-empty-btn" onClick={() => setGame("all")}>Показати всі ігри</button>
     </div>
   );
 
@@ -369,7 +386,7 @@ export default function Bets() {
       <div className="v3-bt-mtabs" role="group" aria-label="Фільтр за грою">
         <PillTrack active={game} />
         <button type="button" className={`v3-bt-mtab${game === "all" ? " is-on" : ""}`} aria-pressed={game === "all"} onClick={() => setGame("all")}><span className="v3-bt-mtab-n">{playing.length}</span>Усі<span className="v3-bt-mtab-c">· {playing.length}</span></button>
-        {gameCounts.map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}<span className="v3-bt-mtab-c">· {n}</span></button>)}
+        {[...gameCounts, ...(phone ? ["CS2", "Dota 2"].filter((g) => !gameCounts.some(([x]) => x === g)).map((g) => [g, 0] as [string, number]) : [])].map(([g, n]) => <button key={g} type="button" className={`v3-bt-mtab${game === g ? " is-on" : ""}`} aria-pressed={game === g} onClick={() => setGame(g)}><span className="v3-bt-mtab-n">{n}</span>{g}<span className="v3-bt-mtab-c">· {n}</span></button>)}
       </div>
       <label className="v3-msearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} /></label>
       <Dropdown className="v3-mselect-dd" ariaLabel="Сортування" prefix="Сортування:" sheet={{ title: "Сортування" }} value={sort} onChange={(v) => setSort(v)} options={SORTS.map(([k]) => ({ value: k, label: SORT_M[k] }))} />
@@ -384,7 +401,8 @@ export default function Bets() {
             <span className="v3-bt-mpill">{open ? "Згорнути" : "Ставки"}<ChevronDown size={13} aria-hidden="true" /></span>
           </button>
         );
-        return <div key={u.id} className={`${open ? "v3-bt-mopen" : "v3-bt-mitem"}${leaving && !playing.includes(u) ? " is-leave" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{open && detailBody(u, s, true)}</div>;
+        const closing = !open && closingId === u.id;
+        return <div key={u.id} className={`${open || closing ? "v3-bt-mopen" : "v3-bt-mitem"}${leaving && !playing.includes(u) ? " is-leave" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>{head}{(open || closing) && <div className={`v3-bt-mxpw${closing ? " is-closing" : ""}`}><div className="v3-bt-mxpw-in">{detailBody(u, s, true)}</div></div>}</div>;
       })}</div>}
       {rows.length > limit && <button type="button" className="v3-bt-allbtn v3-bt-mall" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, rows.length - limit)}</button>}
       {people.length > playing.length && <button type="button" className={`v3-bt-allbtn v3-bt-mall${showAll ? " is-on" : ""}`} aria-expanded={showAll} onClick={toggleAll}>{showAll ? "Лише ті, хто грає" : `Показати всіх · ${people.length}`}<ChevronDown size={16} aria-hidden="true" /></button>}
@@ -402,7 +420,7 @@ export default function Bets() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Ставки</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{loading ? "завантажуємо…" : <>{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час{updatedAt ? ` · оновлено ${updatedAt}` : ""}</>}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Записи ставок, результати й активність користувачів — за весь час.</span><span className="v3-only-mobile">{loading ? "завантажуємо…" : !playing.length ? "ще ніхто не грає" : <>{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · за весь час{updatedAt ? ` · оновлено ${updatedAt}` : ""}</>}</span></p>
         </div>
         <div className="v3-chips">
           {!noBetsAtAll && <button type="button" className="v3-chip v3-bt-refresh v3-hide-mobile" onClick={() => load(true)} disabled={busy || !online}>{refreshIc}Оновити{updatedAt ? ` · ${updatedAt}` : ""}</button>}
@@ -435,7 +453,24 @@ export default function Bets() {
           <section className="v3-bt-kpis">{[0, 1, 2, 3].map((i) => <div key={i} className="v3-dcard v3-bt-kpi"><i className="v3-sk" style={{ width: "50%", height: 10 }} /><i className="v3-sk" style={{ width: "70%", height: 30, marginTop: 14 }} /></div>)}</section>
           <section className="v3-wcard v3-bt-card" role="status" aria-label="Завантаження ставок">{[55, 65, 45, 60, 50].map((w, i) => <div key={i} className="v3-bt-skrow"><i className="is-av" /><div><i style={{ width: `${w}%`, height: 10 }} /><i style={{ width: "100%", height: 5, marginTop: 9 }} /></div><i style={{ width: 64, height: 16 }} /></div>)}</section>
         </>
-      ) : noBetsAtAll ? (
+      ) : noBetsAtAll && phone && !showAll ? (
+        /* phone, nobody plays yet (design BetsMobileEmpty) */
+        <>
+          <section className="v3-bt-mkpis">
+            <div className="v3-bt-mk is-zero"><div className="l">Ставок всього</div><div className="v">0</div><div className="n"><span className="v3-bt-mnote">ще ніхто не ставив</span></div></div>
+            <div className="v3-bt-mk is-zero"><div className="l">Загальний профіт</div><div className="v">0 <small>₴</small></div><div className="n"><span className="v3-bt-mnote">ROI з’явиться після ставок</span></div></div>
+          </section>
+          <div className="v3-bt-mtabs" aria-hidden="true"><span className="v3-bt-mtab is-on">Усі</span><span className="v3-bt-mtab">CS2</span><span className="v3-bt-mtab">Dota 2</span></div>
+          <div className="v3-wcard v3-bt-mempty">
+            <div className="v3-bt-empty">
+              <span className="v3-bt-empty-ico" aria-hidden="true"><Dices size={20} /></span>
+              <strong>Ставок ще немає</strong>
+              <span>Коли користувачі почнуть записувати ставки в застосунку, тут з’явиться їхня статистика.</span>
+              {people.length > 0 && <button type="button" className="v3-btn v3-btn-ghost v3-bt-empty-btn" onClick={() => setShowAll(true)}>Показати всіх · {people.length}</button>}
+            </div>
+          </div>
+        </>
+      ) : noBetsAtAll && !(phone && showAll) ? (
         <>
           <section className="v3-bt-kpis">
             <div className="v3-dcard v3-bt-kpi"><div className="l">Ставок всього</div><div className="v">0</div><div className="n">ще немає записів</div></div>
@@ -466,8 +501,8 @@ export default function Bets() {
             </section>
           ) : (
             <section className="v3-bt-mkpis">
-              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{monthly && <>{chip(monthly.c.bets, monthly.p.bets, num, true)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")}{tot.pending ? ` · ${tot.pending.toLocaleString("uk-UA")} очікує` : ""}</span></div></div>
-              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div>{totUsd && <div className={`v v3-bt-vusd ${totUsd.p >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(totUsd.p, "USD")}</div>}<div className="n">{monthly && <>{chip(monthly.c.profit, monthly.p.profit, uah)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">ROI {signedPct(roi)}{totUsd ? ` · $ ${signedPct(totUsd.roi)}` : " · за весь час"}</span></div></div>
+              <div className="v3-bt-mk is-blue"><div className="l">Ставок всього</div><div className="v"><RollingNumber key={`mb-${tot.bets}`} text={tot.bets.toLocaleString("uk-UA")} /></div><div className="n">{monthly && !phone && <>{chip(monthly.c.bets, monthly.p.bets, num, true)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">{tot.wins.toLocaleString("uk-UA")} {plural(tot.wins, "виграш", "виграші", "виграшів")} · {tot.losses.toLocaleString("uk-UA")} {plural(tot.losses, "програш", "програші", "програшів")}{tot.pending ? ` · ${tot.pending.toLocaleString("uk-UA")} очікує` : ""}</span></div></div>
+              <div className="v3-bt-mk"><div className="l">Загальний профіт</div><div className={`v ${tot.profit >= 0 ? "is-pos" : "is-neg"}`}><RollingNumber key={`mp-${tot.profit}`} text={signedMoney(tot.profit)} /></div>{totUsd && <div className={`v v3-bt-vusd ${totUsd.p >= 0 ? "is-pos" : "is-neg"}`}>{signedMoney(totUsd.p, "USD")}</div>}<div className="n">{monthly && !phone && <>{chip(monthly.c.profit, monthly.p.profit, uah)}<span className="v3-bt-mvs">цей міс. до {monthly.vs}</span></>}<span className="v3-bt-mnote">ROI {signedPct(roi)}{totUsd ? ` · $ ${signedPct(totUsd.roi)}` : " · за весь час"}</span></div></div>
             </section>
           )}
           {wide ? desktopTable : mobileList}
