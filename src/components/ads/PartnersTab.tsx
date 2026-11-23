@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMedia } from "@/hooks/useMediaOnline";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight, Handshake, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdLabel, AskToggle, EditorPanel, LockedLabel, SaveButton } from "@/components/ads/AdsShared";
 import { DateField } from "@/components/ui/date-field";
@@ -115,12 +115,12 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
 
   const editor = (
     <EditorPanel wide={wide} open={editing} paneKey={creating ? "new" : sel?.id} title={creating ? "Новий партнер" : sel?.name || ""} sub={creating ? "Букмекер з ліцензією PlayCity" : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
-      <div className="v3-ad-f"><label htmlFor="bm-name">Назва <span>*</span></label><input id="bm-name" className="v3-ad-in" value={f.name} maxLength={100} onChange={(e) => set({ name: e.target.value })} /></div>
+      <div className="v3-ad-f"><label htmlFor="bm-name">Назва <span>*</span></label><input id="bm-name" className="v3-ad-in" value={f.name} maxLength={100} placeholder="Наприклад, Favbet" onChange={(e) => set({ name: e.target.value })} /></div>
       <div className="v3-ad-row2">
-        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder="Не вказано" onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
+        <div className="v3-ad-f"><label htmlFor="bm-lic">Номер ліцензії PlayCity <span>*</span></label><input id="bm-lic" key={`lic-${shake}`} className={`v3-ad-in${f.licenseNumber.trim() || (phone && creating && !f.name.trim()) ? "" : " is-err"}${shake ? (shake % 2 ? " v3-shake-a" : " v3-shake-b") : ""}`} value={f.licenseNumber} placeholder={phone ? "№" : "Не вказано"} onChange={(e) => set({ licenseNumber: e.target.value })} /></div>
         <div className="v3-ad-f"><label id="bm-until-l">Діє до</label><DateField id="bm-until" labelledBy="bm-until-l" yearNav value={f.licenseUntil || ""} onChange={(v) => set({ licenseUntil: v || null })} /></div>
       </div>
-      {!f.licenseNumber.trim() ? <span className="v3-ad-msg is-bad">Рекламувати можна лише ліцензованих організаторів. Без номера партнер збережеться як чернетка й не з’явиться в застосунку.</span>
+      {!f.licenseNumber.trim() ? (phone && creating && !f.name.trim() ? null : <span className="v3-ad-msg is-bad">Рекламувати можна лише ліцензованих організаторів. Без номера партнер збережеться як чернетка й не з’явиться в застосунку.</span>)
         : licenseState(f).st === "soon" ? <span className="v3-ad-msg is-warn">Ліцензія діє до {dmy(f.licenseUntil!)} — через {licenseState(f).left} {plural(licenseState(f).left!, "день", "дні", "днів")}. Після цієї дати партнер зникне з застосунку автоматично.</span>
         : licenseState(f).st === "expired" ? <span className="v3-ad-msg is-bad">Ліцензія минула — партнер не показується. Внесіть нову дату.</span>
         : <span className="v3-ad-msg">Перевірте номер у реєстрі PlayCity перед збереженням. Після дати «Діє до» партнер зникне автоматично.</span>}
@@ -161,12 +161,12 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
 
   return (
     <>
-      {!phone && places}
+      {(!phone || (list !== null && items.length === 0)) && places}
       <section className="v3-ad-main">
         <div className="v3-wcard v3-ad-table">
           <div className="v3-ad-table-h"><h2>Букмекери-партнери</h2><p>Показуємо лише ліцензованих PlayCity. Без чинної ліцензії партнер автоматично зникає з застосунку.</p></div>
           {list === null ? <div className="v3-ad-load" role="status">Завантажуємо партнерів…</div> : items.length === 0 ? (
-            <div className="v3-bt-empty v3-ad-empty is-quiet-m"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true">₴</span><strong>Партнерів ще немає</strong><span>Додайте букмекера з ліцензією PlayCity — оберіть, де показувати його коефіцієнти.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати партнера</button></div>
+            <div className="v3-bt-empty v3-ad-empty is-quiet-m"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true">{phone ? <Handshake size={22} /> : "₴"}</span><strong>Партнерів ще немає</strong><span>Додайте букмекера з ліцензією PlayCity — оберіть, де показувати його коефіцієнти.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>{phone && <Plus size={16} aria-hidden="true" />}Додати партнера</button></div>
           ) : wide ? (
             <>
               <div className="v3-ad-tr v3-ad-bmcols is-h"><span>Партнер</span><span>Ліцензія PlayCity</span><span>Де показується</span><span>Кліки · 7 дн.</span><span className="v3-ad-r">Статус</span></div>
@@ -186,8 +186,8 @@ export default function PartnersTab({ list, error, stats, settings, wide, online
         {editor}
       </section>
       {/* phone (design AdsMobilePartners): partners first, then the places */}
-      {phone && places}
-      {!wide && <div className="v3-ad-note"><AdLabel /><span>додається до кожного розміщення автоматично</span></div>}
+      {phone && !(list !== null && items.length === 0) && places}
+      {!wide && !phone && <div className="v3-ad-note"><AdLabel /><span>додається до кожного розміщення автоматично</span></div>}
       <ConfirmDialog open={!!delAsk} busy={delBusy} onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && remove(delAsk)}
         title={`Видалити «${delAsk?.name || "партнера"}»?`} confirm="Видалити" busyText="Видаляємо…"
         text="Коефіцієнти партнера зникнуть із застосунку, а сам партнер — зі списку. Статистика кліків лишиться у звітах. Повернути можна одразу після видалення — кнопкою в сповіщенні." />

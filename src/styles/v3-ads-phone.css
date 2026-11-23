@@ -94,3 +94,170 @@
   .v3-ads .v3-ad-mcard small { color: #6b7384; }
   .v3-ads .v3-ad-note { color: #6b7384; }
 }
+
+/* ══ Виправлення 23.11 (13:25) ══ */
+@media (max-width: 767px) {
+  /* 1, 8: без засвіту по краях вкладок */
+  .v3-ads .v3-ads-tabs { -webkit-mask-image: none; mask-image: none; padding: 4px; }
+  /* 18: картка слоту трохи компактніша */
+  .v3-ads .v3-bn-slot-h { padding: 14px 14px 0; }
+  .v3-ads .v3-bn-slot-h strong { font-size: 16px; }
+  .v3-ads .v3-bn-slot > .v3-bn-img, .v3-ads .v3-bn-slot > .v3-bn-title, .v3-ads .v3-bn-slot > .v3-bn-dl, .v3-ads .v3-bn-slot > .v3-bn-slot-f, .v3-ads .v3-bn-slot > .v3-bn-free, .v3-ads .v3-bn-slot > .v3-bn-done, .v3-ads .v3-bn-slot > .v3-bn-pair { margin-left: 14px; margin-right: 14px; }
+  .v3-ads .v3-bn-img { border-radius: 14px; }
+  .v3-ads .v3-bn-title strong { font-size: 14px; }
+  .v3-ads .v3-bn-dl > div { padding: 8px 0; }
+  .v3-ads .v3-bn-slot-f { padding-bottom: 14px; }
+  .v3-ads .v3-bn-slot-f .v3-btn-dark { min-height: 34px; padding: 0 14px; font-size: 13px; }
+  /* 17: «Усі кампанії» — перемикач */
+  .v3-bn-mseg { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; border-radius: 12px; background: #e3e6eb; }
+  .v3-bn-mseg > .v3-pill { top: 3px; bottom: 3px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-bn-mseg button { position: relative; z-index: 1; min-height: 34px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font: 500 12px Inter, sans-serif; white-space: nowrap; }
+  .v3-bn-mseg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-bn-mseg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-bn-mnone { margin: 0; padding: 14px 0; font-size: 12px; color: #6b7384; text-align: center; }
+  /* 16: «Видалити банер?» — по центру, три кнопки стовпчиком */
+  .v3-bn-del { text-align: center; background: #fff !important; }
+  .v3-bn-del .v3-modal-iconrow { flex-direction: column; align-items: center; gap: 10px; }
+  .v3-bn-del .v3-modal-ico.is-red { width: 48px; height: 48px; border-radius: 50%; background: #fde7e7; color: #e5484d; }
+  .v3-bn-del .v3-modal-iconrow > div { text-align: center; }
+  .v3-bn-del .v3-modal-title { font-size: 19px; font-weight: 600; color: #11151c; }
+  .v3-bn-del .v3-modal-sub { font-size: 13px; color: #6b7384; text-wrap: pretty; }
+  .v3-bn-del .v3-modal-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .v3-bn-del .v3-modal-actions .v3-btn { width: 100%; min-height: 46px; border: 0; border-radius: 12px; font-weight: 600; }
+  .v3-bn-del .v3-btn-red { order: 1; background: #e5484d; color: #fff; }
+  .v3-bn-del .v3-bn-del-off { order: 2; background: #11151c; color: #fff; }
+  .v3-bn-del .v3-bn-del-cx { order: 3; background: #eef0f4; color: #11151c; }
+  .v3-bn-del .v3-modal-x { display: none; }
+  /* 15: попередній перегляд у «Новий банер» — світлий */
+  .v3-ads ~ * .v3-bed-prev, .v3-bed-prev { background: #f4f6f9; color: #11151c; border-radius: 16px; }
+  .v3-bed-prev-h div > div { color: #6b7384; }
+  .v3-bed-dev { background: #e3e6eb; border: 0; }
+  .v3-bed-dev button { color: #3c4350; }
+  .v3-bed-dev button.is-on { background: #fff; color: #11151c; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-bed-stage { background: #fff; border: 1px solid #e3e6eb; }
+  .v3-bed-app { background: #fff; border-color: #e3e6eb; color: #11151c; }
+  .v3-bed-app.is-phone { border-color: #d6dae2; }
+  .v3-bed-app-top > span:first-child i { background: #00b24b; }
+  .v3-bed-app-nav { background: #f1f3f7; color: #3c4350; }
+  .v3-bed-app-nav b { background: #11151c; color: #fff; }
+  .v3-bed-app-av { background: #e3e6eb; }
+  .v3-bed-app-l { color: #6b7384; }
+  .v3-bed-row { background: #f4f6f9; }
+  .v3-bed-row i { background: #e3e6eb; }
+  .v3-bed-noimg { background: #eef2ff; color: #3a6df0; border: 1.5px dashed #3a6df0; outline: 0; }
+  .v3-bed-prev .v3-bed-alert.is-warn { background: #fff3dc; border: 0; color: #6b4a00; }
+  .v3-bed-req { background: #fff; color: #11151c; }
+  .v3-bed-req ul { color: #6b7384; }
+  .v3-bed-req b { color: #11151c; }
+  .v3-bed-req a, .v3-bed-req em { color: #3a6df0; }
+  /* 7: завантаження на «Статистиці» — зелене */
+  .v3-ad-hbtn.is-green { background: #00b24b; color: #fff; }
+  /* 9: перемикач періоду на всю ширину */
+  .v3-ads .v3-ad-chart-h { flex-direction: column; align-items: stretch; }
+  .v3-ads .v3-ad-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; border-radius: 12px; }
+  .v3-ads .v3-ad-seg button { min-height: 36px; padding: 0; }
+  /* 2, 3: «Місця показу» — мітка праворуч у заголовку, сірий підпис, розділювачі */
+  .v3-ads .v3-ad-places-h { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; margin-bottom: 4px; }
+  .v3-ads .v3-ad-places-h h2 { font-size: 17px; }
+  .v3-ads .v3-ad-places-h p { font-size: 12px; color: #6b7384; }
+  .v3-ads .v3-ad-places-g { gap: 0; }
+  .v3-ads .v3-ad-place { padding: 12px 0; border-top: 1px solid #eef0f4; border-radius: 0; gap: 2px; }
+  .v3-ads .v3-ad-place-h strong { font-size: 14px; }
+  .v3-ads .v3-ad-place-h small { display: block; font-size: 12px; line-height: 1.35; color: #6b7384; }
+  .v3-ads .v3-ad-place-f { font-size: 11px; color: #9aa3b2; }
+  .v3-ads .v3-ad-place-f b { color: #6b7384; }
+  /* 12: картки Telegram і букмекерів — білі на сірому */
+  .v3-ads .v3-ad-mlist .v3-ad-mcard { background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-table { padding: 0; background: transparent; box-shadow: none; }
+  .v3-ads .v3-ad-table-h h2 { font-size: 15px; font-weight: 600; color: #11151c; }
+  .v3-ads .v3-ad-table-h p { display: none; }
+  /* 4, 19: порожні стани */
+  .v3-ads .v3-bt-empty.v3-ad-empty, .v3-ads .v3-bn-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 420px; padding: 24px 20px; border-radius: 20px; background: #fff; color: #11151c; text-align: center; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .v3-ads .v3-ad-empty.is-quiet-m { min-height: 0; padding: 22px 20px; }
+  .v3-ads .v3-ad-empty .v3-ue-ico, .v3-ads .v3-bn-empty .v3-ue-ico { width: 48px; height: 48px; background: #eef2ff; color: #3a6df0; box-shadow: none; }
+  .v3-ads .v3-ad-empty .v3-ue-ico::before, .v3-ads .v3-ad-empty .v3-ue-ico::after, .v3-ads .v3-bn-empty .v3-ue-ico::before, .v3-ads .v3-bn-empty .v3-ue-ico::after { display: none; }
+  .v3-ads .v3-ad-empty strong, .v3-ads .v3-bn-empty strong { font-size: 16px; font-weight: 600; }
+  .v3-ads .v3-ad-empty > span:not(.v3-ue-ico), .v3-ads .v3-bn-empty > span:not(.v3-ue-ico) { max-width: 290px; font-size: 12px; line-height: 1.5; color: #6b7384; text-wrap: pretty; }
+  .v3-ads .v3-ad-empty .v3-btn, .v3-ads .v3-bn-empty .v3-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; box-shadow: none; }
+}
+
+/* ══ Картка Telegram-групи, перевірка, відхилення · телефон ══ */
+@media (max-width: 767px) {
+  .v3-ad-card { display: flex; flex-direction: column; gap: 10px; background: #fff !important; color: #11151c; }
+  .v3-sheet.v3-ad-card > button.v3-modal-x, .v3-sheet.v3-ad-rep > button.v3-modal-x { display: grid; place-items: center; top: 22px; right: 18px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
+  .v3-ad-ch { display: flex; align-items: center; gap: 10px; padding-right: 44px; min-height: 40px; }
+  .v3-ad-ch h2 { font-size: 20px; font-weight: 600; color: #11151c; }
+  .v3-ad-ch p { font-size: 12px; color: #6b7384; }
+  .v3-ad-ch .v3-ad-tgwho h2 { font-size: 18px; }
+  .v3-ad-clink { font-size: 12px; font-weight: 500; color: #3a6df0; }
+  .v3-ad-card .v3-ad-tgcard { border: 1px solid #e3e6eb; border-radius: 16px; background: #fff; color: #11151c; }
+  .v3-ad-cchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .v3-ad-cplace { padding: 3px 8px; border-radius: 999px; background: #eef2ff; color: #3a6df0; font-size: 11px; font-weight: 600; }
+  .v3-ad-ctiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .v3-ad-ctiles > div { display: flex; flex-direction: column; gap: 2px; padding: 9px 10px; border-radius: 12px; background: #f4f6f9; }
+  .v3-ad-ctiles span { font-size: 11px; color: #3a6df0; }
+  .v3-ad-ctiles b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .v3-ad-ctiles b.is-green { color: #1f9d55; }
+  .v3-ad-cdl { margin: 0; display: flex; flex-direction: column; }
+  .v3-ad-cdl > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f4; font-size: 12px; }
+  .v3-ad-cdl dt { color: #6b7384; }
+  .v3-ad-cdl dd { margin: 0; text-align: right; font-weight: 600; }
+  .v3-ad-card .v3-ad-check { border: 0; border-radius: 12px; background: #e9f7ef; color: #1f6b3a; font-size: 12px; }
+  .v3-ad-card .v3-ad-check.is-warn { background: #fff3dc; color: #6b4a00; }
+  .v3-ad-card .v3-ad-check.is-bad { background: #fdecec; color: #9b2c22; }
+  .v3-ad-cacts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-ad-cacts > * { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 12px; font: 600 14px Inter, sans-serif; text-decoration: none; }
+  .v3-ad-cacts .is-blue { background: #3a6df0; color: #fff; }
+  .v3-ad-cacts .is-grey { background: #eef0f4; color: #11151c; }
+  .v3-ad-cacts .is-green { background: #00b24b; color: #fff; }
+  .v3-ad-cacts .is-red { background: #e5484d; color: #fff; }
+  .v3-ad-cacts button:disabled { opacity: .55; }
+  .v3-ad-crep { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 0; border-radius: 14px; background: #00b24b; color: #fff; font: 600 15px Inter, sans-serif; }
+  .v3-ad-csw { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; }
+  .v3-ad-cedit { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border: 0; background: none; color: #3a6df0; font: 600 13px Inter, sans-serif; }
+  .v3-ad-card .v3-ad-del { align-self: center; border: 0; background: none; color: #e5484d; font-weight: 600; }
+  .v3-ad-card .v3-ad-f label { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-ad-card .v3-ad-in { border: 1px solid #e3e6eb; border-radius: 12px; background: #fff; color: #11151c; font-size: 16px; }
+  .v3-ad-card .v3-ad-hint { font-size: 11px; color: #6b7384; }
+}
+
+/* ══ Звіт для партнера · телефон (design AdsMobileReport) ══ */
+@media (max-width: 767px) {
+  .v3-ad-rep { display: flex; flex-direction: column; gap: 10px; background: #fff !important; color: #11151c; }
+  .v3-ad-rep-h { display: flex; align-items: center; gap: 12px; padding-right: 44px; }
+  .v3-ad-rep-ic { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; color: #fff; font-size: 13px; font-weight: 700; }
+  .v3-ad-rep-h h2 { font-size: 19px; font-weight: 600; color: #11151c; }
+  .v3-ad-rep-h p { font-size: 12px; color: #6b7384; }
+  .v3-ad-rep-l { margin-top: 2px; font-size: 13px; font-weight: 600; }
+  .v3-ad-rep-seg { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 3px; border-radius: 12px; background: #eef0f4; }
+  .v3-ad-rep-seg > .v3-pill { top: 3px; bottom: 3px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-ad-rep-seg button { position: relative; z-index: 1; min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: #3c4350; font: 500 13px Inter, sans-serif; }
+  .v3-ad-rep-seg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-ad-rep-seg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-ad-rep-cf { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-ad-rep-cf label { font-size: 12px; font-weight: 600; }
+  .v3-ad-rep-cf .v3-date-btn { min-height: 42px; border: 1px solid #e3e6eb; border-radius: 12px; background: #fff; color: #11151c; }
+  .v3-ad-rep-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .v3-ad-rep-tiles > div { display: flex; flex-direction: column; gap: 2px; padding: 9px 10px; border-radius: 12px; background: #f4f6f9; }
+  .v3-ad-rep-tiles span { font-size: 11px; color: #3a6df0; }
+  .v3-ad-rep-tiles b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .v3-ad-rep-dl { margin: 0; display: flex; flex-direction: column; }
+  .v3-ad-rep-dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f4; font-size: 12px; }
+  .v3-ad-rep-dl dt { color: #6b7384; }
+  .v3-ad-rep-dl dd { margin: 0; text-align: right; font-weight: 600; }
+  .v3-ad-rep-dl .is-due dd { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .v3-ad-rep-note, .v3-ad-rep-err { margin: 0; font-size: 11px; color: #6b7384; }
+  .v3-ad-rep-err { color: #c2341f; }
+  .v3-ad-rep-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px; }
+  .v3-ad-rep-acts button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; border: 0; border-radius: 14px; font: 600 14px Inter, sans-serif; }
+  .v3-ad-rep-acts .is-grey { background: #eef0f4; color: #11151c; }
+  .v3-ad-rep-acts .is-green { background: #00b24b; color: #fff; }
+  .v3-ad-rep-acts button:disabled { opacity: .55; }
+}
+@media (max-width: 767px) {
+  /* 6: «Новий партнер» — номер ліцензії й дата в один рядок, поля компактніші (design AdsMobileNewPartner) */
+  .v3-ad-sheet .v3-ad-row2:has(#bm-lic) { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-ad-sheet .v3-ad-f label, .v3-ad-sheet .v3-ad-lbl { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-ad-sheet .v3-ad-in, .v3-ad-sheet .v3-date-btn { min-height: 42px; font-size: 16px; border-radius: 12px; }
+  .v3-ad-sheet .v3-modal-title { font-size: 20px; font-weight: 600; }
+}

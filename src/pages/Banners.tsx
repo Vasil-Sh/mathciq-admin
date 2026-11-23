@@ -104,7 +104,7 @@ export default function Banners() {
           </>}
           {/* phone (design AdsMobile*): «Статистика» is a white button in the header, not a tab */}
           {phone && <button type="button" className={`v3-ad-hbtn${tab === "stats" ? " is-on" : ""}`} aria-label="Статистика" aria-pressed={tab === "stats"} onClick={() => setParams(tab === "stats" ? {} : { tab: "stats" })}><BarChart3 size={18} aria-hidden="true" /></button>}
-          {phone && tab === "stats" && <ExportCsvButton className="v3-ad-hbtn" iconOnly size={18} onClick={() => statsActions.current.exp?.()} />}
+          {phone && tab === "stats" && <ExportCsvButton className="v3-ad-hbtn is-green" iconOnly size={18} onClick={() => statsActions.current.exp?.()} />}
           {newAction && <>
             <button type="button" className="v3-btn v3-btn-primary v3-hide-mobile" disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={17} aria-hidden="true" />{newAction.label}</button>
             <button type="button" className="v3-fab v3-only-mobile" aria-label={newAction.label} disabled={!online || !newAction.ready} onClick={newAction.run}><Plus size={20} strokeWidth={2.4} aria-hidden="true" /></button>
@@ -123,8 +123,8 @@ export default function Banners() {
       {tab === "stats" && !wide && <div ref={setTopSlot} className="v3-ad-topslot" />}
       {(tab === "telegram" || tab === "bookmakers") && !wide && (
         <section className="v3-ad-mkpis">
-          <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(week.totals.clicks) : "—"}</b></div>
-          <div><span>Потребують уваги</span><b className={attention.n ? "is-warn" : ""}>{attention.n}</b></div>
+          <div className="is-blue"><span>Кліки · 7 днів</span><b>{week ? nf(week.totals.clicks) : "—"}</b><small>{tab === "bookmakers" ? "усі партнери" : "за всі розміщення"}</small></div>
+          <div><span>Потребують уваги</span><b className={attention.n ? "is-warn" : ""}>{attention.n}</b><small>{attention.n ? (tab === "bookmakers" ? (attention.note.split(" · ").find((x) => x.startsWith("ліцензія")) ? "ліцензія минула" : attention.note) : (attention.note.includes("перевірці") ? "чекає схвалення тексту" : attention.note)) : "усе гаразд"}</small></div>
         </section>
       )}
 

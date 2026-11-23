@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Send, Trash2 } from "lucide-react";
+import { Check, ChevronRight, Download, Pencil, Send, Trash2, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { useMedia } from "@/hooks/useMediaOnline";
+import PartnerReport, { type ReportTarget } from "@/components/ads/PartnerReport";
 import { toast } from "sonner";
 import { AdLabel, AskToggle, EditorPanel, Highlighted, SaveButton, TgAvatar } from "@/components/ads/AdsShared";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -21,13 +24,17 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   const [f, setF] = useState<PromoInput>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  // Phone (designs AdsMobileTgCard / Check / Reject): a tap opens a card; «Редагувати» opens the form
+  const phone = useMedia("(max-width: 767px)");
+  const [phoneEdit, setPhoneEdit] = useState(false);
+  const [report, setReport] = useState<ReportTarget | null>(null);
   const items = list || [];
   const sel = items.find((p) => p.id === selId) || null;
   const editing = creating || !!sel;
 
   // the editor is a modal now: nothing opens until a row is clicked
   useEffect(() => {
-    setRejecting(false);
+    setRejecting(false); setPhoneEdit(false);
     if (creating) { setF(EMPTY); return; }
     if (sel) setF({ name: sel.name, handle: sel.handle, subscribers: sel.subscribers, description: sel.description, placement: sel.placement, game: sel.game, startsOn: sel.startsOn, endsOn: sel.endsOn, active: sel.active, reviewStatus: sel.reviewStatus, rejectReason: sel.rejectReason, priceNote: sel.priceNote });
   }, [creating, sel?.id, sel?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -92,7 +99,7 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
   );
 
   const editor = (
-    <EditorPanel wide={wide} open={editing} paneKey={creating ? "new" : sel?.id} title={creating ? "Нова група" : sel?.name || ""} sub={creating ? "Платне розміщення Telegram-групи" : sel ? PR_STATUS[promoStatus(sel)].label : undefined} onClose={() => { setCreating(false); setSelId(null); }}>
+    <EditorPanel wide={wide} open={editing && (!phone || creating || phoneEdit)} paneKey={creating ? "new" : sel?.id} title={creating ? "Нова група" : sel?.name || ""} sub={creating ? "Платне розміщення Telegram-групи" : sel ? PR_STATUS[promoStatus(sel)].label : undefined} onClose={() => { setCreating(false); setSelId(null); setPhoneEdit(false); }}>
       <span className="v3-ad-lbl">Як побачать користувачі</span>
       {preview}
       <div className="v3-ad-row2">
@@ -130,13 +137,63 @@ export default function TelegramTab({ list, error, stats, wide, online, reload, 
     </EditorPanel>
   );
 
+
+  // ── Phone card (design AdsMobileTgCard), text check (AdsMobileCheck) and reject (AdsMobileReject) ──
+  const st0 = sel ? promoStatus(sel) : "rejected";
+  const sStats = sel ? entityStats(stats, "telegram:", sel.id) : { impressions: 0, clicks: 0 };
+  const rows3 = sel && <dl className="v3-ad-cdl">
+    <div><dt>Місце показу</dt><dd>{placeLabel(sel)}</dd></div>
+    <div><dt>Період</dt><dd>{sel.startsOn || sel.endsOn ? periodText(sel) : "без терміну"}</dd></div>
+    <div><dt>Умови оплати</dt><dd>{sel.priceNote || "не вказані"}</dd></div>
+  </dl>;
+  const phoneCard = phone && sel && !creating && (
+    <Dialog open={!phoneEdit} onOpenChange={(o) => { if (!o) { setSelId(null); setRejecting(false); } }}>
+      <DialogContent className="v3-sheet v3-pay-sheet v3-ad-card">
+        {rejecting ? <>
+          <div className="v3-ad-ch"><div><DialogTitle>Відхилити текст</DialogTitle><DialogDescription>{sel.name} · @{sel.handle}</DialogDescription></div></div>
+          {preview}
+          <div className="v3-ad-f"><label htmlFor="tgm-reason">Причина відхилення <span>*</span></label><input id="tgm-reason" className="v3-ad-in" autoFocus maxLength={500} value={f.rejectReason} placeholder="Наприклад, обіцянка «гарантований прибуток»" onChange={(e) => set({ rejectReason: e.target.value })} /><span className="v3-ad-hint">Власник групи побачить причину</span></div>
+          <div className="v3-ad-cacts"><button type="button" className="is-grey" onClick={() => setRejecting(false)}>Скасувати</button><button type="button" className="is-red" disabled={!online || saving || !f.rejectReason.trim()} onClick={() => save("rejected")}>{saving ? "Зберігаємо…" : "Відхилити"}</button></div>
+        </> : sel.reviewStatus === "pending" ? <>
+          <div className="v3-ad-ch"><div><DialogTitle>Перевірка тексту</DialogTitle><DialogDescription>{sel.name} · @{sel.handle}</DialogDescription></div></div>
+          <span className="v3-ad-clink">Як побачать користувачі</span>
+          {preview}
+          {rows3}
+          {issues.rules.length ? <div className="v3-ad-check is-bad"><span>✕</span>У тексті є заборонене: {issues.rules.join(", ")}</div> : <div className="v3-ad-check is-warn"><span>!</span>Текст ще не схвалено — група не показується</div>}
+          <div className="v3-ad-cacts"><button type="button" className="is-grey" disabled={!online} onClick={() => setRejecting(true)}>Відхилити</button><button type="button" className="is-green" disabled={!online || saving || !!issues.rules.length} onClick={() => save("approved")}>{saving ? "Зберігаємо…" : "Схвалити текст"}</button></div>
+          <button type="button" className="v3-ad-cedit" onClick={() => setPhoneEdit(true)}><Pencil size={14} aria-hidden="true" />Редагувати</button>
+        </> : <>
+          <div className="v3-ad-ch"><span className="v3-ad-tgwho"><TgAvatar handle={sel.handle} name={sel.name} color={st0 === "rejected" ? "#8a93a2" : colorOf(sel.name)} /><span><DialogTitle>{sel.name}</DialogTitle><DialogDescription>@{sel.handle}{sel.subscribers != null ? ` · ${subsText(sel.subscribers)} підписників` : ""}</DialogDescription></span></span></div>
+          <div className="v3-ad-cchips"><span className={`v3-bn-tag ${PR_STATUS[st0].cls}`}>{PR_STATUS[st0].label}</span><span className="v3-ad-cplace">{placeLabel(sel)}</span></div>
+          <div className="v3-ad-ctiles"><div><span>Покази</span><b>{nf(sStats.impressions)}</b></div><div><span>Кліки</span><b>{nf(sStats.clicks)}</b></div><div><span>CTR</span><b className="is-green">{sStats.impressions ? `${((sStats.clicks / sStats.impressions) * 100).toFixed(1).replace(".", ",")}%` : "—"}</b></div></div>
+          <dl className="v3-ad-cdl">
+            <div><dt>Період</dt><dd>{sel.startsOn || sel.endsOn ? periodText(sel) : "без терміну"}</dd></div>
+            <div><dt>Умови оплати</dt><dd>{sel.priceNote || "не вказані"}</dd></div>
+            {sel.createdAt && <div><dt>Додано</dt><dd>{new Date(sel.createdAt).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })}</dd></div>}
+          </dl>
+          {sel.reviewStatus === "approved" ? <div className="v3-ad-check"><span><Check size={12} aria-hidden="true" /></span>Текст пройшов перевірку · без бонусів і обіцянок заробітку</div>
+            : <div className="v3-ad-check is-bad"><span><X size={12} aria-hidden="true" /></span>Відхилено: {sel.rejectReason || "причину не вказано"}</div>}
+          <div className="v3-ad-cacts">
+            <a className="is-blue" href={`https://t.me/${sel.handle}`} target="_blank" rel="noreferrer"><Send size={15} aria-hidden="true" />У Telegram</a>
+            <button type="button" className="is-grey" disabled={!online} onClick={() => setPhoneEdit(true)}><Pencil size={14} aria-hidden="true" />Редагувати</button>
+          </div>
+          <button type="button" className="v3-ad-crep" onClick={() => setReport({ kind: "telegram", p: sel })}><Download size={16} aria-hidden="true" />Звіт для партнера</button>
+          <label className="v3-ad-csw"><input type="checkbox" role="switch" className="v3-switch" checked={sel.active} disabled={!online || sel.reviewStatus !== "approved"} onChange={() => toggleActive(sel)} />Показувати в застосунку</label>
+          <button type="button" className="v3-ad-del" disabled={!online} onClick={() => setDelAsk(sel)}><Trash2 size={15} aria-hidden="true" />Видалити розміщення</button>
+        </>}
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
+      {phoneCard}
+      <PartnerReport target={report} onClose={() => setReport(null)} />
       <section className="v3-ad-main">
         <div className="v3-wcard v3-ad-table">
           <div className="v3-ad-table-h"><h2>Реклама Telegram-груп</h2><p>Картка групи показується в розділі «Telegram» застосунку або в деталях матчу. Показуємо лише після схвалення тексту.</p></div>
           {list === null ? <div className="v3-ad-load" role="status">Завантажуємо розміщення…</div> : items.length === 0 ? (
-            <div className="v3-bt-empty v3-ad-empty"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Розміщень ще немає</strong><span>Додайте групу, оберіть місце показу й термін — після схвалення тексту картка з’явиться в застосунку.</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати групу</button></div>
+            <div className="v3-bt-empty v3-ad-empty"><span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Send size={22} /></span><strong>Розміщень ще немає</strong><span>{phone ? "Додайте платну Telegram-групу — вона з’явиться у списку груп застосунку з міткою «Реклама · 21+»." : "Додайте групу, оберіть місце показу й термін — після схвалення тексту картка з’явиться в застосунку."}</span><button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => { setSelId(null); setCreating(true); }}>Додати групу</button></div>
           ) : wide ? (
             <>
               <div className="v3-ad-tr v3-ad-tgcols is-h"><span>Група</span><span>Місце показу</span><span>Термін</span><span>Кліки / покази</span><span className="v3-ad-r">Статус</span></div>

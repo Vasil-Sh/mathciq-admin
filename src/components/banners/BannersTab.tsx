@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Megaphone, WifiOff } from "lucide-react";
+import { ChevronDown, ChevronRight, Image as ImageIcon, Megaphone, WifiOff } from "lucide-react";
 import { useMedia } from "@/hooks/useMediaOnline";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -157,6 +157,8 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
     );
   }
 
+  const [mcf, setMcf] = useState<"live" | "sched" | "off">("live");
+  const mRows = list.filter((b) => { const st = statusOf(b, today); return mcf === "off" ? st === "off" || st === "done" : st === mcf; });
   const rows = list.filter((b) => cf === "all" || statusOf(b, today) === cf).sort((a, b) => { const o = { live: 0, sched: 1, off: 2, done: 3 }; return o[statusOf(a, today)] - o[statusOf(b, today)] || (b.startsOn || "").localeCompare(a.startsOn || ""); });
 
   if (error && banners === null) return (
@@ -190,9 +192,9 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
 
       {list.length === 0 ? (
         <div className="v3-wcard v3-bt-empty v3-bn-empty">
-          <span className="v3-ue-ico v3-float v3-halo" aria-hidden="true"><Megaphone size={24} /></span>
+          <span className="v3-ue-ico v3-float v3-halo" aria-hidden="true">{phone ? <ImageIcon size={22} /> : <Megaphone size={24} />}</span>
           <strong>Банерів ще немає</strong>
-          <span>Додайте перший банер — оберіть слот і період показу. На екрані «Матчі» вільні обидва слоти.</span>
+          <span>{phone ? "Обидва слоти на екрані «Матчі» вільні. Створіть перший банер — оберіть слот і період показу." : "Додайте перший банер — оберіть слот і період показу. На екрані «Матчі» вільні обидва слоти."}</span>
           <button type="button" className="v3-btn v3-btn-primary" disabled={!online} onClick={() => openNew(1)}>Створити банер</button>
         </div>
       ) : (
@@ -241,8 +243,11 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
           ) : (
             <>
               <div className="v3-bn-mcamp-h"><strong>Усі кампанії</strong><span>{list.length}</span></div>
+              {/* phone (design BannersMobileQueue): Активні / У черзі / Вимкнені */}
+              {phone && <div className="v3-bn-mseg" role="group" aria-label="Кампанії"><PillTrack active={mcf} />{([["live", "Активні", counts.live], ["sched", "У черзі", counts.sched], ["off", "Вимкнені", counts.off + counts.done]] as ["live" | "sched" | "off", string, number][]).map(([k, l, n]) => <button key={k} type="button" className={mcf === k ? "is-on" : ""} aria-pressed={mcf === k} onClick={() => setMcf(k)}>{l} · {n}</button>)}</div>}
               <div className="v3-dcard v3-bn-mcamp">
-                {rows.map((b) => (
+                {phone && !mRows.length && <p className="v3-bn-mnone">{mcf === "live" ? "Зараз нічого не показується" : mcf === "sched" ? "У черзі нічого немає" : "Вимкнених і завершених немає"}</p>}
+                {(phone ? mRows : rows).map((b) => (
                   <button key={b.id} type="button" className="v3-bn-mrow" onClick={() => openEdit(b)}>
                     {b.imageUrl ? <img src={b.imageUrl} alt="" className={statusOf(b, today) === "live" ? "" : "is-dim"} /> : <i />}
                     <span><strong>{b.title}</strong><small>{screenOf(b.screen).label} · {periodText(b)}</small></span>
@@ -281,14 +286,15 @@ export default function BannersTab({ banners, slots, error, wide, online, reload
       </Dialog>
 
       <Dialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
-        <DialogContent className="v3-modal sm:max-w-[520px]">
+        <DialogContent className="v3-modal v3-bn-del sm:max-w-[520px]">
           <div className="v3-modal-iconrow">
             <span className="v3-modal-ico is-red" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 13h10l1-13" /><path d="M9 7V4h6v3" /></svg></span>
-            <div><DialogTitle className="v3-modal-title">Видалити банер?</DialogTitle><DialogDescription className="v3-modal-sub">«{deleting?.title}» зникне з екрана «{screenOf(deleting?.screen).label}». Якщо хочете лише призупинити показ — просто вимкніть його.</DialogDescription></div>
+            <div><DialogTitle className="v3-modal-title">Видалити банер?</DialogTitle><DialogDescription className="v3-modal-sub"><span className="v3-hide-mobile">«{deleting?.title}» зникне з екрана «{screenOf(deleting?.screen).label}». Якщо хочете лише призупинити показ — просто вимкніть його.</span><span className="v3-only-mobile">«{deleting?.title}» зникне із застосунку і зі списку. Статистика лишиться у звітах.</span></DialogDescription></div>
           </div>
           <div className="v3-modal-actions">
-            {deleting?.active && <button type="button" className="v3-btn v3-btn-ghost" onClick={disableInstead}>Вимкнути замість цього</button>}
-            <button type="button" className="v3-btn v3-btn-red" disabled={busyDel || !online} onClick={() => doDelete()}>{busyDel ? "Видаляємо…" : "Видалити"}</button>
+            {deleting?.active && <button type="button" className="v3-btn v3-btn-ghost v3-bn-del-off" onClick={disableInstead}>Вимкнути замість цього</button>}
+            <button type="button" className="v3-btn v3-btn-red" disabled={busyDel || !online} onClick={() => doDelete()}>{busyDel ? "Видаляємо…" : phone ? "Видалити назавжди" : "Видалити"}</button>
+            {phone && <button type="button" className="v3-btn v3-bn-del-cx" onClick={() => setDeleting(null)}>Скасувати</button>}
           </div>
         </DialogContent>
       </Dialog>

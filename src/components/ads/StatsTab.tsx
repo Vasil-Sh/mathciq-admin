@@ -1,3 +1,5 @@
+import { useMedia } from "@/hooks/useMediaOnline";
+import PartnerReport, { type ReportTarget } from "@/components/ads/PartnerReport";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3 } from "lucide-react";
@@ -19,6 +21,8 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
   const [stats, setStats] = useState<AdStats | null>(null);
   const [error, setError] = useState("");
   const [selKey, setSelKey] = useState<string | null>(null);
+  const phone = useMedia("(max-width: 767px)");
+  const [report, setReport] = useState<ReportTarget | null>(null);
 
   useEffect(() => {
     let off = false; setError("");
@@ -130,7 +134,13 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
           </>
         ) : (
           <div className="v3-ad-mlist">{rows.map((r) => (
-            <button key={r.key} type="button" className={`v3-ad-mcard${selKey === r.key ? " is-on" : ""}`} onClick={() => setSelKey(selKey === r.key ? null : r.key)}>
+            <button key={r.key} type="button" className={`v3-ad-mcard${selKey === r.key ? " is-on" : ""}`} onClick={() => {
+              // phone (design AdsMobileReport): a partner row opens «Звіт для партнера»
+              const [kind] = r.placement.split(":");
+              if (phone && kind === "bookmaker") { const b = bookmakers.find((x) => x.id === r.entityId); if (b) { setReport({ kind: "bookmaker", b }); return; } }
+              if (phone && kind === "telegram") { const p = promos.find((x) => x.id === r.entityId); if (p) { setReport({ kind: "telegram", p }); return; } }
+              setSelKey(selKey === r.key ? null : r.key);
+            }}>
               <span><strong>{r.name}</strong><small>{r.where}</small></span>
               <span className="v3-ad-mnum">{nf(r.clicks)}<small>кліків</small></span>
               <small className="v3-ad-mcard-f">{nf(r.impressions)} показів · CTR {ctr(r.clicks, r.impressions)}{r.note ? ` · ${r.note}` : ""}</small>
@@ -138,6 +148,7 @@ export default function StatsTab({ topSlot, banners, bookmakers, promos, wide, e
           ))}</div>
         )}
       </section>
+      <PartnerReport target={report} onClose={() => setReport(null)} />
     </>
   );
 }
