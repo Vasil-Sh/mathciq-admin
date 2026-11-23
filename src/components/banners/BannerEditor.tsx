@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ImageOff, Info, Trash2, X } from "lucide-react";
+import { AlertTriangle, Image as ImageIcon, ImageOff, Info, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { createBanner, updateBanner, uploadBannerImage } from "@/lib/adminBannersApi";
@@ -156,12 +156,12 @@ export default function BannerEditor({ open, banner, preset, banners, online, on
                 </div>
               ) : (
                 <div className="v3-bed-file">
-                  {f.imageUrl ? <img className="v3-bed-thumb" src={f.imageUrl} alt="" onError={() => setImgFailed(true)} /> : <span className="v3-bed-thumb" aria-hidden="true" />}
+                  {f.imageUrl ? <img className="v3-bed-thumb" src={f.imageUrl} alt="" onError={() => setImgFailed(true)} /> : <span className="v3-bed-thumb is-empty" aria-hidden="true"><ImageIcon size={16} /></span>}
                   <div><strong>{uploading ? "Завантажуємо…" : file?.name || (f.imageUrl ? f.imageUrl.split("/").pop() : "Файл не обрано")}</strong><span className="v3-bed-hint">{file?.w ? `${file.w} × ${file.h} · ` : ""}{file ? `${fmtBytes(file.size)} · ` : ""}1100 × 260 · до 1,5 МБ</span></div>
                   <button type="button" className="v3-bed-mini" disabled={uploading || !online} onClick={() => input.current?.click()}>{f.imageUrl ? "Замінити" : "Обрати файл"}</button>
                 </div>
               )}
-              {urlMode ? <input className={`v3-bed-in${imgFailed ? " is-err" : ""}`} type="url" aria-label="URL зображення" value={f.imageUrl} placeholder="https://…/banner.png" onChange={(e) => { set({ imageUrl: e.target.value }); setImgFailed(false); setFile(null); setFileErr(null); }} /> : <button type="button" className="v3-bed-link" onClick={() => setUrlMode(true)}>…або вставте URL зображення</button>}
+              {urlMode ? <input className={`v3-bed-in${imgFailed ? " is-err" : ""}`} type="url" aria-label="URL зображення" value={f.imageUrl} placeholder="https://…/banner.png" onChange={(e) => { set({ imageUrl: e.target.value }); setImgFailed(false); setFile(null); setFileErr(null); }} /> : <button type="button" className="v3-bed-link" onClick={() => setUrlMode(true)}>або вставте URL зображення</button>}
               <div className="v3-bed-note"><Info size={16} aria-hidden="true" /><span>Увесь текст банера — «ПРОМОКОД», заголовок, кнопка — це частина картинки. Назву й опис вище бачать лише адміністратори та програми зчитування екрана. Мітку «Реклама · 21+» ставимо поверх банера автоматично — не додавайте її в картинку.</span></div>
             </div>
           </section>

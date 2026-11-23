@@ -261,3 +261,37 @@
   .v3-ad-sheet .v3-ad-in, .v3-ad-sheet .v3-date-btn { min-height: 42px; font-size: 16px; border-radius: 12px; }
   .v3-ad-sheet .v3-modal-title { font-size: 20px; font-weight: 600; }
 }
+.v3-bed-thumb.is-empty { display: grid; place-items: center; color: #6b7384; }
+
+/* ══ «Новий банер» · телефон — компактні поля, як у дизайні BannerEditorMobile ══ */
+@media (max-width: 767px) {
+  .v3-bed-head h2, .v3-bed-title { font-size: 20px; font-weight: 600; }
+  .v3-bed-sub { margin-top: 2px; font-size: 12px; color: #6b7384; }
+  .v3-bed-form { gap: 10px; }
+  .v3-bed-mtabs { padding: 3px; border-radius: 12px; background: #eef0f4; }
+  .v3-bed-mtabs button { min-height: 32px; font-size: 12px; }
+  .v3-bed-sec { gap: 8px; padding: 12px; border-radius: 16px; background: #f4f6f9; }
+  .v3-bed-sec h3 { font-size: 11px; font-weight: 500; color: #6b7384; }
+  .v3-bed-f { gap: 4px; }
+  .v3-bed-f > label { font-size: 11px; font-weight: 600; color: #11151c; }
+  .v3-bed-in { min-height: 40px; padding: 0 12px; border-radius: 10px; border-color: #e3e6eb; font-size: 16px; }
+  .v3-bed-sec .v3-date-btn, .v3-bed-sec .v3-dd-btn { min-height: 40px; border-radius: 10px; border-color: #e3e6eb; }
+  .v3-bed-hint { font-size: 10.5px; color: #6b7384; }
+  .v3-bed-file { padding: 8px 10px; border: 1px solid #e3e6eb; border-radius: 10px; background: #fff; }
+  .v3-bed-file .v3-bed-thumb.is-empty { width: 34px; height: 34px; border-radius: 8px; background: #f1f3f7; }
+  .v3-bed-file { flex-wrap: nowrap; }
+  .v3-bed-file strong { font-size: 12px; }
+  .v3-bed-mini { min-height: 30px; padding: 0 12px; border-radius: 8px; background: #eef0f4; font-size: 11px; }
+  .v3-bed-link { font-size: 11px; color: #3a6df0; }
+  .v3-bed-note { padding: 10px 12px; border-radius: 10px; background: #eef2ff; color: #4a5b86; font-size: 11px; line-height: 1.45; }
+  .v3-bed-note svg { width: 12px; height: 12px; margin-top: 2px; flex: none; color: #3a6df0; }
+  .v3-bed-opts { gap: 6px; }
+  .v3-bed-opts button, .v3-bed-opts label { padding: 9px 12px; border-radius: 10px; }
+  .v3-bed-opts strong { font-size: 13px; }
+  .v3-bed-opts small, .v3-bed-opts span { font-size: 11px; }
+  .v3-bed-toggle { font-size: 12px; font-weight: 600; }
+  .v3-bed-foot .v3-btn { min-height: 44px; border-radius: 12px; }
+  .v3-bed-foot .v3-btn-ghost { border: 0; background: #eef0f4; color: #11151c; }
+  .v3-bed-foot .v3-btn-primary { background: #00b24b; color: #fff; }
+  .v3-bed-foot .v3-btn-primary:disabled { opacity: .5; }
+}
