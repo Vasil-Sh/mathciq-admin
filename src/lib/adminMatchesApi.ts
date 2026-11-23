@@ -35,7 +35,8 @@ export const startParser = (name: string) => api.post(`/admin/parsers/${encodeUR
 // ── Адмінські дані матчів (cs-backend: routes/adminMatches.ts) ──
 
 /** Статуси ручних правок — як у бекенді (match_overrides, manual_matches). */
-export type AdminStatus = "upcoming" | "live" | "finished" | "postponed" | "cancelled";
+/** «hidden» — «Видалити матч» for a feed match: out of the schedule until the override is removed. */
+export type AdminStatus = "upcoming" | "live" | "finished" | "postponed" | "cancelled" | "hidden";
 export interface TeamAlias { id: number; game: string; canonical: string; alias: string; createdBy: string; createdAt: string }
 export interface ManualMatch { id: string; game: Game; team1: string; team2: string; tournament: string; bo: string; startDate: string; status: AdminStatus; score1: number | null; score2: number | null; createdBy: string; createdAt: string }
 export interface MatchOverride { id: number; game: string; matchId: string; status: AdminStatus | null; startDate: string | null; score1: number | null; score2: number | null; decidedBy: string }
@@ -52,6 +53,11 @@ export interface HiddenTeam { id: number; game: Game; name: string; createdBy: s
 export const fetchHiddenTeams = async () => (await api.get<{ teams: HiddenTeam[] }>("/admin/hidden-teams")).teams || [];
 export const hideTeam = (b: { game: Game; name: string }) => api.post<HiddenTeam>("/admin/hidden-teams", b);
 export const unhideTeam = (id: number) => api.delete(`/admin/hidden-teams/${id}`);
+/** «Різні команди»: a feed spelling that is not this team — no longer flagged as a duplicate. */
+export interface DistinctPair { id: number; game: Game; name: string; variant: string }
+export const fetchDistinct = async () => (await api.get<{ pairs: DistinctPair[] }>("/admin/team-distinct")).pairs || [];
+export const addDistinct = (b: { game: Game; name: string; variant: string }) => api.post<DistinctPair>("/admin/team-distinct", b);
+export const removeDistinct = (id: number) => api.delete(`/admin/team-distinct/${id}`);
 
 export const createManualMatch = (b: { game: Game; team1: string; team2: string; tournament?: string; bo?: string; startDate: string; status?: AdminStatus }) => api.post<ManualMatch>("/admin/manual-matches", b);
 export const deleteManualMatch = (id: string) => api.delete(`/admin/manual-matches/${encodeURIComponent(id)}`);

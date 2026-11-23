@@ -1,0 +1,47 @@
+/* ConfirmSheet — the phone confirmation (design: «Зупинити HLTV?», «Видалити матч?», «Об’єднати з офіційним?») */
+.v3-modal.v3-csheet { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding-top: 28px; background: #fff !important; color: #11151c; text-align: center; }
+.v3-csheet > .v3-modal-x { display: none; }
+.v3-csheet-ico { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%; }
+.v3-csheet-ico.is-red { background: #e5484d; color: #fff; }
+.v3-csheet-ico.is-green { background: #e3f6ea; color: #1f9d55; }
+.v3-csheet-ico.is-blue { background: #e6edff; color: #3a6df0; }
+.v3-csheet-t { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: #11151c; }
+.v3-csheet-s { margin: 8px 6px 0; font-size: 14px; line-height: 1.45; color: #6b7384; }
+.v3-csheet-note { display: flex; gap: 8px; margin-top: 14px; padding: 11px 14px; border-radius: 12px; background: #fff6e0; color: #8a5a00; font-size: 13px; line-height: 1.45; text-align: left; }
+.v3-csheet-note b { color: #e09000; }
+.v3-csheet-cmp { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-top: 14px; text-align: left; }
+.v3-csheet-cmp > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+.v3-csheet-cmp > div.is-off { border: 1px solid #c9d8ff; background: #eef3ff; }
+.v3-csheet-cmp small { font-size: 11px; color: #6b7384; }
+.v3-csheet-cmp > div.is-off small { color: #3a6df0; }
+.v3-csheet-cmp strong { font-size: 14px; font-weight: 600; color: #11151c; }
+.v3-csheet-cmp > i { align-self: center; color: #9aa1ad; font-style: normal; font-size: 13px; line-height: 1; }
+.v3-csheet-acts { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.v3-csheet-go, .v3-csheet-no { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; border: 0; border-radius: 14px; font: 600 15px Inter, sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s, opacity .15s; }
+.v3-csheet-go:active, .v3-csheet-no:active { transform: scale(.98); }
+.v3-csheet-go:disabled, .v3-csheet-no:disabled { opacity: .55; }
+.v3-csheet-go.is-red { background: #e5484d; color: #fff; }
+.v3-csheet-go.is-dark { background: #11151c; color: #fff; }
+.v3-csheet-go.is-green { background: #1fb155; color: #fff; }
+.v3-csheet-go.is-blue { background: #3a6df0; color: #fff; }
+.v3-csheet-no { background: #eef0f4; color: #11151c; }
+.v3-csheet-go .v3-csheet-stop { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #e5484d; }
+.v3-csheet-go .v3-csheet-stop::after { content: ""; width: 8px; height: 2px; border-radius: 1px; background: #fff; }
+.v3-csheet-bar { width: 20px; height: 4px; border-radius: 2px; background: #fff; }
+
+/* «Об’єднати з…» — pick an official match by hand (design MxSearch) */
+.v3-modal.v3-mxpick { background: #fff !important; color: #11151c; }
+.v3-mxpick .v3-modal-title { font-size: 20px; font-weight: 600; color: #11151c; }
+.v3-mxpick .v3-modal-sub { font-size: 12px; color: #6b7384; }
+.v3-mxpick-q { display: flex; align-items: center; gap: 8px; height: 46px; margin-top: 12px; padding: 0 14px; border: 1.5px solid #3a6df0; border-radius: 14px; background: #fff; color: #6b7384; }
+.v3-mxpick-q input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: #11151c; font: 400 16px Inter, sans-serif; }
+.v3-mxpick-list { display: flex; flex-direction: column; gap: 6px; max-height: min(46dvh, 380px); margin-top: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.v3-mxpick-list button { display: flex; align-items: center; gap: 12px; flex-shrink: 0; padding: 11px 14px; border: 1.5px solid transparent; border-radius: 14px; background: #f4f6f9; color: #11151c; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: border-color .2s, background-color .2s; }
+.v3-mxpick-list button.is-on { border-color: #3a6df0; background: #eef3ff; }
+.v3-mxpick-list i { flex: none; width: 18px; height: 18px; border: 1.5px solid #b8bfcb; border-radius: 50%; background: #fff; transition: border .2s; }
+.v3-mxpick-list button.is-on i { border: 5px solid #3a6df0; }
+.v3-mxpick-list span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.v3-mxpick-list strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mxpick-list small { font-size: 12px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-mxpick-none { margin: 18px 0; color: #6b7384; font-size: 13px; text-align: center; }
+.v3-mxpick-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }

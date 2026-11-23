@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, History, Info, LayoutGrid, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
 import UserAvatar from "@/components/UserAvatar";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ConfirmDialog, ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { DateField } from "@/components/ui/date-field";
@@ -14,11 +14,11 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchHiddenTeams, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type ParserState } from "@/lib/dashboardInsights";
 import {
-  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, setAliases, STATUS_LABEL, teamsFrom,
+  addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, setAliases, similarity, STATUS_LABEL, teamsFrom,
   type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
@@ -123,7 +123,7 @@ export default function Matches() {
   const [catalog, setCatalog] = useState<CatalogTeam[]>([]);
   // Команди, видалені з довідника (розпалися, але лишились у пакеті логотипів)
   const [hidden, setHidden] = useState<HiddenTeam[]>([]);
-  useEffect(() => { fetchHiddenTeams().then(setHidden).catch(() => {}); }, []);
+  useEffect(() => { fetchHiddenTeams().then(setHidden).catch(() => {}); fetchDistinct().then(setDistinct).catch(() => {}); }, []);
   useEffect(() => { let off = false; fetchTeamCatalog().then((c) => { if (!off) setCatalog(c); }).catch(() => {}); return () => { off = true; }; }, []);
   const [selTeam, setSelTeam] = useState<string | null>(null);
   // Адмінські дані: псевдоніми, правки, рішення, журнал парсерів
@@ -139,6 +139,12 @@ export default function Matches() {
   const [ask, setAsk] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
   const [mergeFor, setMergeFor] = useState<Team | null>(null);
+  // phone confirmations (design): stop a parser, delete a match, merge a manual match; picker when no similar official match
+  const [stopAsk, setStopAsk] = useState<string | null>(null);
+  const [delAsk, setDelAsk] = useState<Match | null>(null);
+  const [mergeAsk, setMergeAsk] = useState<{ x: ManualGroup; target: Match } | null>(null);
+  const [pickFor, setPickFor] = useState<ManualGroup | null>(null);
+  const [distinct, setDistinct] = useState<DistinctPair[]>([]);
 
   const load = useCallback(async (opts: { force?: boolean } = {}) => {
     try {
@@ -218,8 +224,9 @@ export default function Matches() {
   const groups = useMemo(() => (bets ? manualGroups(recent, known).filter((x) => !decided.has(linkKey(x.game, x.t1, x.t2, x.day))) : []), [bets, recent, known, decided, aliases]);
   const teams = useMemo(() => {
     const off = new Set(hidden.map((h) => `${h.game}:${normTeam(h.name)}`));
-    return mergeCatalog(teamsFrom(known), catalog).filter((t) => !off.has(t.key));
-  }, [known, catalog, aliases, hidden]);
+    const not = new Set(distinct.map((d) => `${d.game}:${normTeam(d.name)}|${d.variant}`));
+    return mergeCatalog(teamsFrom(known), catalog).filter((t) => !off.has(t.key)).map((t) => (t.variants.some((v) => not.has(`${t.key}|${v}`)) ? { ...t, variants: t.variants.filter((v) => !not.has(`${t.key}|${v}`)) } : t));
+  }, [known, catalog, aliases, hidden, distinct]);
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
   const todayM = all.filter((m) => m.day === today);
@@ -333,8 +340,30 @@ export default function Matches() {
     } catch (e) { toast.error("Не вдалося видалити команду", { description: errText(e) }); }
     setSaving("");
   };
-  const removeManual = async (m: Match) => {
-    if (ask !== `del:${m.id}`) { setAsk(`del:${m.id}`); window.setTimeout(() => setAsk((a) => (a === `del:${m.id}` ? "" : a)), 4000); return; }
+  /** «Видалити матч» (phone, after the confirmation): a manual one is deleted; a feed one is hidden from the schedule — undo in the toast. */
+  const removeMatch = async (m: Match) => {
+    if (m.manual) { setAsk(`del:${m.id}`); await removeManual(m, true); setDelAsk(null); return; }
+    const was = ovOf(m);
+    setSaving(m.id);
+    try {
+      await patchMatch(m.game, m.raw, { status: "hidden", startDate: null, score1: null, score2: null });
+      setDelAsk(null); setSelId(null); setSheet(false);
+      await load();
+      toast.success("Матч видалено", {
+        description: `${m.t1} vs ${m.t2} більше не показується в застосунку`,
+        action: { label: "Повернути", onClick: async () => {
+          try {
+            if (was) await patchMatch(m.game, m.raw, { status: was.status, startDate: was.startDate, score1: was.score1, score2: was.score2 });
+            else await resetMatch(m.game, m.raw);
+            await load(); toast.info("Матч повернуто", { description: `${m.t1} vs ${m.t2}` });
+          } catch (e) { toast.error("Не вдалося повернути", { description: errText(e) }); }
+        } },
+      });
+    } catch (e) { toast.error("Не вдалося видалити матч", { description: errText(e) }); }
+    setSaving("");
+  };
+  const removeManual = async (m: Match, sure = false) => {
+    if (!sure && ask !== `del:${m.id}`) { setAsk(`del:${m.id}`); window.setTimeout(() => setAsk((a) => (a === `del:${m.id}` ? "" : a)), 4000); return; }
     setAsk(""); setSaving(m.id);
     try {
       await deleteManualMatch(m.raw);
@@ -346,13 +375,14 @@ export default function Matches() {
   };
 
   // ── Додані вручну: об’єднати / це інший матч ──
-  const decide = async (x: ManualGroup, kind: "merge" | "unlink") => {
+  const decide = async (x: ManualGroup, kind: "merge" | "unlink", target: Match | null = x.official) => {
     setSaving(`${kind}:${x.key}`);
     try {
-      await linkMatch(kind, { game: x.game, team1: x.t1, team2: x.t2, date: x.day, officialId: kind === "merge" ? x.official?.raw ?? null : null });
+      await linkMatch(kind, { game: x.game, team1: x.t1, team2: x.t2, date: x.day, officialId: kind === "merge" ? target?.raw ?? null : null });
+      setMergeAsk(null); setPickFor(null);
       setDecided((d) => new Set(d).add(linkKey(x.game, x.t1, x.t2, x.day)));
       setSelGroup(null); setSheet(false);
-      toast.success(kind === "merge" ? "Об’єднано" : "Позначено як інший матч", { description: kind === "merge" && x.official ? `${x.t1} vs ${x.t2} → ${x.official.t1} vs ${x.official.t2}` : `${x.t1} vs ${x.t2} · ${x.bets.length} ${plural(x.bets.length, "запис", "записи", "записів")}` });
+      toast.success(kind === "merge" ? "Об’єднано" : "Позначено як інший матч", { description: kind === "merge" && target ? `${x.t1} vs ${x.t2} → ${target.t1} vs ${target.t2}` : `${x.t1} vs ${x.t2} · ${x.bets.length} ${plural(x.bets.length, "запис", "записи", "записів")}` });
     } catch (e) { toast.error("Не вдалося зберегти рішення", { description: errText(e) }); }
     setSaving("");
   };
@@ -487,7 +517,7 @@ export default function Matches() {
     <div className="v3-mxp">
       <div className="v3-mxp-bar">
         <div className="v3-mxp-days" role="group" aria-label="День">{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => { setDay(d.key); setShown(12); setRk((x) => x + 1); }}>{d.label}</button>)}</div>
-        <button type="button" className={`v3-mxp-fbtn${game !== "all" || st !== "all" ? " is-on" : ""}`} aria-label="Фільтр" aria-haspopup="dialog" onClick={() => setFiltOpen(true)}><ListFilter size={16} aria-hidden="true" /></button>
+        <button type="button" className={`v3-mxp-fbtn${game !== "all" || st !== "all" ? " is-on" : ""}`} aria-label="Фільтр" aria-haspopup="dialog" onClick={() => setFiltOpen(true)}><Filter size={16} aria-hidden="true" /></button>
         <div className="v3-mxp-view" role="group" aria-label="Вигляд"><button type="button" className={mView === "list" ? "is-on" : ""} aria-pressed={mView === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} aria-hidden="true" /></button><button type="button" className={mView === "grid" ? "is-on" : ""} aria-pressed={mView === "grid"} aria-label="Плитками" onClick={() => pickView("grid")}><LayoutGrid size={15} aria-hidden="true" /></button></div>
       </div>
       {needle && list.length > 0 && <p className="v3-mxp-found" role="status">Знайдено {list.length} · за командою або турніром</p>}
@@ -542,7 +572,7 @@ export default function Matches() {
           : bets && <p className="v3-mxp-bnone">На цей матч ще ніхто не ставив.</p>}
         <div className="v3-mxp-acts">
           {!m.manual && <button type="button" className="is-grey" disabled={!online} onClick={() => setPhoneEdit(true)}>Редагувати</button>}
-          {m.manual && <button type="button" className={`is-red${ask === `del:${m.id}` ? " is-ask" : ""}`} disabled={!online || saving === m.id} onClick={() => removeManual(m)}>{ask === `del:${m.id}` ? "Точно видалити?" : "Видалити матч"}</button>}
+          <button type="button" className="is-red" disabled={!online || saving === m.id} onClick={() => setDelAsk(m)}>Видалити матч</button>
         </div>
       </div>
     );
@@ -649,7 +679,7 @@ export default function Matches() {
                 <span className="v3-mxp-pa">
                   {events[p.name] && <button type="button" className="v3-mxp-plog" onClick={() => setLogFor(p.name)} aria-label={`Інформація й лог · ${PARSER_NAMES[p.name] || p.name}`}><Info size={16} aria-hidden="true" /></button>}
                   {p.paused ? <button type="button" className="v3-mxp-pgo" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
-                    : <button type="button" className="v3-mxp-pstop" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, true)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
+                    : <button type="button" className="v3-mxp-pstop" disabled={!online || stopping === p.name} onClick={() => setStopAsk(p.name)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
                 </span>
               </div>
               <small className="v3-mxp-psub">{p.paused ? `${meta.game || meta.site} · зупинено вручну${p.pausedBy ? ` @${p.pausedBy}` : ""}` : ps === "down" || ps === "flaky" ? `${meta.game || meta.site} · не відповідає${p.lastFailure ? ` · ${ago(p.lastFailure)}` : ""}` : `${meta.game || meta.site} · ${matches ? `${cnt} ${plural(cnt, "матч", "матчі", "матчів")} сьогодні` : "…"}`}</small>
@@ -756,12 +786,19 @@ export default function Matches() {
       <p className="v3-mx-hint">{x.official ? "«Об’єднати» зв’яже записи користувачів з офіційним матчем. «Це інший матч» — матч справжній, просто його немає в джерелах." : "Схожого офіційного матчу немає — об’єднувати нема з чим. Якщо матч справжній, позначте «Це інший матч»."}</p>
     </div>
   );
-  const manualTab = bets === null ? <div className="v3-wcard v3-pay-list">{skelRows(4)}</div> : !groups.length ? (
+  const manualTab = bets === null ? <div className="v3-wcard v3-pay-list">{skelRows(4)}</div> : !groups.length ? (phone ? (
+    /* phone: the same empty state as «Матчі» / «Парсери» */
+    <div className="v3-mxp-none">
+      <span className="v3-mxp-none-ic is-ok" aria-hidden="true"><Check size={20} /></span>
+      <strong>Усі матчі на своїх місцях</strong>
+      <span>За 14 днів немає записів на матчі, яких би не було в стрічках. Перевірено {recent.length} {plural(recent.length, "запис", "записи", "записів")}.</span>
+    </div>
+  ) : (
     <section className="v3-mx-zero">
       <div className="v3-wcard v3-mx-zero-card"><span className="v3-empty-ic v3-float v3-halo" aria-hidden="true"><Check size={22} /></span><strong>Усі матчі на своїх місцях</strong><p>За останні 14 днів немає записів на матчі, яких би не було в стрічках tips.gg і HLTV. Коли користувач введе матч сам, він з’явиться тут разом зі схожим офіційним.</p></div>
       <div className="v3-dcard v3-mx-zero-st"><strong>Перевірено</strong><div><span>Записів за 14 днів</span><b>{recent.length}</b></div><div><span>Матчів у стрічках і історії</span><b>{known.length}</b></div></div>
     </section>
-  ) : wide ? (
+  )) : wide ? (
     <section className="v3-pay-main">
       <div className="v3-wcard v3-pay-list">
         <div className="v3-mx-lh"><h2>Матчі, яких немає в стрічках</h2><p>Користувач ввів матч сам. Поруч — найсхожіший офіційний, з яким його варто об’єднати.</p></div>
@@ -788,7 +825,7 @@ export default function Matches() {
           <div className={`v3-mxp-mbox is-off${x.official ? "" : " is-empty"}`}><small>{x.official ? "Схожий офіційний" : "Схожого офіційного немає"}</small><strong>{x.official ? `${x.official.t1} — ${x.official.t2}${x.official.tournament ? ` · ${x.official.tournament}` : ""} · ${x.official.time}` : "Чекаємо, поки з’явиться в стрічках"}</strong></div>
           <div className="v3-mxp-acts">
             <button type="button" className="is-grey" disabled={!online || !!saving} onClick={() => decide(x, "unlink")}>{saving === `unlink:${x.key}` ? "Зберігаємо…" : "Інший матч"}</button>
-            <button type="button" className="is-dark" disabled={!online || !x.official || !!saving} onClick={() => decide(x, "merge")}>{saving === `merge:${x.key}` ? "Об’єднуємо…" : "Об’єднати"}</button>
+            <button type="button" className="is-dark" disabled={!online || !!saving} onClick={() => (x.official ? setMergeAsk({ x, target: x.official }) : setPickFor(x))}>{saving === `merge:${x.key}` ? "Об’єднуємо…" : "Об’єднати"}</button>
           </div>
         </div>
       ))}
@@ -805,6 +842,22 @@ export default function Matches() {
   // ── Команди ──
   const tn = tq.trim().toLowerCase();
   const teamsG = tg === "all" ? teams : teams.filter((t) => t.game === tg);
+  /** Last finished matches of a team, oldest → newest: W (перемога) / L (поразка) / D (нічия). */
+  const teamForm = (t: Team) => { const tn = normTeam(t.name);
+    return known.filter((m) => m.game === t.game && m.status === "done" && m.s1 != null && m.s2 != null && (normTeam(m.t1) === tn || normTeam(m.t2) === tn))
+      .sort((a, b) => b.ts - a.ts).filter((m, i, xs) => xs.findIndex((y) => y.id === m.id) === i).slice(0, 5).reverse()
+      .map((m) => { const mine = normTeam(m.t1) === tn ? m.s1! - m.s2! : m.s2! - m.s1!; return mine > 0 ? "W" : mine < 0 ? "L" : "D"; }); };
+  /** Where a spelling came from: the first match in the feeds that used it. */
+  const spellingFrom = (t: Team, v: string) => { const m = known.filter((x) => x.game === t.game && (x.t1 === v || x.t2 === v)).sort((a, b) => a.ts - b.ts)[0]; return m ? `${m.source} · з ${dayShort(m.day)}` : "зі стрічок"; };
+  const notSame = async (t: Team, v: string) => {
+    setSaving(`dist:${t.key}|${v}`);
+    try {
+      const d = await addDistinct({ game: t.game, name: t.name, variant: v });
+      setDistinct((xs) => [...xs, d]);
+      toast.success("Позначено як різні команди", { description: `${t.name} ≠ ${v}`, action: { label: "Повернути", onClick: async () => { try { await removeDistinct(d.id); setDistinct((xs) => xs.filter((x) => x.id !== d.id)); } catch (e) { toast.error("Не вдалося повернути", { description: errText(e) }); } } } });
+    } catch (e) { toast.error("Не вдалося зберегти", { description: errText(e) }); }
+    setSaving("");
+  };
   const tgOpts = gameOpts.map((g) => ({ value: g.value, label: `${g.value === "all" ? "Усі ігри" : g.label} · ${g.value === "all" ? teams.length : teams.filter((t) => t.game === g.value).length}` }));
   const tList = teamsG.filter((t) => (tf === "all" || (tf === "dup" ? t.variants.length > 0 : isFallbackLogo(t.logo))) && (!tn || `${t.name} ${t.variants.join(" ")} ${t.aliases.join(" ")}`.toLowerCase().includes(tn)));
   const tSel = tList.find((t) => t.key === selTeam) || (wide ? tList[0] : undefined) || null;
@@ -829,6 +882,33 @@ export default function Matches() {
       <p className="v3-mx-hint">Псевдонім — інше написання «{t.name}»: записи й матчі з будь-яким написанням рахуються як одна команда.</p>
     </div>
   );
+  /** Phone team card — design MxTeam: centered head, spellings, the new-spelling note, «Це одна команда», «Приховати команду». */
+  const phoneTeamDetail = (t: Team) => {
+    const own = aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name));
+    const f = teamForm(t);
+    return (
+      <div className="v3-mxt">
+        <Logo src={t.logo} name={t.name} size={56} />
+        <h2>{t.name}</h2>
+        <p>{[GAME_LABEL[t.game], t.rank != null ? `#${t.rank} у рейтингу` : "", t.last ? (t.last === today ? "останній матч сьогодні" : `останній матч ${dayShort(t.last)}`) : `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}`].filter(Boolean).join(" · ")}</p>
+        {f.length > 0 && <span className="v3-mx-form is-lg" aria-label={`Останні матчі: ${f.join("-")}`}>{f.map((x, k) => <i key={k} className={`is-${x}`}>{x}</i>)}</span>}
+        <div className="v3-mxt-al">
+          <small>Псевдоніми — так команду називають джерела</small>
+          <div>
+            {own.map((a) => <span key={a.id} className="v3-mxt-chip">{a.alias}<button type="button" aria-label={`Прибрати псевдонім ${a.alias}`} disabled={!online || saving === `alias:${a.id}`} onClick={() => removeAlias(a)}><X size={12} aria-hidden="true" /></button></span>)}
+            {t.aliases.filter((n) => !own.some((a) => a.alias === n)).map((n) => <span key={n} className="v3-mxt-chip">{n}</span>)}
+            <button type="button" className="v3-mxt-add" disabled={!online} onClick={() => setMergeFor(t)}>+ Додати</button>
+          </div>
+        </div>
+        {t.variants.length > 0 && <p className="v3-csheet-note"><b aria-hidden="true">!</b><span>Нове написання з джерел — {t.variants.map((v) => `«${v}»`).join(", ")} · підтвердьте «Це одна команда»</span></p>}
+        {t.variants.length > 0 && <div className="v3-mxt-acts">
+          <button type="button" className="v3-csheet-no" disabled={!online || !!saving} onClick={() => notSame(t, t.variants[0])}>Різні команди</button>
+          <button type="button" className="v3-csheet-go is-green" disabled={!online || saving === `team:${t.key}`} onClick={() => addAliases(t, t.variants)}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>
+        </div>}
+        <button type="button" className="v3-mxt-hide" disabled={!online || saving === t.key} onClick={() => setDelTeam(t)}>Приховати команду</button>
+      </div>
+    );
+  };
   const tfOpts = [{ key: "all" as const, label: "Усі", n: teamsG.length }, { key: "dup" as const, label: "Дублікати", n: teamsG.filter((t) => t.variants.length).length }, { key: "logo" as const, label: "Без логотипа", n: teamsG.filter((t) => isFallbackLogo(t.logo)).length }];
   const teamsTab = (
     <section className={wide ? "v3-pay-main" : "v3-pay-m"}>
@@ -852,20 +932,34 @@ export default function Matches() {
             <span className="v3-mx-vars">{t.aliases.length + t.variants.length ? [...t.aliases, ...t.variants].slice(0, 3).map((v) => <span key={v} className="v3-mx-chip">{v}</span>) : <small>—</small>}</span>
             <span><GameIco g={t.game} />{GAME_LABEL[t.game]}</span><span>{t.matches}</span><span className="v3-pay-r v3-pay-by">{t.last ? dayShort(t.last) : "—"}</span>
           </button>
-        ))}</div> : <ul key={tView} className={`v3-pay-mlist a${tView === "grid" ? " v3-mx-tgrid" : ""}`}>{tList.slice(0, tLimit).map((t, i) => (
+        ))}</div> : phone && tf === "dup" ? (
+          /* design «Дублікати»: one card per new spelling — the directory name = the new one, «Різні команди» / «Це одна команда» */
+          <div className="v3-mx-dups">{tList.slice(0, tLimit).flatMap((t) => t.variants.map((v) => ({ t, v }))).map(({ t, v }, i) => { const busyK = saving === `team:${t.key}` || saving === `dist:${t.key}|${v}`; return (
+            <div key={`${t.key}|${v}`} className="v3-mx-dup" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>
+              <div className="v3-mx-duph">{gChip(t.game)}<span>{spellingFrom(t, v)}</span></div>
+              <div className="v3-mx-dupcmp"><button type="button" onClick={() => { setSelTeam(t.key); setSheet(true); }}><strong>{t.name}</strong><small>у довіднику</small></button><i aria-hidden="true">=</i><div className="is-new"><strong>{v}</strong><small>нове написання</small></div></div>
+              <div className="v3-mxp-acts">
+                <button type="button" className="is-grey" disabled={!online || busyK} onClick={() => notSame(t, v)}>{saving === `dist:${t.key}|${v}` ? "Зберігаємо…" : "Різні команди"}</button>
+                <button type="button" className="is-dark" disabled={!online || busyK} onClick={() => addAliases(t, [v])}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>
+              </div>
+            </div>
+          ); })}</div>
+        ) : <ul key={tView} className={`v3-pay-mlist a${tView === "grid" ? " v3-mx-tgrid" : ""}`}>{tList.slice(0, tLimit).map((t, i) => (
           <li key={t.key} style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}><button type="button" className="v3-pay-mcard v3-mx-mcard" onClick={() => { setSelTeam(t.key); setSheet(true); }}>
             <Logo src={t.logo} name={t.name} size={38} />
-            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small></span>
+            <span className="v3-mx-mcard-l"><strong>{t.name}</strong><small><GameIco g={t.game} />{GAME_LABEL[t.game]} · {t.matches || t.rank == null ? `${t.matches} ${plural(t.matches, "матч", "матчі", "матчів")}` : `#${t.rank} у рейтингу`}{t.variants.length ? ` · також «${t.variants[0]}»` : ""}</small>
+              {/* phone: the form of the last finished matches */}
+              {phone && (() => { const f = teamForm(t); return f.length ? <span className="v3-mx-form" aria-label={`Останні матчі: ${f.map((x) => (x === "W" ? "перемога" : x === "L" ? "поразка" : "нічия")).join(", ")}`}>{f.map((x, k) => <i key={k} className={`is-${x}`}>{x}</i>)}</span> : null; })()}</span>
             {t.variants.length > 0 && <span className="v3-tag v3-tag-amber">Дублікат?</span>}
           </button></li>
-        ))}</ul>}{tList.length > tLimit && <button type="button" className={wide ? "v3-ab-more v3-mx-more" : "v3-bt-allbtn v3-mx-mmore"} onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}{!wide && <ChevronDown size={15} aria-hidden="true" />}</button>}</>) : (() => { const e = (teams.length ? empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.", <Users size={22} />) : empty("Команд ще немає", "Довідник заповнюється з матчів і пакетів логотипів. Якщо тут порожньо — бекенд ще не розпакував логотипи або стрічки недоступні.", <Users size={22} />)); return wide ? e : <div className="v3-wcard v3-pay-mnone">{e}</div>; })()}
+        ))}</ul>}{tList.length > tLimit && <button type="button" className={wide ? "v3-ab-more v3-mx-more" : "v3-bt-allbtn v3-mx-mmore"} onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)} з {tList.length - tLimit}{!wide && <ChevronDown size={15} aria-hidden="true" />}</button>}</>) : (() => { const e = (teams.length ? empty("Нічого не знайдено", tn ? `За «${tq.trim()}» команд немає.` : "У цьому фільтрі команд немає.", <Users size={22} />) : empty("Команд ще немає", "Довідник заповнюється з матчів і пакетів логотипів. Якщо тут порожньо — бекенд ще не розпакував логотипи або стрічки недоступні.", <Users size={22} />)); if (phone) return <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true">{tn ? <Search size={20} /> : tf === "dup" ? <Check size={20} /> : <Users size={20} />}</span><strong>{!teams.length ? "Команд ще немає" : tn ? "Нічого не знайдено" : tf === "dup" ? "Дублікатів немає" : tf === "logo" ? "Усі з логотипом" : "Команд немає"}</strong><span>{!teams.length ? "Довідник заповнюється з матчів і пакетів логотипів." : tn ? `За «${tq.trim()}» команд немає.` : tf === "dup" ? "Нових написань у стрічках немає — кожна команда записана одним ім’ям." : tf === "logo" ? "У кожної команди в довіднику є логотип." : "У цьому фільтрі команд немає."}</span>{(tn || tf !== "all") && teams.length > 0 && <button type="button" onClick={() => { setTf("all"); setTq(""); pageSearch.setQ(""); pageSearch.setOpen(false); }}>Показати всі</button>}</div>; return wide ? e : <div className="v3-wcard v3-pay-mnone">{e}</div>; })()}
       </div>
       {wide && <aside className="v3-dcard v3-pay-aside">{tSel ? teamDetail(tSel) : <div className="v3-pay-empty is-dark"><span>Оберіть команду.</span></div>}</aside>}
     </section>
   );
 
   const sheetBody = tab === "manual" ? (groups.find((x) => x.key === selGroup) ? groupDetail(groups.find((x) => x.key === selGroup)!) : null)
-    : tab === "teams" ? (teams.find((t) => t.key === selTeam) ? teamDetail(teams.find((t) => t.key === selTeam)!) : null)
+    : tab === "teams" ? (teams.find((t) => t.key === selTeam) ? (phone ? phoneTeamDetail : teamDetail)(teams.find((t) => t.key === selTeam)!) : null)
     : (all.find((m) => m.id === selId) ? (phone ? (phoneEdit ? phoneEditBody(all.find((m) => m.id === selId)!) : phoneDetail(all.find((m) => m.id === selId)!)) : detail(all.find((m) => m.id === selId)!)) : null);
 
   return (
@@ -931,9 +1025,36 @@ export default function Matches() {
 
       <MergeTeamDialog team={mergeFor} teams={teams} busy={!!mergeFor && saving === `team:${mergeFor.key}`} onClose={() => setMergeFor(null)} onPick={(t, names) => addAliases(t, names)} />
 
+      {/* phone confirmations — design «Зупинити HLTV?», «Видалити матч?», «Об’єднати з офіційним?», «Об’єднати з…» */}
+      <ConfirmSheet open={!!stopAsk} tone="dark" icon={<span className="v3-csheet-bar" />} title={`Зупинити ${stopAsk ? PARSER_NAMES[stopAsk] || stopAsk : ""}?`}
+        text="Запитів до джерела не буде, поки не запустите знову. У застосунку лишаться останні дані з позначкою часу."
+        confirm="Зупинити" confirmIcon={<span className="v3-csheet-stop" aria-hidden="true" />} busy={!!stopAsk && stopping === stopAsk} busyText="Зупиняємо…"
+        onOpenChange={(o) => { if (!o) setStopAsk(null); }} onConfirm={async () => { if (!stopAsk) return; await stopOrStart(stopAsk, true); setStopAsk(null); }}>
+        {parsers && parsers.length > 1 && <p className="v3-csheet-note"><b aria-hidden="true">!</b><span>Якщо зупинити всі {parsers.length} — у меню біля «Матчі» з’явиться знак «стоп».</span></p>}
+      </ConfirmSheet>
+      <ConfirmSheet open={!!delAsk} icon={<Trash2 size={22} />} title="Видалити матч?"
+        text={delAsk ? `${delAsk.t1} — ${delAsk.t2} зникне з розкладу в застосунку.${betsFor(delAsk).length ? ` ${betsFor(delAsk).length} ${plural(betsFor(delAsk).length, "ставка лишиться", "ставки лишаться", "ставок лишаться")} в записах користувачів.` : ""}${delAsk.manual ? "" : " Повернути можна кнопкою в сповіщенні."}` : ""}
+        confirm="Видалити" busy={!!delAsk && saving === delAsk.id} busyText="Видаляємо…"
+        onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && removeMatch(delAsk)} />
+      <ConfirmSheet open={!!mergeAsk} tone="green" icon={<Link2 size={22} />} title="Об’єднати з офіційним?"
+        text={mergeAsk ? `${mergeAsk.x.bets.length} ${plural(mergeAsk.x.bets.length, "запис користувача перейде", "записи користувачів перейдуть", "записів користувачів перейдуть")} на матч зі стрічки. Ставки порахуються за його результатом.` : ""}
+        confirm="Об’єднати" busy={!!mergeAsk && saving === `merge:${mergeAsk.x.key}`} busyText="Об’єднуємо…"
+        onOpenChange={(o) => { if (!o) setMergeAsk(null); }} onConfirm={() => mergeAsk && decide(mergeAsk.x, "merge", mergeAsk.target)}>
+        {mergeAsk && <div className="v3-csheet-cmp">
+          <div><small>Як ввів користувач · @{mergeAsk.x.bets[0]?.username}</small><strong>{mergeAsk.x.t1} vs {mergeAsk.x.t2}</strong></div>
+          <i aria-hidden="true">↓</i>
+          <div className="is-off"><small>Офіційний · {mergeAsk.target.source}</small><strong>{mergeAsk.target.t1} — {mergeAsk.target.t2}{mergeAsk.target.tournament ? ` · ${mergeAsk.target.tournament}` : ""} · {mergeAsk.target.time}</strong></div>
+        </div>}
+      </ConfirmSheet>
+      <PickMatchSheet group={pickFor} known={known} today={today} busy={!!pickFor && saving === `merge:${pickFor.key}`} onClose={() => setPickFor(null)} onPick={(x, m) => decide(x, "merge", m)} />
+
+      {phone ? <ConfirmSheet open={!!delTeam} icon={<Trash2 size={22} />} title={`Приховати ${delTeam?.name || "команду"}?`}
+        text={<>Команда зникне з довідника «Команди»{delTeam ? ` (${GAME_LABEL[delTeam.game]})` : ""}. Логотип і матчі не зміняться. Повернути можна кнопкою в сповіщенні.</>}
+        confirm="Приховати" busy={!!delTeam && saving === delTeam.key} busyText="Приховуємо…"
+        onOpenChange={(o) => { if (!o) setDelTeam(null); }} onConfirm={() => delTeam && removeTeam(delTeam)} /> :
       <ConfirmDialog open={!!delTeam} busy={!!delTeam && saving === delTeam.key} onOpenChange={(o) => { if (!o) setDelTeam(null); }} onConfirm={() => delTeam && removeTeam(delTeam)}
         title={`Видалити ${delTeam?.name || "команду"}?`} confirm="Видалити з довідника" busyText="Видаляємо…"
-        text={<>Команда зникне з довідника «Команди»{delTeam ? ` (${GAME_LABEL[delTeam.game]})` : ""}. Логотип і матчі не зміняться. Повернути можна одразу після видалення — кнопкою в сповіщенні.</>} />
+        text={<>Команда зникне з довідника «Команди»{delTeam ? ` (${GAME_LABEL[delTeam.game]})` : ""}. Логотип і матчі не зміняться. Повернути можна одразу після видалення — кнопкою в сповіщенні.</>} />}
       {!wide && <Dialog open={sheet && !!sheetBody} onOpenChange={setSheet}><DialogContent className="v3-sheet v3-pay-sheet v3-mx-sheet"><DialogTitle className="sr-only">Деталі</DialogTitle><DialogDescription className="sr-only">Деталі матчу</DialogDescription>{sheetBody}</DialogContent></Dialog>}
     </div>
   );
@@ -999,6 +1120,43 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
 const timeAttrs = () => isPhoneWidth()
   ? { type: "time" as const }
   : { type: "text" as const, inputMode: "numeric" as const, onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.select() };
+
+/** «Об’єднати з…» (phone): no similar official match was found — pick one by hand. */
+function PickMatchSheet({ group, known, today, busy, onClose, onPick }: { group: ManualGroup | null; known: Match[]; today: string; busy: boolean; onClose: () => void; onPick: (x: ManualGroup, m: Match) => void }) {
+  const [q, setQ] = useState("");
+  const [pick, setPick] = useState<string | null>(null);
+  useEffect(() => { setQ(""); setPick(null); }, [group?.key]);
+  const list = useMemo(() => {
+    if (!group) return [];
+    const near = (d: string) => Math.abs((Date.parse(d) - Date.parse(group.day)) / 864e5) <= 7;
+    const n = q.trim().toLowerCase();
+    const seen = new Set<string>();
+    return known.filter((m) => m.game === group.game && !m.manual && near(m.day) && (!n || `${m.t1} ${m.t2} ${m.tournament}`.toLowerCase().includes(n)))
+      .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)))
+      .map((m) => ({ m, s: similarity(group, m) })).sort((a, b) => b.s - a.s || Math.abs(a.m.ts - Date.parse(group.day)) - Math.abs(b.m.ts - Date.parse(group.day))).slice(0, 30).map((x) => x.m);
+  }, [group, known, q]);
+  const sel = list.find((m) => m.id === pick) || null;
+  return (
+    <Dialog open={!!group} onOpenChange={(o) => { if (!o && !busy) onClose(); }}>
+      <DialogContent className="v3-modal v3-mxpick sm:max-w-[440px]" onOpenAutoFocus={(e) => { if (isPhoneWidth()) e.preventDefault(); }}>
+        <DialogTitle className="v3-modal-title">Об’єднати з…</DialogTitle>
+        <DialogDescription className="v3-modal-sub">{group ? `${group.t1} vs ${group.t2} · ` : ""}схожого матчу не знайшлось · оберіть вручну</DialogDescription>
+        <label className="v3-mxpick-q"><Search size={16} aria-hidden="true" /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда або турнір" aria-label="Пошук матчу" /></label>
+        <div className="v3-mxpick-list" role="radiogroup" aria-label="Матчі зі стрічок">
+          {list.length ? list.map((m) => (
+            <button key={m.id} type="button" role="radio" aria-checked={pick === m.id} className={pick === m.id ? "is-on" : ""} onClick={() => setPick(m.id)}>
+              <i aria-hidden="true" /><span><strong>{m.t1} — {m.t2}</strong><small>{GAME_LABEL[m.game]}{m.tournament ? ` · ${m.tournament}` : ""} · {m.day === today ? `сьогодні ${m.time}` : dayShort(m.day)}</small></span>
+            </button>
+          )) : <p className="v3-mxpick-none">{q.trim() ? `За «${q.trim()}» матчів немає.` : "У стрічках немає матчів цієї гри за ±7 днів."}</p>}
+        </div>
+        <div className="v3-mxpick-acts">
+          <button type="button" className="v3-csheet-no" onClick={onClose} disabled={busy}>Скасувати</button>
+          <button type="button" className="v3-csheet-go is-green" disabled={!sel || busy} onClick={() => group && sel && onPick(group, sel)}>{busy ? "Об’єднуємо…" : "Об’єднати"}</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /** «Об’єднати з…»: інша команда (або написання) стає псевдонімом цієї. */
 function MergeTeamDialog({ team, teams, busy, onClose, onPick }: { team: Team | null; teams: Team[]; busy: boolean; onClose: () => void; onPick: (t: Team, names: string[]) => void }) {

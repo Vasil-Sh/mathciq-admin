@@ -306,3 +306,41 @@
   .v3-mxp-ptiles > div { padding: 9px 10px; min-width: 0; }
   .v3-mxp-ptiles span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* Команди (phone): form pills W/L, «Дублікати» cards, the team card (design) */
+@media (max-width: 767px) {
+  .v3-mxp-none-ic.is-ok { background: #e3f6ea; color: #1f9d55; }
+  .v3-mx-form { display: inline-flex; gap: 3px; margin-top: 5px; }
+  .v3-mx-form i { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; font-style: normal; font-size: 10px; font-weight: 700; color: #fff; }
+  .v3-mx-form i.is-W { background: #1f9d55; } .v3-mx-form i.is-L { background: #e5484d; } .v3-mx-form i.is-D { background: #9aa1ad; }
+  .v3-mx-form.is-lg i { width: 22px; height: 22px; border-radius: 6px; font-size: 11px; }
+  .v3-mx-tgrid .v3-mx-form { justify-content: center; }
+
+  .v3-mx-dups { display: flex; flex-direction: column; gap: 10px; }
+  .v3-mx-dup { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); animation: v3-mxp-in .3s ease-out backwards; }
+  .v3-mx-duph { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7384; }
+  .v3-mx-dupcmp { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+  .v3-mx-dupcmp > button, .v3-mx-dupcmp > div { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 12px 8px; border: 0; border-radius: 12px; background: #f1f3f7; color: #11151c; text-align: center; font: inherit; }
+  .v3-mx-dupcmp > .is-new { background: #fff1d6; }
+  .v3-mx-dupcmp strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; }
+  .v3-mx-dupcmp small { font-size: 12px; color: #6b7384; }
+  .v3-mx-dupcmp > .is-new small { color: #b26b00; }
+  .v3-mx-dupcmp > i { font-style: normal; color: #9aa1ad; font-size: 16px; }
+  @keyframes v3-mxp-in { from { opacity: 0; transform: translateY(6px); } }
+
+  .v3-mxt { display: flex; flex-direction: column; align-items: center; gap: 0; color: #11151c; text-align: center; }
+  .v3-mxt > .v3-mx-lg { border-radius: 50%; background: #f1f3f7; }
+  .v3-mxt h2 { margin: 10px 0 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: #11151c; }
+  .v3-mxt > p { margin: 4px 0 0; font-size: 13px; color: #6b7384; }
+  .v3-mxt > .v3-mx-form { margin-top: 10px; }
+  .v3-mxt-al { align-self: stretch; display: flex; flex-direction: column; gap: 8px; margin-top: 18px; text-align: left; }
+  .v3-mxt-al > small { font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-mxt-al > div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .v3-mxt-chip { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 12px; border-radius: 999px; background: #eef0f4; font-size: 13px; font-weight: 500; }
+  .v3-mxt-chip button { display: grid; place-items: center; width: 20px; height: 20px; margin-right: -6px; border: 0; border-radius: 50%; background: none; color: #6b7384; }
+  .v3-mxt-add { height: 30px; padding: 0 12px; border: 1.5px dashed #3a6df0; border-radius: 999px; background: #fff; color: #3a6df0; font: 600 13px Inter, sans-serif; }
+  .v3-mxt > .v3-csheet-note { align-self: stretch; }
+  .v3-mxt-acts { align-self: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .v3-mxt-hide { margin-top: 12px; padding: 10px 16px; border: 0; background: none; color: #e5484d; font: 600 14px Inter, sans-serif; }
+  .v3-mxt button:disabled { opacity: .5; }
+}

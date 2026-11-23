@@ -190,7 +190,7 @@ export interface ManualGroup {
 }
 
 /** Схожість двох назв матчу: 100 — обидві команди збігаються точно, 80+ — за префіксом. */
-function similarity(b: { t1: string; t2: string }, m: Match): number {
+export function similarity(b: { t1: string; t2: string }, m: Match): number {
   const x = [normTeam(b.t1), normTeam(b.t2)], y = [normTeam(m.t1), normTeam(m.t2)];
   const one = (a: string, c: string) => (a === c ? 50 : near(a, c) ? 42 : 0);
   return Math.max(one(x[0], y[0]) + one(x[1], y[1]), one(x[0], y[1]) + one(x[1], y[0]));
