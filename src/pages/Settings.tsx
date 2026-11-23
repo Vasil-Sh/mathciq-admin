@@ -271,6 +271,19 @@ export default function Settings() {
     if (el) setPill({ y: el.offsetTop, h: el.offsetHeight });
   }, [activeKey, wide, loading, seen.length]);
 
+  if (loading && !settings && phone) {
+    // phone: the same shape as the loaded screen — kicker, title, chips, one card of rows
+    return (
+      <div className="v3-page v3-settings v3-st-pskel" aria-busy="true">
+        <span className="v3-skel v3-skel-light" style={{ width: 110, height: 12 }} />
+        <span className="v3-skel v3-skel-light" style={{ width: "72%", height: 34, marginTop: 10 }} />
+        <span className="v3-skel v3-skel-light" style={{ width: "90%", height: 13, marginTop: 10 }} />
+        <div className="v3-st-pskel-chips">{[84, 96, 70, 110].map((w, i) => <span key={i} className="v3-skel v3-skel-light" style={{ width: w }} />)}</div>
+        <div className="v3-st-pskel-card">{[0, 1, 2, 3].map((i) => <div key={i}><span><span className="v3-skel v3-skel-light" style={{ width: "60%", height: 15 }} /><span className="v3-skel v3-skel-light" style={{ width: "42%", height: 11 }} /></span><span className="v3-skel v3-skel-light" style={{ width: 96, height: 34, borderRadius: 10 }} /></div>)}</div>
+        <span className="sr-only" role="status">Завантаження налаштувань…</span>
+      </div>
+    );
+  }
   if (loading && !settings) {
     return (
       <div className="v3-page v3-settings">
@@ -1020,7 +1033,7 @@ function AccountSection({ phone, all, n, badge, me, owner, online }: { phone?: b
           <strong className="v3-st-subh">Змінити пароль</strong>
           <input type="text" name="username" autoComplete="username" value={me} readOnly hidden />
           <label className="v3-st-f"><span className="v3-st-l">Поточний пароль</span>
-            <span key={`c${shake}`} className={`v3-st-in${pwErr && /поточн/i.test(pwErr) ? " is-bad v3-st-shake" : ""}`}><input type={eye1 ? "text" : "password"} autoComplete="current-password" value={curPw} onChange={(e) => { setCurPw(e.target.value); setPwErr(""); }} />
+            <span key={`c${shake}`} className={`v3-st-in${pwErr && /поточн/i.test(pwErr) ? " is-bad v3-st-shake" : ""}`}><input type={eye1 ? "text" : "password"} autoComplete="current-password" placeholder={phone ? "Ваш теперішній пароль" : undefined} value={curPw} onChange={(e) => { setCurPw(e.target.value); setPwErr(""); }} />
               <button type="button" className="v3-st-eye" aria-label={eye1 ? "Сховати пароль" : "Показати пароль"} aria-pressed={eye1} onClick={() => setEye1(!eye1)}>{eye1 ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
           </label>
           <label className="v3-st-f"><span className="v3-st-l">Новий пароль</span>

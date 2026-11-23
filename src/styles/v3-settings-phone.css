@@ -250,3 +250,19 @@
   .v3-st-ptexts li > span.v3-st-preq { display: inline-flex; flex-direction: row; align-items: center; flex-wrap: nowrap; white-space: nowrap; min-width: auto; }
   .v3-st-preq svg { flex: none; }
 }
+
+/* loading (phone): the shape of the loaded screen */
+@media (max-width: 767px) {
+  .v3-st-pskel { display: flex; flex-direction: column; padding-top: 18px; }
+  .v3-st-pskel > .v3-skel { display: block; border-radius: 8px; }
+  .v3-st-pskel-chips { display: flex; gap: 8px; margin: 18px 0 14px; overflow: hidden; }
+  .v3-st-pskel-chips .v3-skel { flex: none; height: 34px; border-radius: 10px; }
+  .v3-st-pskel-card { display: flex; flex-direction: column; padding: 6px 16px; border-radius: 20px; background: #fff; }
+  .v3-st-pskel-card > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eef0f4; }
+  .v3-st-pskel-card > div:last-child { border-bottom: 0; }
+  .v3-st-pskel-card > div > span { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .v3-st-pskel-card .v3-skel { display: block; }
+}
+@media (max-width: 767px) {
+  .v3-st-pskel > .v3-skel, .v3-st-pskel-chips .v3-skel { background: linear-gradient(90deg, #dde1e8, #d3d8e0, #dde1e8); background-size: 200% 100%; }
+}

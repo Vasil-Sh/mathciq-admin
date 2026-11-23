@@ -79,10 +79,12 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
         </div>
         {showBars && (
           <div className="v3-ret-mini" role="group" aria-label="Утримання за місяцями">
-            {mini.map((m) => {
+            {mini.map((m, i) => {
               const on = m.month === (pick || focus?.month);
+              // the current month is always marked (striped column, bold letter) — as on «Оплати за місяцями»
+              const cur = i === mini.length - 1;
               return (
-                <button key={m.month} type="button" className={on ? "is-on" : undefined} aria-pressed={m.month === pick}
+                <button key={m.month} type="button" className={[on ? "is-on" : "", cur ? "is-cur" : ""].filter(Boolean).join(" ") || undefined} aria-pressed={m.month === pick}
                   aria-label={`${MONTHS_FULL[mIdx(m.month)]}: ${m.rate === null ? "немає даних" : `${m.rate}%`}`} onClick={() => setPick(m.month === pick ? null : m.month)}>
                   <i>{m.rate !== null && <span style={{ height: `${Math.max(8, m.rate)}%` }} />}</i>
                   <small>{MONTHS[mIdx(m.month)].slice(0, 1)}</small>
