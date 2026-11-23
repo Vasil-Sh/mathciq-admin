@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Send, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -304,6 +304,30 @@ export default function Matches() {
       toast.error(stop ? "Не вдалося зупинити" : "Не вдалося запустити", { description: e instanceof Error ? e.message : "Сервер не відповів" });
     }
     setStopping("");
+  };
+  /** «Надіслати»: the log as text — the share sheet (Telegram etc.) on the phone, otherwise Telegram's share link / the clipboard. */
+  const shareLog = async (name: string) => {
+    const p = parsers?.find((x) => x.name === name);
+    const fmt = (iso: string) => new Date(iso).toLocaleString("uk-UA", { timeZone: "Europe/Kyiv", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const head = [
+      `MatchIQ · лог ${PARSER_NAMES[name] || name} · ${fmt(new Date().toISOString())} (Київ)`,
+      p ? `Стан: ${p.paused ? "зупинено вручну" : p.open ? "помилка (запобіжник)" : "працює"} · збоїв за 24 год: ${p.failures24h}${p.lastFailure ? ` · останній збій ${fmt(p.lastFailure)}` : ""}` : "",
+      matches ? `Матчів сьогодні з цього джерела: ${cntFor(name)}` : "",
+    ].filter(Boolean);
+    const lines = (events[name] || []).map((e) => `${fmt(e.createdAt)}  ${EV_LABEL[e.event]}${e.message && e.message !== "OK" ? ` · ${e.message}` : ""}`);
+    const text = [...head, "", ...lines].join("\n");
+    const title = `Лог ${PARSER_NAMES[name] || name}`;
+    try {
+      if (navigator.share) {
+        // a long log goes as a .txt file when the device can share files (Telegram shows it as a document)
+        const file = new File([text], `matchiq-${name}-log.txt`, { type: "text/plain" });
+        if (text.length > 3500 && navigator.canShare?.({ files: [file] })) await navigator.share({ title, files: [file] });
+        else await navigator.share({ title, text });
+        return;
+      }
+    } catch (e) { if ((e as Error)?.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(text); toast.success("Лог скопійовано", { description: "Відкриваємо Telegram — вставте його в чат" }); } catch { /* no clipboard: Telegram's own share link still carries the start of the text */ }
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(" ")}&text=${encodeURIComponent(text.slice(0, 3000))}`, "_blank", "noopener");
   };
   const rerun = async (name: string) => {
     if (running[name] === "busy") return;
@@ -1054,7 +1078,7 @@ export default function Matches() {
           <DialogTitle className="v3-modal-title">Повний лог · {logFor ? PARSER_NAMES[logFor] || logFor : ""}</DialogTitle>
           <DialogDescription className="v3-modal-sub">Останні {logFor ? (events[logFor] || []).length : 0} подій. Однакові події частіше ніж раз на хвилину зливаються в одну.</DialogDescription>
           <div className="v3-mx-log">{logFor && (events[logFor] || []).map((e) => <div key={e.id} className={`v3-mx-evr is-${e.event}`}><span>{new Date(e.createdAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>)}{logFor && !(events[logFor] || []).length && <p className="v3-mx-pnote">Подій ще немає.</p>}</div>
-          <div className="v3-modal-foot"><span className="v3-hint">Час — київський</span><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={() => setLogFor(null)}>Закрити</button></div></div>
+          <div className="v3-modal-foot"><span className="v3-hint">Час — київський</span><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={() => setLogFor(null)}>Закрити</button><button type="button" className="v3-btn v3-btn-primary v3-mx-logsend" disabled={!logFor || !(events[logFor] || []).length} onClick={() => logFor && shareLog(logFor)}><Send size={15} aria-hidden="true" />Надіслати</button></div></div>
         </DialogContent>
       </Dialog>
 
