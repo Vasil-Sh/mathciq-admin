@@ -18,6 +18,8 @@ import WriteButton from "@/components/dashboard/WriteButton";
 import { composeMessage } from "@/lib/messages";
 import PillTrack from "@/components/PillTrack";
 import SwipeRow from "@/components/dashboard/SwipeRow";
+import MatchesWeekCard from "@/components/dashboard/MatchesWeekCard";
+import { useMedia } from "@/hooks/useMediaOnline";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { activePlans, ago, churnedUsers, churnRisk, fetchOpenTickets, fetchParsers, INACTIVE_DAYS, LOSS_STREAK, PARSER_NAMES, PLAN_COLORS, PLAN_NAMES, periodLabel as limitLabel, planText, plural, relDay, telegramLink, type ParserState, type SupportTicket } from "@/lib/dashboardInsights";
@@ -58,6 +60,7 @@ function useOnline() {
 }
 
 export default function Dashboard() {
+  const phoneW = useMedia("(max-width: 767px)");
   const now = kyivNow();
   const online = useOnline();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -574,11 +577,13 @@ export default function Dashboard() {
             <strong className="v3-kpi-v">{rate ? <>≈ <RollingNumber key={`ai-${period}-${Math.round(view.ai * rate)}`} text={Math.round(view.ai * rate).toLocaleString("uk-UA")} /><small className="v3-kpi-unit"> ₴</small></> : usd(view.ai)}</strong>
             <span className="v3-kpi-n">
               <span className="v3-hide-mobile">{periodShort} · {view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")} · сьогодні {aiToday?.calls ?? 0} ({aiMoney(aiToday?.costUsd ?? 0)})</span>
-              <span className="v3-only-mobile v3-kpi-ai-side">{view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")}<br />сьогодні {aiToday?.calls ?? 0}</span>
+              <span className="v3-only-mobile v3-kpi-ai-side">{view.aiCalls} {plural(view.aiCalls, "аналіз", "аналізи", "аналізів")} · сьогодні {aiToday?.calls ?? 0}</span>
             </span>
           </Link>}
         </section>
       )}
+      {/* phone: the parsers' week under the KPIs (the AI card above is a slim row there) */}
+      {phoneW && <MatchesWeekCard />}
 
       {isEmpty && <section className="v3-dash-main v3-dash-onboard">
         <section className="v3-wcard v3-onboard">
