@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Send, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, Trophy, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Send, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -51,6 +51,15 @@ const PARSER_META: Record<string, { ini: string; color: string; site: string; ga
   cito: { ini: "CT", color: "#7a4fd0", site: "citoapi.com", game: "CS2 · розклад", feed: "cito" },
   opendota: { ini: "OD", color: "#a33a2b", site: "opendota.com", game: "Dota 2 · рахунок", feed: "opendota" },
 };
+/** Tournament icon before its name; a neutral cup when the sources gave none or it failed to load (keeps the line aligned). */
+function TourIcon({ src }: { src?: string | null }) {
+  const [bad, setBad] = useState(false);
+  useEffect(() => setBad(false), [src]);
+  return src && !bad
+    ? <img className="v3-tour-ic" src={src} alt="" loading="lazy" onError={() => setBad(true)} />
+    : <span className="v3-tour-ic is-none" aria-hidden="true"><Trophy size={9} strokeWidth={2.4} /></span>;
+}
+
 /** 02:00–06:00 Kyiv: the backend slows the parsers down (live matches still refresh as by day). */
 const kyivNight = () => { const h = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Kyiv", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 2 && h < 6; };
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
@@ -259,7 +268,14 @@ export default function Matches() {
     const l1 = isFallbackLogo(m.logo1) ? logoMap[logoKey(m.game, m.t1)] : undefined, l2 = isFallbackLogo(m.logo2) ? logoMap[logoKey(m.game, m.t2)] : undefined;
     return l1 || l2 ? { ...m, logo1: l1 || m.logo1, logo2: l2 || m.logo2 } : m;
   }, [logoMap]);
-  const all = useMemo(() => (matches || []).map(withLogo), [matches, withLogo]);
+  const all = useMemo(() => {
+    const list = (matches || []).map(withLogo);
+    // a tournament icon one source gave serves every match of that tournament (another source may have none)
+    const tourKey = (m: Match) => `${m.game}:${m.tournament.toLowerCase().replace(/[^a-z0-9а-яіїєґ]+/gi, "")}`;
+    const icons = new Map<string, string>();
+    for (const m of list) if (m.tourLogo && m.tournament && !icons.has(tourKey(m))) icons.set(tourKey(m), m.tourLogo);
+    return list.map((m) => (!m.tourLogo && m.tournament && icons.has(tourKey(m)) ? { ...m, tourLogo: icons.get(tourKey(m))! } : m));
+  }, [matches, withLogo]);
   const recent = useMemo(() => { const from = addDays(today, -14); return (bets || []).filter((b) => String(b.date).slice(0, 10) >= from); }, [bets, today]);
   const betsFor = useCallback((m: Match) => recent.filter((b) => betMatches(b, m)), [recent]);
   const known = useMemo(() => [...all, ...history.map(withLogo)], [all, history, withLogo]);
@@ -629,12 +645,12 @@ export default function Matches() {
         <span className="v3-mxp-th">{head(m)}{gChip(m.game)}</span>
         <span className="v3-mxp-tm"><Logo src={m.logo1} name={m.t1} size={30} /><b aria-label={sc ? `Рахунок ${m.s1}:${m.s2}` : "Рахунку ще немає"}>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</b><Logo src={m.logo2} name={m.t2} size={30} /></span>
         <span className="v3-mxp-tn"><strong>{m.t1}</strong><strong>{m.t2}</strong></span>
-        <small className="v3-mxp-tt">{m.tourLogo && <img src={m.tourLogo} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}{m.tournament || GAME_LABEL[m.game]}</small>
+        <small className="v3-mxp-tt"><TourIcon src={m.tourLogo} /><span>{m.tournament || GAME_LABEL[m.game]}</span></small>
         {chips(m)}
       </button>
     ) : (
       <button key={m.id} type="button" className={`v3-mxp-card is-${m.status}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => openM(m)}>
-        <span className="v3-mxp-ch">{head(m)}{gChip(m.game)}<span className="v3-mxp-tour">{m.tourLogo && <img src={m.tourLogo} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}{[m.tournament, m.bo].filter(Boolean).join(" · ")}</span><ChevronRight size={15} className="v3-mxp-chev" aria-hidden="true" /></span>
+        <span className="v3-mxp-ch">{head(m)}{gChip(m.game)}<span className="v3-mxp-tour"><TourIcon src={m.tourLogo} /><span>{[m.tournament, m.bo].filter(Boolean).join(" · ")}</span></span><ChevronRight size={15} className="v3-mxp-chev" aria-hidden="true" /></span>
         {[[m.t1, m.logo1, m.s1], [m.t2, m.logo2, m.s2]].map(([n, l, s], k) => (
           <span key={k} className={`v3-mxp-team${dim ? " is-dim" : ""}${m.status === "off" ? " is-off" : ""}`}><Logo src={l as string | null} name={n as string} size={22} /><strong>{n as string}</strong><b>{sc ? String(s) : ""}</b></span>
         ))}
