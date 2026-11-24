@@ -51,6 +51,8 @@ const PARSER_META: Record<string, { ini: string; color: string; site: string; ga
   cito: { ini: "CT", color: "#7a4fd0", site: "citoapi.com", game: "CS2 · розклад", feed: "cito" },
   opendota: { ini: "OD", color: "#a33a2b", site: "opendota.com", game: "Dota 2 · рахунок", feed: "opendota" },
 };
+/** 02:00–06:00 Kyiv: the backend slows the parsers down (live matches still refresh as by day). */
+const kyivNight = () => { const h = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Kyiv", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 2 && h < 6; };
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 const resLabel = (r: string) => (r === "Win" ? ["Виграш", "v3-tag-green"] : r === "Loss" ? ["Програш", "v3-tag-red"] : ["Очікує", "v3-tag-amber"]);
 
@@ -1116,7 +1118,7 @@ export default function Matches() {
       <section className="v3-hero v3-hero-row">
         <div>
           <h1 className="v3-title">Матчі</h1>
-          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з проблемою` : parsers?.length && parsers.every((p) => p.paused) ? "Усі парсери зупинені вручну" : "Усі джерела працюють") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}${phone && updatedAt ? ` · оновлено ${updatedAt}` : ""}`}</span></p>
+          <p className="v3-subtitle"><span className="v3-hide-mobile">Дані з tips.gg і HLTV, записи користувачів і довідник команд. Час — київський.</span><span className="v3-only-mobile">{tab === "parsers" ? (down.length ? `${down.length} ${plural(down.length, "джерело", "джерела", "джерел")} з проблемою` : parsers?.length && parsers.every((p) => p.paused) ? "Усі парсери зупинені вручну" : "Усі джерела працюють") + (kyivNight() ? " · нічний режим до 06:00" : "") : tab === "manual" ? "Чекають об’єднання" : tab === "teams" ? `${teams.length} у довіднику` : `Сьогодні ${todayM.length} · наживо ${liveN}${phone && updatedAt ? ` · оновлено ${updatedAt}` : ""}`}</span></p>
         </div>
         <div className="v3-chips">
           <button type="button" className={`v3-chip v3-mx-rf${busy ? " is-busy" : ""}`} disabled={!online || busy} onClick={refresh} aria-label="Оновити з джерел">
