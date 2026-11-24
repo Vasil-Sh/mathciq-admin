@@ -1227,6 +1227,66 @@
      }
     ]
    }
+  },
+  "GET /admin/matches-week": {
+   "status": 200,
+   "body": {
+    "from": "2026-11-18",
+    "to": "2026-11-24",
+    "since": "2026-11-24",
+    "total": 18,
+    "cs2": 8,
+    "dota2": 10,
+    "finished": 12,
+    "noScore": 1,
+    "withOdds": 9,
+    "scoreDelayMin": null,
+    "lateScores": 0,
+    "days": [
+     {
+      "day": "2026-11-18",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-19",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-20",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-21",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-22",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-23",
+      "total": 0,
+      "noScore": 0,
+      "withOdds": 0
+     },
+     {
+      "day": "2026-11-24",
+      "total": 18,
+      "noScore": 1,
+      "withOdds": 9
+     }
+    ]
+   }
   }
  }
 }
