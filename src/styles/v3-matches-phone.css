@@ -361,6 +361,7 @@
   .v3-mxt-al > small { font-size: 12px; font-weight: 600; color: #6b7384; }
   .v3-mxt-al > div { display: flex; flex-wrap: wrap; gap: 6px; }
   .v3-mxt-chip { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 12px; border-radius: 999px; background: #eef0f4; font-size: 13px; font-weight: 500; }
+  .v3-mxt-auto { margin-left: 5px; padding: 1px 5px; border-radius: 5px; background: #e6edff; color: #2f5fd8; font-size: 10px; font-style: normal; font-weight: 700; }
   .v3-mxt-chip button { display: grid; place-items: center; width: 20px; height: 20px; margin-right: -6px; border: 0; border-radius: 50%; background: none; color: #6b7384; }
   .v3-mxt-add { height: 30px; padding: 0 12px; border: 1.5px dashed #3a6df0; border-radius: 999px; background: #fff; color: #3a6df0; font: 600 13px Inter, sans-serif; }
   .v3-mxt > .v3-csheet-note { align-self: stretch; }
