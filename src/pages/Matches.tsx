@@ -16,7 +16,7 @@ import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
   fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchMatchChanges, refreshParser, type MatchChange, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
-import { fetchParsersFull, PARSER_ISSUE, type ScoreIssue, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
+import { fetchParsersFull, resolveScoreIssue, PARSER_ISSUE, type ScoreIssue, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
   addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, oddsMove, setAliases, similarity, STATUS_LABEL, teamsFrom,
   type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
@@ -158,6 +158,24 @@ export default function Matches() {
   const logoInput = useRef<HTMLInputElement>(null);
   const [issues, setIssues] = useState<ScoreIssue[]>([]);
   const [issuesOpen, setIssuesOpen] = useState(false);
+  const [issueBusy, setIssueBusy] = useState<string | null>(null);
+  /** «Правильний рахунок»: a score of another source becomes the match's score (an admin override, as «Редагувати» does);
+   *  Liquipedia's — nothing changes. Either way the item leaves the list. */
+  const settleIssue = async (x: ScoreIssue, score: string | null) => {
+    const key = `${x.kind}-${x.id}`;
+    setIssueBusy(key);
+    try {
+      if (score) {
+        const [s1, s2] = score.split(":").map(Number);
+        await patchMatch(x.game, x.id, { status: "finished" as AdminStatus, startDate: null, score1: s1, score2: s2 });
+      }
+      await resolveScoreIssue(x.kind, x.id);
+      setIssues((xs) => xs.filter((y) => !(y.kind === x.kind && y.id === x.id)));
+      toast.success(score ? `Рахунок ${score} збережено` : x.kind === "closed" ? "Позначено як перевірене" : "Лишили рахунок Liquipedia");
+      if (score) void load();
+    } catch (e) { toast.error("Не вдалося", { description: e instanceof Error ? e.message : "" }); }
+    setIssueBusy(null);
+  };
   const [logoFor, setLogoFor] = useState<Team | null>(null);
 
   const load = useCallback(async (opts: { force?: boolean } = {}) => {
@@ -793,13 +811,22 @@ export default function Matches() {
       <Dialog open={issuesOpen} onOpenChange={setIssuesOpen}>
         <DialogContent className="v3-sheet v3-pay-sheet v3-mxp-isss">
           <DialogTitle>Рахунки між джерелами</DialogTitle>
-          <p className="v3-mxp-isss-sub">За 7 днів. «Розбіжність» — Liquipedia та інше джерело дали різний рахунок: варто перевірити, бо за ним підказується результат ставок. «Закрито» — Liquipedia мовчала, а PandaScore і Cito 2 год показували однаковий фінальний рахунок.</p>
+          <p className="v3-mxp-isss-sub">За 7 днів. «Розбіжність» — Liquipedia та інше джерело дали різний рахунок. Оберіть правильний: він стане рахунком матчу в застосунку (як через «Редагувати»), а за ним підказується результат ставок. «Закрито» — Liquipedia мовчала, а PandaScore і Cito 2 год показували однаковий рахунок.</p>
           <ul>{issues.map((x) => (
             <li key={`${x.kind}-${x.id}`} className={`is-${x.kind}`}>
               <span className="v3-mxp-iss-k">{x.kind === "conflict" ? "Розбіжність" : "Закрито"} · {x.game === "cs2" ? "CS2" : "Dota 2"}</span>
               <strong>{x.team1} — {x.team2}</strong>
               <small>{x.tournament ? `${x.tournament} · ` : ""}{new Date(x.start).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</small>
-              <div className="v3-mxp-iss-sc"><span>{x.kind === "conflict" ? "Liquipedia" : "Закрито з"} <b>{x.ours}</b></span>{x.theirs.map((t) => <span key={t.source}>{SRC_NAME[t.source]} <b>{t.score}</b></span>)}</div>
+              {x.kind === "conflict" ? <>
+                <p className="v3-mxp-iss-q">Який рахунок правильний?</p>
+                <div className="v3-mxp-iss-sc is-pick">
+                  <button type="button" disabled={!online || issueBusy !== null} onClick={() => void settleIssue(x, null)}>Liquipedia <b>{x.ours}</b></button>
+                  {x.theirs.map((t) => <button type="button" key={t.source} disabled={!online || issueBusy !== null} onClick={() => void settleIssue(x, t.score)}>{SRC_NAME[t.source]} <b>{t.score}</b></button>)}
+                </div>
+              </> : <>
+                <div className="v3-mxp-iss-sc"><span>Закрито з <b>{x.ours}</b></span>{x.theirs.map((t) => <span key={t.source}>{SRC_NAME[t.source]} <b>{t.score}</b></span>)}</div>
+                <button type="button" className="v3-mxp-iss-ok" disabled={!online || issueBusy !== null} onClick={() => void settleIssue(x, null)}><Check size={14} strokeWidth={2.6} aria-hidden="true" />Перевірено</button>
+              </>}
             </li>
           ))}</ul>
         </DialogContent>

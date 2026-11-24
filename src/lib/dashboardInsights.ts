@@ -153,6 +153,8 @@ export async function fetchParsers(): Promise<ParserState[]> {
 /** A score Liquipedia and another source disagree on, or a match closed by PandaScore + Cito while Liquipedia was silent. */
 export interface ScoreIssue { kind: "conflict" | "closed"; id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; tournament: string; ours: string; theirs: { source: "pandascore" | "cito"; score: string }[]; at: string }
 
+export const resolveScoreIssue = (kind: ScoreIssue["kind"], id: string) => api.delete(`/admin/score-issues/${kind}/${encodeURIComponent(id)}`);
+
 export async function fetchParsersFull(): Promise<{ parsers: ParserState[]; scoreIssues: ScoreIssue[] }> {
   const data = await api.get<{ parsers: ParserState[]; scoreIssues?: ScoreIssue[] }>("/admin/parsers");
   return { parsers: data.parsers || [], scoreIssues: data.scoreIssues || [] };
