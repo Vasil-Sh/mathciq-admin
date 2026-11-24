@@ -14,7 +14,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchMatchChanges, refreshParser, type MatchChange, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
@@ -86,6 +86,7 @@ export default function Matches() {
   const [history, setHistory] = useState<Match[]>([]);
   const [parsers, setParsers] = useState<ParserState[] | null>(null);
   const [missOpen, setMissOpen] = useState(false);
+  const [dayOpen, setDayOpen] = useState<string | null>(null);
   const [linked, setLinked] = useState<Record<string, "busy" | "done">>({});
   const [bets, setBets] = useState<UBet[] | null>(null);
   const [error, setError] = useState("");
@@ -143,6 +144,7 @@ export default function Matches() {
   const [mergeFor, setMergeFor] = useState<Team | null>(null);
   // phone confirmations (design): stop a parser, delete a match, merge a manual match; picker when no similar official match
   const [stopAsk, setStopAsk] = useState<string | null>(null);
+  const [stopFor, setStopFor] = useState<"1h" | "morning" | "forever">("1h");
   const [delAsk, setDelAsk] = useState<Match | null>(null);
   const [mergeAsk, setMergeAsk] = useState<{ x: ManualGroup; target: Match } | null>(null);
   const [pickFor, setPickFor] = useState<ManualGroup | null>(null);
@@ -286,9 +288,13 @@ export default function Matches() {
       toast.error("Не вдалося зв’язати", { description: errText(e) });
     }
   };
-  const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); return h !== "ok" ? h : matches && cntFor(p.name, p.name === "oddspapi" ? all : todayM) === 0 ? "idle" : "ok"; };
+  // Liquipedia refreshes every ~5 min: no success for 20 min with no error either = quietly stuck («Без оновлень N хв»)
+  //   only while the feed is asking for data (askedAt within 5 min) — with no visitors the refresh sleeps on purpose
+  const staleMin = (p: ParserState) => p.name === "liquipedia" && p.lastSuccess && p.askedAt && Date.now() - Date.parse(p.askedAt) < 5 * 60_000 ? Math.floor((Date.now() - Date.parse(p.lastSuccess)) / 60_000) : 0;
+  const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "stale" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); if (h !== "ok") return h; if (staleMin(p) >= 20) return "stale"; return matches && cntFor(p.name, p.name === "oddspapi" ? all : todayM) === 0 ? "idle" : "ok"; };
+  const staleText = (p: ParserState) => { const m = staleMin(p); return m < 60 ? `${m} хв` : `${Math.floor(m / 60)} год ${m % 60 ? `${m % 60} хв` : ""}`.trim(); };
   const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });
-  const issueText = (p: ParserState) => `${PARSER_NAMES[p.name] || p.name} ${PARSER_ISSUE[pState(p) as "down" | "flaky" | "idle"]}`;
+  const issueText = (p: ParserState) => { const st = pState(p); return `${PARSER_NAMES[p.name] || p.name} ${st === "stale" ? `без оновлень ${staleText(p)}` : PARSER_ISSUE[st as "down" | "flaky" | "idle"]}`; };
   const todayBets = bets ? todayM.reduce((a, m) => a + betsFor(m).length, 0) : null;
 
   // ── Матчі: фільтри ──
@@ -309,13 +315,28 @@ export default function Matches() {
   };
 
   const [stopping, setStopping] = useState("");
+  const [refreshing, setRefreshing] = useState("");
+  const refreshNow = async (name: string) => {
+    if (refreshing) return;
+    setRefreshing(name);
+    try {
+      const r = await refreshParser(name);
+      toast.success(`${PARSER_NAMES[name] || name}: оновлюємо`, { description: name === "oddspapi" ? `Витрачено ${r.cost} ${plural(r.cost, "запит", "запити", "запитів")} з місячного ліміту. Коефіцієнти з’являться за хвилину.` : name === "liquipedia" ? "Liquipedia просить паузу 31 с між запитами — обидві гри оновляться приблизно за хвилину." : "Наступний запит піде одразу." });
+      window.setTimeout(() => { void load(); }, name === "liquipedia" ? 70_000 : 8_000);
+    } catch (e) {
+      toast.error("Не вдалося оновити", { description: e instanceof Error ? e.message : "Сервер не відповів" });
+    }
+    window.setTimeout(() => setRefreshing(""), 1200);
+  };
   const setPaused = (name: string, paused: boolean) => setParsers((ps) => ps && ps.map((x) => (x.name === name ? { ...x, paused, pausedAt: paused ? new Date().toISOString() : "", pausedBy: paused ? x.pausedBy : "" } : x)));
-  const stopOrStart = async (name: string, stop: boolean) => {
+  // minutes until 08:00 Kyiv (tomorrow if it is already past 08:00)
+  const toMorning = () => { const kyiv = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Kyiv" })); const t = new Date(kyiv); t.setHours(8, 0, 0, 0); if (t <= kyiv) t.setDate(t.getDate() + 1); return Math.round((t.getTime() - kyiv.getTime()) / 60_000); };
+  const stopOrStart = async (name: string, stop: boolean, minutes?: number) => {
     if (stopping) return;
     setStopping(name); setPaused(name, stop);
     try {
-      await (stop ? stopParser(name) : startParser(name));
-      if (stop) toast.success(`${PARSER_NAMES[name] || name} зупинено`, { description: "Він не звертається до джерела, застосунок показує останні збережені дані", action: { label: "Запустити", onClick: () => stopOrStart(name, false) } });
+      await (stop ? stopParser(name, minutes) : startParser(name));
+      if (stop) toast.success(`${PARSER_NAMES[name] || name} зупинено${minutes ? ` до ${new Date(Date.now() + minutes * 60_000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}`, { description: minutes ? "Потім запуститься сам. Застосунок поки показує останні збережені дані" : "Він не звертається до джерела, застосунок показує останні збережені дані", action: { label: "Запустити", onClick: () => stopOrStart(name, false) } });
       else toast.success(`${PARSER_NAMES[name] || name} запущено`, { description: "Наступний запит до джерела піде як завжди" });
       await load();
     } catch (e) {
@@ -645,12 +666,16 @@ export default function Matches() {
           <span><Logo src={m.logo2} name={m.t2} size={44} /><strong>{m.t2}</strong></span>
         </div>
         <dl className="v3-mxp-kv">
-          <div><dt>Турнір</dt><dd>{[m.tournament || "не вказано", m.bo].filter(Boolean).join(" · ")}</dd></div>
+          <div><dt>Турнір</dt><dd>{[m.tournament || "не вказано", m.stage, m.tier ? `тир ${m.tier}` : "", m.bo].filter(Boolean).join(" · ")}</dd></div>
+          {m.maps && <div><dt>Карти</dt><dd className="v3-mxp-maps">{m.maps.map((x, k) => <span key={k}>{x.map} <b>{x.score1 ?? "–"}:{x.score2 ?? "–"}</b></span>)}</dd></div>}
           <div><dt>Початок</dt><dd>{m.day === today ? m.time : `${dayShort(m.day)} · ${m.time}`} · Київ</dd></div>
           {m.c1 != null && m.c2 != null && <div><dt>Коефіцієнти</dt><dd className="v3-mxp-odds">{([[m.c1, m.o1, m.t1], [m.c2, m.o2, m.t2]] as const).map(([c, o, t], k) => { const mv = oddsMove(c, o); return <span key={k} aria-label={`${t}: ${mv.now}${mv.from ? `, на відкритті ${mv.from}` : ""}`}><b>{mv.now}</b>{mv.dir && <i className={`is-${mv.dir}`}>{mv.dir === "down" ? "↓" : "↑"} з {mv.from}</i>}</span>; })}</dd></div>}
+          {m.x1 != null && m.x2 != null && <div><dt>Закриття</dt><dd>{oddsMove(m.x1, null).now} · {oddsMove(m.x2, null).now}<small className="v3-mxp-ksub">остання ціна перед стартом</small></dd></div>}
+          {(m.b1 && m.c1 != null && m.b1.c > m.c1) || (m.b2 && m.c2 != null && m.b2.c > m.c2) ? <div><dt>Найкращий</dt><dd>{[m.b1, m.b2].map((b, k) => b ? <span key={k} className="v3-mxp-best">{oddsMove(b.c, null).now} <small>{b.book}</small></span> : null)}</dd></div> : null}
           <div><dt>Джерело</dt><dd>{m.link ? <a href={m.link} target="_blank" rel="noreferrer">{m.source}<ExternalLink size={12} aria-hidden="true" /></a> : m.source}{updatedAt ? ` · оновлено ${updatedAt}` : ""}</dd></div>
           {ov && <div><dt>Правка</dt><dd>@{ov.decidedBy}</dd></div>}
         </dl>
+        {!m.manual && !m.id.includes(":h:") && <MatchHistory game={m.game} id={m.raw} />}
         <p className="v3-mxp-bh">Ставки користувачів · {bets ? bs.length : "…"}</p>
         {bs.length > 0 ? <div className="v3-mxp-bl">{bs.slice(0, 8).map((b) => <div key={b.id}><span><b>@{b.username}</b> {b.betType} · {b.odds}</span><strong>{b.currency === "USD" ? `${Number(b.amount).toLocaleString("uk-UA")} ₴` : `${Number(b.amount).toLocaleString("uk-UA")} ₴`}</strong></div>)}{bs.length > 8 && <small>і ще {bs.length - 8}</small>}</div>
           : bets && <p className="v3-mxp-bnone">На цей матч ще ніхто не ставив.</p>}
@@ -761,14 +786,14 @@ export default function Matches() {
             <div key={p.name} className={`v3-mxp-pc${ps === "paused" ? " is-paused" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
               <div className="v3-mxp-ph">
                 <strong>{PARSER_NAMES[p.name] || p.name}</strong>
-                <span key={ps} className={`v3-mxp-pst is-${ps}`}><i aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "paused" ? "Зупинено" : "Працює"}</span>
+                <span key={ps} className={`v3-mxp-pst is-${ps}`}><i aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "stale" ? `Без оновлень ${staleText(p)}` : ps === "paused" ? "Зупинено" : "Працює"}</span>
                 <span className="v3-mxp-pa">
                   {events[p.name] && <button type="button" className="v3-mxp-plog" onClick={() => setLogFor(p.name)} aria-label={`Інформація й лог · ${PARSER_NAMES[p.name] || p.name}`}><Info size={16} aria-hidden="true" /></button>}
                   {p.paused ? <button type="button" className="v3-mxp-pgo" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
                     : <button type="button" className="v3-mxp-pstop" disabled={!online || stopping === p.name} onClick={() => setStopAsk(p.name)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
                 </span>
               </div>
-              <small className="v3-mxp-psub">{p.paused ? `${meta.game || meta.site} · зупинено вручну${p.pausedBy ? ` @${p.pausedBy}` : ""}` : ps === "down" || ps === "flaky" ? `${meta.game || meta.site} · не відповідає${p.lastFailure ? ` · ${ago(p.lastFailure)}` : ""}` : `${meta.game || meta.site} · ${!matches ? "…" : p.name === "oddspapi" ? (() => { const n = cntFor(p.name, all); return `${n} ${plural(n, "матч", "матчі", "матчів")} з коефіцієнтами`; })() : `${cnt} ${plural(cnt, "матч", "матчі", "матчів")} сьогодні`}`}</small>
+              <small className="v3-mxp-psub">{p.paused ? `${meta.game || meta.site} · ${p.pausedUntil ? `зупинено до ${new Date(p.pausedUntil).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}, потім запуститься сам` : `зупинено вручну${p.pausedBy ? ` @${p.pausedBy}` : ""}`}` : ps === "down" || ps === "flaky" ? `${meta.game || meta.site} · не відповідає${p.lastFailure ? ` · ${ago(p.lastFailure)}` : ""}` : `${meta.game || meta.site} · ${!matches ? "…" : p.name === "oddspapi" ? (() => { const n = cntFor(p.name, all); return `${n} ${plural(n, "матч", "матчі", "матчів")} з коефіцієнтами`; })() : `${cnt} ${plural(cnt, "матч", "матчі", "матчів")} сьогодні`}`}</small>
               {/* tap an hour — what happened in it */}
               <div className="v3-mxp-bars" role="group" aria-label="Останні 24 години">{hrs.map((h, k) => <button type="button" key={k} className={`is-${p.paused ? "none" : h.s}${hourFor?.p === p.name && hourFor.k === k ? " is-pick" : ""}`} aria-label={`${h.hh}:00 — ${hourText(h)}`} onClick={() => setHourFor(hourFor?.p === p.name && hourFor.k === k ? null : { p: p.name, k })} />)}</div>
               {hourFor?.p === p.name && hrs[hourFor.k] && <div key={hourFor.k} className={`v3-mxp-hour is-${hrs[hourFor.k].s}`} role="status" style={{ ["--x" as string]: `${(hourFor.k + .5) / 24 * 100}%` }}><b>{hrs[hourFor.k].hh}:00–{String((+hrs[hourFor.k].hh + 1) % 24).padStart(2, "0")}:00</b><span>{hourText(hrs[hourFor.k])}</span></div>}
@@ -777,7 +802,13 @@ export default function Matches() {
               {p.week && p.week.some((d) => d.ok + d.fail > 0) && (() => { const ok = p.week.reduce((a, d) => a + d.ok, 0), all = p.week.reduce((a, d) => a + d.ok + d.fail, 0), pct = Math.floor((ok / all) * 1000) / 10; return (
                 <div className="v3-mxp-week">
                   <div className="v3-mxp-wh"><span>7 днів</span><b className={pct >= 95 ? "is-ok" : pct >= 80 ? "is-mid" : "is-bad"}>{String(pct).replace(".", ",")}% успішних запусків</b></div>
-                  <div className="v3-mxp-wd">{p.week.map((d) => { const n = d.ok + d.fail, r = n ? d.ok / n : -1; const lvl = r < 0 ? "none" : r >= .95 ? "ok" : r >= .8 ? "mid" : "bad"; const wd = new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" }); return <span key={d.day} className={`is-${lvl}`} aria-label={`${wd} ${d.day}: ${n ? `${d.ok} з ${n} успішно` : "запусків немає"}`}><i />{wd}</span>; })}</div>
+                  <div className="v3-mxp-wd">{p.week.map((d) => { const n = d.ok + d.fail, r = n ? d.ok / n : -1; const lvl = r < 0 ? "none" : r >= .95 ? "ok" : r >= .8 ? "mid" : "bad"; const wd = new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" }); const key = `${p.name}:${d.day}`; return <button type="button" key={d.day} className={`is-${lvl}${dayOpen === key ? " is-sel" : ""}`} disabled={!d.fail} aria-pressed={dayOpen === key} aria-label={`${wd} ${d.day}: ${n ? `${d.ok} з ${n} успішно` : "запусків немає"}${d.fail ? ", показати збої" : ""}`} onClick={() => setDayOpen(dayOpen === key ? null : key)}><i />{wd}</button>; })}</div>
+                  {(() => { const d = p.week.find((x) => `${p.name}:${x.day}` === dayOpen); if (!d) return null; return (
+                    <div className="v3-mxp-wwhy">
+                      <b>{new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })} · {d.fail} {plural(d.fail, "збій", "збої", "збоїв")} з {d.ok + d.fail}</b>
+                      {(d.reasons || []).map((x) => <p key={x.message}><span>{x.message}</span><small>{x.n}× · {x.first === x.last ? x.first : `${x.first}–${x.last}`}</small></p>)}
+                    </div>
+                  ); })()}
                 </div>
               ); })()}
               <div className="v3-mxp-ptiles">
@@ -786,8 +817,10 @@ export default function Matches() {
                 <div><span>Зібрано матчів</span><b>{matches ? cntFor(p.name, all) : "…"}</b></div>
               </div>
               {/* OddsPapi only adds prices: where they get lost — schedule → priced → our matches */}
-              {p.odds && !p.paused && <div className="v3-mxp-podds"><p>У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}</p><small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.accountAt ? " (дані OddsPapi)" : ""}{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}{p.odds.nextOddsAt ? ` · наступні о ${new Date(p.odds.nextOddsAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small>{!!p.odds.unmatched?.length && <button type="button" className="v3-mxp-pmiss" onClick={() => setMissOpen(true)}><AlertTriangle size={14} aria-hidden="true" />Не знайшли наш матч: {p.odds.unmatched.length}<ChevronRight size={15} aria-hidden="true" /></button>}</div>}
+              {p.odds && !p.paused && <div className="v3-mxp-podds"><p>У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}</p><small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.accountAt ? " (дані OddsPapi)" : ""}{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}{p.odds.nextOddsAt ? ` · наступні о ${new Date(p.odds.nextOddsAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small>{!!p.odds.fallback && <p className="v3-mxp-pfall">Liquipedia не оновлюється — у стрічці {p.odds.fallback} {plural(p.odds.fallback, "матч", "матчі", "матчів")} з розкладу OddsPapi (без рахунку)</p>}{!!p.odds.unmatched?.length && <button type="button" className="v3-mxp-pmiss" onClick={() => setMissOpen(true)}><AlertTriangle size={14} aria-hidden="true" />Не знайшли наш матч: {p.odds.unmatched.length}<ChevronRight size={15} aria-hidden="true" /></button>}</div>}
               {p.open && !p.paused && <button type="button" className="v3-mxp-prun" disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>{r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}</button>}
+              {/* «Оновити зараз»: fetch from the source now; OddsPapi says what it costs from the month's requests */}
+              {!p.open && !p.paused && <button type="button" className="v3-mxp-pref" disabled={!online || refreshing === p.name} onClick={() => refreshNow(p.name)}><RefreshCw size={14} aria-hidden="true" className={refreshing === p.name ? "is-spin" : ""} />{refreshing === p.name ? "Оновлюємо…" : "Оновити зараз"}{p.name === "oddspapi" && p.odds?.refreshCost ? <small>{p.odds.refreshCost} {plural(p.odds.refreshCost, "запит", "запити", "запитів")} з ліміту</small> : p.name === "liquipedia" ? <small>≈ 1 хв</small> : null}</button>}
             </div>
           );
         })}
@@ -834,7 +867,7 @@ export default function Matches() {
               <div className="v3-mx-ph">
                 <span className="v3-mx-pav" style={{ background: meta.color }}>{meta.ini}</span>
                 <span><strong>{PARSER_NAMES[p.name] || p.name}</strong><small>{meta.site}{meta.game && ` · ${meta.game}`}</small></span>
-                <span key={ps} className={`v3-tag v3-mx-flip ${ps === "down" ? "v3-tag-red" : ps === "ok" ? "v3-tag-green" : ps === "paused" ? "v3-tag-gray" : "v3-tag-amber"}`}><i className={`v3-mx-dot${ps === "down" || ps === "flaky" ? " is-pulse" : ""}`} aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "paused" ? "Зупинено" : "Працює"}</span>
+                <span key={ps} className={`v3-tag v3-mx-flip ${ps === "down" ? "v3-tag-red" : ps === "ok" ? "v3-tag-green" : ps === "paused" ? "v3-tag-gray" : "v3-tag-amber"}`}><i className={`v3-mx-dot${ps === "down" || ps === "flaky" ? " is-pulse" : ""}`} aria-hidden="true" />{ps === "down" ? "Помилка" : ps === "flaky" ? "Збої" : ps === "idle" ? "Без даних" : ps === "stale" ? `Без оновлень ${staleText(p)}` : ps === "paused" ? "Зупинено" : "Працює"}</span>
                 {ps !== "paused" && <button type="button" className="v3-mx-pstop" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, true)} aria-label={`Зупинити ${PARSER_NAMES[p.name] || p.name}`}><Square size={11} fill="currentColor" aria-hidden="true" />Стоп</button>}
               </div>
               <div className="v3-mx-pkv">
@@ -845,7 +878,7 @@ export default function Matches() {
               {(() => { const ev = events[p.name]; return ev ? (
                 <div className="v3-mx-ev"><strong>Останні події</strong>{ev.length ? ev.slice(0, 4).map((e, k) => <div key={e.id} className={`v3-mx-evr is-${e.event}`} style={{ animationDelay: `${150 + k * 45}ms` }}><span>{new Date(e.createdAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><span>{EV_LABEL[e.event]}{e.message && e.message !== "OK" ? ` · ${e.message}` : ""}</span></div>) : <p className="v3-mx-pnote">Подій ще немає — журнал почне наповнюватися з наступних запусків.</p>}</div>
               ) : null; })()}
-              <p className="v3-mx-pnote">{p.paused ? `Зупинено вручну${p.pausedBy ? ` (@${p.pausedBy})` : ""}${p.pausedAt ? ` ${ago(p.pausedAt)}` : ""}. Парсер не звертається до джерела і не рахує збоїв — застосунок показує останні збережені дані. «Запустити» вмикає його знову.` : p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : ps === "flaky" ? `Останні запуски завершуються помилкою (${ago(p.lastFailure)}), парсер повторює спроби. Поки так, у меню біля «Матчі» стоїть «!».` : ps === "idle" ? "Помилок немає, але сьогодні джерело не повернуло жодного матчу — найчастіше це блокування з боку сайту. Застосунок показує останні отримані дані." : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
+              <p className="v3-mx-pnote">{p.paused ? `Зупинено вручну${p.pausedBy ? ` (@${p.pausedBy})` : ""}${p.pausedAt ? ` ${ago(p.pausedAt)}` : ""}. Парсер не звертається до джерела і не рахує збоїв — застосунок показує останні збережені дані. «Запустити» вмикає його знову.` : p.open ? `Запобіжник спрацював після ${p.failures} ${plural(p.failures, "невдалої спроби", "невдалих спроб", "невдалих спроб")} — застосунок показує останні отримані дані. «Запустити зараз» скидає його, і наступний запит піде одразу.` : ps === "flaky" ? `Останні запуски завершуються помилкою (${ago(p.lastFailure)}), парсер повторює спроби. Поки так, у меню біля «Матчі» стоїть «!».` : ps === "stale" ? `Помилок немає, але Liquipedia не оновлювалась ${staleText(p)} (зазвичай — кожні 5 хв). Застосунок показує останні отримані дані; «Оновити зараз» запустить запит.` : ps === "idle" ? "Помилок немає, але сьогодні джерело не повернуло жодного матчу — найчастіше це блокування з боку сайту. Застосунок показує останні отримані дані." : "Дані оновлюються автоматично. Якщо джерело мовчатиме, тут з’явиться помилка, а в меню — позначка «!»."}</p>
               <div className="v3-mx-pacts">
                 {p.paused ? <button type="button" className="v3-btn v3-btn-primary" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}>{stopping === p.name ? <span className="v3-mx-spin" aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}Запустити</button> :
                 <button type="button" className={`v3-btn ${p.open ? "v3-btn-primary" : "v3-btn-dark"}`} disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>
@@ -1153,9 +1186,10 @@ export default function Matches() {
 
       {/* phone confirmations — design «Зупинити HLTV?», «Видалити матч?», «Об’єднати з офіційним?», «Об’єднати з…» */}
       <ConfirmSheet open={!!stopAsk} tone="dark" icon={<span className="v3-csheet-bar" />} title={`Зупинити ${stopAsk ? PARSER_NAMES[stopAsk] || stopAsk : ""}?`}
-        text="Запитів до джерела не буде, поки не запустите знову. У застосунку лишаться останні дані з позначкою часу."
+        text={stopFor === "forever" ? "Запитів до джерела не буде, поки не запустите знову. У застосунку лишаться останні дані з позначкою часу." : "Запитів до джерела не буде, а потім парсер запуститься сам. У застосунку поки лишаться останні дані."}
         confirm="Зупинити" confirmIcon={<span className="v3-csheet-stop" aria-hidden="true" />} busy={!!stopAsk && stopping === stopAsk} busyText="Зупиняємо…"
-        onOpenChange={(o) => { if (!o) setStopAsk(null); }} onConfirm={async () => { if (!stopAsk) return; await stopOrStart(stopAsk, true); setStopAsk(null); }}>
+        onOpenChange={(o) => { if (!o) { setStopAsk(null); setStopFor("1h"); } }} onConfirm={async () => { if (!stopAsk) return; await stopOrStart(stopAsk, true, stopFor === "1h" ? 60 : stopFor === "morning" ? toMorning() : undefined); setStopAsk(null); setStopFor("1h"); }}>
+        <div className="v3-csheet-seg" role="radiogroup" aria-label="На скільки зупинити">{([["1h", "На 1 годину"], ["morning", "До 08:00"], ["forever", "Доки не запущу"]] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stopFor === k} className={stopFor === k ? "is-on" : ""} onClick={() => setStopFor(k)}>{l}</button>)}</div>
         {parsers && parsers.length > 1 && <p className="v3-csheet-note"><b aria-hidden="true">!</b><span>Якщо зупинити всі {parsers.length} — у меню біля «Матчі» з’явиться знак «стоп».</span></p>}
       </ConfirmSheet>
       <ConfirmSheet open={!!delAsk} icon={<Trash2 size={22} />} title="Видалити матч?"
@@ -1308,5 +1342,29 @@ function MergeTeamDialog({ team, teams, busy, onClose, onPick }: { team: Team | 
         <div className="v3-modal-foot"><span className="v3-hint">Запишеться в журнал дій</span><div className="v3-modal-actions"><button type="button" className="v3-btn v3-btn-ghost" onClick={onClose} disabled={busy}>Скасувати</button></div></div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const FIELD_LABEL: Record<string, string> = { start: "Початок", status: "Статус", score: "Рахунок", odds: "Коефіцієнти", override: "Правка" };
+const STATUS_UA: Record<string, string> = { upcoming: "заплановано", live: "наживо", finished: "завершено", postponed: "перенесено", cancelled: "скасовано" };
+/** «Історія змін»: що змінилось у матчі, коли і хто — парсер чи адмін. Завантажується, коли розгорнути. */
+function MatchHistory({ game, id }: { game: string; id: string }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<MatchChange[] | null>(null);
+  useEffect(() => {
+    if (!open || rows) return;
+    let live = true;
+    fetchMatchChanges(game, id).then((r) => { if (live) setRows(r); }).catch(() => { if (live) setRows([]); });
+    return () => { live = false; };
+  }, [open, rows, game, id]);
+  const val = (f: string, v: string | null) => v == null ? "—" : f === "start" ? new Date(v).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" }) : f === "status" ? STATUS_UA[v] || v : v;
+  const src = (s: string) => s === "liquipedia" ? "Liquipedia" : s === "oddspapi" ? "OddsPapi" : s === "liquipedia/opendota" ? "Liquipedia / OpenDota" : s;
+  return (
+    <div className="v3-mxp-hist">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}><History size={15} aria-hidden="true" />Історія змін{rows ? ` · ${rows.length}` : ""}<ChevronDown size={15} aria-hidden="true" className={open ? "is-up" : ""} /></button>
+      {open && (rows === null ? <p className="v3-mxp-hnone">Завантажуємо…</p> : rows.length === 0 ? <p className="v3-mxp-hnone">Змін ще не було — матч такий, яким прийшов від джерела.</p> : (
+        <ol>{rows.map((r, k) => <li key={k}><span>{FIELD_LABEL[r.field] || r.field}: {r.oldValue != null && <s>{val(r.field, r.oldValue)}</s>} {val(r.field, r.newValue)}</span><small>{src(r.source)} · {new Date(r.at).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</small></li>)}</ol>
+      ))}
+    </div>
   );
 }

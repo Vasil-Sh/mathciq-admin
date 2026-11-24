@@ -45,3 +45,7 @@
 .v3-mxpick-list small { font-size: 12px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-mxpick-none { margin: 18px 0; color: #6b7384; font-size: 13px; text-align: center; }
 .v3-mxpick-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+/* «На скільки зупинити»: 1 год / до ранку / доки не запущу */
+.v3-csheet-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 14px; padding: 4px; border-radius: 14px; background: #eef0f4; }
+.v3-csheet-seg button { min-height: 40px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: #3e4656; font: 500 13px Inter, sans-serif; cursor: pointer; }
+.v3-csheet-seg button.is-on { background: #fff; color: #11151c; font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, .1); }

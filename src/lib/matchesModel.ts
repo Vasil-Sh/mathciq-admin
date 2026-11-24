@@ -25,6 +25,14 @@ export interface FeedMatch {
   coeff2?: number | null;
   openCoeff1?: number | null;
   openCoeff2?: number | null;
+  closeCoeff1?: number | null;
+  closeCoeff2?: number | null;
+  bestCoeff1?: number | null;
+  bestCoeff2?: number | null;
+  bestBook1?: string | null;
+  bestBook2?: string | null;
+  tier?: "S" | "A" | "B" | "C" | "D" | null;
+  maps?: { map: string; score1: number | null; score2: number | null }[];
 }
 
 /** Як приходить із GET /matches-history. */
@@ -68,6 +76,10 @@ export interface Match {
   odds?: boolean;
   /** Коефіцієнти на перемогу зараз і на відкритті лінії (рух коефіцієнтів). */
   c1?: number | null; c2?: number | null; o1?: number | null; o2?: number | null;
+  /** Закриття (остання ціна перед стартом) і найкращий коефіцієнт серед букмекерів. */
+  x1?: number | null; x2?: number | null; b1?: { c: number; book: string } | null; b2?: { c: number; book: string } | null;
+  stage?: string; tier?: string | null;
+  maps?: { map: string; score1: number | null; score2: number | null }[];
 }
 
 export const GAME_LABEL: Record<Game, string> = { cs2: "CS2", dota2: "Dota 2" };
@@ -114,6 +126,10 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     link: m.link || "",
     odds: m.coeff1 != null && m.coeff2 != null,
     c1: m.coeff1 ?? null, c2: m.coeff2 ?? null, o1: m.openCoeff1 ?? null, o2: m.openCoeff2 ?? null,
+    x1: m.closeCoeff1 ?? null, x2: m.closeCoeff2 ?? null,
+    b1: m.bestCoeff1 != null && m.bestBook1 ? { c: m.bestCoeff1, book: m.bestBook1 } : null,
+    b2: m.bestCoeff2 != null && m.bestBook2 ? { c: m.bestCoeff2, book: m.bestBook2 } : null,
+    stage: m.stage || "", tier: m.tier ?? null, maps: m.maps?.length ? m.maps : undefined,
     raw: String(m.id),
     manual: String(m.id).startsWith("manual-"),
   };

@@ -29,7 +29,8 @@ export async function fetchHistory(days = 30): Promise<Match[]> {
 export async function rerunParser(name: string): Promise<void> {
   await api.post(`/admin/parsers/${encodeURIComponent(name)}/rerun`, {});
 }
-export const stopParser = (name: string) => api.post(`/admin/parsers/${encodeURIComponent(name)}/stop`, {});
+/** `minutes` — start again by itself after that long; none = until started by hand. */
+export const stopParser = (name: string, minutes?: number) => api.post(`/admin/parsers/${encodeURIComponent(name)}/stop`, minutes ? { minutes } : {});
 export const startParser = (name: string) => api.post(`/admin/parsers/${encodeURIComponent(name)}/start`, {});
 
 // ── Адмінські дані матчів (cs-backend: routes/adminMatches.ts) ──
@@ -135,3 +136,9 @@ export async function logoFileToDataUrl(file: File): Promise<string> {
     return out;
   } finally { URL.revokeObjectURL(url); }
 }
+
+/** «Історія змін» матчу: що змінилось, коли і яке джерело змінило. */
+export interface MatchChange { field: string; oldValue: string | null; newValue: string | null; source: string; at: string }
+export const fetchMatchChanges = (game: string, matchId: string) => api.get<{ changes: MatchChange[] }>(`/admin/matches/${encodeURIComponent(game)}/${encodeURIComponent(matchId)}/changes`).then((r) => r.changes || []);
+/** «Оновити зараз»: OddsPapi відповідає, скільки запитів витратив. */
+export const refreshParser = (name: string) => api.post<{ success: boolean; cost: number }>(`/admin/parsers/${encodeURIComponent(name)}/refresh`, {});

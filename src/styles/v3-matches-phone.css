@@ -191,7 +191,7 @@
   .v3-mxp-pst i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .v3-mxp-pst.is-ok { background: #e3f5ea; color: #1f8a4c; }
   .v3-mxp-pst.is-down { background: #fde2df; color: #c2341f; }
-  .v3-mxp-pst.is-flaky, .v3-mxp-pst.is-idle { background: #fff3dc; color: #8a5a00; }
+  .v3-mxp-pst.is-flaky, .v3-mxp-pst.is-idle, .v3-mxp-pst.is-stale { background: #fff3dc; color: #8a5a00; }
   .v3-mxp-pst.is-paused { background: #eef0f4; color: #6b7384; }
   .v3-mxp-pa { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
   /* grey like the tiles below it — white on the white card blended in */
@@ -448,3 +448,44 @@
   .v3-mxp-wd i { display: block; width: 100%; height: 6px; border-radius: 3px; background: #e6e9ee; }
   .v3-mxp-wd .is-ok i { background: #1fb155; } .v3-mxp-wd .is-mid i { background: #f0a020; } .v3-mxp-wd .is-bad i { background: #e5484d; }
 }
+
+/* 7 днів: день торкається → причини збоїв */
+@media (max-width: 767px) {
+  .v3-mxp-wd button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0 2px; border: 0; border-radius: 6px; background: none; font: 500 10px Inter, sans-serif; color: #8a93a2; }
+  .v3-mxp-wd button:disabled { cursor: default; }
+  .v3-mxp-wd button.is-sel { background: #eef0f4; color: #11151c; }
+  .v3-mxp-wd button i { display: block; width: 100%; height: 6px; border-radius: 3px; background: #e6e9ee; }
+  .v3-mxp-wd .is-ok i { background: #1fb155; } .v3-mxp-wd .is-mid i { background: #f0a020; } .v3-mxp-wd .is-bad i { background: #e5484d; }
+  .v3-mxp-wwhy { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #fdf2f2; }
+  .v3-mxp-wwhy b { font-size: 12px; font-weight: 600; color: #11151c; }
+  .v3-mxp-wwhy b::first-letter { text-transform: uppercase; }
+  .v3-mxp-wwhy p { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: 12px; color: #3e4656; }
+  .v3-mxp-wwhy p span { min-width: 0; overflow-wrap: anywhere; }
+  .v3-mxp-wwhy p small { flex: none; color: #8a93a2; font-variant-numeric: tabular-nums; }
+}
+
+/* Парсери: «Оновити зараз», запасний розклад; матч: карти, закриття, найкращий коефіцієнт, історія змін */
+@media (max-width: 767px) {
+  .v3-mxp-pref { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 40px; margin-top: 10px; border: 0; border-radius: 12px; background: #eef0f4; color: #11151c; font: 600 13px Inter, sans-serif; }
+  .v3-mxp-pref small { font-size: 11px; font-weight: 500; color: #6b7384; }
+  .v3-mxp-pref small::before { content: "·"; margin-right: 6px; }
+  .v3-mxp-pref:disabled { opacity: .6; }
+  .v3-mxp-pref .is-spin { animation: v3-mxp-spin .9s linear infinite; }
+  @keyframes v3-mxp-spin { to { transform: rotate(360deg); } }
+  .v3-mxp-pfall { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: #fff3dc; color: #8a5a00; font-size: 12px; font-weight: 500; line-height: 1.4; }
+  .v3-mxp-maps { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .v3-mxp-maps b, .v3-mxp-best { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .v3-mxp-best + .v3-mxp-best { margin-left: 12px; }
+  .v3-mxp-best small, .v3-mxp-ksub { font-size: 11px; font-weight: 500; color: #8a93a2; }
+  .v3-mxp-ksub { display: block; }
+  .v3-mxp-hist { margin: 4px 0 12px; border-radius: 14px; background: #f4f6f9; }
+  .v3-mxp-hist > button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; background: none; color: #11151c; font: 600 14px Inter, sans-serif; text-align: left; }
+  .v3-mxp-hist > button svg:last-child { margin-left: auto; color: #8a93a2; transition: transform .2s; }
+  .v3-mxp-hist > button svg.is-up { transform: rotate(180deg); }
+  .v3-mxp-hist ol { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0 12px 12px; list-style: none; }
+  .v3-mxp-hist li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; color: #11151c; }
+  .v3-mxp-hist li s { color: #8a93a2; }
+  .v3-mxp-hist li small { font-size: 11px; color: #8a93a2; }
+  .v3-mxp-hnone { margin: 0; padding: 0 12px 12px; font-size: 13px; color: #6b7384; }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) { .v3-mxp-pref .is-spin { animation: none; } }
