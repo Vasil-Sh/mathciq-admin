@@ -11,7 +11,10 @@ interface WeekReport {
   finished: number; noScore: number; withOdds: number;
   scoreDelayMin: number | null; lateScores: number;
   days: { day: string; total: number; noScore: number; withOdds: number }[];
+  bySource?: { source: string; n: number }[];
 }
+
+const SOURCE: Record<string, string> = { liquipedia: "Liquipedia", liquipedia_page: "сторінки турнірів", pandascore: "PandaScore", cito: "Cito", oddspapi: "OddsPapi", manual: "вручну", other: "інше" };
 
 const dShort = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("uk-UA", { day: "numeric", month: "short", timeZone: "UTC" });
 const mins = (m: number) => (m < 60 ? `${m} хв` : `${Math.floor(m / 60)} год${m % 60 ? ` ${m % 60} хв` : ""}`);
@@ -44,6 +47,7 @@ export default function MatchesWeekCard() {
             <div><b>{r.scoreDelayMin == null ? "—" : mins(r.scoreDelayMin)}</b><small>{r.lateScores ? `рахунок після завершення · ${r.lateScores} ${plural(r.lateScores, "матч", "матчі", "матчів")}` : "рахунок одразу з завершенням"}</small></div>
           </div>
           <div className="v3-mw-bars" aria-hidden="true">{r.days.map((d) => <span key={d.day} title={`${dShort(d.day)}: ${d.total}`}><i style={{ height: `${Math.round((d.total / max) * 100)}%` }}>{d.withOdds > 0 && <u style={{ height: `${Math.round((d.withOdds / Math.max(1, d.total)) * 100)}%` }} />}</i><small>{new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" })}</small></span>)}</div>
+          {!!r.bySource?.length && <div className="v3-mw-src"><small>Звідки матчі</small><ul>{r.bySource.map((x) => <li key={x.source}><span>{SOURCE[x.source] || x.source}</span><b>{x.n}</b></li>)}</ul></div>}
           <p className="v3-mw-note">{partial ? `Рахуємо з ${dShort(r.since!)} — тиждень заповниться до ${dShort(new Date(Date.parse(`${r.since}T12:00:00Z`) + 6 * 86_400_000).toISOString().slice(0, 10))}. ` : ""}Темніша частина стовпчика — матчі з коефіцієнтами.</p>
         </>
       )}
