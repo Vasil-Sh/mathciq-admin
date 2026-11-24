@@ -112,7 +112,7 @@ export const streakText = (n: number) => `${n} ${plural(n, "програш", "п
 
 // ── Attention sources ──
 
-export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string; pausedUntil?: string; askedAt?: string; week?: { day: string; ok: number; fail: number; reasons?: { message: string; n: number; first: string; last: string }[] }[]; odds?: { used: number; budget: number; calls?: Record<string, number>; accountAt?: number; refreshCost?: number; fallback?: number; scheduled: number; priced: number; matched: number; fixturesAt: string; oddsAt: string; nextOddsAt?: string; unmatched?: OddsMiss[] }; pages?: { pages: number; added: number }; pandascore?: { at: string; nextAt: string; callsThisHour: number; cs2: number; dota2: number; added: { cs2: number; dota2: number } }; cito?: { used: number; left: number; budget: number; upcoming: number; recent: number; added: number; upcomingAt: string; recentAt: string; nextAt: string } }
+export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string; pausedUntil?: string; askedAt?: string; week?: { day: string; ok: number; fail: number; reasons?: { message: string; n: number; first: string; last: string }[] }[]; odds?: { used: number; budget: number; calls?: Record<string, number>; accountAt?: number; refreshCost?: number; fallback?: number; scheduled: number; priced: number; matched: number; fixturesAt: string; oddsAt: string; nextOddsAt?: string; unmatched?: OddsMiss[] }; pages?: { pages: number; added: number }; pandascore?: { at: string; nextAt: string; callsThisHour: number; cs2: number; dota2: number; aliases?: number; added: { cs2: number; dota2: number } }; cito?: { used: number; left: number; budget: number; upcoming: number; recent: number; added: number; upcomingAt: string; recentAt: string; nextAt: string } }
 /** A priced OddsPapi match that found none of ours; `ours` = our match at that time sharing one team. */
 export interface OddsMiss { game: "cs2" | "dota2"; odds: { team1: string; team2: string; start: string; tournament: string; coeff1: number; coeff2: number }; ours: { team1: string; team2: string; start: string } | null }
 export interface SupportTicket { id: string; username: string; subject: string; createdAt: string }
@@ -147,8 +147,15 @@ export function parserHealth(p: ParserState, now = Date.now()): ParserHealth {
 export const PARSER_ISSUE: Record<"down" | "flaky" | "idle", string> = { down: "не відповідає", flaky: "працює зі збоями", idle: "не повертає матчів" };
 
 export async function fetchParsers(): Promise<ParserState[]> {
-  const data = await api.get<{ parsers: ParserState[] }>("/admin/parsers");
-  return data.parsers || [];
+  return (await fetchParsersFull()).parsers;
+}
+
+/** A score Liquipedia and another source disagree on, or a match closed by PandaScore + Cito while Liquipedia was silent. */
+export interface ScoreIssue { kind: "conflict" | "closed"; id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; tournament: string; ours: string; theirs: { source: "pandascore" | "cito"; score: string }[]; at: string }
+
+export async function fetchParsersFull(): Promise<{ parsers: ParserState[]; scoreIssues: ScoreIssue[] }> {
+  const data = await api.get<{ parsers: ParserState[]; scoreIssues?: ScoreIssue[] }>("/admin/parsers");
+  return { parsers: data.parsers || [], scoreIssues: data.scoreIssues || [] };
 }
 
 export async function fetchOpenTickets(): Promise<SupportTicket[]> {

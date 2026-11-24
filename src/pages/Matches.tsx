@@ -16,7 +16,7 @@ import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
   fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchMatchChanges, refreshParser, type MatchChange, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
-import { fetchParsers, PARSER_ISSUE, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
+import { fetchParsersFull, PARSER_ISSUE, type ScoreIssue, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
   addDays, ago, baseNorm, betMatches, dayShort, GAME_LABEL, initials, isFallbackLogo, isoToKyiv, kyivDay, kyivToIso, linkKey, manualGroups, mergeCatalog, normTeam, oddsMove, setAliases, similarity, STATUS_LABEL, teamsFrom,
   type CatalogTeam, type Game, type ManualGroup, type Match, type MStatus, type Team,
@@ -156,12 +156,14 @@ export default function Matches() {
   // «Змінити логотип»: game:norm → URL of the admin's own logo
   const [ownLogos, setOwnLogos] = useState<Record<string, string>>({});
   const logoInput = useRef<HTMLInputElement>(null);
+  const [issues, setIssues] = useState<ScoreIssue[]>([]);
+  const [issuesOpen, setIssuesOpen] = useState(false);
   const [logoFor, setLogoFor] = useState<Team | null>(null);
 
   const load = useCallback(async (opts: { force?: boolean } = {}) => {
     try {
-      const [feeds, ps] = await Promise.all([fetchFeeds(opts.force), fetchParsers().catch(() => null)]);
-      setMatches(feeds.matches); setFailed(feeds.failed); if (ps) setParsers(ps);
+      const [feeds, pf] = await Promise.all([fetchFeeds(opts.force), fetchParsersFull().catch(() => null)]);
+      setMatches(feeds.matches); setFailed(feeds.failed); if (pf) { setParsers(pf.parsers); setIssues(pf.scoreIssues); }
       setError(""); setUpdatedAt(hhmm());
       return true;
     } catch (e) {
@@ -779,8 +781,29 @@ export default function Matches() {
     return Array.from({ length: 24 }, (_, i) => { const d = new Date(Date.now() - (23 - i) * 36e5); const hh = isoToKyiv(d.getTime()).slice(11, 13); const h = byHour.get(hh); return { hh, ok: h?.success ?? 0, bad: h?.failure ?? 0, s: !h ? "none" : h.failure && h.success ? "mix" : h.failure ? "bad" : "ok" }; }); };
   const hourText = (h: { ok: number; bad: number; s: string }) => h.s === "none" ? "запусків не було"
     : [h.ok ? `${h.ok} ${plural(h.ok, "успішний запуск", "успішні запуски", "успішних запусків")}` : "", h.bad ? `${h.bad} ${plural(h.bad, "збій", "збої", "збоїв")}` : ""].filter(Boolean).join(" · ");
+  const SRC_NAME = { pandascore: "PandaScore", cito: "Cito" } as const;
+  const conflictsN = issues.filter((x) => x.kind === "conflict").length;
   const phoneParsers = (
     <section className="v3-mxp-ps">
+      {issues.length > 0 && <button type="button" className={`v3-mxp-iss${conflictsN ? " is-warn" : ""}`} onClick={() => setIssuesOpen(true)}>
+        <AlertTriangle size={16} aria-hidden="true" />
+        <span><b>{conflictsN ? `Розбіжності рахунку · ${conflictsN}` : "Розбіжностей немає"}</b><small>{issues.length - conflictsN ? `закрито за PandaScore і Cito · ${issues.length - conflictsN}` : "джерела по-різному бачать рахунок — перевірте перед розрахунком ставок"}</small></span>
+        <ChevronRight size={16} aria-hidden="true" />
+      </button>}
+      <Dialog open={issuesOpen} onOpenChange={setIssuesOpen}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-mxp-isss">
+          <DialogTitle>Рахунки між джерелами</DialogTitle>
+          <p className="v3-mxp-isss-sub">За 7 днів. «Розбіжність» — Liquipedia та інше джерело дали різний рахунок: варто перевірити, бо за ним підказується результат ставок. «Закрито» — Liquipedia мовчала, а PandaScore і Cito 2 год показували однаковий фінальний рахунок.</p>
+          <ul>{issues.map((x) => (
+            <li key={`${x.kind}-${x.id}`} className={`is-${x.kind}`}>
+              <span className="v3-mxp-iss-k">{x.kind === "conflict" ? "Розбіжність" : "Закрито"} · {x.game === "cs2" ? "CS2" : "Dota 2"}</span>
+              <strong>{x.team1} — {x.team2}</strong>
+              <small>{x.tournament ? `${x.tournament} · ` : ""}{new Date(x.start).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</small>
+              <div className="v3-mxp-iss-sc"><span>{x.kind === "conflict" ? "Liquipedia" : "Закрито з"} <b>{x.ours}</b></span>{x.theirs.map((t) => <span key={t.source}>{SRC_NAME[t.source]} <b>{t.score}</b></span>)}</div>
+            </li>
+          ))}</ul>
+        </DialogContent>
+      </Dialog>
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-mxp-pc is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
         : !parsers.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Activity size={20} /></span><strong>Парсерів немає</strong><span>Бекенд не повідомив про жодне джерело матчів. Щойно парсер запуститься, він з’явиться тут.</span></div>
         : parsers.map((p, i) => {
@@ -823,7 +846,7 @@ export default function Matches() {
               {/* OddsPapi only adds prices: where they get lost — schedule → priced → our matches */}
               {p.pages && p.pages.pages > 0 && !p.paused && <div className="v3-mxp-podds"><p>Сторінки турнірів: {p.pages.pages} · +{p.pages.added} {plural(p.pages.added, "матч", "матчі", "матчів")}, яких немає в тікері</p><small>Тікер вміщує лише 50 найближчих матчів — решту розкладу беремо зі сторінок турнірів (кожна раз на годину)</small></div>}
               {p.pandascore && !p.paused && !p.pandascore.at && <div className="v3-mxp-podds"><p>Ще не запитували після перезапуску сервера</p><small>Перший запит — коли в застосунку з’являться відвідувачі (без них оновлення спить)</small></div>}
-              {p.pandascore && !p.paused && !!p.pandascore.at && <div className="v3-mxp-podds"><p>Матчів у PandaScore: CS2 {p.pandascore.cs2} · Dota 2 {p.pandascore.dota2} · додано до стрічки {p.pandascore.added.cs2 + p.pandascore.added.dota2} (решта вже є з Liquipedia)</p><small>Запитів за годину {p.pandascore.callsThisHour} з 1000{p.pandascore.at ? ` · оновлено ${ago(p.pandascore.at)}` : ""}{p.pandascore.nextAt ? ` · наступне о ${new Date(p.pandascore.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
+              {p.pandascore && !p.paused && !!p.pandascore.at && <div className="v3-mxp-podds"><p>Матчів у PandaScore: CS2 {p.pandascore.cs2} · Dota 2 {p.pandascore.dota2} · додано до стрічки {p.pandascore.added.cs2 + p.pandascore.added.dota2} (решта вже є з Liquipedia)</p><small>{p.pandascore.aliases ? `Зв’язків команд додано автоматично: ${p.pandascore.aliases} · ` : ""}Запитів за годину {p.pandascore.callsThisHour} з 1000{p.pandascore.at ? ` · оновлено ${ago(p.pandascore.at)}` : ""}{p.pandascore.nextAt ? ` · наступне о ${new Date(p.pandascore.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
               {p.cito && !p.paused && !p.cito.upcomingAt && <div className="v3-mxp-podds"><p>Ще не запитували</p><small>Перший запит — коли в застосунку з’являться відвідувачі (без них оновлення спить) · ліміт {p.cito.budget} на місяць</small></div>}
               {p.cito && !p.paused && !!p.cito.upcomingAt && <div className="v3-mxp-podds"><p>Матчів у Cito {p.cito.upcoming + p.cito.recent} · додано до стрічки {p.cito.added} (решта вже є з Liquipedia)</p><small>Запитів {p.cito.used} з {p.cito.budget} за місяць{p.cito.upcomingAt ? ` · розклад ${ago(p.cito.upcomingAt)}` : ""}{p.cito.nextAt ? ` · наступний о ${new Date(p.cito.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
               {p.odds && !p.paused && <div className="v3-mxp-podds"><p>У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}</p><small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.accountAt ? " (дані OddsPapi)" : ""}{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}{p.odds.nextOddsAt ? ` · наступні о ${new Date(p.odds.nextOddsAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}{p.odds.calls && Object.keys(p.odds.calls).length ? <span className="v3-mxp-pcalls">наш сервер цього місяця: {Object.entries(p.odds.calls).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${k.replace(/^\//, "")} ${n}`).join(" · ")}</span> : null}</small>{!!p.odds.fallback && <p className="v3-mxp-pfall">Liquipedia не оновлюється — у стрічці {p.odds.fallback} {plural(p.odds.fallback, "матч", "матчі", "матчів")} з розкладу OddsPapi (без рахунку)</p>}{!!p.odds.unmatched?.length && <button type="button" className="v3-mxp-pmiss" onClick={() => setMissOpen(true)}><AlertTriangle size={14} aria-hidden="true" />Не знайшли наш матч: {p.odds.unmatched.length}<ChevronRight size={15} aria-hidden="true" /></button>}</div>}
