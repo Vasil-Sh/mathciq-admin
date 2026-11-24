@@ -41,12 +41,13 @@ const EV_LABEL: Record<ParserEvent["event"], string> = { success: "Оновле�
 /** Поле часу: лише цифри, двокрапка ставиться сама («1930» → «19:30»). */
 const hhmmInput = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d; };
 const errText = (e: unknown, d = "Сервер не відповів") => (e instanceof Error && e.message ? e.message : d);
-const PARSER_META: Record<string, { ini: string; color: string; site: string; game: string; feed: Game | "hltv" | "oddspapi" | "opendota" | "liquipedia" | "cito" }> = {
+const PARSER_META: Record<string, { ini: string; color: string; site: string; game: string; feed: Game | "hltv" | "oddspapi" | "opendota" | "liquipedia" | "cito" | "pandascore" }> = {
   hltv_scraper: { ini: "HL", color: "#2450c4", site: "hltv.org", game: "CS2", feed: "hltv" },
   tipsgg_fetch_cs2_matches: { ini: "TI", color: "#7a4fd0", site: "tips.gg", game: "CS2", feed: "cs2" },
   tipsgg_fetch_dota2_matches: { ini: "TI", color: "#c2410c", site: "tips.gg", game: "Dota 2", feed: "dota2" },
   liquipedia: { ini: "LP", color: "#2b6cb0", site: "liquipedia.net", game: "CS2 · Dota 2", feed: "liquipedia" },
   oddspapi: { ini: "OP", color: "#0f7b5f", site: "oddspapi.io", game: "коефіцієнти", feed: "oddspapi" },
+  pandascore: { ini: "PS", color: "#c2410c", site: "pandascore.co", game: "CS2 · Dota 2 · розклад", feed: "pandascore" },
   cito: { ini: "CT", color: "#7a4fd0", site: "citoapi.com", game: "CS2 · розклад", feed: "cito" },
   opendota: { ini: "OD", color: "#a33a2b", site: "opendota.com", game: "Dota 2 · рахунок", feed: "opendota" },
 };
@@ -270,7 +271,7 @@ export default function Matches() {
   const todayM = all.filter((m) => m.day === today);
   const liveN = all.filter((m) => m.status === "live").length;
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
-  const cntFor = (name: string, list: Match[] = todayM) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? list.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? list.filter((m) => m.source === "Liquipedia").length : f === "cito" ? list.filter((m) => m.source === "Cito").length : f === "oddspapi" ? list.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? list.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : list.filter((m) => m.game === f && m.source === "tips.gg").length; };
+  const cntFor = (name: string, list: Match[] = todayM) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? list.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? list.filter((m) => m.source === "Liquipedia").length : f === "cito" ? list.filter((m) => m.source === "Cito").length : f === "pandascore" ? list.filter((m) => m.source === "PandaScore").length : f === "oddspapi" ? list.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? list.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : list.filter((m) => m.game === f && m.source === "tips.gg").length; };
   /** down / flaky from the breaker; idle = no errors, but nothing came in today (e.g. the source blocks us). */
   // OddsPapi → our match: name each differing team as an alias of ours (same team, other spelling)
   const missKey = (x: OddsMiss) => `${x.game}:${x.odds.team1}:${x.odds.team2}:${x.odds.start}`;
@@ -292,7 +293,7 @@ export default function Matches() {
   // Liquipedia refreshes every ~5 min: no success for 20 min with no error either = quietly stuck («Без оновлень N хв»)
   //   only while the feed is asking for data (askedAt within 5 min) — with no visitors the refresh sleeps on purpose
   const staleMin = (p: ParserState) => p.name === "liquipedia" && p.lastSuccess && p.askedAt && Date.now() - Date.parse(p.askedAt) < 5 * 60_000 ? Math.floor((Date.now() - Date.parse(p.lastSuccess)) / 60_000) : 0;
-  const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "stale" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); if (h !== "ok") return h; if (staleMin(p) >= 20) return "stale"; if (p.name === "cito") return p.cito && p.cito.upcomingAt && !p.cito.upcoming && !p.cito.recent ? "idle" : "ok"; return matches && cntFor(p.name, p.name === "oddspapi" ? all : todayM) === 0 ? "idle" : "ok"; };
+  const pState = (p: ParserState): "paused" | "down" | "flaky" | "idle" | "stale" | "ok" => { if (p.paused) return "paused"; const h = parserHealth(p); if (h !== "ok") return h; if (staleMin(p) >= 20) return "stale"; if (p.name === "pandascore") return p.pandascore && p.pandascore.at && !p.pandascore.cs2 && !p.pandascore.dota2 ? "idle" : "ok"; if (p.name === "cito") return p.cito && p.cito.upcomingAt && !p.cito.upcoming && !p.cito.recent ? "idle" : "ok"; return matches && cntFor(p.name, p.name === "oddspapi" ? all : todayM) === 0 ? "idle" : "ok"; };
   const staleText = (p: ParserState) => { const m = staleMin(p); return m < 60 ? `${m} хв` : `${Math.floor(m / 60)} год ${m % 60 ? `${m % 60} хв` : ""}`.trim(); };
   const down = (parsers || []).filter((p) => { const st = pState(p); return st !== "ok" && st !== "paused"; });
   const issueText = (p: ParserState) => { const st = pState(p); return `${PARSER_NAMES[p.name] || p.name} ${st === "stale" ? `без оновлень ${staleText(p)}` : PARSER_ISSUE[st as "down" | "flaky" | "idle"]}`; };
@@ -818,6 +819,7 @@ export default function Matches() {
                 <div><span>Зібрано матчів</span><b>{matches ? cntFor(p.name, all) : "…"}</b></div>
               </div>
               {/* OddsPapi only adds prices: where they get lost — schedule → priced → our matches */}
+              {p.pandascore && !p.paused && <div className="v3-mxp-podds"><p>Матчів у PandaScore: CS2 {p.pandascore.cs2} · Dota 2 {p.pandascore.dota2} · додано до стрічки {p.pandascore.added.cs2 + p.pandascore.added.dota2} (решта вже є з Liquipedia)</p><small>Запитів за годину {p.pandascore.callsThisHour} з 1000{p.pandascore.at ? ` · оновлено ${ago(p.pandascore.at)}` : ""}{p.pandascore.nextAt ? ` · наступне о ${new Date(p.pandascore.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
               {p.cito && !p.paused && <div className="v3-mxp-podds"><p>Матчів у Cito {p.cito.upcoming + p.cito.recent} · додано до стрічки {p.cito.added} (решта вже є з Liquipedia)</p><small>Запитів {p.cito.used} з {p.cito.budget} за місяць{p.cito.upcomingAt ? ` · розклад ${ago(p.cito.upcomingAt)}` : ""}{p.cito.nextAt ? ` · наступний о ${new Date(p.cito.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
               {p.odds && !p.paused && <div className="v3-mxp-podds"><p>У розкладі {p.odds.scheduled} · з коефіцієнтами {p.odds.priced} · у наших матчах {p.odds.matched}</p><small>Запитів {p.odds.used} з {p.odds.budget} за місяць{p.odds.accountAt ? " (дані OddsPapi)" : ""}{p.odds.oddsAt ? ` · коефіцієнти ${ago(p.odds.oddsAt)}` : p.odds.fixturesAt ? ` · розклад ${ago(p.odds.fixturesAt)}` : ""}{p.odds.nextOddsAt ? ` · наступні о ${new Date(p.odds.nextOddsAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}{p.odds.calls && Object.keys(p.odds.calls).length ? <span className="v3-mxp-pcalls">наш сервер цього місяця: {Object.entries(p.odds.calls).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${k.replace(/^\//, "")} ${n}`).join(" · ")}</span> : null}</small>{!!p.odds.fallback && <p className="v3-mxp-pfall">Liquipedia не оновлюється — у стрічці {p.odds.fallback} {plural(p.odds.fallback, "матч", "матчі", "матчів")} з розкладу OddsPapi (без рахунку)</p>}{!!p.odds.unmatched?.length && <button type="button" className="v3-mxp-pmiss" onClick={() => setMissOpen(true)}><AlertTriangle size={14} aria-hidden="true" />Не знайшли наш матч: {p.odds.unmatched.length}<ChevronRight size={15} aria-hidden="true" /></button>}</div>}
               {p.open && !p.paused && <button type="button" className="v3-mxp-prun" disabled={!online || r === "busy"} onClick={() => rerun(p.name)}>{r === "busy" ? "Запускаємо…" : r === "done" ? "Запущено" : "Запустити зараз"}</button>}
@@ -1373,7 +1375,7 @@ function MatchHistory({ game, id }: { game: string; id: string }) {
     return () => { live = false; };
   }, [open, rows, game, id]);
   const val = (f: string, v: string | null) => v == null ? "—" : f === "start" ? new Date(v).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" }) : f === "status" ? STATUS_UA[v] || v : v;
-  const src = (s: string) => s === "liquipedia" ? "Liquipedia" : s === "oddspapi" ? "OddsPapi" : s === "cito" ? "Cito" : s === "liquipedia/opendota" ? "Liquipedia / OpenDota" : s;
+  const src = (s: string) => s === "liquipedia" ? "Liquipedia" : s === "oddspapi" ? "OddsPapi" : s === "cito" ? "Cito" : s === "pandascore" ? "PandaScore" : s === "liquipedia/opendota" ? "Liquipedia / OpenDota" : s;
   return (
     <div className="v3-mxp-hist">
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}><History size={15} aria-hidden="true" />Історія змін{rows ? ` · ${rows.length}` : ""}<ChevronDown size={15} aria-hidden="true" className={open ? "is-up" : ""} /></button>

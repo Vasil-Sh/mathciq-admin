@@ -66,7 +66,7 @@ export interface Match {
   tournament: string;
   bo: string;
   status: MStatus;
-  source: "HLTV" | "tips.gg" | "OddsPapi" | "Liquipedia" | "Cito" | "Вручну";
+  source: "HLTV" | "tips.gg" | "OddsPapi" | "Liquipedia" | "Cito" | "PandaScore" | "Вручну";
   link: string;
   /** id у стрічці без префікса гри — для ручних правок. */
   raw: string;
@@ -122,7 +122,7 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     tournament: String(m.tournament ?? ""),
     bo: (m.type || "").toUpperCase(),
     status: m.status === "live" ? "live" : m.status === "finished" ? "done" : m.status === "postponed" ? "moved" : m.status === "cancelled" ? "off" : "plan",
-    source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : String(m.id).startsWith("ct-") ? "Cito" : String(m.id).startsWith("lp-") ? "Liquipedia" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
+    source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : String(m.id).startsWith("ct-") ? "Cito" : String(m.id).startsWith("ps-") ? "PandaScore" : String(m.id).startsWith("lp-") ? "Liquipedia" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
     link: m.link || "",
     odds: m.coeff1 != null && m.coeff2 != null,
     c1: m.coeff1 ?? null, c2: m.coeff2 ?? null, o1: m.openCoeff1 ?? null, o2: m.openCoeff2 ?? null,
