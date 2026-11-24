@@ -14,7 +14,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
 import {
   createAlias, createManualMatch, deleteAlias, deleteManualMatch, fetchAliases, fetchAvailability, fetchFeeds, fetchHistory, fetchLinks, fetchOverrides,
-  fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchMatchChanges, refreshParser, type MatchChange, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
+  fetchHiddenTeams, fetchTeamLogos, saveTeamLogo, deleteTeamLogo, logoFileToDataUrl, logoNorm, fetchDistinct, addDistinct, removeDistinct, type DistinctPair, fetchParserEvents, fetchMatchChanges, refreshParser, type MatchChange, fetchTeamCatalog, hideTeam, type HiddenTeam, linkMatch, unhideTeam, logoKey, patchMatch, setPagesMode, type PagesMode, rerunParser, resetMatch, startParser, stopParser, resolveLogos, type AdminStatus, type HourStat, type MatchOverride, type ParserEvent, type TeamAlias,
 } from "@/lib/adminMatchesApi";
 import { fetchParsersFull, resolveScoreIssue, PARSER_ISSUE, type ScoreIssue, PARSER_NAMES, parserHealth, plural, type OddsMiss, type ParserState } from "@/lib/dashboardInsights";
 import {
@@ -159,6 +159,16 @@ export default function Matches() {
   const [issues, setIssues] = useState<ScoreIssue[]>([]);
   const [issuesOpen, setIssuesOpen] = useState(false);
   const [issueBusy, setIssueBusy] = useState<string | null>(null);
+  const [pagesBusy, setPagesBusy] = useState(false);
+  const changePagesMode = async (mode: PagesMode) => {
+    setPagesBusy(true);
+    try {
+      await setPagesMode(mode);
+      setParsers((ps) => ps && ps.map((x) => (x.name === "liquipedia" && x.pages ? { ...x, pages: { ...x.pages, mode } } : x)));
+      toast.success(mode === "on" ? "Матчі сторінок додаються завжди" : mode === "off" ? "Сторінки турнірів вимкнено" : "Сторінки — автоматично", { description: "Стрічка оновиться за кілька хвилин" });
+    } catch (e) { toast.error("Не вдалося", { description: e instanceof Error ? e.message : "" }); }
+    setPagesBusy(false);
+  };
   /** «Правильний рахунок»: a score of another source becomes the match's score (an admin override, as «Редагувати» does);
    *  Liquipedia's — nothing changes. Either way the item leaves the list. */
   const settleIssue = async (x: ScoreIssue, score: string | null) => {
@@ -619,12 +629,12 @@ export default function Matches() {
         <span className="v3-mxp-th">{head(m)}{gChip(m.game)}</span>
         <span className="v3-mxp-tm"><Logo src={m.logo1} name={m.t1} size={30} /><b aria-label={sc ? `Рахунок ${m.s1}:${m.s2}` : "Рахунку ще немає"}>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</b><Logo src={m.logo2} name={m.t2} size={30} /></span>
         <span className="v3-mxp-tn"><strong>{m.t1}</strong><strong>{m.t2}</strong></span>
-        <small className="v3-mxp-tt">{m.tournament || GAME_LABEL[m.game]}</small>
+        <small className="v3-mxp-tt">{m.tourLogo && <img src={m.tourLogo} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}{m.tournament || GAME_LABEL[m.game]}</small>
         {chips(m)}
       </button>
     ) : (
       <button key={m.id} type="button" className={`v3-mxp-card is-${m.status}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => openM(m)}>
-        <span className="v3-mxp-ch">{head(m)}{gChip(m.game)}<span className="v3-mxp-tour">{[m.tournament, m.bo].filter(Boolean).join(" · ")}</span><ChevronRight size={15} className="v3-mxp-chev" aria-hidden="true" /></span>
+        <span className="v3-mxp-ch">{head(m)}{gChip(m.game)}<span className="v3-mxp-tour">{m.tourLogo && <img src={m.tourLogo} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}{[m.tournament, m.bo].filter(Boolean).join(" · ")}</span><ChevronRight size={15} className="v3-mxp-chev" aria-hidden="true" /></span>
         {[[m.t1, m.logo1, m.s1], [m.t2, m.logo2, m.s2]].map(([n, l, s], k) => (
           <span key={k} className={`v3-mxp-team${dim ? " is-dim" : ""}${m.status === "off" ? " is-off" : ""}`}><Logo src={l as string | null} name={n as string} size={22} /><strong>{n as string}</strong><b>{sc ? String(s) : ""}</b></span>
         ))}
@@ -871,7 +881,7 @@ export default function Matches() {
                 <div><span>Зібрано матчів</span><b>{matches ? cntFor(p.name, all) : "…"}</b></div>
               </div>
               {/* OddsPapi only adds prices: where they get lost — schedule → priced → our matches */}
-              {p.pages && p.pages.pages > 0 && !p.paused && <div className="v3-mxp-podds"><p>Сторінки турнірів: {p.pages.pages} · +{p.pages.added} {plural(p.pages.added, "матч", "матчі", "матчів")}, яких немає в тікері</p><small>Тікер вміщує лише 50 найближчих матчів — решту розкладу беремо зі сторінок турнірів (кожна раз на годину){p.pages.checked ? ` · збіг із тікером ${p.pages.agreed} з ${p.pages.checked}` : ""}</small>{p.pages.trusted === false && <p className="v3-mxp-pfall">Сторінки розходяться з тікером у часі чи форматі BO, тож їхні матчі зараз не додаються. {p.pages.off?.length ? `Напр.: ${p.pages.off.slice(0, 2).join("; ")}.` : ""}</p>}{!!p.pages.empty && <p className="v3-mxp-pfall">{p.pages.empty === p.pages.pages ? `Жодна сторінка турніру не дала матчів (${p.pages.pages})` : `${p.pages.empty} з ${p.pages.pages} сторінок турнірів без матчів`} — схоже, Liquipedia змінила розмітку сторінок. Тікер працює як раніше, а розбір сторінок треба оновити.</p>}</div>}
+              {p.pages && (p.pages.pages > 0 || p.pages.mode === "off") && !p.paused && <div className="v3-mxp-podds"><p>Сторінки турнірів: {p.pages.pages} · +{p.pages.added} {plural(p.pages.added, "матч", "матчі", "матчів")}, яких немає в тікері</p><small>Тікер вміщує лише 50 найближчих матчів — решту розкладу беремо зі сторінок турнірів (кожна раз на годину){p.pages.checked ? ` · збіг із тікером ${p.pages.agreed} з ${p.pages.checked}` : ""}</small>{p.pages.trusted === false && p.pages.mode === "auto" && <p className="v3-mxp-pfall">Сторінки розходяться з тікером у часі, тож їхні матчі зараз не додаються. {p.pages.off?.length ? `Напр.: ${p.pages.off.slice(0, 2).join("; ")}.` : ""} Якщо розбіжності неважливі — оберіть «Завжди».</p>}<div className="v3-mxp-pmode" role="radiogroup" aria-label="Сторінки турнірів"><small>Додавати матчі сторінок</small><div>{([["auto", "Авто"], ["on", "Завжди"], ["off", "Вимкнено"]] as [PagesMode, string][]).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={(p.pages!.mode || "auto") === k} className={(p.pages!.mode || "auto") === k ? "is-on" : ""} disabled={!online || pagesBusy} onClick={() => void changePagesMode(k)}>{l}</button>)}</div><small className="v3-mxp-pmode-h">{(p.pages.mode || "auto") === "auto" ? "Поки збігаються з тікером (70%+)" : p.pages.mode === "on" ? "Завжди, навіть якщо розходяться з тікером" : "Сторінки не читаються — лише тікер"}</small></div>{!!p.pages.empty && <p className="v3-mxp-pfall">{p.pages.empty === p.pages.pages ? `Жодна сторінка турніру не дала матчів (${p.pages.pages})` : `${p.pages.empty} з ${p.pages.pages} сторінок турнірів без матчів`} — схоже, Liquipedia змінила розмітку сторінок. Тікер працює як раніше, а розбір сторінок треба оновити.</p>}</div>}
               {p.pandascore && !p.paused && !p.pandascore.at && <div className="v3-mxp-podds"><p>Ще не запитували після перезапуску сервера</p><small>Перший запит — коли в застосунку з’являться відвідувачі (без них оновлення спить)</small></div>}
               {p.pandascore && !p.paused && !!p.pandascore.at && <div className="v3-mxp-podds"><p>Матчів у PandaScore: CS2 {p.pandascore.cs2} · Dota 2 {p.pandascore.dota2} · додано до стрічки {p.pandascore.added.cs2 + p.pandascore.added.dota2} (решта вже є з Liquipedia)</p><small>{p.pandascore.aliases ? `Зв’язків команд додано автоматично: ${p.pandascore.aliases} · ` : ""}Запитів за останню годину {p.pandascore.callsThisHour} з 1000{p.pandascore.at ? ` · оновлено ${ago(p.pandascore.at)}` : ""}{p.pandascore.waiting ? " · наступне — коли в застосунку з’являться відвідувачі" : p.pandascore.nextAt ? ` · наступне о ${new Date(p.pandascore.nextAt).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}</small></div>}
               {p.cito && !p.paused && !p.cito.upcomingAt && <div className="v3-mxp-podds"><p>Ще не запитували</p><small>Перший запит — коли в застосунку з’являться відвідувачі (без них оновлення спить) · ліміт {p.cito.budget} на місяць</small></div>}

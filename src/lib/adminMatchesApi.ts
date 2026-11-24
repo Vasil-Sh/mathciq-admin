@@ -141,4 +141,7 @@ export async function logoFileToDataUrl(file: File): Promise<string> {
 export interface MatchChange { field: string; oldValue: string | null; newValue: string | null; source: string; at: string }
 export const fetchMatchChanges = (game: string, matchId: string) => api.get<{ changes: MatchChange[] }>(`/admin/matches/${encodeURIComponent(game)}/${encodeURIComponent(matchId)}/changes`).then((r) => r.changes || []);
 /** «Оновити зараз»: OddsPapi відповідає, скільки запитів витратив. */
+/** «Сторінки турнірів» Liquipedia: auto — додаються, поки збігаються з тікером; on — завжди; off — не читаються. */
+export type PagesMode = "auto" | "on" | "off";
+export const setPagesMode = (mode: PagesMode) => api.put<{ success: boolean; mode: PagesMode }>("/admin/parsers/liquipedia/pages-mode", { mode });
 export const refreshParser = (name: string) => api.post<{ success: boolean; cost: number }>(`/admin/parsers/${encodeURIComponent(name)}/refresh`, {});

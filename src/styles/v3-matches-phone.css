@@ -68,6 +68,8 @@
   .v3-mxp-tn strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
   .v3-mxp-tn strong + strong { text-align: right; }
   .v3-mxp-tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: #6b7384; }
+  /* tournament icon before its name (Liquipedia / PandaScore) */
+  .v3-mxp-tt img, .v3-mxp-tour img { width: 14px; height: 14px; margin-right: 5px; object-fit: contain; vertical-align: -3px; border-radius: 3px; }
   .v3-mxp-tile.is-moved .v3-mxp-tm, .v3-mxp-tile.is-off .v3-mxp-tm, .v3-mxp-tile.is-moved .v3-mxp-tn, .v3-mxp-tile.is-off .v3-mxp-tn { opacity: .5; }
   .v3-mxp-more { min-height: 44px; border: 0; border-radius: 14px; background: #fff; color: #11151c; font: 600 14px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
   /* порожньо */
@@ -529,4 +531,14 @@
   .v3-mxp-iss-sc.is-pick button:disabled { opacity: .5; }
   .v3-mxp-iss-ok { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin-top: 6px; padding: 0 12px; border: 0; border-radius: 10px; background: #e3f5ea; color: #1f8a4c; font: 600 13px Inter, sans-serif; }
   .v3-mxp-iss-ok:disabled { opacity: .5; }
+}
+@media (max-width: 767px) {
+  /* Liquipedia «Додавати матчі сторінок»: Авто / Завжди / Вимкнено */
+  .v3-mxp-pmode { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .v3-mxp-pmode > small { font-size: 11px; font-weight: 600; color: #6b7384; }
+  .v3-mxp-pmode > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px; border-radius: 11px; background: #e9ecf1; }
+  .v3-mxp-pmode button { min-height: 34px; border: 0; border-radius: 8px; background: transparent; color: #4a5263; font: 500 13px Inter, sans-serif; transition: background-color .2s, color .2s, box-shadow .2s; }
+  .v3-mxp-pmode button.is-on { background: #fff; color: #11151c; font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+  .v3-mxp-pmode button:disabled { opacity: .55; }
+  .v3-mxp-pmode .v3-mxp-pmode-h { font-weight: 500; color: #8a93a2; }
 }

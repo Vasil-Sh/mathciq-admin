@@ -17,6 +17,7 @@ export interface FeedMatch {
   logoTeam1: string | null;
   logoTeam2: string | null;
   tournament?: string;
+  tournamentLogo?: string | null;
   stage?: string;
   /** postponed / cancelled — лише з ручних правок адміна. */
   status: "upcoming" | "live" | "finished" | "postponed" | "cancelled";
@@ -64,6 +65,8 @@ export interface Match {
   s1: number | null;
   s2: number | null;
   tournament: string;
+  /** Tournament / league icon from Liquipedia or PandaScore. */
+  tourLogo?: string | null;
   bo: string;
   status: MStatus;
   source: "HLTV" | "tips.gg" | "OddsPapi" | "Liquipedia" | "Cito" | "PandaScore" | "Вручну";
@@ -120,6 +123,7 @@ export function fromFeed(m: FeedMatch, game: Game, apiBase: string): Match {
     s1: m.score1,
     s2: m.score2,
     tournament: String(m.tournament ?? ""),
+    tourLogo: absLogo(m.tournamentLogo ?? null, apiBase),
     bo: (m.type || "").toUpperCase(),
     status: m.status === "live" ? "live" : m.status === "finished" ? "done" : m.status === "postponed" ? "moved" : m.status === "cancelled" ? "off" : "plan",
     source: String(m.id).startsWith("manual-") ? "Вручну" : String(m.id).startsWith("op-") ? "OddsPapi" : String(m.id).startsWith("ct-") ? "Cito" : String(m.id).startsWith("ps-") ? "PandaScore" : String(m.id).startsWith("lp-") ? "Liquipedia" : /hltv/i.test(m.link || "") ? "HLTV" : "tips.gg",
