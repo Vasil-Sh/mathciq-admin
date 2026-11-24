@@ -636,7 +636,7 @@ export default function Matches() {
             for (const [title, xs] of groupsOf(list)) { if (!xs.length || left <= 0) continue;
               // tiles: a cut group keeps an even number of cards, so the last row has no hole
               let part = xs.slice(0, left); if (mView === "grid" && part.length < xs.length && part.length % 2) part = xs.slice(0, part.length + 1); left -= part.length;
-              out.push(<p key={`h-${title}`} className="v3-mxp-gh">{title}</p>);
+              out.push(<p key={`h-${title}`} className="v3-mxp-gh">{title}<span className="v3-mxp-ghn">{xs.length}</span></p>);
               out.push(<div key={`g-${title}`} className="v3-mxp-grp">{part.map((m) => mCard(m, i++))}</div>); }
             return out; })()}</div>}
       {(() => { const vis = Math.min(list.length, mView === "grid" ? shownGrid : shown); return list.length > vis && <button type="button" className="v3-mxp-more" onClick={() => setShown(vis + 12)}>Показати ще {Math.min(12, list.length - vis)}</button>; })()}
@@ -696,7 +696,7 @@ export default function Matches() {
           <div className="v3-mxp-eg"><span className="v3-mxp-egt">Час і статус</span>
             <div className="v3-mxp-e2">
               <div className="v3-field"><label id={`pe-d-${m.id}`}>Дата</label><DateField id={`pe-date-${m.id}`} labelledBy={`pe-d-${m.id}`} value={f.date} onChange={(v) => setForm(m, { date: v })} /></div>
-              <div className="v3-field"><label htmlFor={`pe-t-${m.id}`}>Час (Київ)</label><input id={`pe-t-${m.id}`} {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} /></div>
+              <div className="v3-field"><label htmlFor={`pe-t-${m.id}`}>Час (Київ)</label><TimeInput id={`pe-t-${m.id}`} value={f.time} onChange={(v) => setForm(m, { time: v })} /></div>
             </div>
             {!ov && <span className="v3-mxp-was">Зараз {m.time} у {m.source}</span>}
             <div className="v3-field v3-mxp-stf"><span className="v3-label" id={`pe-st-${m.id}`}>Статус</span>
@@ -1259,7 +1259,7 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
             </div>
             <div className="v3-amg"><p className="v3-amg-t v3-only-mobile">Час</p>
             <div className="v3-field"><label id="am-d">Дата</label><DateField id="am-date" labelledBy="am-d" required value={f.date} onChange={(v) => setF({ ...f, date: v })} /></div>
-            <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><input id="am-time" required {...timeAttrs()} pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Година й хвилини, напр. 19:30" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setF({ ...f, time: hhmmInput(e.target.value) })} /></div>
+            <div className="v3-field"><label htmlFor="am-time">Час (Київ)</label><TimeInput id="am-time" required value={f.time} onChange={(v) => setF({ ...f, time: v })} /></div>
             <div className="v3-field v3-span2"><span className="v3-label" id="am-bo">Формат</span><div className="v3-chipset" role="group" aria-labelledby="am-bo">{["BO1", "BO2", "BO3", "BO5"].map((b) => <button key={b} type="button" className={f.bo === b ? "is-on" : ""} aria-pressed={f.bo === b} onClick={() => setF({ ...f, bo: b })}>{b}</button>)}</div></div>
             </div>
           </fieldset>
@@ -1282,6 +1282,19 @@ function AddMatchDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenC
 const timeAttrs = () => isPhoneWidth()
   ? { type: "time" as const }
   : { type: "text" as const, inputMode: "numeric" as const, onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.select() };
+
+/** Time field. Phone: the value is our own text, laid out like the «Дата» button next to it, with the native
+ *  time input invisible on top — a tap still opens the iOS wheel, but iOS no longer draws the value high and thin. */
+function TimeInput({ id, value, required, onChange }: { id: string; value: string; required?: boolean; onChange: (v: string) => void }) {
+  const common = { id, required, pattern: "([01][0-9]|2[0-3]):[0-5][0-9]", title: "Година й хвилини, напр. 19:30", placeholder: "19:00", maxLength: 5, value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(hhmmInput(e.target.value)) };
+  if (!isPhoneWidth()) return <input {...common} {...timeAttrs()} />;
+  return (
+    <span className="v3-date-btn v3-time-btn">
+      <span aria-hidden="true" className={value ? "" : "is-ph"}>{value || "19:00"}</span>
+      <input {...common} type="time" />
+    </span>
+  );
+}
 
 /** «Об’єднати з…» (phone): no similar official match was found — pick one by hand. */
 function PickMatchSheet({ group, known, today, busy, onClose, onPick }: { group: ManualGroup | null; known: Match[]; today: string; busy: boolean; onClose: () => void; onPick: (x: ManualGroup, m: Match) => void }) {

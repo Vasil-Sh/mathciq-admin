@@ -932,6 +932,8 @@ function IconBadgeRow() {
 const ERR_SRC: Record<ServerError["source"], string> = { api: "API", process: "процес", console: "лог" };
 const errAgo = (iso: string) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? "щойно" : m < 60 ? `${m} хв тому` : m < 1440 ? `${Math.round(m / 60)} год тому` : new Date(iso).toLocaleDateString("uk-UA", { day: "numeric", month: "short" }); };
 /** Errors the backend kept (Railway's log scrolls away): one row per kind, how often, when; share or mark as fixed. */
+const ERR_SEV = { critical: "Критично", warning: "Увага", info: "Інфо" } as const;
+
 function ErrorsSection({ all, n }: { all: boolean; n: number }) {
   const [list, setList] = useState<ServerError[] | null>(null);
   const [err, setErr] = useState("");
@@ -946,7 +948,7 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
     setBusy(null);
   };
   const share = async (e: ServerError) => {
-    const text = [`MatchIQ · помилка сервера (${ERR_SRC[e.source]})`, e.message, e.path ? `Маршрут: ${e.path}` : "", `${e.count} раз(и) · перша ${new Date(e.firstAt).toLocaleString("uk-UA")} · остання ${new Date(e.lastAt).toLocaleString("uk-UA")}`, e.detail ? `\n${e.detail}` : ""].filter(Boolean).join("\n");
+    const text = [`MatchIQ · помилка сервера (${ERR_SRC[e.source]}${e.status ? ` · ${e.status}` : ""}${e.severity ? ` · ${ERR_SEV[e.severity]}` : ""})`, e.message, e.hint || "", e.path ? `Маршрут: ${e.path}` : "", `${e.count} раз(и) · перша ${new Date(e.firstAt).toLocaleString("uk-UA")} · остання ${new Date(e.lastAt).toLocaleString("uk-UA")}`, e.detail ? `\n${e.detail}` : ""].filter(Boolean).join("\n");
     try { if (navigator.share) { await navigator.share({ title: "Помилка сервера", text }); return; } } catch (x) { if ((x as Error)?.name === "AbortError") return; }
     try { await navigator.clipboard.writeText(text); toast.success("Скопійовано"); } catch { toast.error("Не вдалося скопіювати"); }
   };
@@ -962,7 +964,8 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
               <button type="button" className="v3-st-errh" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>
                 <span className={`v3-st-errsrc is-${e.source}`}>{ERR_SRC[e.source]}</span>
                 <strong>{e.message}</strong>
-                <small>{e.count > 1 && <span className="v3-st-errn">×{e.count}</span>}{errAgo(e.lastAt)}{e.path ? ` · ${e.path}` : ""}</small>
+                {e.severity && <em className={`v3-st-errsev is-${e.severity}`}><b>{ERR_SEV[e.severity]}</b>{e.hint}</em>}
+                <small>{e.count > 1 && <span className="v3-st-errn">×{e.count}</span>}{e.status ? <span className="v3-st-errcode">{e.status}</span> : null}{errAgo(e.lastAt)}{e.path ? ` · ${e.path}` : ""}</small>
                 <ChevronDown size={16} className="v3-st-errchev" aria-hidden="true" />
               </button>
               {open === e.id && <div className="v3-st-errd">
@@ -970,6 +973,7 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
                 <dl>
                   <div><dt>Уперше</dt><dd>{new Date(e.firstAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
                   <div><dt>Востаннє</dt><dd>{new Date(e.lastAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</dd></div>
+                  {e.status ? <div><dt>Статус-код</dt><dd>HTTP {e.status}</dd></div> : null}
                   {e.path && <div><dt>Маршрут</dt><dd>{e.path}</dd></div>}
                 </dl>
                 <div className="v3-st-pbtns"><button type="button" className="v3-st-pgrey" onClick={() => share(e)}><Send size={15} aria-hidden="true" />Надіслати</button><button type="button" className="v3-st-pgreen" disabled={busy === e.id} onClick={() => resolve(e.id)}>{busy === e.id ? "Зберігаємо…" : <><Check size={15} strokeWidth={2.6} aria-hidden="true" />Вирішено</>}</button></div>
