@@ -194,7 +194,9 @@
   .v3-mxp-pst.is-flaky, .v3-mxp-pst.is-idle { background: #fff3dc; color: #8a5a00; }
   .v3-mxp-pst.is-paused { background: #eef0f4; color: #6b7384; }
   .v3-mxp-pa { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
-  .v3-mxp-plog { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #e3e6eb; border-radius: 10px; background: #fff; color: #11151c; }
+  /* grey like the tiles below it — white on the white card blended in */
+  .v3-mxp-plog { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 10px; background: #eef0f4; color: #11151c; transition: background-color .15s; }
+  .v3-mxp-plog:active { background: #e3e6eb; }
   .v3-mxp-pstop { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #11151c; color: #fff; font: 600 13px Inter, sans-serif; }
   .v3-mxp-pstop i { display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #e5484d; color: #fff; }
   .v3-mxp-pgo { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #00b24b; color: #fff; font: 600 13px Inter, sans-serif; }
