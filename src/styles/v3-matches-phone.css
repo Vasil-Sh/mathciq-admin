@@ -489,3 +489,4 @@
   .v3-mxp-hnone { margin: 0; padding: 0 12px 12px; font-size: 13px; color: #6b7384; }
 }
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) { .v3-mxp-pref .is-spin { animation: none; } }
+@media (max-width: 767px) { .v3-mxp-pcalls { display: block; margin-top: 2px; } }

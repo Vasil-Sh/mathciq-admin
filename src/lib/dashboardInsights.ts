@@ -112,7 +112,7 @@ export const streakText = (n: number) => `${n} ${plural(n, "програш", "п
 
 // ── Attention sources ──
 
-export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string; pausedUntil?: string; askedAt?: string; week?: { day: string; ok: number; fail: number; reasons?: { message: string; n: number; first: string; last: string }[] }[]; odds?: { used: number; budget: number; accountAt?: number; refreshCost?: number; fallback?: number; scheduled: number; priced: number; matched: number; fixturesAt: string; oddsAt: string; nextOddsAt?: string; unmatched?: OddsMiss[] } }
+export interface ParserState { name: string; open: boolean; failures: number; failures24h: number; lastFailure: string; lastSuccess?: string; paused?: boolean; pausedBy?: string; pausedAt?: string; pausedUntil?: string; askedAt?: string; week?: { day: string; ok: number; fail: number; reasons?: { message: string; n: number; first: string; last: string }[] }[]; odds?: { used: number; budget: number; calls?: Record<string, number>; accountAt?: number; refreshCost?: number; fallback?: number; scheduled: number; priced: number; matched: number; fixturesAt: string; oddsAt: string; nextOddsAt?: string; unmatched?: OddsMiss[] } }
 /** A priced OddsPapi match that found none of ours; `ours` = our match at that time sharing one team. */
 export interface OddsMiss { game: "cs2" | "dota2"; odds: { team1: string; team2: string; start: string; tournament: string; coeff1: number; coeff2: number }; ours: { team1: string; team2: string; start: string } | null }
 export interface SupportTicket { id: string; username: string; subject: string; createdAt: string }
