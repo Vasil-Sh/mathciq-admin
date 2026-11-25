@@ -6,12 +6,16 @@ export interface TgChannel {
   lastPostAt: string | null; checkedAt: string | null; error: string | null; status: TgStatus;
   posts7d: number; tips7d: number; unknown7d: number; recognized: number | null; settled: number; wins: number; winrate: number | null; roi: number | null; pending: number;
   users: string[]; days: number[];
+  /** Saved posts still waiting to be read again (screenshots, a new reader). */
+  rereading?: number;
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
   all?: { posts: number; tips: number; unknown: number; other: number; repeats: number; won: number; lost: number; pending: number; recognized: number | null; winrate: number | null; profit: number | null; roi: number | null; firstAt: string | null };
 }
 export interface TgList {
   channels: TgChannel[]; invites: { name: string; link: string; who: string[] }[]; days: string[];
   totals: { channels: number; running: number; posts24h: number; tips24h: number; recognized: number | null; unknown7d: number; queue?: number; settled30d: number; winrate30d: number | null; pending: number };
+  /** How posts are read: the AI model (GEMINI_API_KEY on the server) or OCR, and how it went since the server started. */
+  reader?: { ai: boolean; model: string | null; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
   night: boolean; nextAt: string | null;
 }
 export interface TgPost {
@@ -31,6 +35,7 @@ export const previewTgChannel = (link: string) => api.post<TgPreview>("/admin/tg
 export const addTgChannel = (link: string, game: string, test: boolean) => api.post<{ ok: true; handle: string; added: number }>("/admin/tg-sources", { link, game, test });
 export const pauseTgChannel = (handle: string, paused: boolean) => api.post<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}/pause`, { paused });
 export const refreshTgChannel = (handle: string) => api.post<{ ok: true; added?: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/refresh`);
+export const rereadTgChannel = (handle: string) => api.post<{ ok: true; posts: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/reread`);
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
 export const fixTgPost = (handle: string, postId: number, body: { kind: "other" } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap"; side?: 1 | 2; line?: number; over?: boolean; odds?: number | null; remember?: boolean }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);

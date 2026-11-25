@@ -174,3 +174,5 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-mxp-pstop i, .v3-tg-stop i { position: relative; }
 .v3-mxp-pstop:not(:disabled) i::before, .v3-tg-stop:not(:disabled) i::before { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid rgba(229, 72, 77, .9); border-right-color: transparent; border-bottom-color: transparent; animation: v3-tg-rot 1.2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .v3-tg-spin, .v3-mxp-pstop i::before, .v3-tg-stop i::before { animation: none; } }
+.v3-tg-reread { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-top: 8px; border: 0; border-radius: 14px; background: #eef0f4; color: #11151c; font: 600 14px Inter, sans-serif; }
+.v3-tg-reader b { font-weight: 600; }
