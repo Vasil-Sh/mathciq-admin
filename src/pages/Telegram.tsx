@@ -134,7 +134,7 @@ export default function Telegram() {
                 <div className="v3-mxp-ph">
                   <span className="v3-tg-av is-s"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span>
                   <strong>{c.title || `@${c.handle}`}</strong>
-                  <span className={`v3-mxp-pst is-${st}`}>{c.status === "run" ? <i className="v3-tg-spin" aria-hidden="true" /> : <i aria-hidden="true" />}{sl}</span>
+                  <span className={`v3-mxp-pst is-${st}`}><i aria-hidden="true" />{sl}</span>
                   <span className="v3-mxp-pa" onClick={(e) => e.stopPropagation()}>
                     <button type="button" className="v3-mxp-plog" onClick={() => !opening && void openCh(c.handle)} aria-label={`Пости й статистика · ${c.title || c.handle}`}><Info size={16} aria-hidden="true" /></button>
                     {c.status === "block" ? null : c.paused
