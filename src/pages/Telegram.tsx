@@ -229,7 +229,7 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
           {post.reason && <p className="v3-tg-warn">{post.reason}</p>}
           <span className="v3-tg-fl">Матч</span>
           {!pickM && match ? <button type="button" className="v3-tg-mbox" onClick={() => setPickM(true)}><span>{match.team1} — {match.team2}</span><b>Змінити</b></button> : <>
-            <label className="v3-tg-msearch"><Search size={16} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда" aria-label="Пошук матчу" autoFocus />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={14} /></button>}</label>
+            <label className="v3-tg-msearch"><Search size={16} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда" aria-label="Пошук матчу" />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={14} /></button>}</label>
             <div className="v3-tg-mlist">{(found || []).slice(0, 6).map((m) => <button key={m.id} type="button" className={match?.id === m.id ? "is-on" : ""} onClick={() => { setMatch(m); setPickM(false); }}><span>{m.team1} — {m.team2}</span><small>{m.game === "cs2" ? "CS2" : "Dota 2"} · {when(m.start)}</small></button>)}{found && !found.length && <small className="v3-tg-note">Нічого не знайдено</small>}</div>
           </>}
           <span className="v3-tg-fl">Ставка</span>
@@ -281,7 +281,7 @@ function AddSheet({ open, online, onOpenChange, onDone }: { open: boolean; onlin
       <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
         <DialogTitle>Додати канал</DialogTitle>
         <DialogDescription>Для тесту збору й розпізнавання</DialogDescription>
-        <label className="v3-tg-fodds"><span className="v3-tg-fl">Посилання на публічний канал</span><input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://t.me/… або @нікнейм" autoFocus /><small>Запрошення t.me/+… поки не підходять</small></label>
+        <label className="v3-tg-fodds"><span className="v3-tg-fl">Посилання на публічний канал</span><input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://t.me/… або @нікнейм" /><small>Запрошення t.me/+… поки не підходять</small></label>
         {checking && <p className="v3-tg-note">Перевіряємо…</p>}
         {pv && !checking && (pv.ok ? (
           <div className="v3-tg-pv">

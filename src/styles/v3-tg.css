@@ -101,3 +101,15 @@ small.v3-tg-note { display: block; padding: 0; background: none; margin-top: -4p
 .v3-tg-rem input:focus-visible + i { outline: 2px solid #3a6df0; outline-offset: 2px; }
 .v3-tg-pv { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; padding: 12px; border-radius: 14px; background: #f7f8fa; }
 .v3-tg-pv b { font-weight: 600; }
+.v3-tg-fline input, .v3-tg-fodds input, .v3-tg-msearch input { background: #fff; color: #11151c; }
+.v3-tg-fline input::placeholder, .v3-tg-fodds input::placeholder, .v3-tg-msearch input::placeholder { color: #8a93a2; }
+.v3-tg-fodds input:focus, .v3-tg-fline input:focus { outline: none; border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .15); }
+small.v3-tg-note { margin-top: 6px; }
+@media (max-width: 767px) {
+  .v3-tg .v3-hero .v3-chips { display: flex; gap: 8px; }
+  .v3-tg .v3-mx-rf { width: 40px; height: 40px; padding: 0; justify-content: center; border: 0; border-radius: 12px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .06); }
+  .v3-tg .v3-mx-plus { width: 40px; height: 40px; min-height: 40px; padding: 0; justify-content: center; border-radius: 12px; background: #00b24b; box-shadow: none; }
+  .v3-sheet.v3-tg-sheet { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 96px); padding-top: 30px !important; background: #fff !important; color: #11151c; }
+  .v3-sheet.v3-tg-sheet > button.v3-modal-x { display: grid; place-items: center; top: 22px; right: 18px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
+  .v3-tg-sheet > h2, .v3-tg-sh { padding-right: 44px; }
+}
