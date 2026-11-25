@@ -21,7 +21,8 @@ const ITEMS: Item[] = [
   { label: "Оплати", to: "/payments", icon: CreditCard },
   { label: "Ставки", to: "/bets", icon: CircleDollarSign },
   { label: "Реклама", to: "/banners", icon: Megaphone, group: "ads", subs: ([["banners", "Банери", Image], ["telegram", "Telegram-групи", Send], ["bookmakers", "Букмекери", Hand], ["stats", "Статистика", BarChart3]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "banners" ? "/banners" : `/banners?tab=${k}` })) },
-  { label: "Матчі", to: "/matches", icon: Gamepad2, group: "matches", subs: ([["matches", "Матчі", CalendarDays], ["parsers", "Парсери", Activity], ["manual", "Додані вручну", List], ["teams", "Команди", Users], ["telegram", "Telegram", Send]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "matches" ? "/matches" : k === "telegram" ? "/telegram" : `/matches?tab=${k}` })) },
+  { label: "Матчі", to: "/matches", icon: Gamepad2, group: "matches", subs: ([["matches", "Матчі", CalendarDays], ["parsers", "Парсери", Activity], ["manual", "Додані вручну", List], ["teams", "Команди", Users]] as [string, string, typeof Users][]).map(([k, l, icon]) => ({ key: k, label: l, icon, to: k === "matches" ? "/matches" : `/matches?tab=${k}` })) },
+  { label: "Telegram", to: "/telegram", icon: Send },
 ];
 
 /**
@@ -33,7 +34,7 @@ export default function MobileDrawer({ open, onOpenChange, username, telegram, r
 }) {
   const { pathname, search, hash } = useLocation();
   const here = (to: string) => { const [p, q = ""] = to.split(/[?#]/); const tail = to.includes("?") ? `?${q}` : to.includes("#") ? `#${q}` : ""; return pathname === p && (tail ? (tail.startsWith("?") ? search === tail : hash === tail) : !search && !hash); };
-  const groupOf = (p: string): string | null => (p.startsWith("/banners") ? "ads" : p.startsWith("/matches") || p.startsWith("/telegram") ? "matches" : p.startsWith("/settings") ? "settings" : null);
+  const groupOf = (p: string): string | null => (p.startsWith("/banners") ? "ads" : p.startsWith("/matches") ? "matches" : p.startsWith("/settings") ? "settings" : null);
   const [openGrp, setOpenGrp] = useState<string | null>(groupOf(pathname));
   useEffect(() => { if (open) setOpenGrp(groupOf(pathname)); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const close = () => onOpenChange(false);

@@ -113,3 +113,10 @@ small.v3-tg-note { margin-top: 6px; }
   .v3-sheet.v3-tg-sheet > button.v3-modal-x { display: grid; place-items: center; top: 22px; right: 18px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; }
   .v3-tg-sheet > h2, .v3-tg-sh { padding-right: 44px; }
 }
+@media (max-width: 767px) {
+  .v3-tg-sheet .v3-mxp-acts > * { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; white-space: nowrap; }
+  .v3-tg-sheet .v3-mxp-acts .v3-tg-stop i { margin: 0; vertical-align: 0; flex-shrink: 0; }
+  .v3-tg-sheet .v3-mxp-acts svg { flex-shrink: 0; }
+  .v3-tg-del { min-height: 46px; margin-top: 8px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 14px; }
+  .v3-tg-del:disabled { opacity: .55; }
+}
