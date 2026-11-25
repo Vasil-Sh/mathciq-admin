@@ -176,3 +176,10 @@ small.v3-tg-note { margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) { .v3-tg-spin, .v3-mxp-pstop i::before, .v3-tg-stop i::before { animation: none; } }
 .v3-tg-reread { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-top: 8px; border: 0; border-radius: 14px; background: #eef0f4; color: #11151c; font: 600 14px Inter, sans-serif; }
 .v3-tg-reader b { font-weight: 600; }
+.v3-tg-prog { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #eef3ff; }
+.v3-tg-progh { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #2450c4; }
+.v3-tg-progh b { margin-left: auto; font-weight: 700; }
+.v3-tg-progh .v3-tg-spin { color: #2f7bff; }
+.v3-tg-progb { height: 6px; border-radius: 3px; background: #d6e2ff; overflow: hidden; }
+.v3-tg-progb i { display: block; height: 100%; border-radius: 3px; background: #2f7bff; transition: width .4s ease; }
+.v3-tg-prog small { font-size: 11px; color: #4a5263; }

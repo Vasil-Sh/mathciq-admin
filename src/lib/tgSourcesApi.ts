@@ -8,6 +8,8 @@ export interface TgChannel {
   users: string[]; days: number[];
   /** Saved posts still waiting to be read again (screenshots, a new reader). */
   rereading?: number;
+  /** Posts the running «Перечитати» started with (null when none runs). */
+  rereadTotal?: number | null;
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
   all?: { posts: number; tips: number; unknown: number; other: number; repeats: number; won: number; lost: number; pending: number; recognized: number | null; winrate: number | null; profit: number | null; roi: number | null; firstAt: string | null };
 }

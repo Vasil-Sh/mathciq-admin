@@ -67,6 +67,9 @@ export default function Telegram() {
     fetchTgUnrecognized().then(setUnk).catch(() => setUnk([]));
   }, []);
   useEffect(() => { void load(); }, [load]);
+  // while a channel is being re-read: refresh every 5 s for the progress
+  const reading = !!data?.channels.some((c) => c.rereadTotal);
+  useEffect(() => { if (!reading) return; const id = setInterval(() => void load(), 5_000); return () => clearInterval(id); }, [reading, load]);
   // The sheet opens once its posts are here, so it never jumps from placeholders to a taller sheet.
   const cache = useRef(new Map<string, TgPost[]>());
   const [opening, setOpening] = useState<string | null>(null);
@@ -91,7 +94,7 @@ export default function Telegram() {
     catch (e) { toast.error("Не вдалося оновити", { description: (e as Error).message }); }
   };
   const reread = async (h: string) => {
-    try { const r = await rereadTgChannel(h); toast.success(`Перечитуємо ${r.posts} ${plural(r.posts, "пост", "пости", "постів")}`, { description: "По 8 за прохід, нові зверху — повністю за кілька хвилин" }); setTimeout(() => { void load(); if (sel === h) getPosts(h).then(setPosts).catch(() => {}); }, 60_000); }
+    try { const r = await rereadTgChannel(h); toast.success(`Перечитуємо ${r.posts} ${plural(r.posts, "пост", "пости", "постів")}`, { description: "Прогрес — на картці каналу" }); setSel(null); setTimeout(() => void load(), 1_500); }
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
   };
   const setPaused = async (c: TgChannel, paused: boolean) => {
@@ -145,6 +148,13 @@ export default function Telegram() {
                   </span>
                 </div>
                 <small className="v3-mxp-psub">{c.status === "err" ? c.error : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
+                {!!c.rereadTotal && (() => { const done = Math.max(0, c.rereadTotal - (c.rereading || 0)), p = Math.min(100, Math.round((done / c.rereadTotal) * 100)); return (
+                  <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label="Перечитуємо пости">
+                    <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />Перечитуємо пости<b>{p}%</b></span>
+                    <span className="v3-tg-progb"><i style={{ width: `${p}%` }} /></span>
+                    <small>{done} з {c.rereadTotal} · ≈6 с на пост</small>
+                  </div>
+                ); })()}
                 {c.status !== "block" && <div className="v3-tg-week">
                   <div className="v3-mxp-wh"><span>7 днів</span><b>{wk ? `${wk} ${plural(wk, "пост", "пости", "постів")} · прогнозів ${c.tips7d}` : "постів не було"}</b></div>
                   <span className="v3-tg-bars" aria-hidden="true">{c.days.map((d, k) => <i key={k} className={`${k === 6 ? "is-today" : ""}${d ? "" : " is-zero"}`} style={{ height: `${d ? Math.max(14, Math.round((d / mx) * 100)) : 8}%` }} />)}</span>
@@ -155,7 +165,7 @@ export default function Telegram() {
                   <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
                   <div><span>Прибуток</span><b className={tone(A?.profit)}>{money(A?.profit)}</b></div>
                 </div>
-                {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{c.rereading ? `Перечитуємо пости: залишилось ${c.rereading} · ` : ""}{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
+                {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
               </div>
             ); })}
             {data.invites.map((g) => (
