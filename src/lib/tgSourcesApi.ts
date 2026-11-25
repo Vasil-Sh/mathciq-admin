@@ -15,6 +15,8 @@ export interface TgList {
 export interface TgPost {
   handle: string; postId: number; postedAt: string; text: string; kind: "bet" | "other" | "unknown"; reason: string | null; game: string | null;
   matchId: string | null; team1: string | null; team2: string | null; market: string | null; pick: string | null; odds: number | null; result: "Win" | "Loss" | null; score: string | null; fixedBy: string | null; title?: string | null;
+  /** Screenshots of the post (t.me CDN) and the text OCR read on them. */
+  photos?: string[]; ocr?: string | null;
 }
 export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string }
 export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean } | { ok: false; error: string };

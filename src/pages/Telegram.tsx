@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ChevronRight, ExternalLink, Plus, RefreshCw, Search, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
@@ -32,6 +32,14 @@ const MARKET = (p: TgPost) => {
   return m;
 };
 const odds = (n: number | null) => (n == null ? "" : n.toFixed(2).replace(".", ","));
+
+/** Screenshots of a post; a link that expired on the t.me CDN just disappears. */
+function Shots({ urls, big }: { urls?: string[]; big?: boolean }) {
+  const [bad, setBad] = useState<string[]>([]);
+  const ok = (urls || []).filter((u) => !bad.includes(u));
+  if (!ok.length) return null;
+  return <span className={`v3-tg-shots${big ? " is-big" : ""}`}>{ok.map((u) => <a key={u} href={u} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}><img src={u} alt="Скрін ставки" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad((b) => [...b, u])} /></a>)}</span>;
+}
 
 export default function Telegram() {
   const online = useOnline();
@@ -131,7 +139,7 @@ export default function Telegram() {
             {unk.map((p) => (
               <button key={`${p.handle}/${p.postId}`} type="button" className="v3-tg-card v3-tg-un" onClick={() => setFix(p)}>
                 <span className="v3-tg-unh"><span className="v3-tg-av is-s"><TgAvatar handle={p.handle} name={p.title || p.handle} color={colorOf(p.handle)} /></span><b>{p.title || `@${p.handle}`}</b><small>{when(p.postedAt)}</small></span>
-                <span className="v3-tg-untx">{p.text}</span>
+                <span className="v3-tg-unb"><Shots urls={p.photos} /><span className="v3-tg-untx">{p.text || (p.photos?.length ? "Скрін без підпису" : "")}</span></span>
                 <em className="v3-tg-st is-warn">{p.reason || "Не розпізнано"}</em>
               </button>
             ))}
@@ -159,7 +167,8 @@ export default function Telegram() {
                 <li key={p.postId}>
                   <span className="v3-tg-ph"><small>{when(p.postedAt)}</small><em className={`v3-tg-st ${p.kind === "bet" ? "is-ok" : p.kind === "unknown" ? "is-warn" : "is-off"}`}>{p.kind === "bet" ? "Прогноз" : p.kind === "unknown" ? "Не розпізнано" : "Не прогноз"}</em>
                     {p.result && <em className={`v3-tg-st ${p.result === "Win" ? "is-ok" : "is-bad"}`}>{p.result === "Win" ? "Виграш" : "Програш"}{p.score ? ` · ${p.score}` : ""}</em>}</span>
-                  <span className="v3-tg-ptx">{p.text}</span>
+                  {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
+                  <Shots urls={p.photos} />
                   {p.kind === "bet" ? <b className="is-ok">→ {p.team1} — {p.team2} · {MARKET(p)}{p.odds ? ` · ${odds(p.odds)}` : ""}{!p.result ? " · очікує" : ""}</b>
                     : p.kind === "unknown" ? <button type="button" className="v3-tg-pfix" onClick={() => setFix({ ...p, title: ch.title })}>→ {p.reason} · розібрати<ChevronRight size={14} aria-hidden="true" /></button> : null}
                 </li>
@@ -204,13 +213,12 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
     setPickM(!post.matchId); setQ(""); setMk("p1"); setLine("2.5"); setOver(true); setKf(post.odds ? String(post.odds) : ""); setRemember(false);
   }, [post]);
   useEffect(() => { if (!post || !pickM) return; const id = setTimeout(() => { fetchTgMatches(q).then(setFound).catch(() => setFound([])); }, 250); return () => clearTimeout(id); }, [q, pickM, post]);
-  const hl = useMemo(() => {
-    if (!post) return null;
+  const mark = useCallback((text: string) => {
     const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const names = [match?.team1, match?.team2].filter(Boolean).map((n) => esc(String(n).split(/\s+/).pop() || ""));
     const re = new RegExp(`(${[...names.filter(Boolean), "\\d{1,2}[.,]\\d{1,3}"].join("|")})`, "ig");
-    return post.text.split(re).map((x, i) => (i % 2 ? <mark key={i} className={/^\d/.test(x) ? "is-odds" : undefined}>{x}</mark> : x));
-  }, [post, match]);
+    return text.split(re).map((x, i) => (i % 2 ? <mark key={i} className={/^\d/.test(x) ? "is-odds" : undefined}>{x}</mark> : x));
+  }, [match]);
   const save = async (kind: "bet" | "other") => {
     if (!post) return;
     setSaving(true);
@@ -235,7 +243,9 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
         {post && <>
           <DialogTitle>Розібрати пост</DialogTitle>
           <DialogDescription>{post.title || `@${post.handle}`} · {when(post.postedAt)}</DialogDescription>
-          <div className="v3-tg-ftx">{hl}</div>
+          <Shots urls={post.photos} big />
+          {post.text && <div className="v3-tg-ftx">{mark(post.text)}</div>}
+          {post.ocr && <details className="v3-tg-ocr"><summary>Прочитано зі скріну</summary><div>{mark(post.ocr)}</div></details>}
           {post.reason && <p className="v3-tg-warn">{post.reason}</p>}
           <span className="v3-tg-fl">Матч</span>
           {!pickM && match ? <button type="button" className="v3-tg-mbox" onClick={() => setPickM(true)}><span>{match.team1} — {match.team2}</span><b>Змінити</b></button> : <>
