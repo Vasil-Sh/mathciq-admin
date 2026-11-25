@@ -643,9 +643,9 @@ export default function Matches() {
     return mView === "grid" ? (
       <button key={m.id} type="button" className={`v3-mxp-tile is-${m.status}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => openM(m)}>
         <span className="v3-mxp-th">{head(m)}{gChip(m.game)}</span>
+        <small className="v3-mxp-tt"><TourIcon src={m.tourLogo} /><span>{m.tournament || GAME_LABEL[m.game]}</span></small>
         <span className="v3-mxp-tm"><Logo src={m.logo1} name={m.t1} size={30} /><b aria-label={sc ? `Рахунок ${m.s1}:${m.s2}` : "Рахунку ще немає"}>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</b><Logo src={m.logo2} name={m.t2} size={30} /></span>
         <span className="v3-mxp-tn"><strong>{m.t1}</strong><strong>{m.t2}</strong></span>
-        <small className="v3-mxp-tt"><TourIcon src={m.tourLogo} /><span>{m.tournament || GAME_LABEL[m.game]}</span></small>
         {chips(m)}
       </button>
     ) : (
@@ -1059,7 +1059,11 @@ export default function Matches() {
   /** Last 5 finished matches, newest first: result, opponent, score from this team's side, day. */
   const teamLast = (t: Team) => { const tn = normTeam(t.name);
     return known.filter((m) => m.game === t.game && m.status === "done" && m.s1 != null && m.s2 != null && (m.s1 || m.s2) && (normTeam(m.t1) === tn || normTeam(m.t2) === tn))
-      .sort((a, b) => b.ts - a.ts).filter((m, i, xs) => xs.findIndex((y) => y.id === m.id) === i).slice(0, 5)
+      .sort((a, b) => b.ts - a.ts)
+      // the same match from two sources (Liquipedia + PandaScore, an older id in the history): one opponent within 6 h
+      .filter((m, i, xs) => { const opp = (x: Match) => normTeam(normTeam(x.t1) === tn ? x.t2 : x.t1);
+        return !xs.slice(0, i).some((y) => y.id === m.id || (Math.abs(y.ts - m.ts) < 6 * 3_600_000 && opp(y) === opp(m))); })
+      .slice(0, 5)
       .map((m) => { const first = normTeam(m.t1) === tn; const a = first ? m.s1! : m.s2!, b = first ? m.s2! : m.s1!;
         return { id: m.id, r: (a > b ? "W" : a < b ? "L" : "D") as "W" | "L" | "D", opp: first ? m.t2 : m.t1, oppLogo: first ? m.logo2 : m.logo1, score: `${a}:${b}`, day: m.day, tour: m.tournament }; }); };
   /** The same as letters, oldest → newest (the last one on the right). */

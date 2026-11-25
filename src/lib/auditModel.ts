@@ -101,6 +101,14 @@ export function describe(e: Entry): View {
     return { ...base, kind: "ad", verb: e.action === "POST" ? "додав Telegram-групу" : e.action === "DELETE" ? "видалив Telegram-групу" : "оновив Telegram-групу", target: nm ? String(nm) : "група", meta: "Реклама · Telegram-групи" };
   }
   if (t.startsWith("/admin/telegram-groups")) return { ...base, kind: "ad", verb: t.endsWith("/approve") ? "схвалив групу" : "відхилив групу", target: String(d.name || d.groupName || "групу"), meta: "Модерація Telegram-груп" };
+  const sci = t.match(/^\/admin\/score-issues\/(conflict|closed)\/(.+)$/);
+  if (sci) {
+    // older entries keep only the match id (lp-cs2-2026-11-24-heroic-vs-m80): its team part is the best name there is
+    const slug = decodeURIComponent(sci[2]).replace(/^[a-z]+-(cs2|dota2)-\d{4}-\d{2}-\d{2}-/, "").split("-vs-").map((x) => x.replace(/-/g, " ")).join(" — ");
+    const teams = d.team1 && d.team2 ? `${d.team1} — ${d.team2}` : slug;
+    return { ...base, kind: "set", verb: sci[1] === "closed" ? "перевірив закритий матч" : "розв’язав розбіжність рахунку", target: teams, chips: d.score ? [{ k: "Рахунок", from: "—", to: String(d.score) }] : [], meta: "Матчі · рахунки між джерелами" };
+  }
+  if (t === "/admin/parsers/liquipedia/pages-mode") return { ...base, kind: "set", verb: "змінив режим сторінок турнірів", target: "Liquipedia", chips: [{ k: "Режим", from: "—", to: d.mode === "on" ? "Завжди" : d.mode === "off" ? "Вимкнено" : "Авто" }], meta: "Парсери · Liquipedia" };
   const pst = t.match(/^\/admin\/parsers\/([a-z0-9_]+)\/(stop|start)$/);
   if (pst) { const nm: Record<string, string> = { hltv_scraper: "HLTV", tipsgg_fetch_cs2_matches: "Tips.gg · CS2", tipsgg_fetch_dota2_matches: "Tips.gg · Dota 2", liquipedia: "Liquipedia", oddspapi: "OddsPapi", cito: "Cito", pandascore: "PandaScore", opendota: "OpenDota" }; return { ...base, kind: "set", verb: pst[2] === "stop" ? "зупинив парсер" : "запустив парсер", target: nm[pst[1]] || pst[1], chips: [], meta: pst[2] === "stop" ? "Парсер не звертається до джерела, поки його не запустять" : "Парсер знову забирає матчі" }; }
   if (t.startsWith("/admin/hidden-teams")) return { ...base, kind: "set", verb: e.action === "DELETE" ? "повернув команду в довідник" : "видалив команду з довідника", target: String(d.name || "команду"), chips: [], meta: `Матчі · команди${d.game ? ` · ${d.game === "dota2" ? "Dota 2" : "CS2"}` : ""}` };
