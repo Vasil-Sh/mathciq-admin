@@ -755,7 +755,7 @@ export default function Matches() {
     return (
       <form className="v3-mxp-ed" onSubmit={(e) => { e.preventDefault(); saveEdit(m); }}>
         <div className="v3-mxp-eh"><strong>Редагувати матч</strong><small>{m.t1} — {m.t2}{m.tournament ? ` · ${m.tournament}` : ""}</small></div>
-        <p className="v3-mxp-enote"><AlertTriangle size={14} aria-hidden="true" />Ручна правка лежить поверх даних парсера. Нові дані з джерела її не перезапишуть.</p>
+        <p className="v3-mxp-enote"><AlertTriangle size={14} aria-hidden="true" />Рахунок діє, поки джерело не дасть свій.</p>
         <fieldset disabled={!online || busyM} className="v3-mxp-efs">
           <div className="v3-mxp-eg"><span className="v3-mxp-egt">Час і статус</span>
             <div className="v3-mxp-e2">
