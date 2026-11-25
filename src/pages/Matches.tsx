@@ -1181,7 +1181,7 @@ export default function Matches() {
               <div className="v3-mx-dupcmp"><button type="button" onClick={() => { setSelTeam(t.key); setSheet(true); }}><strong>{t.name}</strong><small>у довіднику</small></button><i aria-hidden="true">=</i><div className="is-new"><strong>{v}</strong><small>нове написання</small></div></div>
               <div className="v3-mxp-acts">
                 <button type="button" className="is-grey" disabled={!online || busyK} onClick={() => notSame(t, v)}>{saving === `dist:${t.key}|${v}` ? "Зберігаємо…" : "Різні команди"}</button>
-                <button type="button" className="is-dark" disabled={!online || busyK} onClick={() => addAliases(t, [v])}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>
+                <button type="button" className="is-green" disabled={!online || busyK} onClick={() => addAliases(t, [v])}>{saving === `team:${t.key}` ? "Зберігаємо…" : "Це одна команда"}</button>
               </div>
             </div>
           ); })}</div>
