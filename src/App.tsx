@@ -13,6 +13,7 @@ const AuditLog = lazy(() => import("@/pages/AuditLog"));
 const Banners = lazy(() => import("@/pages/Banners"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Support = lazy(() => import("@/pages/Support"));
+const Telegram = lazy(() => import("@/pages/Telegram"));
 import AdminLayout from "@/components/AdminLayout";
 
 import NotFound from "@/pages/NotFound";
@@ -80,6 +81,7 @@ function AppRoutes() {
         <Route path="/settings" element={<Suspense fallback={<div role="status">Завантаження налаштувань…</div>}><Settings /></Suspense>} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/matches" element={<Matches />} />
+        <Route path="/telegram" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження каналів…</div>}><Telegram /></Suspense>} />
         <Route path="/support" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження підтримки…</div>}><Support /></Suspense>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFound />} />

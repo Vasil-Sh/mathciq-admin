@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getExpiringWindow } from "@/lib/usersModel";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
-import {
-  BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard,
-  LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X,
-} from "lucide-react";
+import { BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard, LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X, Send } from "lucide-react";
 import CommandPalette from "@/components/CommandPalette";
 import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
@@ -27,6 +24,7 @@ const navigation: { label: string; href: string; icon: typeof Users; badge?: Nav
   { label: "Ставки", href: "/bets", icon: CircleDollarSign },
   { label: "Реклама", href: "/banners", icon: Megaphone },
   { label: "Матчі", href: "/matches", icon: Swords, badge: "matches" },
+  { label: "Telegram", href: "/telegram", icon: Send },
   { label: "Підтримка", href: "/support", icon: MessageCircle, badge: "support" },
   { label: "Налаштування", href: "/settings", icon: Settings2 },
 ];
