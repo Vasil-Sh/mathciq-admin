@@ -659,6 +659,12 @@ export default function Matches() {
     );
   };
   const groupsOf = (xs: Match[]) => {
+    // «Тиждень»: by day — live matches sit first inside «Сьогодні», a separate «Наживо» group is only on «Сьогодні»
+    if (day === "week") {
+      const rank = (m: Match) => (m.status === "live" ? 0 : m.status === "plan" ? 1 : 2);
+      const days = [...new Set(xs.map((m) => m.day))].sort();
+      return days.map((d) => [d === today ? "Сьогодні" : d === addDays(today, 1) ? "Завтра" : dayShort(d), xs.filter((m) => m.day === d).sort((x, y) => rank(x) - rank(y))]) as [string, Match[]][];
+    }
     const live = xs.filter((m) => m.status === "live"), plan = xs.filter((m) => m.status === "plan"), rest = xs.filter((m) => m.status !== "live" && m.status !== "plan");
     return [["Наживо", live], [day === "today" ? "Сьогодні" : "Заплановані", plan], ["Завершені", rest]] as [string, Match[]][];
   };
