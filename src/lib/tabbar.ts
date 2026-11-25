@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleDollarSign, CreditCard, Gamepad2, History, LayoutDashboard, LifeBuoy, Megaphone, Settings2, Users } from "lucide-react";
+import { CircleDollarSign, CreditCard, Gamepad2, History, LayoutDashboard, LifeBuoy, Megaphone, Send, Settings2, Users } from "lucide-react";
 
 /** Sections that can sit in the phone tab bar next to «Меню». */
 export const TAB_OPTIONS = [
@@ -7,6 +7,7 @@ export const TAB_OPTIONS = [
   { key: "users", to: "/users", label: "Користувачі", icon: Users },
   { key: "payments", to: "/payments", label: "Оплати", icon: CreditCard },
   { key: "matches", to: "/matches", label: "Матчі", icon: Gamepad2 },
+  { key: "telegram", to: "/telegram", label: "Telegram", icon: Send },
   { key: "bets", to: "/bets", label: "Ставки", icon: CircleDollarSign },
   { key: "ads", to: "/banners", label: "Реклама", icon: Megaphone },
   { key: "support", to: "/support", label: "Підтримка", icon: LifeBuoy },
