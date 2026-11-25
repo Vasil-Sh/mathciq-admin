@@ -110,7 +110,10 @@
   .v3-mxp-dh { display: flex; align-items: center; gap: 8px; padding-right: 44px; min-height: 30px; }
   .v3-mxp-dh .v3-mxp-live, .v3-mxp-dh .v3-mxp-time { font-size: 13px; }
   .v3-mxp-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 4px 0 12px; border-bottom: 1px solid #eef0f4; }
-  .v3-mxp-vs > span { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; text-align: center; }
+  .v3-mxp-vs > span, .v3-mxp-vs > .v3-mxp-vsteam { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; text-align: center; }
+  .v3-mxp-vsteam { padding: 6px 4px; border: 0; border-radius: 14px; background: transparent; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .v3-mxp-vsteam:active { background: #f1f3f7; }
+  .v3-mxp-vsteam:focus-visible { outline: 2px solid #3a6df0; outline-offset: 2px; }
   .v3-mxp-vs strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; }
   .v3-mxp-vs > b { font-size: 32px; font-weight: 300; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
   .v3-mx-sheet .v3-mxp-vs .v3-mx-lg { border-radius: 50%; background: #f1f3f7; object-fit: contain; }

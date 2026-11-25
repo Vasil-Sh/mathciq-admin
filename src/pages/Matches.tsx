@@ -705,15 +705,23 @@ export default function Matches() {
       </Dialog>
     </div>
   );
+  /** Team from the directory by any of its spellings — the match sheet opens its card in «Команди». */
+  const teamOf = (g: Game, name: string) => { const n = normTeam(name); return teams.find((t) => t.game === g && [t.name, ...t.aliases, ...t.variants].some((x) => normTeam(x) === n)); };
+  const openTeam = (t: Team) => { setPhoneEdit(false); setTf("all"); setTq(""); setTab("teams"); setSelTeam(t.key); setSheet(true); };
+  const vsSide = (m: Match, side: 1 | 2) => {
+    const name = side === 1 ? m.t1 : m.t2, logo = side === 1 ? m.logo1 : m.logo2, t = teamOf(m.game, name);
+    const inner = <><Logo src={logo} name={name} size={44} /><strong>{name}</strong></>;
+    return t ? <button type="button" className="v3-mxp-vsteam" aria-label={`Відкрити команду ${t.name}`} onClick={() => openTeam(t)}>{inner}</button> : <span>{inner}</span>;
+  };
   const phoneDetail = (m: Match) => {
     const bs = betsFor(m), sc = hasScore(m), ov = ovOf(m);
     return (
       <div className="v3-mxp-det">
         <div className="v3-mxp-dh">{head(m)}{gChip(m.game)}</div>
         <div className="v3-mxp-vs">
-          <span><Logo src={m.logo1} name={m.t1} size={44} /><strong>{m.t1}</strong></span>
+          {vsSide(m, 1)}
           <b aria-label={sc ? `Рахунок ${m.s1}:${m.s2}` : "Рахунку ще немає"}>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</b>
-          <span><Logo src={m.logo2} name={m.t2} size={44} /><strong>{m.t2}</strong></span>
+          {vsSide(m, 2)}
         </div>
         <dl className="v3-mxp-kv">
           <div><dt>Турнір</dt><dd>{[m.tournament || "не вказано", m.stage, m.tier ? `тир ${m.tier}` : "", m.bo].filter(Boolean).join(" · ")}</dd></div>
