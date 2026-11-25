@@ -137,3 +137,40 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-ocr > div { padding: 0 12px 12px; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.45; color: #4a5263; max-height: 180px; overflow: auto; }
 .v3-tg-ocr mark { padding: 0 3px; border-radius: 4px; background: #e3e9ff; color: #2450c4; }
 .v3-tg-ocr mark.is-odds { background: #e3f6ea; color: #1f6b3a; }
+/* channel cards in the style of the parser cards */
+.v3-tg-pc { cursor: pointer; }
+.v3-tg-pc .v3-mxp-ph > strong { flex: 1; }
+.v3-tg-pc.is-opening { animation: v3-tg-pulse 1s ease-in-out infinite; }
+.v3-tg-pc .v3-tg-av .v3-ad-tgav { width: 28px; height: 28px; font-size: 10px; }
+.v3-tg-spin { box-sizing: border-box; width: 10px !important; height: 10px !important; border-radius: 50%; background: none !important; border: 2px solid currentColor; border-right-color: transparent; animation: v3-tg-rot .9s linear infinite; }
+@keyframes v3-tg-rot { to { transform: rotate(360deg); } }
+.v3-tg-week { display: flex; flex-direction: column; gap: 6px; }
+.v3-tg-week .v3-mxp-wh { display: flex; justify-content: space-between; font-size: 12px; color: #6b7384; }
+.v3-tg-week .v3-mxp-wh b { font-weight: 600; color: #11151c; }
+.v3-tg-week .v3-tg-bars { height: 30px; }
+.v3-tg-bars i.is-zero { background: #eef0f4; }
+.v3-tg-wdays { display: flex; gap: 3px; }
+.v3-tg-wdays span { flex: 1; text-align: center; font-size: 10px; color: #8a93a2; }
+.v3-tg-pc .v3-mxp-podds p { margin: 0; font-size: 13px; font-weight: 600; }
+.v3-tg-pc .v3-mxp-podds small { display: block; margin-top: 3px; font-size: 12px; color: #6b7384; line-height: 1.4; }
+/* channel sheet */
+.v3-tg-kv small { font-size: 12px; font-weight: 500; color: #6b7384; }
+.v3-tg-kvn { margin: 8px 2px 0; font-size: 11px; line-height: 1.4; color: #8a93a2; }
+.v3-tg-shh { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; }
+.v3-tg-shh p { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 600; }
+.v3-tg-vt { display: inline-flex; flex-shrink: 0; gap: 2px; padding: 3px; border-radius: 11px; background: #eceef2; }
+.v3-tg-vt button { display: grid; place-items: center; width: 34px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #6b7384; }
+.v3-tg-vt button.is-on { background: #fff; color: #11151c; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+.v3-tg-posts { gap: 8px; }
+.v3-tg-posts li { gap: 6px; padding: 12px 14px; }
+.v3-tg-posts.is-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.v3-tg-posts .v3-tg-pg { padding: 8px; gap: 6px; min-width: 0; }
+.v3-tg-pg .v3-tg-shots { display: block; }
+.v3-tg-pg .v3-tg-shots a { display: block; }
+.v3-tg-pg .v3-tg-shots img { width: 100%; height: 110px; }
+.v3-tg-pgtx { display: -webkit-box; height: 110px; padding: 8px; box-sizing: border-box; border-radius: 10px; background: #fff; font-size: 12px; line-height: 1.4; overflow: hidden; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.v3-tg-pg > small { font-size: 11px; color: #6b7384; }
+/* «Стоп» while a source works: the red mark turns */
+.v3-mxp-pstop i, .v3-tg-stop i { position: relative; }
+.v3-mxp-pstop:not(:disabled) i::before, .v3-tg-stop:not(:disabled) i::before { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid rgba(229, 72, 77, .9); border-right-color: transparent; border-bottom-color: transparent; animation: v3-tg-rot 1.2s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .v3-tg-spin, .v3-mxp-pstop i::before, .v3-tg-stop i::before { animation: none; } }

@@ -6,10 +6,12 @@ export interface TgChannel {
   lastPostAt: string | null; checkedAt: string | null; error: string | null; status: TgStatus;
   posts7d: number; tips7d: number; unknown7d: number; recognized: number | null; settled: number; wins: number; winrate: number | null; roi: number | null; pending: number;
   users: string[]; days: number[];
+  /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
+  all?: { posts: number; tips: number; unknown: number; other: number; repeats: number; won: number; lost: number; pending: number; recognized: number | null; winrate: number | null; profit: number | null; roi: number | null; firstAt: string | null };
 }
 export interface TgList {
   channels: TgChannel[]; invites: { name: string; link: string; who: string[] }[]; days: string[];
-  totals: { channels: number; running: number; posts24h: number; tips24h: number; recognized: number | null; unknown7d: number; settled30d: number; winrate30d: number | null; pending: number };
+  totals: { channels: number; running: number; posts24h: number; tips24h: number; recognized: number | null; unknown7d: number; queue?: number; settled30d: number; winrate30d: number | null; pending: number };
   night: boolean; nextAt: string | null;
 }
 export interface TgPost {

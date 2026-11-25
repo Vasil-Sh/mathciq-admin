@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, ExternalLink, Plus, RefreshCw, Search, Send, X } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Info, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -31,6 +31,12 @@ const MARKET = (p: TgPost) => {
   const h = /^Handicap ([+-][\d.]+)$/.exec(m); if (h) return `Фора ${h[1].replace("-", "−")} · ${p.pick}`;
   return m;
 };
+const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : ["Інфо", "is-off"];
+const money = (n: number | null | undefined) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("uk-UA")}`);
+const pct = (n: number | null | undefined) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}%`);
+const tone = (n: number | null | undefined) => (n == null || n === 0 ? "" : n > 0 ? "is-ok" : "is-bad");
+const WD = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" });
+const readView = (): "list" | "grid" => { try { return localStorage.getItem("v3-tg-posts-view") === "grid" ? "grid" : "list"; } catch { return "list"; } };
 const odds = (n: number | null) => (n == null ? "" : n.toFixed(2).replace(".", ","));
 
 /** Screenshots of a post; a link that expired on the t.me CDN just disappears. */
@@ -53,6 +59,9 @@ export default function Telegram() {
   const [fix, setFix] = useState<TgPost | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [stopAsk, setStopAsk] = useState<TgChannel | null>(null);
+  const [delAsk, setDelAsk] = useState<TgChannel | null>(null);
+  const [view, setView] = useState<"list" | "grid">(readView);
+  const pickView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem("v3-tg-posts-view", v); } catch { /* private mode */ } };
 
   const load = useCallback(async () => {
     try { setData(await fetchTgSources()); setErr(""); } catch (e) { setErr((e as Error).message); }
@@ -87,7 +96,7 @@ export default function Telegram() {
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
   };
   const remove = async (c: TgChannel) => {
-    try { await deleteTgChannel(c.handle); toast.success("Тестовий канал видалено"); setSel(null); await load(); }
+    try { await deleteTgChannel(c.handle); toast.success("Тестовий канал видалено"); setDelAsk(null); setSel(null); await load(); }
     catch (e) { toast.error("Не вдалося видалити", { description: (e as Error).message }); }
   };
 
@@ -108,7 +117,7 @@ export default function Telegram() {
       {err && !data ? <div className="v3-dcard v3-uerror" role="alert"><span className="v3-uerror-ico" aria-hidden="true">!</span><strong>Не вдалося завантажити канали</strong><code className="v3-uerror-det">{err}</code><div><button type="button" className="v3-btn v3-btn-blue" onClick={() => void load()}>Спробувати ще раз</button></div></div> : <>
         <section className="v3-sums v3-pay-sums v3-mx-sums" aria-label="Підсумки">
           <div className="v3-sum is-static is-on"><span className="v3-sum-l">Постів за 24 год</span><strong className="v3-sum-v"><RollingNumber key={`p${t?.posts24h}`} text={t ? String(t.posts24h) : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? `прогнозів ${t.tips24h}` : "…"}</span></span></div>
-          <div className="v3-sum is-static"><span className="v3-sum-l">Розпізнано</span><strong className="v3-sum-v"><RollingNumber key={`r${t?.recognized}`} text={t?.recognized != null ? `${t.recognized}%` : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? (t.unknown7d ? `${t.unknown7d} ${plural(t.unknown7d, "чекає", "чекають", "чекають")} розбору` : "черга порожня") : "…"}</span></span></div>
+          <div className="v3-sum is-static"><span className="v3-sum-l">Розпізнано</span><strong className="v3-sum-v"><RollingNumber key={`r${t?.recognized}`} text={t?.recognized != null ? `${t.recognized}%` : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? ((t.queue ?? t.unknown7d) ? `${t.queue ?? t.unknown7d} ${plural(t.queue ?? t.unknown7d, "чекає", "чекають", "чекають")} розбору` : "черга порожня") : "…"}</span></span></div>
         </section>
 
         <div className="v3-pay-tabs v3-tg-tabs" role="tablist" aria-label="Розділи">
@@ -120,12 +129,32 @@ export default function Telegram() {
           !data ? <div className="v3-tg-list" aria-hidden="true">{[0, 1, 2].map((i) => <div key={i} className="v3-tg-card is-skel"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>)}</div>
           : !data.channels.length && !data.invites.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Send size={20} /></span><strong>Каналів ще немає</strong><span>Додайте публічний канал кнопкою «+» або дочекайтесь, поки користувач Pro додасть посилання t.me/… у «Telegram-групи».</span><button type="button" onClick={() => setAddOpen(true)}>Додати канал</button></div>
           : <div className="v3-tg-list">
-            {data.channels.map((c) => { const mx = Math.max(1, ...c.days); const [sl, sc] = STATUS[c.status]; return (
-              <button key={c.handle} type="button" className={`v3-tg-card${c.status === "run" ? "" : " is-dim"}${opening === c.handle ? " is-opening" : ""}`} disabled={!!opening} onClick={() => void openCh(c.handle)}>
-                <span className="v3-tg-ch"><span className="v3-tg-av"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span><span className="v3-tg-chn"><strong>{c.title || `@${c.handle}`}</strong><small>@{c.handle} · {GAME[c.game]}{c.isTest ? " · тест" : ""}</small></span><em className={`v3-tg-st ${sc}`}>{sl}</em></span>
-                <span className="v3-tg-line">{c.status === "err" ? c.error : `${(c.posts7d / 7).toFixed(c.posts7d < 7 ? 1 : 0).replace(".", ",")} ${plural(Math.round(c.posts7d / 7), "пост", "пости", "постів")}/день · розпізнано ${c.recognized != null ? `${c.recognized}%` : "—"} · ${when(c.lastPostAt)}`}</span>
-                {c.status !== "block" && <span className="v3-tg-bars" aria-hidden="true">{c.days.map((d, i) => <i key={i} className={i === 6 ? "is-today" : ""} style={{ height: `${Math.max(8, Math.round((d / mx) * 100))}%` }} />)}</span>}
-              </button>
+            {data.channels.map((c, i) => { const mx = Math.max(1, ...c.days); const [sl] = STATUS[c.status]; const st = c.status === "run" ? "ok" : c.status === "stop" ? "paused" : "down"; const A = c.all; const wk = c.days.reduce((x, n) => x + n, 0); return (
+              <div key={c.handle} className={`v3-mxp-pc v3-tg-pc${c.status === "run" ? "" : " is-paused"}${opening === c.handle ? " is-opening" : ""}`} style={{ animationDelay: `${i * 60}ms` }} role="button" tabIndex={0} aria-label={`Відкрити ${c.title || c.handle}`} onClick={() => !opening && void openCh(c.handle)} onKeyDown={(e) => { if (e.key === "Enter" && !opening) void openCh(c.handle); }}>
+                <div className="v3-mxp-ph">
+                  <span className="v3-tg-av is-s"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span>
+                  <strong>{c.title || `@${c.handle}`}</strong>
+                  <span className={`v3-mxp-pst is-${st}`}>{c.status === "run" ? <i className="v3-tg-spin" aria-hidden="true" /> : <i aria-hidden="true" />}{sl}</span>
+                  <span className="v3-mxp-pa" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" className="v3-mxp-plog" onClick={() => !opening && void openCh(c.handle)} aria-label={`Пости й статистика · ${c.title || c.handle}`}><Info size={16} aria-hidden="true" /></button>
+                    {c.status === "block" ? null : c.paused
+                      ? <button type="button" className="v3-mxp-pgo" disabled={!online} onClick={() => void setPaused(c, false)}><Play size={13} aria-hidden="true" />Запустити</button>
+                      : <button type="button" className="v3-mxp-pstop" disabled={!online} onClick={() => setStopAsk(c)} aria-label={`Зупинити ${c.title || c.handle}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
+                  </span>
+                </div>
+                <small className="v3-mxp-psub">{c.status === "err" ? c.error : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
+                {c.status !== "block" && <div className="v3-tg-week">
+                  <div className="v3-mxp-wh"><span>7 днів</span><b>{wk ? `${wk} ${plural(wk, "пост", "пости", "постів")} · прогнозів ${c.tips7d}` : "постів не було"}</b></div>
+                  <span className="v3-tg-bars" aria-hidden="true">{c.days.map((d, k) => <i key={k} className={`${k === 6 ? "is-today" : ""}${d ? "" : " is-zero"}`} style={{ height: `${d ? Math.max(14, Math.round((d / mx) * 100)) : 8}%` }} />)}</span>
+                  <span className="v3-tg-wdays" aria-hidden="true">{data.days.map((d) => <span key={d}>{WD(d)}</span>)}</span>
+                </div>}
+                <div className="v3-mxp-ptiles">
+                  <div><span>Прогнозів</span><b>{A ? A.tips : c.tips7d}</b></div>
+                  <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
+                  <div><span>Прибуток</span><b className={tone(A?.profit)}>{money(A?.profit)}</b></div>
+                </div>
+                {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
+              </div>
             ); })}
             {data.invites.map((g) => (
               <div key={g.link} className="v3-tg-card is-dim"><span className="v3-tg-ch"><span className="v3-tg-av"><TgAvatar handle="" name={g.name} color="#334155" /></span><span className="v3-tg-chn"><strong>{g.name}</strong><small>запрошення · {g.who.join(", ") || "—"}</small></span><em className="v3-tg-st is-warn">Приватний</em></span><span className="v3-tg-line">Посилання-запрошення — пости не видно. Поки читаємо лише публічні канали.</span></div>
@@ -155,17 +184,28 @@ export default function Telegram() {
             {ch.status === "block" ? <p className="v3-tg-warn">Заблоковано в «Підтримці». Пости не збираємо, статистику не показуємо.</p>
               : ch.status === "err" ? <p className="v3-tg-warn is-bad">{ch.error}. Перевірте, чи канал публічний і чи не змінив нікнейм.</p> : null}
             <div className="v3-tg-kv">
-              <div><span>Постів / день</span><b>{(ch.posts7d / 7).toFixed(ch.posts7d < 7 ? 1 : 0).replace(".", ",")}</b></div>
-              <div><span>Розпізнано</span><b className={ch.recognized == null ? "" : ch.recognized >= 85 ? "is-ok" : ch.recognized >= 70 ? "is-warn" : "is-bad"}>{ch.recognized != null ? `${ch.recognized}%` : "—"}</b></div>
-              <div><span>ROI каналу</span><b className={ch.roi == null ? "" : ch.roi > 0 ? "is-ok" : ch.roi < 0 ? "is-bad" : ""}>{ch.roi == null ? "—" : `${ch.roi > 0 ? "+" : ch.roi < 0 ? "−" : ""}${Math.abs(ch.roi)}%`}</b></div>
-              <div><span>Вінрейт · розраховано</span><b>{ch.winrate != null ? `${ch.winrate}%` : "—"} · {ch.settled}</b></div>
+              <div><span>Прогнозів</span><b>{ch.all?.tips ?? ch.tips7d}{ch.all?.pending ? <small> · очікує {ch.all.pending}</small> : null}</b></div>
+              <div><span>Розпізнано</span><b className={ch.all?.recognized == null ? "" : ch.all.recognized >= 85 ? "is-ok" : ch.all.recognized >= 70 ? "is-warn" : "is-bad"}>{ch.all?.recognized != null ? `${ch.all.recognized}%` : "—"}</b></div>
+              <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
+              <div><span>Прибуток · ROI</span><b className={tone(ch.all?.profit)}>{money(ch.all?.profit)}{ch.all?.roi != null ? <small> · {pct(ch.all.roi)}</small> : null}</b></div>
             </div>
-            <p className="v3-tg-shh">Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
+            <p className="v3-tg-kvn">Прибуток — якби на кожен прогноз ставили 100. Повтори одного прогнозу рахуємо раз.</p>
+            <div className="v3-tg-shh"><p>Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
+              <span className="v3-tg-vt" role="group" aria-label="Вигляд">
+                <button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={16} aria-hidden="true" /></button>
+                <button type="button" className={view === "grid" ? "is-on" : ""} aria-pressed={view === "grid"} aria-label="Картками" onClick={() => pickView("grid")}><LayoutGrid size={16} aria-hidden="true" /></button>
+              </span></div>
             {posts === null ? <div className="v3-tg-posts" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
               : !posts.length ? <p className="v3-tg-note">Постів ще немає — перший збір за кілька хвилин.</p>
-              : <ul className="v3-tg-posts">{posts.slice(0, 12).map((p) => (
+              : <ul className={`v3-tg-posts${view === "grid" ? " is-grid" : ""}`}>{posts.slice(0, view === "grid" ? 20 : 12).map((p) => view === "grid" ? (
+                <li key={p.postId} className="v3-tg-pg" onClick={() => p.kind === "unknown" && setFix({ ...p, title: ch.title })}>
+                  {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : <span className="v3-tg-pgtx">{p.text}</span>}
+                  <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{p.result && <em className={`v3-tg-st ${p.result === "Win" ? "is-ok" : "is-bad"}`}>{p.result === "Win" ? "Виграш" : "Програш"}</em>}</span>
+                  <small>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>
+                </li>
+              ) : (
                 <li key={p.postId}>
-                  <span className="v3-tg-ph"><small>{when(p.postedAt)}</small><em className={`v3-tg-st ${p.kind === "bet" ? "is-ok" : p.kind === "unknown" ? "is-warn" : "is-off"}`}>{p.kind === "bet" ? "Прогноз" : p.kind === "unknown" ? "Не розпізнано" : "Не прогноз"}</em>
+                  <span className="v3-tg-ph"><small>{when(p.postedAt)}</small><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>
                     {p.result && <em className={`v3-tg-st ${p.result === "Win" ? "is-ok" : "is-bad"}`}>{p.result === "Win" ? "Виграш" : "Програш"}{p.score ? ` · ${p.score}` : ""}</em>}</span>
                   {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
                   <Shots urls={p.photos} />
@@ -180,7 +220,7 @@ export default function Telegram() {
               {ch.status !== "block" && !ch.paused && <button type="button" className="is-grey" disabled={!online} onClick={() => void refreshOne(ch.handle)}><RefreshCw size={15} aria-hidden="true" /> Оновити</button>}
               <a className="is-grey v3-tg-open" href={`https://t.me/${ch.handle}`} target="_blank" rel="noreferrer">У Telegram<ExternalLink size={14} aria-hidden="true" /></a>
             </div>
-            {ch.isTest && <button type="button" className="v3-tg-del" disabled={!online} onClick={() => void remove(ch)}>Видалити тестовий канал</button>}
+            {ch.isTest && <button type="button" className="v3-tg-del" disabled={!online} onClick={() => setDelAsk(ch)}>Видалити тестовий канал</button>}
           </>}
         </DialogContent>
       </Dialog>
@@ -188,6 +228,10 @@ export default function Telegram() {
       <ConfirmSheet open={!!stopAsk} tone="dark" icon={<span className="v3-tg-stopic" />} title={`Зупинити збір «${stopAsk?.title || stopAsk?.handle || ""}»?`}
         text="Нові пости не збиратимемо, поки не запустите знову. Уже зібрані прогнози й статистика лишаються." confirm="Зупинити"
         onOpenChange={(o) => { if (!o) setStopAsk(null); }} onConfirm={() => stopAsk && void setPaused(stopAsk, true)} />
+
+      <ConfirmSheet open={!!delAsk} tone="red" icon={<Trash2 size={22} aria-hidden="true" />} title={`Видалити «${delAsk?.title || delAsk?.handle || ""}»?`}
+        text="Канал зникне зі списку разом з усіма зібраними постами й статистикою. Це не можна скасувати." confirm="Видалити"
+        onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && void remove(delAsk)} />
 
       <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
       <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={(h) => { setAddOpen(false); void load().then(() => openCh(h)); }} />
