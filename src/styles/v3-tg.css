@@ -120,3 +120,7 @@ small.v3-tg-note { margin-top: 6px; }
   .v3-tg-del { min-height: 46px; margin-top: 8px; border-radius: 14px; background: #e5484d; color: #fff; font-size: 14px; }
   .v3-tg-del:disabled { opacity: .55; }
 }
+.v3-tg-card:disabled { opacity: 1; }
+.v3-tg-card.is-opening { animation: v3-tg-pulse 1s ease-in-out infinite; }
+@keyframes v3-tg-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .v3-tg-card.is-opening { animation: none; opacity: .6; } }

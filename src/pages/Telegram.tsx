@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, ExternalLink, Plus, RefreshCw, Search, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
@@ -51,7 +51,17 @@ export default function Telegram() {
     fetchTgUnrecognized().then(setUnk).catch(() => setUnk([]));
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { if (!sel) return; setPosts(null); fetchTgPosts(sel).then(setPosts).catch(() => setPosts([])); }, [sel]);
+  // The sheet opens once its posts are here, so it never jumps from placeholders to a taller sheet.
+  const cache = useRef(new Map<string, TgPost[]>());
+  const [opening, setOpening] = useState<string | null>(null);
+  const getPosts = (h: string) => fetchTgPosts(h).then((p) => { cache.current.set(h, p); return p; });
+  const openCh = async (h: string) => {
+    const hit = cache.current.get(h);
+    if (hit) { setPosts(hit); setSel(h); getPosts(h).then((p) => setPosts((cur) => (cur === hit ? p : cur))).catch(() => {}); return; }
+    setOpening(h);
+    const p = await getPosts(h).catch(() => [] as TgPost[]);
+    setOpening(null); setPosts(p); setSel(h);
+  };
 
   const ch = data?.channels.find((c) => c.handle === sel) || null;
   const refreshAll = async () => {
@@ -61,7 +71,7 @@ export default function Telegram() {
     finally { setBusy(false); }
   };
   const refreshOne = async (h: string) => {
-    try { const r = await refreshTgChannel(h); toast.success(r.added ? `Нових постів: ${r.added}` : "Нових постів немає"); await load(); if (sel === h) setPosts(await fetchTgPosts(h)); }
+    try { const r = await refreshTgChannel(h); toast.success(r.added ? `Нових постів: ${r.added}` : "Нових постів немає"); await load(); if (sel === h) setPosts(await getPosts(h)); }
     catch (e) { toast.error("Не вдалося оновити", { description: (e as Error).message }); }
   };
   const setPaused = async (c: TgChannel, paused: boolean) => {
@@ -103,7 +113,7 @@ export default function Telegram() {
           : !data.channels.length && !data.invites.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Send size={20} /></span><strong>Каналів ще немає</strong><span>Додайте публічний канал кнопкою «+» або дочекайтесь, поки користувач Pro додасть посилання t.me/… у «Telegram-групи».</span><button type="button" onClick={() => setAddOpen(true)}>Додати канал</button></div>
           : <div className="v3-tg-list">
             {data.channels.map((c) => { const mx = Math.max(1, ...c.days); const [sl, sc] = STATUS[c.status]; return (
-              <button key={c.handle} type="button" className={`v3-tg-card${c.status === "run" ? "" : " is-dim"}`} onClick={() => setSel(c.handle)}>
+              <button key={c.handle} type="button" className={`v3-tg-card${c.status === "run" ? "" : " is-dim"}${opening === c.handle ? " is-opening" : ""}`} disabled={!!opening} onClick={() => void openCh(c.handle)}>
                 <span className="v3-tg-ch"><span className="v3-tg-av"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span><span className="v3-tg-chn"><strong>{c.title || `@${c.handle}`}</strong><small>@{c.handle} · {GAME[c.game]}{c.isTest ? " · тест" : ""}</small></span><em className={`v3-tg-st ${sc}`}>{sl}</em></span>
                 <span className="v3-tg-line">{c.status === "err" ? c.error : `${(c.posts7d / 7).toFixed(c.posts7d < 7 ? 1 : 0).replace(".", ",")} ${plural(Math.round(c.posts7d / 7), "пост", "пости", "постів")}/день · розпізнано ${c.recognized != null ? `${c.recognized}%` : "—"} · ${when(c.lastPostAt)}`}</span>
                 {c.status !== "block" && <span className="v3-tg-bars" aria-hidden="true">{c.days.map((d, i) => <i key={i} className={i === 6 ? "is-today" : ""} style={{ height: `${Math.max(8, Math.round((d / mx) * 100))}%` }} />)}</span>}
@@ -170,8 +180,8 @@ export default function Telegram() {
         text="Нові пости не збиратимемо, поки не запустите знову. Уже зібрані прогнози й статистика лишаються." confirm="Зупинити"
         onOpenChange={(o) => { if (!o) setStopAsk(null); }} onConfirm={() => stopAsk && void setPaused(stopAsk, true)} />
 
-      <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) fetchTgPosts(sel).then(setPosts).catch(() => {}); }} />
-      <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={(h) => { setAddOpen(false); void load().then(() => setSel(h)); }} />
+      <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
+      <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={(h) => { setAddOpen(false); void load().then(() => openCh(h)); }} />
     </div>
   );
 }
