@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Ticket, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -72,19 +72,27 @@ const odds = (n: number | null) => (n == null ? "" : n.toFixed(2).replace(".", "
 
 /** Screenshots of a post; a link that expired on the t.me CDN just disappears. */
 /** Every slip with money the channel showed: which are in «Гроші каналу», with what profit, and why the others are not. */
-function SlipList({ handle }: { handle: string }) {
+function SlipList({ handle, title }: { handle: string; title: string }) {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<TgSlip[] | null>(null);
-  const toggle = () => { setOpen((o) => !o); if (!list) fetchTgSlips(handle).then(setList).catch(() => setList([])); };
+  useEffect(() => { fetchTgSlips(handle).then(setList).catch(() => setList([])); }, [handle]);
   const RS: Record<string, [string, string]> = { Win: ["Виграш", "is-ok"], Loss: ["Програш", "is-bad"], Void: ["Повернення", "is-off"] };
   return (<>
-    <button type="button" className="v3-tg-rtoggle v3-tg-slipt" aria-expanded={open} onClick={toggle}><span>Квитки зі ставками{list ? ` · ${list.length}` : ""}</span><ChevronDown size={16} aria-hidden="true" className={open ? "is-up" : ""} /></button>
-    {open && (!list ? <p className="v3-tg-note">Завантажуємо…</p> : !list.length ? <p className="v3-tg-note">Квитків із сумою ставки ще не було.</p> : <ul className="v3-tg-slips">{list.map((x) => { const c = x.currency ? (CUR[x.currency] || x.currency) : ""; const n = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 }); const r = x.result ? RS[x.result] : null; return (
-      <li key={x.postId} className={x.counted ? "" : "is-off"}>
-        <span className="v3-tg-sl1"><small>{when(x.postedAt)}</small><b>{x.team1 && x.team2 ? `${x.team1} — ${x.team2}` : x.pick || "—"}</b>{r ? <em className={`v3-tg-st ${r[1]}`}>{r[0]}</em> : x.counted ? <em className="v3-tg-st is-warn">Очікується</em> : null}</span>
-        <span className="v3-tg-sl2">{n(x.stake)} {c}{x.payout ? ` → ${n(x.payout)} ${c}` : ""}{x.odds ? ` · кф ${odds(x.odds)}` : ""}<b className={x.profit == null ? "" : tone(x.profit)}>{x.counted ? (x.profit == null ? "у грі" : cash(x.profit, x.currency || "")) : x.why}</b></span>
-      </li>
-    ); })}</ul>)}
+    <button type="button" className="v3-tg-slipt" onClick={() => setOpen(true)}><Ticket size={16} aria-hidden="true" />Квитки зі ставками{list ? ` · ${list.length}` : ""}</button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
+        <DialogTitle>Квитки зі ставками</DialogTitle>
+        <DialogDescription>{title} · кожен квиток із сумою, що показав канал</DialogDescription>
+        {!list ? <p className="v3-tg-note">Завантажуємо…</p> : !list.length ? <p className="v3-tg-note">Квитків із сумою ставки ще не було.</p> : <ul className="v3-tg-slips">{list.map((x) => { const c = x.currency ? (CUR[x.currency] || x.currency) : ""; const n = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 }); const r = x.result ? RS[x.result] : null; return (
+          <li key={x.postId} className={x.counted ? "" : "is-off"}>
+            <span className="v3-tg-sl1"><small>{when(x.postedAt)}</small><b>{x.team1 && x.team2 ? `${x.team1} — ${x.team2}` : x.pick || "—"}</b>{r ? <em className={`v3-tg-st ${r[1]}`}>{r[0]}</em> : x.counted ? <em className="v3-tg-st is-warn">Очікується</em> : null}</span>
+            <span className="v3-tg-sl2">{n(x.stake)} {c}{x.payout ? ` → ${n(x.payout)} ${c}` : ""}{x.odds ? ` · кф ${odds(x.odds)}` : ""}<b className={x.profit == null ? "" : tone(x.profit)}>{x.counted ? (x.profit == null ? "у грі" : cash(x.profit, x.currency || "")) : x.why}</b></span>
+          </li>
+        ); })}</ul>}
+        <p className="v3-tg-note">У «Гроші каналу» йдуть квитки прогнозів, кожен раз. Прибуток виграшу — виплата мінус ставка (або ставка × (кф − 1)).</p>
+        <div className="v3-mxp-acts"><button type="button" className="is-grey" onClick={() => setOpen(false)}>Закрити</button></div>
+      </DialogContent>
+    </Dialog>
   </>);
 }
 
@@ -345,7 +353,7 @@ export default function Telegram() {
                 {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
               </div>
             ); })}
-            {ch.status !== "block" && <SlipList key={ch.handle} handle={ch.handle} />}
+            {ch.status !== "block" && <SlipList key={ch.handle} handle={ch.handle} title={ch.title || at(ch.handle)} />}
             <div className="v3-tg-kv is-3">
               <div><span>Сьогодні</span><b>{ch.days[ch.days.length - 1] ?? 0}<small> {plural(ch.days[ch.days.length - 1] ?? 0, "пост", "пости", "постів")}</small></b></div>
               <div><span>Усього постів</span><b>{ch.all?.posts ?? 0}</b></div>
