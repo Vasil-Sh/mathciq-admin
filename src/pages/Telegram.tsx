@@ -71,6 +71,18 @@ const readView = (): "list" | "grid" => { try { return localStorage.getItem("v3-
 const odds = (n: number | null) => (n == null ? "" : n.toFixed(2).replace(".", ","));
 
 /** Screenshots of a post; a link that expired on the t.me CDN just disappears. */
+/** A post's text on a grid card, a few lines with an arrow to read it all or fold it (a screenshot card: the caption under it). */
+function MoreText({ text, cap }: { text: string; cap?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > (cap ? 70 : 130) || text.split("\n").length > (cap ? 2 : 5);
+  return (
+    <span className={`${cap ? "v3-tg-pgcap" : "v3-tg-pgtx"}${open ? " is-open" : ""}`}>
+      <span className="v3-tg-pgt">{text}</span>
+      {long && <button type="button" className="v3-tg-pgmore" aria-expanded={open} aria-label={open ? "Згорнути текст" : "Читати весь текст"} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}><ChevronDown size={14} aria-hidden="true" className={open ? "is-up" : ""} /></button>}
+    </span>
+  );
+}
+
 function Shots({ urls, big }: { urls?: string[]; big?: boolean }) {
   const [bad, setBad] = useState<string[]>([]);
   const ok = (urls || []).filter((u) => !bad.includes(u));
@@ -95,6 +107,15 @@ export default function Telegram() {
   const [sort, setSort] = useState<"new" | "roi" | "win" | "honest">("new");
   const [readersOpen, setReadersOpen] = useState(() => { try { return localStorage.getItem("v3-tg-readers") === "1"; } catch { return false; } });
   const golden = async () => { try { await runTgGolden(); toast.success("Перевіряємо читачів", { description: "≈6 с на запит — результат тут же" }); setTimeout(() => void load(), 1_500); } catch (e) { toast.error("Не вдалося запустити", { description: (e as Error).message }); } };
+  // posts of a channel the admin has seen (its total when the sheet was last opened): the card shows how many came since
+  const [chSeen, setChSeen] = useState<Record<string, number>>(() => { try { return JSON.parse(localStorage.getItem("v3-tg-chseen") || "{}") as Record<string, number>; } catch { return {}; } });
+  const markChSeen = (h: string) => { const n = data?.channels.find((c) => c.handle === h)?.all?.posts; if (n == null) return; setChSeen((cur) => { const next = { ...cur, [h]: n }; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; }); };
+  // a channel seen for the first time: its posts now are the start (the badge counts only what comes after)
+  useEffect(() => {
+    const miss = data?.channels.filter((c) => chSeen[c.handle] == null && c.all?.posts != null);
+    if (!miss?.length) return;
+    setChSeen((cur) => { const next = { ...cur }; for (const c of miss) next[c.handle] = c.all!.posts; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+  }, [data, chSeen]);
   const toggleReaders = () => setReadersOpen((o) => { try { localStorage.setItem("v3-tg-readers", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
   const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
@@ -116,6 +137,7 @@ export default function Telegram() {
   const [opening, setOpening] = useState<string | null>(null);
   const getPosts = (h: string) => fetchTgPosts(h).then((p) => { cache.current.set(h, p); return p; });
   const openCh = async (h: string) => {
+    markChSeen(h);
     const hit = cache.current.get(h);
     if (hit) { setPosts(hit); setSel(h); getPosts(h).then((p) => setPosts((cur) => (cur === hit ? p : cur))).catch(() => {}); return; }
     setOpening(h);
@@ -232,7 +254,7 @@ export default function Telegram() {
             {[...data.channels].sort((x, y) => sort === "roi" ? (y.all?.ours?.roi ?? y.all?.roi ?? -1e9) - (x.all?.ours?.roi ?? x.all?.roi ?? -1e9) : sort === "win" ? (y.all?.winrate ?? -1) - (x.all?.winrate ?? -1) : sort === "honest" ? (y.all?.honesty ?? -1) - (x.all?.honesty ?? -1) : 0).map((c, i) => { const mx = Math.max(1, ...c.days); const A = c.all; const wk = c.days.reduce((x, n) => x + n, 0); return (
               <div key={c.handle} className={`v3-mxp-pc v3-tg-pc${c.status === "run" ? "" : " is-paused"}${opening === c.handle ? " is-opening" : ""}`} style={{ animationDelay: `${i * 60}ms` }} role="button" tabIndex={0} aria-label={`Відкрити ${c.title || c.handle}`} onClick={() => !opening && void openCh(c.handle)} onKeyDown={(e) => { if (e.key === "Enter" && !opening) void openCh(c.handle); }}>
                 <div className="v3-mxp-ph">
-                  <span className="v3-tg-av is-s"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span>
+                  <span className="v3-tg-av is-s"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} />{(() => { const n = chSeen[c.handle] != null ? (A?.posts ?? 0) - chSeen[c.handle] : 0; return n > 0 ? <i className="v3-tg-new" aria-label={`${n} ${plural(n, "новий пост", "нові пости", "нових постів")}`}>{n > 99 ? "99+" : n}</i> : null; })()}</span>
                   <strong>{c.title || `@${c.handle}`}</strong>
                   <span className="v3-mxp-pa" onClick={(e) => e.stopPropagation()}>
                     <button type="button" className="v3-mxp-plog" onClick={() => !opening && void openCh(c.handle)} aria-label={`Пости й статистика · ${c.title || c.handle}`}><Info size={16} aria-hidden="true" /></button>
@@ -287,12 +309,13 @@ export default function Telegram() {
         )}
       </>}
 
-      <Dialog open={!!ch} onOpenChange={(o) => { if (!o) setSel(null); }}>
+      <Dialog open={!!ch} onOpenChange={(o) => { if (!o) { if (sel) markChSeen(sel); setSel(null); } }}>
         <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
           {ch && <>
             <div className="v3-tg-sh"><span className="v3-tg-av is-l"><TgAvatar handle={ch.handle} name={ch.title || ch.handle} color={colorOf(ch.handle)} /></span><span className="v3-tg-chn"><DialogTitle>{ch.title || `@${ch.handle}`}</DialogTitle><DialogDescription>{at(ch.handle)} · {GAME[ch.game]}{ch.subscribers ? ` · ${ch.subscribers.toLocaleString("uk-UA")} підписників` : ""}{ch.isTest ? " · тестовий" : ""}</DialogDescription></span></div>
             {ch.status === "block" ? <p className="v3-tg-warn">Заблоковано в «Підтримці». Пости не збираємо, статистику не показуємо.</p>
               : ch.status === "err" ? <p className="v3-tg-warn is-bad">{ch.error}. Перевірте, чи канал публічний і чи не змінив нікнейм.</p> : null}
+            {ch.status !== "block" && !ch.money?.length && <div className="v3-tg-bank is-empty"><div className="v3-tg-bankh"><span>Гроші каналу за квитками</span><b>—</b></div><small className="v3-tg-bankn">Квитків із сумою ставки ще не було — гроші порахуємо, коли канал покаже квиток зі ставкою.</small></div>}
             {!!ch.money?.length && ch.money.map((m) => { const c = CUR[m.currency] || m.currency, f = (n?: number) => `${(n || 0).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${c}`; return (
               <div key={m.currency} className="v3-tg-bank">
                 <div className="v3-tg-bankh"><span>Гроші каналу за квитками</span><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b></div>
@@ -304,8 +327,10 @@ export default function Telegram() {
                 {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
               </div>
             ); })}
-            <div className="v3-tg-kv">
-              <div><span>Прогнозів</span><b>{ch.all?.tips ?? ch.tips7d}{ch.all?.pending ? <small> · очікує {ch.all.pending}</small> : null}</b></div>
+            <div className="v3-tg-kv is-3">
+              <div><span>Сьогодні</span><b>{ch.days[ch.days.length - 1] ?? 0}<small> {plural(ch.days[ch.days.length - 1] ?? 0, "пост", "пости", "постів")}</small></b></div>
+              <div><span>Усього постів</span><b>{ch.all?.posts ?? 0}</b></div>
+              <div><span>Прогнозів</span><b>{ch.all?.tips ?? ch.tips7d}{ch.all?.pending ? <small> · ⏳{ch.all.pending}</small> : null}</b></div>
               <div><span>Розпізнано</span><b className={ch.all?.recognized == null ? "" : ch.all.recognized >= 85 ? "is-ok" : ch.all.recognized >= 70 ? "is-warn" : "is-bad"}>{ch.all?.recognized != null ? `${ch.all.recognized}%` : "—"}</b></div>
               <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
               <div><span>Окупність</span><b className={tone(ch.all?.roi)}>{pct(ch.all?.roi)}</b></div>
@@ -332,7 +357,7 @@ export default function Telegram() {
               : !posts.length ? <p className="v3-tg-note">Постів ще немає — перший збір за кілька хвилин.</p>
               : <ul className={`v3-tg-posts${view === "grid" ? " is-grid" : ""}`}>{posts.slice(0, view === "grid" ? 20 : 12).map((p) => view === "grid" ? (
                 <li key={p.postId} className="v3-tg-pg" onClick={() => setFix({ ...p, title: ch.title })}>
-                  {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : <span className="v3-tg-pgtx">{p.text}</span>}
+                  {p.photos?.length ? <><Shots urls={p.photos.slice(0, 1)} />{p.text.trim() && <MoreText text={p.text} cap />}</> : <MoreText text={p.text} />}
                   <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}</em>}<Marks p={p} /></span>
                   <small>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>
                 </li>

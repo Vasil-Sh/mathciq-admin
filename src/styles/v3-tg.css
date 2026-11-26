@@ -168,7 +168,14 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-pg .v3-tg-shots { display: block; }
 .v3-tg-pg .v3-tg-shots a { display: block; }
 .v3-tg-pg .v3-tg-shots img { width: 100%; height: 110px; }
-.v3-tg-pgtx { display: -webkit-box; height: 110px; padding: 8px; box-sizing: border-box; border-radius: 10px; background: #fff; font-size: 12px; line-height: 1.4; overflow: hidden; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.v3-tg-pgtx { position: relative; display: block; min-height: 110px; padding: 8px; box-sizing: border-box; border-radius: 10px; background: #fff; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.v3-tg-pgt { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 5; -webkit-box-orient: vertical; white-space: pre-line; }
+.v3-tg-pgcap { position: relative; display: block; font-size: 12px; line-height: 1.4; color: #11151c; overflow-wrap: anywhere; }
+.v3-tg-pgcap .v3-tg-pgt { -webkit-line-clamp: 2; }
+.v3-tg-pgtx.is-open .v3-tg-pgt, .v3-tg-pgcap.is-open .v3-tg-pgt { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.v3-tg-pgmore { display: flex; align-items: center; justify-content: center; width: 100%; height: 22px; margin-top: 2px; padding: 0; border: 0; border-radius: 7px; background: #eef0f4; color: #4a5263; }
+.v3-tg-pgmore svg { transition: transform .2s; }
+.v3-tg-pgmore svg.is-up { transform: rotate(180deg); }
 .v3-tg-pg > small { font-size: 11px; color: #6b7384; }
 /* «Стоп» while a source works: the red mark turns */
 .v3-mxp-pstop i, .v3-tg-stop i { position: relative; }
@@ -383,3 +390,11 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-acc { margin: 0; padding: 8px 12px; border-radius: 10px; background: #e3f6ea; color: #1f7a45; font-size: 12px; line-height: 1.4; }
 .v3-tg-acc.is-bad { background: #fde2df; color: #c2341f; }
 .v3-tg-rtiles b.is-ok { color: #1f7a45; }
+
+/* new posts since the sheet was last opened — a badge on the avatar; the sheet's tiles 3 in a row; the money block before any slip */
+.v3-tg-av { position: relative; }
+.v3-tg-new { position: absolute; top: -6px; right: -8px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: #e5484d; color: #fff; font: 700 11px/18px Inter, sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px #fff; }
+.v3-tg-kv.is-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.v3-tg-kv.is-3 > div { min-width: 0; padding: 9px 10px; }
+.v3-tg-kv.is-3 b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-tg-bank.is-empty .v3-tg-bankh b { color: #8a93a2; }
