@@ -404,3 +404,11 @@ small.v3-tg-note { margin-top: 6px; }
   .v3-tg-posts.is-grid { align-items: start; }
   .v3-tg-pgtx { min-height: 0; }
 }
+
+/* the channel card: a 4th tile «Гроші» (the slips' profit); 4 in a row — the second part of a value on its own line */
+.v3-mxp-ptiles.v3-tg-pt4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 767px) {
+  .v3-tg-pt4 > div { min-width: 0; padding-left: 9px; padding-right: 6px; }
+  .v3-tg-pt4 b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v3-tg-pt4 b small { display: block; margin-top: 1px; font-size: 11px; }
+}

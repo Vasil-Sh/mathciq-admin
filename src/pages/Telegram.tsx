@@ -277,10 +277,11 @@ export default function Telegram() {
                   <span className="v3-tg-bars" onClick={(e) => e.stopPropagation()}>{c.days.map((d, k) => <button type="button" key={k} className={`${k === 6 ? "is-today" : ""}${d ? "" : " is-zero"}`} style={{ height: `${d ? Math.max(14, Math.round((d / mx) * 100)) : 8}%` }} aria-label={`${WD(data.days[k])}: ${d} ${plural(d, "пост", "пости", "постів")}`} onClick={() => setDay({ ch: c, i: k })} />)}</span>
                   <span className="v3-tg-wdays" aria-hidden="true">{data.days.map((d) => <span key={d}>{WD(d)}</span>)}</span>
                 </div>}
-                <div className="v3-mxp-ptiles">
+                <div className="v3-mxp-ptiles v3-tg-pt4">
                   <div><span>Прогнозів</span><b>{A ? A.tips : c.tips7d}</b></div>
                   <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
                   <div><span>Вінрейт</span><b className={A?.winrate == null ? "" : A.winrate >= 55 ? "is-ok" : A.winrate < 45 ? "is-bad" : ""}>{A?.winrate != null ? `${A.winrate}%` : "—"}{A && A.won + A.lost ? <small> · {A.won}–{A.lost}</small> : null}</b></div>
+                  {(() => { const m = c.money?.[0]; return <div><span>Гроші</span><b className={m ? tone(m.profit) : ""}>{m ? <>{cash(m.profit, m.currency).replace(/\s\S+$/, "")}<small> {CUR[m.currency] || m.currency}{c.money!.length > 1 ? ` +${c.money!.length - 1}` : ""}</small></> : "—"}</b></div>; })()}
                 </div>
                 {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""}</small></div>}
                 <p className="v3-tg-when">{c.paused ? <>Зупинено · перевірено {when(c.checkedAt)}</> : <><i aria-hidden="true" />Перевірено {when(c.checkedAt)}{data.nextAt && !c.progress ? ` · наступна перевірка о ${hhmm(data.nextAt)}` : ""}</>}</p>
@@ -321,8 +322,8 @@ export default function Telegram() {
                 <div className="v3-tg-bankh"><span>Гроші каналу за квитками</span><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b></div>
                 <div className="v3-tg-banks">
                   <div><small>Поставив</small><b>{f(m.staked)}</b><em>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")}</em></div>
-                  <div className="is-ok"><small>Виграв</small><b>+{f(m.won)}</b><em>{m.wins ?? 0} {plural(m.wins ?? 0, "ставка", "ставки", "ставок")}</em></div>
-                  <div className="is-bad"><small>Програв</small><b>−{f(m.lost)}</b><em>{m.losses ?? 0} {plural(m.losses ?? 0, "ставка", "ставки", "ставок")}</em></div>
+                  <div className="is-ok"><small>Виграв</small><b>{m.won ? "+" : ""}{f(m.won)}</b><em>{m.wins ?? 0} {plural(m.wins ?? 0, "ставка", "ставки", "ставок")}</em></div>
+                  <div className="is-bad"><small>Програв</small><b>{m.lost ? "−" : ""}{f(m.lost)}</b><em>{m.losses ?? 0} {plural(m.losses ?? 0, "ставка", "ставки", "ставок")}</em></div>
                 </div>
                 {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
               </div>
