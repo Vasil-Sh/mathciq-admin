@@ -21,8 +21,9 @@
   .v3-header-end .v3-tip { display: none; }
 
   /* нижня панель */
-  .v3-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 8px 4px max(8px, calc(env(safe-area-inset-bottom, 0px) - 11px)); background: #141416; border-top: 1px solid rgba(255, 255, 255, .06); }
+  .v3-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: space-evenly; /* equal gaps between the labels, whatever their length */ padding: 8px 4px max(8px, calc(env(safe-area-inset-bottom, 0px) - 11px)); background: #141416; border-top: 1px solid rgba(255, 255, 255, .06); }
   .v3-tab svg { width: 22px; height: 22px; }
+  .v3-tabbar > .v3-tab { flex: 0 0 auto; min-width: 48px; }
   .v3-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0; border: 0; background: none; color: #a1a3aa; font: 400 11px Inter, sans-serif; letter-spacing: .01em; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color .2s, transform .15s; }
   .v3-tab.is-on { color: #3a8bff; }
   .v3-tab:active { transform: scale(.94); }

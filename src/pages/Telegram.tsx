@@ -30,7 +30,10 @@ const MARKET = (p: TgPost) => {
   const h = /^Handicap ([+-][\d.]+)$/.exec(m); if (h) return `Фора ${h[1].replace("-", "−")} · ${p.pick}`;
   return m;
 };
-const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : ["Інфо", "is-off"];
+const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : p.reason === "Результат" ? ["Результат", "is-off"] : ["Інфо", "is-off"];
+const RES = (r: TgPost["result"]): [string, string] | null => r === "Win" ? ["Виграш", "is-ok"] : r === "Loss" ? ["Програш", "is-bad"] : r === "Void" ? ["Повернення", "is-off"] : null;
+const CUR: Record<string, string> = { UAH: "₴", RUB: "₽", USD: "$", EUR: "€", USDT: "USDT", KZT: "₸" };
+const cash = (n: number, c: string) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${CUR[c] || c}`;
 const money = (n: number | null | undefined) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("uk-UA")}`);
 const pct = (n: number | null | undefined) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}%`);
 const tone = (n: number | null | undefined) => (n == null || n === 0 ? "" : n > 0 ? "is-ok" : "is-bad");
@@ -59,6 +62,7 @@ export default function Telegram() {
   const [addOpen, setAddOpen] = useState(false);
   const [stopAsk, setStopAsk] = useState<TgChannel | null>(null);
   const [delAsk, setDelAsk] = useState<TgChannel | null>(null);
+  const [day, setDay] = useState<{ ch: TgChannel; i: number } | null>(null);
   const [view, setView] = useState<"list" | "grid">(readView);
   const pickView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem("v3-tg-posts-view", v); } catch { /* private mode */ } };
 
@@ -68,7 +72,7 @@ export default function Telegram() {
   }, []);
   useEffect(() => { void load(); }, [load]);
   // while a channel is being re-read: refresh every 5 s for the progress
-  const reading = !!data?.channels.some((c) => c.rereadTotal);
+  const reading = !!data?.channels.some((c) => c.progress);
   useEffect(() => { if (!reading) return; const id = setInterval(() => void load(), 5_000); return () => clearInterval(id); }, [reading, load]);
   // The sheet opens once its posts are here, so it never jumps from placeholders to a taller sheet.
   const cache = useRef(new Map<string, TgPost[]>());
@@ -148,22 +152,23 @@ export default function Telegram() {
                   </span>
                 </div>
                 <small className="v3-mxp-psub">{c.status === "err" ? c.error : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
-                {!!c.rereadTotal && (() => { const done = Math.max(0, c.rereadTotal - (c.rereading || 0)), p = Math.min(100, Math.round((done / c.rereadTotal) * 100)); return (
-                  <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label="Перечитуємо пости">
-                    <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />Перечитуємо пости<b>{p}%</b></span>
+                {!!c.progress && (() => { const pr = c.progress, p = Math.min(100, Math.round((pr.done / Math.max(1, pr.total)) * 100)); return (
+                  <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={pr.kind === "add" ? "Збираємо пости" : "Перечитуємо пости"} onClick={(e) => e.stopPropagation()}>
+                    <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />{pr.kind === "add" ? "Збираємо пости" : "Перечитуємо пости"}<b>{p}%</b></span>
                     <span className="v3-tg-progb"><i style={{ width: `${p}%` }} /></span>
-                    <small>{done} з {c.rereadTotal} · ≈6 с на пост</small>
+                    <small>{pr.done} з {pr.total} · ≈6 с на пост</small>
                   </div>
                 ); })()}
                 {c.status !== "block" && <div className="v3-tg-week">
                   <div className="v3-mxp-wh"><span>7 днів</span><b>{wk ? `${wk} ${plural(wk, "пост", "пости", "постів")} · прогнозів ${c.tips7d}` : "постів не було"}</b></div>
-                  <span className="v3-tg-bars" aria-hidden="true">{c.days.map((d, k) => <i key={k} className={`${k === 6 ? "is-today" : ""}${d ? "" : " is-zero"}`} style={{ height: `${d ? Math.max(14, Math.round((d / mx) * 100)) : 8}%` }} />)}</span>
+                  <span className="v3-tg-bars" onClick={(e) => e.stopPropagation()}>{c.days.map((d, k) => <button type="button" key={k} className={`${k === 6 ? "is-today" : ""}${d ? "" : " is-zero"}`} style={{ height: `${d ? Math.max(14, Math.round((d / mx) * 100)) : 8}%` }} aria-label={`${WD(data.days[k])}: ${d} ${plural(d, "пост", "пости", "постів")}`} onClick={() => setDay({ ch: c, i: k })} />)}</span>
                   <span className="v3-tg-wdays" aria-hidden="true">{data.days.map((d) => <span key={d}>{WD(d)}</span>)}</span>
                 </div>}
                 <div className="v3-mxp-ptiles">
                   <div><span>Прогнозів</span><b>{A ? A.tips : c.tips7d}</b></div>
                   <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
-                  <div><span>Прибуток</span><b className={tone(A?.profit)}>{money(A?.profit)}</b></div>
+                  {c.money?.length ? <div><span>Прибуток</span><b className={tone(c.money[0].profit)}>{cash(c.money[0].profit, c.money[0].currency)}</b></div>
+                    : <div><span>Прибуток</span><b className={tone(A?.profit)}>{money(A?.profit)}</b></div>}
                 </div>
                 {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
               </div>
@@ -171,10 +176,23 @@ export default function Telegram() {
             {data.invites.map((g) => (
               <div key={g.link} className="v3-tg-card is-dim"><span className="v3-tg-ch"><span className="v3-tg-av"><TgAvatar handle="" name={g.name} color="#334155" /></span><span className="v3-tg-chn"><strong>{g.name}</strong><small>запрошення · {g.who.join(", ") || "—"}</small></span><em className="v3-tg-st is-warn">Приватний</em></span><span className="v3-tg-line">Посилання-запрошення — пости не видно. Поки читаємо лише публічні канали.</span></div>
             ))}
-            {data.reader && <p className="v3-tg-note v3-tg-reader">{data.reader.ai
-              ? <>Скріни й пости читає ШІ ({data.reader.model || "Gemini"}): {data.reader.aiCalls} {plural(data.reader.aiCalls, "запит", "запити", "запитів")}{data.reader.aiFailed ? ` · помилок ${data.reader.aiFailed}` : ""}{data.reader.aiError ? <><br /><b>Остання помилка:</b> {data.reader.aiError} — поки що читаємо OCR</> : null}</>
-              : <>Скріни читає OCR (без ключа ШІ): {data.reader.ocrImages} {plural(data.reader.ocrImages, "скрін", "скріни", "скрінів")}{data.reader.ocrAvgMs ? ` · ≈${(data.reader.ocrAvgMs / 1000).toFixed(1).replace(".", ",")} с на скрін` : ""}{data.reader.ocrFailed ? ` · помилок ${data.reader.ocrFailed}` : ""}{data.reader.ocrError ? <><br /><b>Остання помилка:</b> {data.reader.ocrError}</> : null}</>}
-              <br />Лічильники — з останнього запуску сервера.</p>}
+            {data.reader && (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
+              <div className="v3-tg-reader">
+                <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em></div>
+                <div className="v3-tg-rtiles">
+                  {r.ai ? <>
+                    <div><span>Запитів</span><b>{r.aiCalls}</b></div>
+                    <div><span>Помилок</span><b className={r.aiFailed ? "is-warn" : ""}>{r.aiFailed}</b></div>
+                  </> : <>
+                    <div><span>Скрінів</span><b>{r.ocrImages}</b></div>
+                    <div><span>На скрін</span><b>{r.ocrAvgMs ? `${(r.ocrAvgMs / 1000).toFixed(1).replace(".", ",")} с` : "—"}</b></div>
+                    <div><span>Помилок</span><b className={r.ocrFailed ? "is-warn" : ""}>{r.ocrFailed}</b></div>
+                  </>}
+                </div>
+                {err && <p className="v3-tg-rerr"><b>Остання помилка</b>{err}{r.ai ? " — такий пост читаємо OCR" : ""}</p>}
+                <small>Лічильники — з останнього запуску сервера</small>
+              </div>
+            ); })()}
             <p className="v3-tg-note">Канали з’являються самі, коли користувач додає публічне посилання t.me/… у «Telegram-групи». Збираємо раз на 10 хв, уночі 02–06 — раз на годину.</p>
           </div>
         ) : (
@@ -205,7 +223,11 @@ export default function Telegram() {
               <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
               <div><span>Прибуток · ROI</span><b className={tone(ch.all?.profit)}>{money(ch.all?.profit)}{ch.all?.roi != null ? <small> · {pct(ch.all.roi)}</small> : null}</b></div>
             </div>
-            <p className="v3-tg-kvn">Прибуток — якби на кожен прогноз ставили 100. Повтори одного прогнозу рахуємо раз.</p>
+            {!!ch.money?.length && <div className="v3-tg-money">
+              <span>За квитками на скрінах</span>
+              {ch.money.map((m) => <div key={m.currency}><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b><small>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")} · поставлено {m.staked.toLocaleString("uk-UA")} {CUR[m.currency] || m.currency}</small></div>)}
+            </div>}
+            <p className="v3-tg-kvn">«Прибуток · ROI» — якби на кожен прогноз ставили 100. «За квитками» — реальні гроші зі скрінів у валюті квитка: виграш = виплата − ставка, програш = −ставка. Повтори одного прогнозу рахуємо раз.</p>
             <div className="v3-tg-shh"><p>Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
               <span className="v3-tg-vt" role="group" aria-label="Вигляд">
                 <button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={16} aria-hidden="true" /></button>
@@ -216,13 +238,13 @@ export default function Telegram() {
               : <ul className={`v3-tg-posts${view === "grid" ? " is-grid" : ""}`}>{posts.slice(0, view === "grid" ? 20 : 12).map((p) => view === "grid" ? (
                 <li key={p.postId} className="v3-tg-pg" onClick={() => p.kind === "unknown" && setFix({ ...p, title: ch.title })}>
                   {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : <span className="v3-tg-pgtx">{p.text}</span>}
-                  <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{p.result && <em className={`v3-tg-st ${p.result === "Win" ? "is-ok" : "is-bad"}`}>{p.result === "Win" ? "Виграш" : "Програш"}</em>}</span>
+                  <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p.result) && <em className={`v3-tg-st ${RES(p.result)![1]}`}>{RES(p.result)![0]}</em>}</span>
                   <small>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>
                 </li>
               ) : (
                 <li key={p.postId}>
                   <span className="v3-tg-ph"><small>{when(p.postedAt)}</small><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>
-                    {p.result && <em className={`v3-tg-st ${p.result === "Win" ? "is-ok" : "is-bad"}`}>{p.result === "Win" ? "Виграш" : "Програш"}{p.score ? ` · ${p.score}` : ""}</em>}</span>
+                    {RES(p.result) && <em className={`v3-tg-st ${RES(p.result)![1]}`}>{RES(p.result)![0]}{p.score ? ` · ${p.score}` : ""}</em>}</span>
                   {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
                   <Shots urls={p.photos} />
                   {p.kind === "bet" ? <b className="is-ok">→ {p.team1} — {p.team2} · {MARKET(p)}{p.odds ? ` · ${odds(p.odds)}` : ""}{!p.result ? " · очікує" : ""}</b>
@@ -250,8 +272,24 @@ export default function Telegram() {
         text="Канал зникне зі списку разом з усіма зібраними постами й статистикою. Це не можна скасувати." confirm="Видалити"
         onOpenChange={(o) => { if (!o) setDelAsk(null); }} onConfirm={() => delAsk && void remove(delAsk)} />
 
+      <Dialog open={!!day} onOpenChange={(o) => { if (!o) setDay(null); }}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
+          {day && data && (() => { const n = day.ch.days[day.i], d = day.ch.daysDetail?.[day.i], iso = data.days[day.i]; return <>
+            <DialogTitle>{new Date(`${iso}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}</DialogTitle>
+            <DialogDescription>{day.ch.title || `@${day.ch.handle}`} · зібрано {n} {plural(n, "пост", "пости", "постів")}</DialogDescription>
+            <div className="v3-tg-kv">
+              <div><span>Прогнозів</span><b className={d?.tips ? "is-ok" : ""}>{d?.tips ?? "—"}</b></div>
+              <div><span>Не розпізнано</span><b className={d?.unknown ? "is-warn" : ""}>{d?.unknown ?? "—"}</b></div>
+              <div><span>Інфо</span><b>{d?.info ?? "—"}</b></div>
+              <div><span>Повтори й результати</span><b>{d?.repeats ?? "—"}</b></div>
+            </div>
+            <div className="v3-mxp-acts"><button type="button" className="is-grey" onClick={() => setDay(null)}>Закрити</button>{n > 0 && <button type="button" className="is-green" onClick={() => { const h = day.ch.handle; setDay(null); void openCh(h); }}>Пости каналу</button>}</div>
+          </>; })()}
+        </DialogContent>
+      </Dialog>
+
       <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
-      <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={(h) => { setAddOpen(false); void load().then(() => openCh(h)); }} />
+      <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={() => { setAddOpen(false); void load(); }} />
     </div>
   );
 }
@@ -262,7 +300,10 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
   const [pickM, setPickM] = useState(false);
   const [q, setQ] = useState("");
   const [found, setFound] = useState<TgMatch[] | null>(null);
-  const [mk, setMk] = useState<"p1" | "p2" | "total" | "hcp">("p1");
+  const [mk, setMk] = useState<"p1" | "p2" | "map" | "total" | "hcp">("p1");
+  const [side, setSide] = useState<1 | 2>(1);
+  const [mapN, setMapN] = useState(1);
+  const [plus, setPlus] = useState(false);
   const [line, setLine] = useState("2.5");
   const [over, setOver] = useState(true);
   const [kf, setKf] = useState("");
@@ -271,7 +312,16 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
   useEffect(() => {
     if (!post) return;
     setMatch(post.matchId && post.team1 && post.team2 ? { id: post.matchId, game: (post.game as TgMatch["game"]) || "cs2", team1: post.team1, team2: post.team2, start: "" } : null);
-    setPickM(!post.matchId); setQ(""); setMk("p1"); setLine("2.5"); setOver(true); setKf(post.odds ? String(post.odds) : ""); setRemember(false);
+    setPickM(!post.matchId); setQ(""); setLine("2.5"); setOver(true); setKf(post.odds ? String(post.odds) : ""); setRemember(false);
+    // start from what the reader saw: «Map 2 Winner», «Handicap +1.5», «Total Maps Over 2.5», the side by the pick
+    const sd: 1 | 2 = post.pick && post.team2 && post.pick === post.team2 ? 2 : 1, mkt = post.market || "";
+    setSide(sd); setMapN(1); setPlus(false);
+    const mm = /^Map (\d) Winner$/.exec(mkt), hh = /^Handicap ([+-])([\d.]+)$/.exec(mkt), tt = /^Total Maps (Over|Under) ([\d.]+)$/.exec(mkt);
+    const ai = /Карта (\d)/.exec(post.ocr || ""), aiH = /Фора .*?([+\-−])(\d+[.,]5)/.exec(post.ocr || "");
+    if (mm || (!mkt && ai)) { setMk("map"); setMapN(Number((mm || ai)![1])); }
+    else if (hh || (!mkt && aiH)) { setMk("hcp"); setPlus((hh ? hh[1] : aiH![1]) === "+"); setLine((hh ? hh[2] : aiH![2]).replace(",", ".")); }
+    else if (tt) { setMk("total"); setOver(tt[1] === "Over"); setLine(tt[2]); }
+    else setMk(sd === 2 ? "p2" : "p1");
   }, [post]);
   useEffect(() => { if (!post || !pickM) return; const id = setTimeout(() => { fetchTgMatches(q).then(setFound).catch(() => setFound([])); }, 250); return () => clearTimeout(id); }, [q, pickM, post]);
   const mark = useCallback((text: string) => {
@@ -288,8 +338,10 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
       else {
         if (!match) { toast.error("Оберіть матч"); setSaving(false); return; }
         const o = kf.trim() ? Number(kf.replace(",", ".")) : null;
+        const ln = Math.abs(Number(line.replace(",", ".")) || 1.5);
         await fixTgPost(post.handle, post.postId, mk === "total" ? { kind: "bet", matchId: match.id, market: "Total", line: Number(line.replace(",", ".")) || 2.5, over, odds: o }
-          : mk === "hcp" ? { kind: "bet", matchId: match.id, market: "Handicap", side: 1, line: -(Math.abs(Number(line.replace(",", ".")) || 1.5)), odds: o }
+          : mk === "hcp" ? { kind: "bet", matchId: match.id, market: "Handicap", side, line: plus ? ln : -ln, odds: o }
+          : mk === "map" ? { kind: "bet", matchId: match.id, market: "Map", side, map: mapN, odds: o }
           : { kind: "bet", matchId: match.id, market: "Match Winner", side: mk === "p2" ? 2 : 1, odds: o, remember });
       }
       toast.success(kind === "other" ? "Позначено: не прогноз" : "Прогноз збережено", { description: kind === "bet" && match ? `${match.team1} — ${match.team2}` : undefined });
@@ -317,10 +369,13 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
           <div className="v3-tg-ropts" role="radiogroup" aria-label="Ставка">
             {opt("p1", `Перемога ${match?.team1 || "команди 1"}`, "П1")}
             {opt("p2", `Перемога ${match?.team2 || "команди 2"}`, "П2")}
-            <div className="v3-tg-ropts2">{opt("total", "Тотал карт")}{opt("hcp", `Фора ${match?.team1 || ""}`.trim())}</div>
+            <div className="v3-tg-ropts3">{opt("map", "Карта")}{opt("total", "Тотал карт")}{opt("hcp", "Фора")}</div>
           </div>
+          {(mk === "map" || mk === "hcp") && <div className="v3-tg-seg2 v3-tg-sideseg" role="group" aria-label="На кого">{([1, 2] as const).map((v) => <button key={v} type="button" className={side === v ? "is-on" : ""} onClick={() => setSide(v)}>{(v === 1 ? match?.team1 : match?.team2) || `Команда ${v}`}</button>)}</div>}
+          {mk === "map" && <div className="v3-tg-fline"><span className="v3-tg-fsub">Карта №</span><div className="v3-tg-seg3 is-5">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" className={mapN === n ? "is-on" : ""} onClick={() => setMapN(n)}>{n}</button>)}</div></div>}
           {(mk === "total" || mk === "hcp") && <div className="v3-tg-fline">
             {mk === "total" && <div className="v3-tg-seg2">{([[true, "Більше"], [false, "Менше"]] as const).map(([v, l]) => <button key={l} type="button" className={over === v ? "is-on" : ""} onClick={() => setOver(v)}>{l}</button>)}</div>}
+            {mk === "hcp" && <div className="v3-tg-seg2">{([[false, "−"], [true, "+"]] as const).map(([v, l]) => <button key={l} type="button" className={plus === v ? "is-on" : ""} aria-label={v ? "Плюсова фора" : "Мінусова фора"} onClick={() => setPlus(v)}>{l}</button>)}</div>}
             <label><span>Лінія</span><input inputMode="decimal" value={line} onChange={(e) => setLine(e.target.value)} /></label>
           </div>}
           <label className="v3-tg-fodds"><span className="v3-tg-fl">Кофіцієнт</span><input inputMode="decimal" value={kf} onChange={(e) => setKf(e.target.value)} placeholder="Напр. 1.85" /></label>
@@ -353,7 +408,7 @@ function AddSheet({ open, online, onOpenChange, onDone }: { open: boolean; onlin
   const add = async () => {
     if (!pv?.ok) return;
     setSaving(true);
-    try { const r = await addTgChannel(link.trim(), game, test); toast.success(`${pv.title || `@${pv.handle}`} додано`, { description: r.added ? `Зібрано ${r.added} ${plural(r.added, "пост", "пости", "постів")}` : "Перший збір — за хвилину" }); onDone(r.handle); }
+    try { const r = await addTgChannel(link.trim(), game, test); toast.success(`${pv.title || `@${pv.handle}`} додано`, { description: "Збираємо пости — прогрес на картці каналу" }); onDone(r.handle); }
     catch (e) { toast.error("Не вдалося додати", { description: (e as Error).message }); }
     finally { setSaving(false); }
   };
