@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -91,6 +91,8 @@ export default function Telegram() {
   const [delAsk, setDelAsk] = useState<TgChannel | null>(null);
   const [day, setDay] = useState<{ ch: TgChannel; i: number } | null>(null);
   const [sort, setSort] = useState<"new" | "roi" | "win" | "honest">("new");
+  const [readersOpen, setReadersOpen] = useState(() => { try { return localStorage.getItem("v3-tg-readers") === "1"; } catch { return false; } });
+  const toggleReaders = () => setReadersOpen((o) => { try { localStorage.setItem("v3-tg-readers", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
   const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
   const [view, setView] = useState<"list" | "grid">(readView);
@@ -200,7 +202,8 @@ export default function Telegram() {
                     <div><span>Помилок</span><b className={r.ocrFailed ? "is-warn" : ""}>{r.ocrFailed}</b></div>
                   </>}
                 </div>
-                {!!r.readers?.length && <ul className="v3-tg-readers">{r.readers.map((x, i) => { const rest = x.restUntil && Date.parse(x.restUntil) > Date.now(); const state = !x.hasKey ? "is-off" : rest ? "is-warn" : x.failed && !x.ok ? "is-bad" : "is-ok"; return (
+                {!!r.readers?.length && <button type="button" className="v3-tg-rtoggle" aria-expanded={readersOpen} onClick={toggleReaders}><span>Черга читачів · {r.readers.filter((x) => x.hasKey).length} з ключем</span><ChevronDown size={16} aria-hidden="true" className={readersOpen ? "is-up" : ""} /></button>}
+                {!!r.readers?.length && readersOpen && <ul className="v3-tg-readers">{r.readers.map((x, i) => { const rest = x.restUntil && Date.parse(x.restUntil) > Date.now(); const state = !x.hasKey ? "is-off" : rest ? "is-warn" : x.failed && !x.ok ? "is-bad" : "is-ok"; return (
                   <li key={x.id} className={state}>
                     <span className="v3-tg-rn">{i + 1}</span>
                     <span className="v3-tg-rl"><b>{x.label}</b><small>{!x.hasKey ? `немає ключа · ${x.keyName}` : rest ? `ліміт · знову о ${hhmm(x.restUntil)}` : x.failed && !x.ok && x.lastError ? x.lastError : x.model}</small></span>
@@ -385,7 +388,7 @@ function ChannelStats({ handle }: { handle: string }) {
   return (
     <div className="v3-tg-stats">
       {st.chart.length > 0 && <div className="v3-tg-chartbox">
-        <div className="v3-tg-chh"><span><small>Прибуток по днях</small><b className={last.ours >= 0 ? "is-ok" : "is-bad"}>{sgn(last.ours)}</b><em>по 100 на прогноз</em></span>
+        <div className="v3-tg-chh"><span><small>Прибуток по днях</small><b className={last.ours >= 0 ? "is-ok" : "is-bad"}>{sgn(last.ours)}</b><em>{(() => { const n = st.byGame.reduce((x, g) => x + g.won + g.lost, 0); return `якби ставили по 100 на кожен з ${n} ${plural(n, "закритого прогнозу", "закритих прогнозів", "закритих прогнозів")} (разом ${(n * 100).toLocaleString("uk-UA")})`; })()}</em></span>
           <span className="v3-tg-legend">{!same && <i className="claimed">За каналом {sgn(last.claimed)}</i>}<i className="ours">{same ? "Канал і наш рахунок збігаються" : "За нашим рахунком"}</i></span></div>
         <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart" role="img" aria-label={`Прибуток за нашим рахунком ${sgn(last.ours)}${same ? "" : `, за каналом ${sgn(last.claimed)}`}`}>
           <defs><linearGradient id="v3tgfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f7bff" stopOpacity=".22" /><stop offset="1" stopColor="#2f7bff" stopOpacity="0" /></linearGradient></defs>
@@ -398,9 +401,9 @@ function ChannelStats({ handle }: { handle: string }) {
         <div className="v3-tg-chx"><span>{day(st.chart[0].day)}</span><span>{day(st.chart[st.chart.length - 1].day)}</span></div>
       </div>}
       {(st.streaks.best > 0 || st.streaks.worst < 0) && <div className="v3-tg-streaks">
-        <div><small>Виграші поспіль</small><b className="is-ok">{st.streaks.best}</b></div>
-        <div><small>Програші поспіль</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
-        <div><small>Зараз</small><b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} ✓` : st.streaks.current < 0 ? `${-st.streaks.current} ✗` : "—"}</b></div>
+        <div><small>Найдовша виграшна</small><b className="is-ok">{st.streaks.best}</b></div>
+        <div><small>Найдовша програшна</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
+        <div><small>Поточна серія</small><b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} ${plural(st.streaks.current, "виграш", "виграші", "виграшів")}` : st.streaks.current < 0 ? `${-st.streaks.current} ${plural(-st.streaks.current, "програш", "програші", "програшів")}` : "—"}</b></div>
       </div>}
       {rows("Вінрейт за грою", st.byGame)}
       {rows("Вінрейт за ставкою", st.byMarket)}
