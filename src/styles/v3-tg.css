@@ -398,3 +398,9 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-kv.is-3 > div { min-width: 0; padding: 9px 10px; }
 .v3-tg-kv.is-3 b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v3-tg-bank.is-empty .v3-tg-bankh b { color: #8a93a2; }
+
+/* grid of posts: a card is as tall as what it holds (no empty space under a short text) */
+@media (max-width: 767px) {
+  .v3-tg-posts.is-grid { align-items: start; }
+  .v3-tg-pgtx { min-height: 0; }
+}
