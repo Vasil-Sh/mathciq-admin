@@ -218,3 +218,12 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-rerr { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff3d6; color: #6b4500; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .v3-tg-rerr b { display: block; margin-bottom: 2px; font-weight: 700; }
 .v3-tg-reader > small { font-size: 11px; color: #8a93a2; }
+.v3-tg-st.is-wait { background: #e8efff; color: #2450c4; }
+.v3-tg-go { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.v3-tg-reread, .v3-tg-del, .v3-tg-vt button, .v3-tg-ropt, .v3-tg-seg2 button, .v3-tg-seg3 button { transition: transform .12s ease, background-color .15s ease; }
+.v3-tg-reread:active:not(:disabled), .v3-tg-del:active:not(:disabled), .v3-tg-vt button:active, .v3-tg-ropt:active, .v3-tg-seg2 button:active, .v3-tg-seg3 button:active { transform: scale(.97); }
+.v3-tg-reread:active:not(:disabled) { background: #e2e5eb; }
+.v3-tg-list > .v3-tg-reader { margin-bottom: 2px; }
+.v3-tg-mtile b + b { margin-top: 2px; font-size: 14px; }
+.v3-mxp-ptiles b.is-ok, .v3-tg-kv b.is-ok, .v3-tg-mtile b.is-ok { color: #1f7a45; }
+.v3-mxp-ptiles b.is-bad, .v3-tg-kv b.is-bad, .v3-tg-mtile b.is-bad { color: #c2341f; }
