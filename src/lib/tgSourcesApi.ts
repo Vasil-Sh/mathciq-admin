@@ -15,7 +15,7 @@ export interface TgChannel {
   /** A running re-read / first read of a new channel: posts to read and read so far. */
   progress?: { total: number; done: number; kind: "reread" | "add" | "collect" | "archive" } | null;
   /** Real money from the bet slips, per currency (won → paid − staked, lost → −staked). */
-  money?: { currency: string; profit: number; staked: number; bets: number; won?: number; lost?: number; wins?: number; losses?: number; open?: number; openBets?: number }[];
+  money?: { currency: string; profit: number; staked: number; bets: number; won?: number; lost?: number; wins?: number; losses?: number; open?: number; openBets?: number; profitUsd?: number | null; stakedUsd?: number | null }[];
   /** The 7 days of `days` by kind (the day sheet). */
   daysDetail?: { tips: number; unknown: number; info: number; repeats: number }[];
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
@@ -54,6 +54,8 @@ export interface TgPost {
   live?: { status: string; score1: number | null; score2: number | null; start: string };
   /** Screenshots of the post (t.me CDN) and the text OCR read on them. */
   photos?: string[]; ocr?: string | null;
+  /** How it was read: ai, ocr, slip (a slip OCR read in full), caption (the tip from the caption), template, rules, cache. */
+  readBy?: string | null;
 }
 export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; status?: string }
 export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean; private?: boolean; joined?: boolean } | { ok: false; error: string };
@@ -70,6 +72,8 @@ export const rereadTgChannel = (handle: string) => api.post<{ ok: true; posts: n
 export const resolveTgPost = (handle: string, postId: number, who: "channel" | "ours") => api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}/resolve`, { who });
 export const archiveTgChannel = (handle: string, pages = 5) => api.post<{ ok: true; pages: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/archive`, { pages });
 export interface TgStats {
+  /** The channel's money slip by slip in its main currency: the balance after each settled slip. */
+  money?: { currency: string; points: { at: string; balance: number }[] } | null;
   chart: { day: string; claimed: number; ours: number }[];
   byGame: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
   byMarket: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
@@ -80,6 +84,9 @@ export const fetchTgStats = (handle: string) => api.get<TgStats>(`/admin/tg-sour
 export const runTgGolden = () => api.post<{ ok: true; running: boolean }>("/admin/tg-sources/golden");
 export interface TgSlip { postId: number; postedAt: string; kind: string; reason: string | null; result: "Win" | "Loss" | "Void" | null; slip: string | null; stake: number; currency: string | null; payout: number | null; odds: number | null; team1: string | null; team2: string | null; pick: string | null; market: string | null; readBy: string | null; counted: boolean; profit: number | null; why: string | null }
 export const fetchTgSlips = (handle: string) => api.get<{ slips: TgSlip[] }>(`/admin/tg-sources/${encodeURIComponent(handle)}/slips`).then((r) => r.slips);
+export const fetchTgPostsPage = (handle: string, filter: string, before?: string) => api.get<{ posts: TgPost[]; more?: boolean }>(`/admin/tg-sources/${encodeURIComponent(handle)}/posts?filter=${filter}${before ? `&before=${encodeURIComponent(before)}` : ""}`);
+export const rereadTgPost = (handle: string, postId: number) => api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}/reread`);
+export const bulkTgInfo = (items: { handle: string; postId: number }[]) => api.post<{ ok: true; n: number }>("/admin/tg-posts/bulk", { items });
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
-export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
+export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map" | "MapHandicap" | "MapTotal"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);
