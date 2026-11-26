@@ -34,7 +34,7 @@ export interface TgList {
   reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> };
     readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; ok: number; failed: number; restUntil: string | null; lastError: string | null; read30?: number; wrong30?: number; accuracy?: number | null }[];
     /** Requests not spent since the server started: by rules, a channel's template, a slip read before, posts read in one request. */
-    saved?: { rules: number; template: number; cache: number; batch: number; since: string };
+    saved?: { rules: number; template: number; cache: number; batch: number; slip?: number; caption?: number; since: string };
     /** The reference check: the posts the admin sorted, read again by every reader. */
     golden?: { at?: string; posts?: number; readers?: { id: string; label: string; ok: number; total: number; skipped: number; misses: string[] }[]; running: boolean; done: number; total: number }; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
   night: boolean; nextAt: string | null;

@@ -223,7 +223,7 @@ export default function Telegram() {
                   {r.ai ? <>
                     <div><span>Сьогодні</span><b className={r.quota && r.quota.used >= r.quota.limit * 0.9 ? "is-warn" : ""}>{r.quota ? `${r.quota.used} з ${r.quota.limit}` : r.aiCalls}</b></div>
                     <div><span>Помилок</span><b className={r.aiFailed ? "is-warn" : ""}>{r.aiFailed}</b></div>
-                    {r.saved && <div title={`Правила: ${r.saved.rules} · шаблон каналу: ${r.saved.template} · той самий скрін: ${r.saved.cache} · пакетом: ${r.saved.batch}`}><span>Без запиту</span><b className="is-ok">{r.saved.rules + r.saved.template + r.saved.cache + r.saved.batch}</b></div>}
+                    {r.saved && <div title={`Правила: ${r.saved.rules} · шаблон каналу: ${r.saved.template} · той самий скрін: ${r.saved.cache} · пакетом: ${r.saved.batch} · квиток через OCR: ${r.saved.slip ?? 0} · прогноз з підпису: ${r.saved.caption ?? 0}`}><span>Без запиту</span><b className="is-ok">{r.saved.rules + r.saved.template + r.saved.cache + r.saved.batch + (r.saved.slip ?? 0) + (r.saved.caption ?? 0)}</b></div>}
                   </> : <>
                     <div><span>Скрінів</span><b>{r.ocrImages}</b></div>
                     <div><span>На скрін</span><b>{r.ocrAvgMs ? `${(r.ocrAvgMs / 1000).toFixed(1).replace(".", ",")} с` : "—"}</b></div>
