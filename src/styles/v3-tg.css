@@ -315,3 +315,15 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-claims b.is-bad { color: #c2341f; }
 /* the page's gap spaces these: same room above and below */
 .v3-tg > .v3-tg-best, .v3-tg > .v3-tg-alert { margin: 0; }
+.v3-tg-readers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.v3-tg-readers li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #f7f8fa; }
+.v3-tg-rn { display: grid; place-items: center; width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: #e2e5eb; color: #4a5263; font-size: 11px; font-weight: 700; }
+.v3-tg-readers li.is-ok .v3-tg-rn { background: #e3f6ea; color: #1f7a45; }
+.v3-tg-readers li.is-warn .v3-tg-rn { background: #fff3d6; color: #8a5a00; }
+.v3-tg-readers li.is-bad .v3-tg-rn { background: #fde2df; color: #c2341f; }
+.v3-tg-rl { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.v3-tg-rl b { font-size: 13px; font-weight: 600; }
+.v3-tg-rl small { font-size: 11px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-tg-readers li.is-off .v3-tg-rl b { color: #8a93a2; }
+.v3-tg-readers li em { font-style: normal; font-size: 13px; font-weight: 700; color: #11151c; }
+.v3-tg-reader > small { line-height: 1.45; }

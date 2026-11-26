@@ -29,7 +29,8 @@ export interface TgList {
   alerts?: { unknown: number; mismatches: number };
   /** The best channel of the last 7 days (ROI, ≥ 3 settled tips). */
   best?: { handle: string; title: string | null; roi: number; won: number; lost: number } | null;
-  reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> }; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
+  reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> };
+    readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; ok: number; failed: number; restUntil: string | null; lastError: string | null }[]; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
   night: boolean; nextAt: string | null;
 }
 export interface TgPost {
