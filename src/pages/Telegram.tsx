@@ -283,7 +283,7 @@ export default function Telegram() {
               <div><span>Прогнозів</span><b>{ch.all?.tips ?? ch.tips7d}{ch.all?.pending ? <small> · очікує {ch.all.pending}</small> : null}</b></div>
               <div><span>Розпізнано</span><b className={ch.all?.recognized == null ? "" : ch.all.recognized >= 85 ? "is-ok" : ch.all.recognized >= 70 ? "is-warn" : "is-bad"}>{ch.all?.recognized != null ? `${ch.all.recognized}%` : "—"}</b></div>
               <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
-              <div><span>Прибуток · ROI</span><b className={tone(ch.all?.profit)}>{money(ch.all?.profit)}{ch.all?.roi != null ? <small> · {pct(ch.all.roi)}</small> : null}</b></div>
+              <div><span>Окупність</span><b className={tone(ch.all?.roi)}>{pct(ch.all?.roi)}</b></div>
             </div>
             {ch.all && (ch.all.ours?.won || ch.all.ours?.lost || ch.all.mismatches || ch.all.live || ch.all.deleted || ch.all.oddsHigh) ? <div className="v3-tg-honest">
               <span>Наша перевірка</span>
@@ -388,7 +388,7 @@ function ChannelStats({ handle }: { handle: string }) {
   return (
     <div className="v3-tg-stats">
       {st.chart.length > 0 && <div className="v3-tg-chartbox">
-        <div className="v3-tg-chh"><span><small>Прибуток по днях</small><b className={last.ours >= 0 ? "is-ok" : "is-bad"}>{sgn(last.ours)}</b><em>{(() => { const n = st.byGame.reduce((x, g) => x + g.won + g.lost, 0); return `якби ставили по 100 на кожен з ${n} ${plural(n, "закритого прогнозу", "закритих прогнозів", "закритих прогнозів")} (разом ${(n * 100).toLocaleString("uk-UA")})`; })()}</em></span>
+        <div className="v3-tg-chh"><span><small>Окупність каналу</small>{(() => { const n = st.byGame.reduce((x, g) => x + g.won + g.lost, 0), roi = n ? Math.round(last.ours / n) : 0; return <><b className={roi >= 0 ? "is-ok" : "is-bad"}>{sgn(roi)}%</b><em>{roi >= 0 ? `Хто ставив за каналом, заробив ${roi} з кожних 100` : `Хто ставив за каналом, втратив ${-roi} з кожних 100`}</em></>; })()}</span>
           <span className="v3-tg-legend">{!same && <i className="claimed">За каналом {sgn(last.claimed)}</i>}<i className="ours">{same ? "Канал і наш рахунок збігаються" : "За нашим рахунком"}</i></span></div>
         <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart" role="img" aria-label={`Прибуток за нашим рахунком ${sgn(last.ours)}${same ? "" : `, за каналом ${sgn(last.claimed)}`}`}>
           <defs><linearGradient id="v3tgfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f7bff" stopOpacity=".22" /><stop offset="1" stopColor="#2f7bff" stopOpacity="0" /></linearGradient></defs>
@@ -403,7 +403,6 @@ function ChannelStats({ handle }: { handle: string }) {
       {(st.streaks.best > 0 || st.streaks.worst < 0) && <div className="v3-tg-streaks">
         <div><small>Найдовша виграшна</small><b className="is-ok">{st.streaks.best}</b></div>
         <div><small>Найдовша програшна</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
-        <div><small>Поточна серія</small><b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} ${plural(st.streaks.current, "виграш", "виграші", "виграшів")}` : st.streaks.current < 0 ? `${-st.streaks.current} ${plural(-st.streaks.current, "програш", "програші", "програшів")}` : "—"}</b></div>
       </div>}
       {rows("Вінрейт за грою", st.byGame)}
       {rows("Вінрейт за ставкою", st.byMarket)}

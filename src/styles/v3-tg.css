@@ -297,7 +297,7 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-chart line.zero { stroke: #dfe3ea; stroke-width: 1; stroke-dasharray: 2 3; }
 .v3-tg-chart .dot { fill: #fff; stroke: #2f7bff; stroke-width: 2.4; }
 .v3-tg-chx { display: flex; justify-content: space-between; margin-top: 2px; font-size: 11px; color: #8a93a2; }
-.v3-tg-streaks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.v3-tg-streaks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .v3-tg-streaks > div { padding: 9px 10px; border-radius: 12px; background: #f1f3f7; }
 .v3-tg-streaks small { display: block; font-size: 11px; color: #6b7384; }
 .v3-tg-streaks b { display: block; margin-top: 2px; font-size: 17px; font-weight: 700; }
