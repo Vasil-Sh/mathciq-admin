@@ -78,6 +78,8 @@ export interface TgStats {
 }
 export const fetchTgStats = (handle: string) => api.get<TgStats>(`/admin/tg-sources/${encodeURIComponent(handle)}/stats`);
 export const runTgGolden = () => api.post<{ ok: true; running: boolean }>("/admin/tg-sources/golden");
+export interface TgSlip { postId: number; postedAt: string; kind: string; reason: string | null; result: "Win" | "Loss" | "Void" | null; slip: string | null; stake: number; currency: string | null; payout: number | null; odds: number | null; team1: string | null; team2: string | null; pick: string | null; market: string | null; readBy: string | null; counted: boolean; profit: number | null; why: string | null }
+export const fetchTgSlips = (handle: string) => api.get<{ slips: TgSlip[] }>(`/admin/tg-sources/${encodeURIComponent(handle)}/slips`).then((r) => r.slips);
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
 export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);

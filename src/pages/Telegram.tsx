@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -71,6 +71,23 @@ const readView = (): "list" | "grid" => { try { return localStorage.getItem("v3-
 const odds = (n: number | null) => (n == null ? "" : n.toFixed(2).replace(".", ","));
 
 /** Screenshots of a post; a link that expired on the t.me CDN just disappears. */
+/** Every slip with money the channel showed: which are in «Гроші каналу», with what profit, and why the others are not. */
+function SlipList({ handle }: { handle: string }) {
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState<TgSlip[] | null>(null);
+  const toggle = () => { setOpen((o) => !o); if (!list) fetchTgSlips(handle).then(setList).catch(() => setList([])); };
+  const RS: Record<string, [string, string]> = { Win: ["Виграш", "is-ok"], Loss: ["Програш", "is-bad"], Void: ["Повернення", "is-off"] };
+  return (<>
+    <button type="button" className="v3-tg-rtoggle v3-tg-slipt" aria-expanded={open} onClick={toggle}><span>Квитки зі ставками{list ? ` · ${list.length}` : ""}</span><ChevronDown size={16} aria-hidden="true" className={open ? "is-up" : ""} /></button>
+    {open && (!list ? <p className="v3-tg-note">Завантажуємо…</p> : !list.length ? <p className="v3-tg-note">Квитків із сумою ставки ще не було.</p> : <ul className="v3-tg-slips">{list.map((x) => { const c = x.currency ? (CUR[x.currency] || x.currency) : ""; const n = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 }); const r = x.result ? RS[x.result] : null; return (
+      <li key={x.postId} className={x.counted ? "" : "is-off"}>
+        <span className="v3-tg-sl1"><small>{when(x.postedAt)}</small><b>{x.team1 && x.team2 ? `${x.team1} — ${x.team2}` : x.pick || "—"}</b>{r ? <em className={`v3-tg-st ${r[1]}`}>{r[0]}</em> : x.counted ? <em className="v3-tg-st is-warn">Очікується</em> : null}</span>
+        <span className="v3-tg-sl2">{n(x.stake)} {c}{x.payout ? ` → ${n(x.payout)} ${c}` : ""}{x.odds ? ` · кф ${odds(x.odds)}` : ""}<b className={x.profit == null ? "" : tone(x.profit)}>{x.counted ? (x.profit == null ? "у грі" : cash(x.profit, x.currency || "")) : x.why}</b></span>
+      </li>
+    ); })}</ul>)}
+  </>);
+}
+
 /** A post's text on a grid card, a few lines with an arrow to read it all or fold it (a screenshot card: the caption under it). */
 function MoreText({ text, cap }: { text: string; cap?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -328,6 +345,7 @@ export default function Telegram() {
                 {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
               </div>
             ); })}
+            {ch.status !== "block" && <SlipList key={ch.handle} handle={ch.handle} />}
             <div className="v3-tg-kv is-3">
               <div><span>Сьогодні</span><b>{ch.days[ch.days.length - 1] ?? 0}<small> {plural(ch.days[ch.days.length - 1] ?? 0, "пост", "пости", "постів")}</small></b></div>
               <div><span>Усього постів</span><b>{ch.all?.posts ?? 0}</b></div>
