@@ -13,7 +13,7 @@ export interface TgChannel {
   /** A running re-read / first read of a new channel: posts to read and read so far. */
   progress?: { total: number; done: number; kind: "reread" | "add" | "collect" | "archive" } | null;
   /** Real money from the bet slips, per currency (won → paid − staked, lost → −staked). */
-  money?: { currency: string; profit: number; staked: number; bets: number }[];
+  money?: { currency: string; profit: number; staked: number; bets: number; won?: number; lost?: number; wins?: number; losses?: number; open?: number; openBets?: number }[];
   /** The 7 days of `days` by kind (the day sheet). */
   daysDetail?: { tips: number; unknown: number; info: number; repeats: number }[];
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */

@@ -279,6 +279,17 @@ export default function Telegram() {
             <div className="v3-tg-sh"><span className="v3-tg-av is-l"><TgAvatar handle={ch.handle} name={ch.title || ch.handle} color={colorOf(ch.handle)} /></span><span className="v3-tg-chn"><DialogTitle>{ch.title || `@${ch.handle}`}</DialogTitle><DialogDescription>@{ch.handle} · {GAME[ch.game]}{ch.subscribers ? ` · ${ch.subscribers.toLocaleString("uk-UA")} підписників` : ""}{ch.isTest ? " · тестовий" : ""}</DialogDescription></span></div>
             {ch.status === "block" ? <p className="v3-tg-warn">Заблоковано в «Підтримці». Пости не збираємо, статистику не показуємо.</p>
               : ch.status === "err" ? <p className="v3-tg-warn is-bad">{ch.error}. Перевірте, чи канал публічний і чи не змінив нікнейм.</p> : null}
+            {!!ch.money?.length && ch.money.map((m) => { const c = CUR[m.currency] || m.currency, f = (n?: number) => `${(n || 0).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${c}`; return (
+              <div key={m.currency} className="v3-tg-bank">
+                <div className="v3-tg-bankh"><span>Гроші каналу за квитками</span><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b></div>
+                <div className="v3-tg-banks">
+                  <div><small>Поставив</small><b>{f(m.staked)}</b><em>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")}</em></div>
+                  <div className="is-ok"><small>Виграв</small><b>+{f(m.won)}</b><em>{m.wins ?? 0} {plural(m.wins ?? 0, "ставка", "ставки", "ставок")}</em></div>
+                  <div className="is-bad"><small>Програв</small><b>−{f(m.lost)}</b><em>{m.losses ?? 0} {plural(m.losses ?? 0, "ставка", "ставки", "ставок")}</em></div>
+                </div>
+                {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
+              </div>
+            ); })}
             <div className="v3-tg-kv">
               <div><span>Прогнозів</span><b>{ch.all?.tips ?? ch.tips7d}{ch.all?.pending ? <small> · очікує {ch.all.pending}</small> : null}</b></div>
               <div><span>Розпізнано</span><b className={ch.all?.recognized == null ? "" : ch.all.recognized >= 85 ? "is-ok" : ch.all.recognized >= 70 ? "is-warn" : "is-bad"}>{ch.all?.recognized != null ? `${ch.all.recognized}%` : "—"}</b></div>
@@ -296,11 +307,7 @@ export default function Telegram() {
               <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
             </div> : null}
             <ChannelStats handle={ch.handle} />
-            {!!ch.money?.length && <div className="v3-tg-money">
-              <span>За квитками на скрінах</span>
-              {ch.money.map((m) => <div key={m.currency}><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b><small>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")} · поставлено {m.staked.toLocaleString("uk-UA")} {CUR[m.currency] || m.currency}</small></div>)}
-            </div>}
-            <p className="v3-tg-kvn">«Прибуток · ROI» — якби на кожен прогноз ставили 100. «За квитками» — реальні гроші зі скрінів у валюті квитка: виграш = виплата − ставка, програш = −ставка. Повтори одного прогнозу рахуємо раз.</p>
+            <p className="v3-tg-kvn">«Окупність» — скільки приносить кожні 100 поставлених за прогнозами каналу. Повтори одного прогнозу рахуємо раз.</p>
             <div className="v3-tg-shh"><p>Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
               <span className="v3-tg-vt" role="group" aria-label="Вигляд">
                 <button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={16} aria-hidden="true" /></button>
