@@ -31,6 +31,7 @@ const MARKET = (p: TgPost) => {
   return m;
 };
 const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : p.reason === "Результат" ? ["Прогноз", "is-ok"] : ["Інфо", "is-off"];
+const PROG = { add: "Збираємо пости", reread: "Перечитуємо пости", collect: "Читаємо нові пости" } as const;
 const RES0 = (r: TgPost["result"]): [string, string] | null => r === "Win" ? ["Виграш", "is-ok"] : r === "Loss" ? ["Програш", "is-bad"] : r === "Void" ? ["Повернення", "is-off"] : null;
 const SLIP: Record<string, [string, string]> = { won: ["Виграш", "is-ok"], lost: ["Програш", "is-bad"], pending: ["Очікується", "is-wait"], cashout: ["Продано", "is-off"], void: ["Повернення", "is-off"] };
 /** What this post shows: its own slip (a pending slip stays «Очікується» even after the tip was won), else the settled result. */
@@ -105,7 +106,7 @@ export default function Telegram() {
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
   };
   const setPaused = async (c: TgChannel, paused: boolean) => {
-    try { await pauseTgChannel(c.handle, paused); toast.success(paused ? "Збір зупинено" : "Збір запущено", { description: c.title || `@${c.handle}` }); setStopAsk(null); await load(); }
+    try { await pauseTgChannel(c.handle, paused); toast.success(paused ? "Збір зупинено" : "Збір запущено", { description: paused ? c.title || `@${c.handle}` : "Читаємо нові пости — прогрес на картці" }); setStopAsk(null); await load(); if (!paused) setTimeout(() => void load(), 3_000); }
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
   };
   const remove = async (c: TgChannel) => {
@@ -173,8 +174,8 @@ export default function Telegram() {
                 </div>
                 <small className="v3-mxp-psub">{c.status === "err" ? c.error : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
                 {!!c.progress && (() => { const pr = c.progress, p = Math.min(100, Math.round((pr.done / Math.max(1, pr.total)) * 100)); return (
-                  <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={pr.kind === "add" ? "Збираємо пости" : "Перечитуємо пости"} onClick={(e) => e.stopPropagation()}>
-                    <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />{pr.kind === "add" ? "Збираємо пости" : "Перечитуємо пости"}<b>{p}%</b></span>
+                  <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={PROG[pr.kind]} onClick={(e) => e.stopPropagation()}>
+                    <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />{PROG[pr.kind]}<b>{p}%</b></span>
                     <span className="v3-tg-progb"><i style={{ width: `${p}%` }} /></span>
                     <small>{pr.done} з {pr.total} · ≈6 с на пост</small>
                   </div>
@@ -189,7 +190,8 @@ export default function Telegram() {
                   <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
                   <div><span>Вінрейт</span><b className={A?.winrate == null ? "" : A.winrate >= 55 ? "is-ok" : A.winrate < 45 ? "is-bad" : ""}>{A?.winrate != null ? `${A.winrate}%` : "—"}{A && A.won + A.lost ? <small> · {A.won}–{A.lost}</small> : null}</b></div>
                 </div>
-                {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
+                {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""}</small></div>}
+                <p className="v3-tg-when">{c.paused ? <>Зупинено · перевірено {when(c.checkedAt)}</> : <><i aria-hidden="true" />Перевірено {when(c.checkedAt)}{data.nextAt && !c.progress ? ` · наступна перевірка о ${hhmm(data.nextAt)}` : ""}</>}</p>
               </div>
             ); })}
             {data.invites.map((g) => (
@@ -239,7 +241,7 @@ export default function Telegram() {
             {posts === null ? <div className="v3-tg-posts" aria-hidden="true"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>
               : !posts.length ? <p className="v3-tg-note">Постів ще немає — перший збір за кілька хвилин.</p>
               : <ul className={`v3-tg-posts${view === "grid" ? " is-grid" : ""}`}>{posts.slice(0, view === "grid" ? 20 : 12).map((p) => view === "grid" ? (
-                <li key={p.postId} className="v3-tg-pg" onClick={() => p.kind === "unknown" && setFix({ ...p, title: ch.title })}>
+                <li key={p.postId} className="v3-tg-pg" onClick={() => setFix({ ...p, title: ch.title })}>
                   {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : <span className="v3-tg-pgtx">{p.text}</span>}
                   <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}</em>}</span>
                   <small>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>
@@ -251,7 +253,8 @@ export default function Telegram() {
                   {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
                   <Shots urls={p.photos} />
                   {p.kind === "bet" ? <b className="is-ok">→ {p.team1} — {p.team2} · {MARKET(p)}{p.odds ? ` · ${odds(p.odds)}` : ""}{!p.result ? " · очікує" : ""}</b>
-                    : p.kind === "unknown" ? <button type="button" className="v3-tg-pfix" onClick={() => setFix({ ...p, title: ch.title })}>→ {p.reason} · розібрати<ChevronRight size={14} aria-hidden="true" /></button> : null}
+                    : p.kind === "unknown" ? <button type="button" className="v3-tg-pfix" onClick={() => setFix({ ...p, title: ch.title })}>→ {p.reason} · розібрати<ChevronRight size={14} aria-hidden="true" /></button>
+                    : <button type="button" className="v3-tg-pfix is-quiet" onClick={() => setFix({ ...p, title: ch.title })}>Змінити розбір<ChevronRight size={14} aria-hidden="true" /></button>}
                 </li>
               ))}</ul>}
             <div className="v3-mxp-acts">

@@ -9,7 +9,7 @@ export interface TgChannel {
   /** Saved posts still waiting to be read again (screenshots, a new reader). */
   rereading?: number;
   /** A running re-read / first read of a new channel: posts to read and read so far. */
-  progress?: { total: number; done: number; kind: "reread" | "add" } | null;
+  progress?: { total: number; done: number; kind: "reread" | "add" | "collect" } | null;
   /** Real money from the bet slips, per currency (won → paid − staked, lost → −staked). */
   money?: { currency: string; profit: number; staked: number; bets: number }[];
   /** The 7 days of `days` by kind (the day sheet). */
