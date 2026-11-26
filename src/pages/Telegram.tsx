@@ -96,6 +96,8 @@ export default function Telegram() {
   const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
   const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
   const [view, setView] = useState<"list" | "grid">(readView);
+  const [more, setMore] = useState(false);
+  useEffect(() => setMore(false), [sel]);
   const pickView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem("v3-tg-posts-view", v); } catch { /* private mode */ } };
 
   const load = useCallback(async () => {
@@ -306,8 +308,9 @@ export default function Telegram() {
               </div>
               <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
             </div> : null}
-            <ChannelStats handle={ch.handle} />
-            <p className="v3-tg-kvn">«Окупність» — скільки приносить кожні 100 поставлених за прогнозами каналу. Повтори одного прогнозу рахуємо раз.</p>
+            <button type="button" className="v3-tg-rtoggle v3-tg-more" aria-expanded={more} onClick={() => setMore((o) => !o)}><span>{more ? "Згорнути" : "Показати більше"}</span><ChevronDown size={16} aria-hidden="true" className={more ? "is-up" : ""} /></button>
+            <div className={`v3-tg-moreb${more ? " is-open" : ""}`}><ChannelStats handle={ch.handle} />
+            <p className="v3-tg-kvn">«Окупність» — скільки приносить кожні 100 поставлених за прогнозами каналу. Повтори одного прогнозу рахуємо раз.</p></div>
             <div className="v3-tg-shh"><p>Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
               <span className="v3-tg-vt" role="group" aria-label="Вигляд">
                 <button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={16} aria-hidden="true" /></button>

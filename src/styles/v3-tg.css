@@ -354,3 +354,15 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-banks .is-ok { background: #e3f6ea; } .v3-tg-banks .is-ok b { color: #1f7a45; }
 .v3-tg-banks .is-bad { background: #fde2df; } .v3-tg-banks .is-bad b { color: #c2341f; }
 .v3-tg-bankn { display: block; margin-top: 8px; font-size: 12px; color: #4a5263; }
+
+/* «Показати більше» in the channel sheet; long status chips wrap; the 5-way result fits a phone; calmer queue alert — phone only */
+.v3-tg-more { display: none; }
+@media (max-width: 767px) {
+  .v3-tg-more { display: flex; margin-top: 8px; background: #f1f3f7; color: #11151c; }
+  .v3-tg-moreb:not(.is-open) { display: none; }
+  .v3-tg-st.is-bad, .v3-tg-st.is-warn { white-space: normal; height: auto; min-height: 24px; padding: 3px 9px; border-radius: 10px; line-height: 1.35; flex-shrink: 1; max-width: 100%; }
+  .v3-tg-resseg { grid-template-columns: .85fr .95fr 1fr 1fr 1.3fr; }
+  .v3-tg-resseg button { font-size: 13px; padding: 0 2px; letter-spacing: -.01em; }
+  .v3-tg-alert { background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .05), inset 3px 0 0 #f0a020; color: #11151c; }
+  .v3-tg-alert button { background: #f1f3f7; color: #11151c; }
+}
