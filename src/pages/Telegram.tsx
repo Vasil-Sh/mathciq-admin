@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Ticket, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Ticket, Trash2, X, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -435,9 +435,16 @@ export default function Telegram() {
               </div>
               <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
             </div> : null}
-            <button type="button" className="v3-tg-rtoggle v3-tg-more" aria-expanded={more} onClick={() => setMore((o) => !o)}><span>{more ? "Згорнути" : "Показати більше"}</span><ChevronDown size={16} aria-hidden="true" className={more ? "is-up" : ""} /></button>
-            <div className={`v3-tg-moreb${more ? " is-open" : ""}`}><ChannelStats handle={ch.handle} />
-            <p className="v3-tg-kvn">«Окупність» — скільки приносить кожні 100 поставлених за прогнозами каналу. Повтори одного прогнозу рахуємо раз.</p></div>
+            <button type="button" className="v3-tg-slipt" onClick={() => setMore(true)}><BarChart3 size={16} aria-hidden="true" />Статистика каналу</button>
+            <Dialog open={more} onOpenChange={setMore}>
+              <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
+                <DialogTitle>Статистика каналу</DialogTitle>
+                <DialogDescription>{ch.title || at(ch.handle)} · окупність, гроші, серії, вінрейт</DialogDescription>
+                <ChannelStats handle={ch.handle} />
+                <p className="v3-tg-kvn">«Окупність» — скільки приносить кожні 100 поставлених за прогнозами каналу. Повтори одного прогнозу рахуємо раз.</p>
+                <div className="v3-mxp-acts"><button type="button" className="is-grey" onClick={() => setMore(false)}>Закрити</button></div>
+              </DialogContent>
+            </Dialog>
             <div className="v3-tg-shh"><p>Останні пости <small>· перевірено {hhmm(ch.checkedAt)}{ch.users.length ? ` · додали ${ch.users.join(", ")}` : ""}</small></p>
               <span className="v3-tg-vt" role="group" aria-label="Вигляд">
                 <button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={16} aria-hidden="true" /></button>
