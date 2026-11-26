@@ -252,7 +252,7 @@ export default function Telegram() {
                   <li key={x.id} className={state}>
                     <span className="v3-tg-rn">{i + 1}</span>
                     <span className="v3-tg-rl"><b>{x.label}</b><small>{!x.hasKey ? `немає ключа · ${x.keyName}` : rest ? `ліміт · знову о ${hhmm(x.restUntil)}` : x.failed && !x.ok && x.lastError ? x.lastError : x.model}{x.hasKey && x.accuracy != null && (x.read30 ?? 0) >= 5 ? ` · точність ${x.accuracy}% з ${x.read30}` : ""}</small></span>
-                    <em>{x.hasKey ? x.today : "—"}</em>
+                    <em>{x.hasKey ? <>{x.today}{x.limit ? <small>/{x.limitGuess ? "≈" : ""}{x.limit}</small> : null}</> : "—"}</em>
                   </li>
                 ); })}<li className="is-off"><span className="v3-tg-rn">{r.readers.length + 1}</span><span className="v3-tg-rl"><b>OCR</b><small>запасний варіант без ключів</small></span><em>{r.ocrImages}</em></li></ul>}
                 {!!r.readers?.length && readersOpen && r.golden && (() => { const g = r.golden; return (
@@ -264,7 +264,7 @@ export default function Telegram() {
                 ); })()}
                 {err && <p className="v3-tg-rerr"><b>Остання помилка</b>{err}{r.ai ? " — пост читає наступний у ланцюжку" : ""}</p>}
                 {data.account && (data.account.enabled ? <p className={`v3-tg-acc${data.account.error ? " is-bad" : ""}`}>{data.account.error ? `Акаунт Telegram: ${data.account.error}` : "Акаунт Telegram підключено — можна додавати приватні канали t.me/+…"}</p> : null)}
-                <small>Читають по черзі: якщо в одного ліміт або погана відповідь — наступний. Квиток із грошима читають двоє; якщо не згодні — пост іде в «Нерозпізнані». Точніший за вашими виправленнями читач стає першим. Число справа — запитів сьогодні.</small>
+                <small>Читають по черзі: якщо в одного ліміт або погана відповідь — наступний. Квиток із грошима читають двоє; якщо не згодні — пост іде в «Нерозпізнані». Точніший за вашими виправленнями читач стає першим. Справа — запитів сьогодні / денний ліміт («≈» — приблизний, уточниться, коли читач уперше дійде до ліміту).</small>
               </div>
             ); })()}
             {data.channels.length > 1 && <div className="v3-mxp-bar v3-tg-sortbar"><div className="v3-mxp-days" role="group" aria-label="Сортування">{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}</div></div>}

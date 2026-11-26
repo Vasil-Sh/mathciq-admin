@@ -32,7 +32,7 @@ export interface TgList {
   /** The best channel of the last 7 days (ROI, ≥ 3 settled tips). */
   best?: { handle: string; title: string | null; roi: number; won: number; lost: number } | null;
   reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> };
-    readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; ok: number; failed: number; restUntil: string | null; lastError: string | null; read30?: number; wrong30?: number; accuracy?: number | null }[];
+    readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; limit?: number | null; limitGuess?: boolean; ok: number; failed: number; restUntil: string | null; lastError: string | null; read30?: number; wrong30?: number; accuracy?: number | null }[];
     /** Requests not spent since the server started: by rules, a channel's template, a slip read before, posts read in one request. */
     saved?: { rules: number; template: number; cache: number; batch: number; slip?: number; caption?: number; since: string };
     /** The reference check: the posts the admin sorted, read again by every reader. */
