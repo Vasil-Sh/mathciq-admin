@@ -327,3 +327,12 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-readers li.is-off .v3-tg-rl b { color: #8a93a2; }
 .v3-tg-readers li em { font-style: normal; font-size: 13px; font-weight: 700; color: #11151c; }
 .v3-tg-reader > small { line-height: 1.45; }
+/* «Розібрати пост»: what the post is, the tip's result */
+.v3-tg-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-tg-kinds button { height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: #eef0f4; color: #11151c; font: 600 13px Inter, sans-serif; transition: transform .12s ease, background-color .15s ease; }
+.v3-tg-kinds button.is-on { background: #2f7bff; color: #fff; }
+.v3-tg-kinds button:active { transform: scale(.96); }
+.v3-tg-resseg button { font-size: 12px; padding: 0 2px; }
+.v3-tg-resseg button.is-on.is-Win { background: #00b24b; box-shadow: none; }
+.v3-tg-resseg button.is-on.is-Loss { background: #e5484d; box-shadow: none; }
+.v3-tg-resseg button.is-on.is-Void, .v3-tg-resseg button.is-on.is-pending { background: #6b7384; box-shadow: none; }

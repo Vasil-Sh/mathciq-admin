@@ -411,6 +411,8 @@ function ChannelStats({ handle }: { handle: string }) {
   );
 }
 
+const KINDS = [["bet", "Прогноз"], ["info", "Інфо"], ["repeat", "Повтор"], ["poll", "Опитування"], ["summary", "Підсумок"]] as const;
+
 /** «Розібрати пост»: the match, the market, the odds — or «Не прогноз». */
 function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; online: boolean; onClose: () => void; onDone: () => void }) {
   const [match, setMatch] = useState<TgMatch | null>(null);
@@ -418,6 +420,9 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
   const [q, setQ] = useState("");
   const [found, setFound] = useState<TgMatch[] | null>(null);
   const [mk, setMk] = useState<"p1" | "p2" | "map" | "total" | "hcp">("p1");
+  type Kind = "bet" | "info" | "repeat" | "poll" | "summary";
+  const [kind, setKind] = useState<Kind>("bet");
+  const [res, setRes] = useState<"auto" | "pending" | "Win" | "Loss" | "Void">("auto");
   const [side, setSide] = useState<1 | 2>(1);
   const [mapN, setMapN] = useState(1);
   const [plus, setPlus] = useState(false);
@@ -433,6 +438,8 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
     // start from what the reader saw: «Map 2 Winner», «Handicap +1.5», «Total Maps Over 2.5», the side by the pick
     const sd: 1 | 2 = post.pick && post.team2 && post.pick === post.team2 ? 2 : 1, mkt = post.market || "";
     setSide(sd); setMapN(1); setPlus(false);
+    setKind(post.kind === "bet" || post.kind === "unknown" ? "bet" : post.reason === "Повтор" || post.reason === "Результат" ? "repeat" : post.reason === "Опитування" ? "poll" : post.reason === "Підсумок" ? "summary" : "info");
+    setRes(post.settledBy === "admin" && post.result ? post.result : "auto");
     const mm = /^Map (\d) Winner$/.exec(mkt), hh = /^Handicap ([+-])([\d.]+)$/.exec(mkt), tt = /^Total Maps (Over|Under) ([\d.]+)$/.exec(mkt);
     const ai = /Карта (\d)/.exec(post.ocr || ""), aiH = /Фора .*?([+\-−])(\d+[.,]5)/.exec(post.ocr || "");
     if (mm || (!mkt && ai)) { setMk("map"); setMapN(Number((mm || ai)![1])); }
@@ -454,21 +461,21 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
     finally { setSaving(false); }
   };
-  const save = async (kind: "bet" | "other") => {
+  const save = async (to: "bet" | "other") => {
     if (!post) return;
     setSaving(true);
     try {
-      if (kind === "other") await fixTgPost(post.handle, post.postId, { kind: "other" });
+      if (to === "other") await fixTgPost(post.handle, post.postId, { kind: "other", reason: kind === "repeat" ? "Повтор" : kind === "poll" ? "Опитування" : kind === "summary" ? "Підсумок" : null });
       else {
         if (!match) { toast.error("Оберіть матч"); setSaving(false); return; }
         const o = kf.trim() ? Number(kf.replace(",", ".")) : null;
         const ln = Math.abs(Number(line.replace(",", ".")) || 1.5);
-        await fixTgPost(post.handle, post.postId, mk === "total" ? { kind: "bet", matchId: match.id, market: "Total", line: Number(line.replace(",", ".")) || 2.5, over, odds: o }
-          : mk === "hcp" ? { kind: "bet", matchId: match.id, market: "Handicap", side, line: plus ? ln : -ln, odds: o }
-          : mk === "map" ? { kind: "bet", matchId: match.id, market: "Map", side, map: mapN, odds: o }
-          : { kind: "bet", matchId: match.id, market: "Match Winner", side: mk === "p2" ? 2 : 1, odds: o, remember });
+        await fixTgPost(post.handle, post.postId, mk === "total" ? { kind: "bet", matchId: match.id, market: "Total", line: Number(line.replace(",", ".")) || 2.5, over, odds: o, result: res }
+          : mk === "hcp" ? { kind: "bet", matchId: match.id, market: "Handicap", side, line: plus ? ln : -ln, odds: o, result: res }
+          : mk === "map" ? { kind: "bet", matchId: match.id, market: "Map", side, map: mapN, odds: o, result: res }
+          : { kind: "bet", matchId: match.id, market: "Match Winner", side: mk === "p2" ? 2 : 1, odds: o, remember, result: res });
       }
-      toast.success(kind === "other" ? "Позначено: не прогноз" : "Прогноз збережено", { description: kind === "bet" && match ? `${match.team1} — ${match.team2}` : undefined });
+      toast.success(to === "other" ? `Позначено: ${KINDS.find((k) => k[0] === kind)?.[1] || "інфо"}` : "Прогноз збережено", { description: kind === "bet" && match ? `${match.team1} — ${match.team2}` : undefined });
       onDone();
     } catch (e) { toast.error("Не вдалося зберегти", { description: (e as Error).message }); }
     finally { setSaving(false); }
@@ -488,6 +495,9 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
             <p>Канал: <b>{post.result === "Win" ? "виграш" : "програш"}</b> · за нашим рахунком{post.score ? ` ${post.score}` : ""}: <b>{post.ourResult === "Win" ? "виграш" : "програш"}</b></p>
             <div className="v3-mxp-acts"><button type="button" className="is-grey" disabled={!online || saving} onClick={() => void resolve("channel")}>Канал правий</button><button type="button" className="is-green" disabled={!online || saving} onClick={() => void resolve("ours")}>Ми праві</button></div>
           </div>}
+          <span className="v3-tg-fl">Що це за пост</span>
+          <div className="v3-tg-kinds" role="radiogroup" aria-label="Тип поста">{KINDS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={kind === k} className={kind === k ? "is-on" : ""} onClick={() => setKind(k)}>{l}</button>)}</div>
+          {kind === "bet" && <>
           <span className="v3-tg-fl">Матч</span>
           {!pickM && match ? <button type="button" className="v3-tg-mbox" onClick={() => setPickM(true)}><span>{match.team1} — {match.team2}</span><b>Змінити</b></button> : <>
             <label className="v3-tg-msearch"><Search size={16} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда" aria-label="Пошук матчу" />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={14} /></button>}</label>
@@ -508,9 +518,13 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
           </div>}
           <label className="v3-tg-fodds"><span className="v3-tg-fl">Кофіцієнт</span><input inputMode="decimal" value={kf} onChange={(e) => setKf(e.target.value)} placeholder="Напр. 1.85" /></label>
           {(mk === "p1" || mk === "p2") && <label className="v3-tg-rem"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /><i aria-hidden="true"><Check size={13} strokeWidth={3} /></i>Запам’ятати для каналу: кофіцієнт без команди — ставка на {mk === "p2" ? "другу" : "першу"}</label>}
+          <span className="v3-tg-fl">Результат</span>
+          <div className="v3-tg-seg3 is-5 v3-tg-resseg" role="radiogroup" aria-label="Результат">{([["auto", "Авто"], ["pending", "Очікує"], ["Win", "Виграш"], ["Loss", "Програш"], ["Void", "Повернення"]] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={res === k} className={`${res === k ? "is-on" : ""} is-${k}`} onClick={() => setRes(k)}>{l}</button>)}</div>
+          <small className="v3-tg-note">«Авто» — з квитка, потім наша перевірка за рахунком. «Очікує» — закриє наша перевірка.</small>
+          </>}
           <div className="v3-mxp-acts">
-            <button type="button" className="is-grey" disabled={!online || saving} onClick={() => void save("other")}>Не прогноз</button>
-            <button type="button" className="is-green" disabled={!online || saving || !match} onClick={() => void save("bet")}>{saving ? "Зберігаємо…" : "Зберегти прогноз"}</button>
+            <button type="button" className="is-grey" onClick={onClose}>Скасувати</button>
+            <button type="button" className="is-green" disabled={!online || saving || (kind === "bet" && !match)} onClick={() => void save(kind === "bet" ? "bet" : "other")}>{saving ? "Зберігаємо…" : kind === "bet" ? "Зберегти прогноз" : "Зберегти"}</button>
           </div>
         </>}
       </DialogContent>
