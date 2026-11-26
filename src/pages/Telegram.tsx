@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, ExternalLink, Info, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, History, Info, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, deleteTgChannel, rereadTgChannel, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -28,10 +28,13 @@ const MARKET = (p: TgPost) => {
   if (m === "Match Winner") return `П${p.pick === p.team2 ? 2 : 1} · ${p.pick}`;
   const t = /^Total Maps (Over|Under) ([\d.]+)$/.exec(m); if (t) return `Тотал карт ${t[1] === "Over" ? ">" : "<"} ${t[2]}`;
   const h = /^Handicap ([+-][\d.]+)$/.exec(m); if (h) return `Фора ${h[1].replace("-", "−")} · ${p.pick}`;
+  const mw = /^Map (\d) Winner$/.exec(m); if (mw) return `Карта ${mw[1]} · ${p.pick}`;
+  const mt = /^Map (\d) Total (Over|Under) ([\d.]+)$/.exec(m); if (mt) return `Карта ${mt[1]} · тотал раундів ${mt[2] === "Over" ? ">" : "<"} ${mt[3]}`;
+  const mh = /^Map (\d) Handicap ([+-][\d.]+)$/.exec(m); if (mh) return `Карта ${mh[1]} · фора ${mh[2].replace("-", "−")} · ${p.pick}`;
   return m;
 };
-const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : p.reason === "Результат" ? ["Прогноз", "is-ok"] : ["Інфо", "is-off"];
-const PROG = { add: "Збираємо пости", reread: "Перечитуємо пости", collect: "Читаємо нові пости" } as const;
+const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : p.reason === "Результат" ? ["Прогноз", "is-ok"] : p.reason === "Опитування" ? ["Опитування", "is-off"] : p.reason === "Підсумок" ? [`Підсумок${p.claim?.won != null && p.claim?.total ? ` ${p.claim.won}/${p.claim.total}` : ""}`, "is-ours"] : ["Інфо", "is-off"];
+const PROG = { add: "Збираємо пости", reread: "Перечитуємо пости", collect: "Читаємо нові пости", archive: "Підтягуємо архів" } as const;
 /** Extra marks of a post: our own check, live, deleted / edited. */
 function Marks({ p }: { p: TgPost }) {
   const m: [string, string][] = [];
@@ -40,6 +43,7 @@ function Marks({ p }: { p: TgPost }) {
   else if (p.settledBy === "ours") m.push(["Перевірено нами", "is-ours"]);
   else if (p.ourResult && p.settledBy === "slip") m.push(["Підтверджено", "is-ours"]);
   if (p.isLive) m.push(["Ставка наживо", "is-warn"]);
+  if (p.oddsHigh && p.ourOdds) m.push([`Кф вище нашого ${odds(p.ourOdds)}`, "is-warn"]);
   if (p.deletedAt) m.push(["Видалено", "is-bad"]);
   if (p.editedAt) m.push(["Змінено", "is-off"]);
   return m.length ? <>{m.map(([t, c]) => <em key={t} className={`v3-tg-st ${c}`}>{t}</em>)}</> : null;
@@ -120,6 +124,10 @@ export default function Telegram() {
     try { await refreshTgChannel(h); toast.success("Збір запущено", { description: "Пости зі скрінами читаються кілька секунд кожен — оновимо за хвилину" }); setTimeout(() => { void load(); if (sel === h) getPosts(h).then(setPosts).catch(() => {}); }, 45_000); }
     catch (e) { toast.error("Не вдалося оновити", { description: (e as Error).message }); }
   };
+  const archive = async (h: string) => {
+    try { await archiveTgChannel(h, 5); toast.success("Підтягуємо архів", { description: "До 100 старших постів — прогрес на картці каналу" }); setSel(null); setTimeout(() => void load(), 4_000); }
+    catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
+  };
   const reread = async (h: string) => {
     try { const r = await rereadTgChannel(h); toast.success(`Перечитуємо ${r.posts} ${plural(r.posts, "пост", "пости", "постів")}`, { description: "Прогрес — на картці каналу" }); setSel(null); setTimeout(() => void load(), 1_500); }
     catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
@@ -153,6 +161,7 @@ export default function Telegram() {
           <div className="v3-sum is-static"><span className="v3-sum-l">Розпізнано</span><strong className="v3-sum-v"><RollingNumber key={`r${t?.recognized}`} text={t?.recognized != null ? `${t.recognized}%` : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? ((t.queue ?? t.unknown7d) ? `${t.queue ?? t.unknown7d} ${plural(t.queue ?? t.unknown7d, "чекає", "чекають", "чекають")} розбору` : "черга порожня") : "…"}</span></span></div>
         </section>
 
+        {data?.best && data.channels.length > 1 && <div className="v3-tg-best"><span aria-hidden="true">🏆</span><span><b>Канал тижня:</b> {data.best.title || `@${data.best.handle}`} · ROI {pct(data.best.roi)} · {data.best.won}–{data.best.lost}</span></div>}
         {data?.alerts && ((data.alerts.unknown > (seen.unknown ?? 0)) || (data.alerts.mismatches > (seen.mismatches ?? 0))) && (
           <div className="v3-tg-alert" role="status">
             <span><b>Нове в черзі:</b> {[data.alerts.unknown > (seen.unknown ?? 0) ? `${data.alerts.unknown - (seen.unknown ?? 0)} ${plural(data.alerts.unknown - (seen.unknown ?? 0), "нерозпізнаний пост", "нерозпізнані пости", "нерозпізнаних постів")}` : "", data.alerts.mismatches > (seen.mismatches ?? 0) ? `${data.alerts.mismatches - (seen.mismatches ?? 0)} ${plural(data.alerts.mismatches - (seen.mismatches ?? 0), "розбіжність", "розбіжності", "розбіжностей")} з нашим рахунком` : ""].filter(Boolean).join(" · ")}</span>
@@ -199,7 +208,8 @@ export default function Telegram() {
                       : <button type="button" className="v3-mxp-pstop" disabled={!online} onClick={() => setStopAsk(c)} aria-label={`Зупинити ${c.title || c.handle}`}><i aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
                   </span>
                 </div>
-                <small className="v3-mxp-psub">{c.status === "err" ? c.error : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
+                <small className="v3-mxp-psub">{c.status === "err" ? `${c.error}${c.fails && c.fails > 1 ? ` · ${c.fails} рази поспіль` : ""}` : `@${c.handle} · ${GAME[c.game]}${c.isTest ? " · тест" : ""} · останній пост ${when(c.lastPostAt)}`}</small>
+                {c.autoPaused && c.paused && <small className="v3-tg-auto">Пауза: {c.autoPaused.toLowerCase()}. «Запустити» — читати знову.</small>}
                 {!!c.progress && (() => { const pr = c.progress, p = Math.min(100, Math.round((pr.done / Math.max(1, pr.total)) * 100)); return (
                   <div className="v3-tg-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={p} aria-label={PROG[pr.kind]} onClick={(e) => e.stopPropagation()}>
                     <span className="v3-tg-progh"><i className="v3-tg-spin" aria-hidden="true" />{PROG[pr.kind]}<b>{p}%</b></span>
@@ -256,7 +266,7 @@ export default function Telegram() {
               <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
               <div><span>Прибуток · ROI</span><b className={tone(ch.all?.profit)}>{money(ch.all?.profit)}{ch.all?.roi != null ? <small> · {pct(ch.all.roi)}</small> : null}</b></div>
             </div>
-            {ch.all && (ch.all.ours?.won || ch.all.ours?.lost || ch.all.mismatches || ch.all.live || ch.all.deleted) ? <div className="v3-tg-honest">
+            {ch.all && (ch.all.ours?.won || ch.all.ours?.lost || ch.all.mismatches || ch.all.live || ch.all.deleted || ch.all.oddsHigh) ? <div className="v3-tg-honest">
               <span>Наша перевірка</span>
               <div className="v3-tg-kv">
                 <div><span>ROI за каналом</span><b className={tone(ch.all.roi)}>{pct(ch.all.roi)}</b></div>
@@ -264,8 +274,9 @@ export default function Telegram() {
                 <div><span>Чесність</span><b className={ch.all.honesty == null ? "" : ch.all.honesty >= 90 ? "is-ok" : ch.all.honesty >= 70 ? "is-warn" : "is-bad"}>{ch.all.honesty != null ? `${ch.all.honesty}%` : "—"}<small> · {ch.all.confirmed ?? 0} ✓ {ch.all.mismatches ?? 0} ✗</small></b></div>
                 <div><span>Ставки наживо</span><b>{ch.all.live ?? 0}{ch.all.live ? <small> · {ch.all.liveWon ?? 0}–{ch.all.liveLost ?? 0}</small> : null}</b></div>
               </div>
-              <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
+              <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
             </div> : null}
+            <ChannelStats handle={ch.handle} />
             {!!ch.money?.length && <div className="v3-tg-money">
               <span>За квитками на скрінах</span>
               {ch.money.map((m) => <div key={m.currency}><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b><small>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")} · поставлено {m.staked.toLocaleString("uk-UA")} {CUR[m.currency] || m.currency}</small></div>)}
@@ -304,6 +315,7 @@ export default function Telegram() {
               <a className="is-grey v3-tg-open" href={`https://t.me/${ch.handle}`} target="_blank" rel="noreferrer">У Telegram<ExternalLink size={14} aria-hidden="true" /></a>
             </div>
             <button type="button" className="v3-tg-reread" disabled={!online} onClick={() => void reread(ch.handle)}><RefreshCw size={15} aria-hidden="true" />Перечитати пости каналу</button>
+            <button type="button" className="v3-tg-reread" disabled={!online} onClick={() => void archive(ch.handle)}><History size={15} aria-hidden="true" />Підтягнути архів · ще ≈100 постів</button>
             {ch.isTest && <button type="button" className="v3-tg-del" disabled={!online} onClick={() => setDelAsk(ch)}>Видалити тестовий канал</button>}
           </>}
         </DialogContent>
@@ -335,6 +347,39 @@ export default function Telegram() {
 
       <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
       <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={() => { setAddOpen(false); void load(); }} />
+    </div>
+  );
+}
+
+/** Profit by day (the channel's results and ours), by game / market, streaks, the channel's own summaries next to ours. */
+function ChannelStats({ handle }: { handle: string }) {
+  const [st, setSt] = useState<TgStats | null>(null);
+  useEffect(() => { setSt(null); fetchTgStats(handle).then(setSt).catch(() => setSt(null)); }, [handle]);
+  if (!st || (!st.chart.length && !st.summaries.length)) return null;
+  const W = 300, H = 90, pts = st.chart, all = pts.flatMap((p) => [p.claimed, p.ours, 0]), lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
+  const x = (i: number) => (pts.length < 2 ? W / 2 : (i / (pts.length - 1)) * W), y = (v: number) => H - ((v - lo) / span) * (H - 8) - 4;
+  const line = (k: "claimed" | "ours") => pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
+  const last = pts[pts.length - 1];
+  const row = (r: TgStats["byGame"][number]) => <li key={r.name}><span>{r.name}</span><b>{r.winrate}%</b><small>{r.won}–{r.lost}{r.roi != null ? ` · ROI ${r.roi > 0 ? "+" : r.roi < 0 ? "−" : ""}${Math.abs(r.roi)}%` : ""}</small></li>;
+  return (
+    <div className="v3-tg-stats">
+      {pts.length > 0 && <>
+        <span className="v3-tg-sth">Прибуток по днях <small>(по 100 на прогноз)</small></span>
+        <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart" role="img" aria-label={`Прибуток: за каналом ${last.claimed}, за нашим рахунком ${last.ours}`}>
+          <line x1="0" x2={W} y1={y(0)} y2={y(0)} className="zero" />
+          <path d={line("claimed")} className="claimed" />
+          <path d={line("ours")} className="ours" />
+        </svg>
+        <div className="v3-tg-legend"><span className="claimed">За каналом {last.claimed > 0 ? "+" : ""}{last.claimed}</span><span className="ours">За нашим рахунком {last.ours > 0 ? "+" : ""}{last.ours}</span></div>
+      </>}
+      {(st.byGame.length > 0 || st.byMarket.length > 0) && <div className="v3-tg-split">
+        {st.byGame.length > 0 && <ul><li className="h">Гра</li>{st.byGame.map(row)}</ul>}
+        {st.byMarket.length > 0 && <ul><li className="h">Ставка</li>{st.byMarket.map(row)}</ul>}
+      </div>}
+      {(st.streaks.best > 1 || st.streaks.worst < -1) && <p className="v3-tg-streak">Серії: найдовша виграшна <b>{st.streaks.best}</b> · програшна <b>{Math.abs(st.streaks.worst)}</b> · зараз <b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} виграші` : st.streaks.current < 0 ? `${-st.streaks.current} програші` : "—"}</b></p>}
+      {st.summaries.length > 0 && <div className="v3-tg-claims"><span className="v3-tg-sth">Підсумки каналу і наші дані</span>
+        {st.summaries.map((s) => <p key={s.at}>{when(s.at)}{s.period ? ` · ${s.period}` : ""}: канал <b>{s.claimed.won ?? "?"}/{s.claimed.total ?? "?"}</b> · у нас <b className={s.claimed.won != null && s.ours.total && s.claimed.won > s.ours.won ? "is-bad" : ""}>{s.ours.won}/{s.ours.total}</b></p>)}
+      </div>}
     </div>
   );
 }
@@ -375,6 +420,13 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
     const re = new RegExp(`(${[...names.filter(Boolean), "\\d{1,2}[.,]\\d{1,3}"].join("|")})`, "ig");
     return text.split(re).map((x, i) => (i % 2 ? <mark key={i} className={/^\d/.test(x) ? "is-odds" : undefined}>{x}</mark> : x));
   }, [match]);
+  const resolve = async (who: "channel" | "ours") => {
+    if (!post) return;
+    setSaving(true);
+    try { await resolveTgPost(post.handle, post.postId, who); toast.success(who === "ours" ? "Записано результат за нашим рахунком" : "Записано результат каналу"); onDone(); }
+    catch (e) { toast.error("Не вдалося", { description: (e as Error).message }); }
+    finally { setSaving(false); }
+  };
   const save = async (kind: "bet" | "other") => {
     if (!post) return;
     setSaving(true);
@@ -405,6 +457,10 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
           {post.text && <div className="v3-tg-ftx">{mark(post.text)}</div>}
           {post.ocr && <details className="v3-tg-ocr"><summary>Прочитано зі скріну</summary><div>{mark(post.ocr)}</div></details>}
           {post.reason && <p className="v3-tg-warn">{post.reason}</p>}
+          {post.mismatch && <div className="v3-tg-mm">
+            <p>Канал: <b>{post.result === "Win" ? "виграш" : "програш"}</b> · за нашим рахунком{post.score ? ` ${post.score}` : ""}: <b>{post.ourResult === "Win" ? "виграш" : "програш"}</b></p>
+            <div className="v3-mxp-acts"><button type="button" className="is-grey" disabled={!online || saving} onClick={() => void resolve("channel")}>Канал правий</button><button type="button" className="is-green" disabled={!online || saving} onClick={() => void resolve("ours")}>Ми праві</button></div>
+          </div>}
           <span className="v3-tg-fl">Матч</span>
           {!pickM && match ? <button type="button" className="v3-tg-mbox" onClick={() => setPickM(true)}><span>{match.team1} — {match.team2}</span><b>Змінити</b></button> : <>
             <label className="v3-tg-msearch"><Search size={16} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда" aria-label="Пошук матчу" />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={14} /></button>}</label>
