@@ -32,6 +32,22 @@ const MARKET = (p: TgPost) => {
 };
 const KIND = (p: TgPost): [string, string] => p.kind === "bet" ? ["Прогноз", "is-ok"] : p.kind === "unknown" ? ["Не розпізнано", "is-warn"] : p.reason === "Повтор" ? ["Повтор", "is-off"] : p.reason === "Результат" ? ["Прогноз", "is-ok"] : ["Інфо", "is-off"];
 const PROG = { add: "Збираємо пости", reread: "Перечитуємо пости", collect: "Читаємо нові пости" } as const;
+/** Extra marks of a post: our own check, live, deleted / edited. */
+function Marks({ p }: { p: TgPost }) {
+  const m: [string, string][] = [];
+  if (p.kind === "bet" && p.live?.status === "live") m.push([`Йде${p.live.score1 != null ? ` · ${p.live.score1}:${p.live.score2}` : ""}`, "is-live"]);
+  if (p.mismatch) m.push([`Розбіжність: за рахунком ${p.ourResult === "Win" ? "виграш" : "програш"}`, "is-bad"]);
+  else if (p.settledBy === "ours") m.push(["Перевірено нами", "is-ours"]);
+  else if (p.ourResult && p.settledBy === "slip") m.push(["Підтверджено", "is-ours"]);
+  if (p.isLive) m.push(["Ставка наживо", "is-warn"]);
+  if (p.deletedAt) m.push(["Видалено", "is-bad"]);
+  if (p.editedAt) m.push(["Змінено", "is-off"]);
+  return m.length ? <>{m.map(([t, c]) => <em key={t} className={`v3-tg-st ${c}`}>{t}</em>)}</> : null;
+}
+function Legs({ p }: { p: TgPost }) {
+  if (!p.legs?.length) return null;
+  return <ul className="v3-tg-legs">{p.legs.map((l, i) => <li key={i}><span>{l.team1} — {l.team2}</span><b>{l.pick || l.market}{l.odds ? ` · ${odds(l.odds)}` : ""}</b>{l.result && <em className={`v3-tg-st ${l.result === "Win" ? "is-ok" : "is-bad"}`}>{l.result === "Win" ? "✓" : "✗"}</em>}</li>)}</ul>;
+}
 const RES0 = (r: TgPost["result"]): [string, string] | null => r === "Win" ? ["Виграш", "is-ok"] : r === "Loss" ? ["Програш", "is-bad"] : r === "Void" ? ["Повернення", "is-off"] : null;
 const SLIP: Record<string, [string, string]> = { won: ["Виграш", "is-ok"], lost: ["Програш", "is-bad"], pending: ["Очікується", "is-wait"], cashout: ["Продано", "is-off"], void: ["Повернення", "is-off"] };
 /** What this post shows: its own slip (a pending slip stays «Очікується» even after the tip was won), else the settled result. */
@@ -67,6 +83,9 @@ export default function Telegram() {
   const [stopAsk, setStopAsk] = useState<TgChannel | null>(null);
   const [delAsk, setDelAsk] = useState<TgChannel | null>(null);
   const [day, setDay] = useState<{ ch: TgChannel; i: number } | null>(null);
+  const [sort, setSort] = useState<"new" | "roi" | "win" | "honest">("new");
+  const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
+  const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
   const [view, setView] = useState<"list" | "grid">(readView);
   const pickView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem("v3-tg-posts-view", v); } catch { /* private mode */ } };
 
@@ -134,6 +153,13 @@ export default function Telegram() {
           <div className="v3-sum is-static"><span className="v3-sum-l">Розпізнано</span><strong className="v3-sum-v"><RollingNumber key={`r${t?.recognized}`} text={t?.recognized != null ? `${t.recognized}%` : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? ((t.queue ?? t.unknown7d) ? `${t.queue ?? t.unknown7d} ${plural(t.queue ?? t.unknown7d, "чекає", "чекають", "чекають")} розбору` : "черга порожня") : "…"}</span></span></div>
         </section>
 
+        {data?.alerts && ((data.alerts.unknown > (seen.unknown ?? 0)) || (data.alerts.mismatches > (seen.mismatches ?? 0))) && (
+          <div className="v3-tg-alert" role="status">
+            <span><b>Нове в черзі:</b> {[data.alerts.unknown > (seen.unknown ?? 0) ? `${data.alerts.unknown - (seen.unknown ?? 0)} ${plural(data.alerts.unknown - (seen.unknown ?? 0), "нерозпізнаний пост", "нерозпізнані пости", "нерозпізнаних постів")}` : "", data.alerts.mismatches > (seen.mismatches ?? 0) ? `${data.alerts.mismatches - (seen.mismatches ?? 0)} ${plural(data.alerts.mismatches - (seen.mismatches ?? 0), "розбіжність", "розбіжності", "розбіжностей")} з нашим рахунком` : ""].filter(Boolean).join(" · ")}</span>
+            <button type="button" onClick={() => { setTab("un"); markSeen(); }}>Переглянути</button>
+            <button type="button" className="is-x" aria-label="Сховати" onClick={markSeen}><X size={15} /></button>
+          </div>
+        )}
         <div className="v3-pay-tabs v3-tg-tabs" role="tablist" aria-label="Розділи">
           <PillTrack active={tab} />
           {([["ch", "Канали", data?.channels.length], ["un", "Нерозпізнані", unk?.length]] as const).map(([k, l, n]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={`v3-pay-tab${tab === k ? " is-on" : ""}`} onClick={() => setTab(k)}><span>{l}{n != null ? ` · ${n}` : ""}</span></button>)}
@@ -148,7 +174,7 @@ export default function Telegram() {
                 <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em></div>
                 <div className="v3-tg-rtiles">
                   {r.ai ? <>
-                    <div><span>Запитів</span><b>{r.aiCalls}</b></div>
+                    <div><span>Сьогодні</span><b className={r.quota && r.quota.used >= r.quota.limit * 0.9 ? "is-warn" : ""}>{r.quota ? `${r.quota.used} з ${r.quota.limit}` : r.aiCalls}</b></div>
                     <div><span>Помилок</span><b className={r.aiFailed ? "is-warn" : ""}>{r.aiFailed}</b></div>
                   </> : <>
                     <div><span>Скрінів</span><b>{r.ocrImages}</b></div>
@@ -160,7 +186,8 @@ export default function Telegram() {
                 <small>Лічильники — з останнього запуску сервера</small>
               </div>
             ); })()}
-            {data.channels.map((c, i) => { const mx = Math.max(1, ...c.days); const A = c.all; const wk = c.days.reduce((x, n) => x + n, 0); return (
+            {data.channels.length > 1 && <div className="v3-tg-sort" role="group" aria-label="Сортування">{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}</div>}
+            {[...data.channels].sort((x, y) => sort === "roi" ? (y.all?.ours?.roi ?? y.all?.roi ?? -1e9) - (x.all?.ours?.roi ?? x.all?.roi ?? -1e9) : sort === "win" ? (y.all?.winrate ?? -1) - (x.all?.winrate ?? -1) : sort === "honest" ? (y.all?.honesty ?? -1) - (x.all?.honesty ?? -1) : 0).map((c, i) => { const mx = Math.max(1, ...c.days); const A = c.all; const wk = c.days.reduce((x, n) => x + n, 0); return (
               <div key={c.handle} className={`v3-mxp-pc v3-tg-pc${c.status === "run" ? "" : " is-paused"}${opening === c.handle ? " is-opening" : ""}`} style={{ animationDelay: `${i * 60}ms` }} role="button" tabIndex={0} aria-label={`Відкрити ${c.title || c.handle}`} onClick={() => !opening && void openCh(c.handle)} onKeyDown={(e) => { if (e.key === "Enter" && !opening) void openCh(c.handle); }}>
                 <div className="v3-mxp-ph">
                   <span className="v3-tg-av is-s"><TgAvatar handle={c.handle} name={c.title || c.handle} color={colorOf(c.handle)} /></span>
@@ -208,7 +235,8 @@ export default function Telegram() {
               <button key={`${p.handle}/${p.postId}`} type="button" className="v3-tg-card v3-tg-un" onClick={() => setFix(p)}>
                 <span className="v3-tg-unh"><span className="v3-tg-av is-s"><TgAvatar handle={p.handle} name={p.title || p.handle} color={colorOf(p.handle)} /></span><b>{p.title || `@${p.handle}`}</b><small>{when(p.postedAt)}</small></span>
                 <span className="v3-tg-unb"><Shots urls={p.photos} /><span className="v3-tg-untx">{p.text || (p.photos?.length ? "Скрін без підпису" : "")}</span></span>
-                <em className="v3-tg-st is-warn">{p.reason || "Не розпізнано"}</em>
+                {p.mismatch ? <em className="v3-tg-st is-bad">Розбіжність: канал — {p.result === "Win" ? "виграш" : "програш"}, за нашим рахунком{p.score ? ` ${p.score}` : ""} — {p.ourResult === "Win" ? "виграш" : "програш"}</em>
+                  : <em className="v3-tg-st is-warn">{p.reason || "Не розпізнано"}</em>}
               </button>
             ))}
             <p className="v3-tg-note">Розібраний вручну пост рахується в статистиці каналу. «Запам’ятати» додає правило — схожі пости далі розпізнаються самі.</p>
@@ -228,6 +256,16 @@ export default function Telegram() {
               <div><span>Вінрейт</span><b>{ch.all?.winrate != null ? `${ch.all.winrate}%` : "—"}{ch.all && ch.all.won + ch.all.lost ? <small> · {ch.all.won}–{ch.all.lost}</small> : null}</b></div>
               <div><span>Прибуток · ROI</span><b className={tone(ch.all?.profit)}>{money(ch.all?.profit)}{ch.all?.roi != null ? <small> · {pct(ch.all.roi)}</small> : null}</b></div>
             </div>
+            {ch.all && (ch.all.ours?.won || ch.all.ours?.lost || ch.all.mismatches || ch.all.live || ch.all.deleted) ? <div className="v3-tg-honest">
+              <span>Наша перевірка</span>
+              <div className="v3-tg-kv">
+                <div><span>ROI за каналом</span><b className={tone(ch.all.roi)}>{pct(ch.all.roi)}</b></div>
+                <div><span>ROI за нашим рахунком</span><b className={tone(ch.all.ours?.roi)}>{pct(ch.all.ours?.roi)}</b></div>
+                <div><span>Чесність</span><b className={ch.all.honesty == null ? "" : ch.all.honesty >= 90 ? "is-ok" : ch.all.honesty >= 70 ? "is-warn" : "is-bad"}>{ch.all.honesty != null ? `${ch.all.honesty}%` : "—"}<small> · {ch.all.confirmed ?? 0} ✓ {ch.all.mismatches ?? 0} ✗</small></b></div>
+                <div><span>Ставки наживо</span><b>{ch.all.live ?? 0}{ch.all.live ? <small> · {ch.all.liveWon ?? 0}–{ch.all.liveLost ?? 0}</small> : null}</b></div>
+              </div>
+              <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
+            </div> : null}
             {!!ch.money?.length && <div className="v3-tg-money">
               <span>За квитками на скрінах</span>
               {ch.money.map((m) => <div key={m.currency}><b className={tone(m.profit)}>{cash(m.profit, m.currency)}</b><small>{m.bets} {plural(m.bets, "ставка", "ставки", "ставок")} · поставлено {m.staked.toLocaleString("uk-UA")} {CUR[m.currency] || m.currency}</small></div>)}
@@ -243,16 +281,17 @@ export default function Telegram() {
               : <ul className={`v3-tg-posts${view === "grid" ? " is-grid" : ""}`}>{posts.slice(0, view === "grid" ? 20 : 12).map((p) => view === "grid" ? (
                 <li key={p.postId} className="v3-tg-pg" onClick={() => setFix({ ...p, title: ch.title })}>
                   {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : <span className="v3-tg-pgtx">{p.text}</span>}
-                  <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}</em>}</span>
+                  <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}</em>}<Marks p={p} /></span>
                   <small>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>
                 </li>
               ) : (
                 <li key={p.postId}>
                   <span className="v3-tg-ph"><small>{when(p.postedAt)}</small><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>
-                    {RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}{p.score && !p.slip ? ` · ${p.score}` : ""}</em>}</span>
+                    {RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}{p.score && !p.slip ? ` · ${p.score}` : ""}</em>}<Marks p={p} /></span>
                   {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
                   <Shots urls={p.photos} />
-                  {p.kind === "bet" ? <b className="is-ok">→ {p.team1} — {p.team2} · {MARKET(p)}{p.odds ? ` · ${odds(p.odds)}` : ""}{!p.result ? " · очікує" : ""}</b>
+                  <Legs p={p} />
+                  {p.kind === "bet" ? <button type="button" className="v3-tg-pfix is-bet" onClick={() => setFix({ ...p, title: ch.title })}>→ {p.market === "Express" ? `Експрес · ${p.legs?.length || ""} події` : `${p.team1} — ${p.team2} · ${MARKET(p)}`}{p.odds ? ` · ${odds(p.odds)}` : ""}{!p.result ? " · очікує" : ""}{p.ourResult && p.score ? ` · рахунок ${p.score}` : ""}<ChevronRight size={14} aria-hidden="true" /></button>
                     : p.kind === "unknown" ? <button type="button" className="v3-tg-pfix" onClick={() => setFix({ ...p, title: ch.title })}>→ {p.reason} · розібрати<ChevronRight size={14} aria-hidden="true" /></button>
                     : <button type="button" className="v3-tg-pfix is-quiet" onClick={() => setFix({ ...p, title: ch.title })}>Змінити розбір<ChevronRight size={14} aria-hidden="true" /></button>}
                 </li>
@@ -369,7 +408,7 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
           <span className="v3-tg-fl">Матч</span>
           {!pickM && match ? <button type="button" className="v3-tg-mbox" onClick={() => setPickM(true)}><span>{match.team1} — {match.team2}</span><b>Змінити</b></button> : <>
             <label className="v3-tg-msearch"><Search size={16} aria-hidden="true" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Команда" aria-label="Пошук матчу" />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={14} /></button>}</label>
-            <div className="v3-tg-mlist">{(found || []).slice(0, 6).map((m) => <button key={m.id} type="button" className={match?.id === m.id ? "is-on" : ""} onClick={() => { setMatch(m); setPickM(false); }}><span>{m.team1} — {m.team2}</span><small>{m.game === "cs2" ? "CS2" : "Dota 2"} · {when(m.start)}</small></button>)}{found && !found.length && <small className="v3-tg-note">Нічого не знайдено</small>}</div>
+            <div className="v3-tg-mlist">{(found || []).slice(0, 6).map((m) => <button key={m.id} type="button" className={match?.id === m.id ? "is-on" : ""} onClick={() => { setMatch(m); setPickM(false); }}><span>{m.team1} — {m.team2}</span><small>{m.game === "cs2" ? "CS2" : "Dota 2"} · {m.status === "live" ? "наживо" : m.status === "finished" ? `завершено · ${when(m.start)}` : when(m.start)}</small></button>)}{found && !found.length && <small className="v3-tg-note">Нічого не знайдено</small>}</div>
           </>}
           <span className="v3-tg-fl">Ставка</span>
           <div className="v3-tg-ropts" role="radiogroup" aria-label="Ставка">

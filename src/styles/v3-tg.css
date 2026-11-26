@@ -232,3 +232,28 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-when i { width: 7px; height: 7px; border-radius: 50%; background: #00b24b; flex-shrink: 0; }
 .v3-tg-pfix.is-quiet { color: #6b7384; font-weight: 500; }
 .v3-tg-pg { cursor: pointer; }
+/* our own check */
+.v3-tg-st.is-live { background: #fde2df; color: #c2341f; }
+.v3-tg-st.is-live::before { content: ""; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #e5484d; animation: v3-tg-pulse 1.2s ease-in-out infinite; }
+.v3-tg-st.is-ours { background: #e8efff; color: #2450c4; }
+.v3-tg-honest { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: #f1f3f7; }
+.v3-tg-honest > span { font-size: 11px; color: #6b7384; }
+.v3-tg-honest .v3-tg-kv { margin-top: 0; }
+.v3-tg-honest .v3-tg-kv > div { background: #fff; }
+.v3-tg-honest > small { font-size: 11px; color: #6b7384; line-height: 1.4; }
+.v3-tg-honest > small:empty { display: none; }
+.v3-tg-legs { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.v3-tg-legs li { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; background: #fff; font-size: 12px; }
+.v3-tg-legs li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a5263; }
+.v3-tg-legs li b { font-weight: 600; white-space: nowrap; }
+.v3-tg-legs li .v3-tg-st { height: 20px; padding: 0 7px; }
+.v3-tg-pfix.is-bet { color: #1f7a45; text-align: left; }
+.v3-tg-sort { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.v3-tg-sort button { flex-shrink: 0; height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: #fff; color: #4a5263; font: 600 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); transition: transform .12s ease; }
+.v3-tg-sort button.is-on { background: #2f7bff; color: #fff; }
+.v3-tg-sort button:active { transform: scale(.96); }
+.v3-tg-alert { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 10px 10px 10px 14px; border-radius: 14px; background: #fff3d6; color: #6b4500; font-size: 13px; line-height: 1.4; }
+.v3-tg-alert > span { flex: 1; min-width: 0; }
+.v3-tg-alert b { font-weight: 700; }
+.v3-tg-alert button { flex-shrink: 0; height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: #fff; color: #6b4500; font: 600 13px Inter, sans-serif; }
+.v3-tg-alert button.is-x { display: grid; place-items: center; width: 32px; padding: 0; background: transparent; }

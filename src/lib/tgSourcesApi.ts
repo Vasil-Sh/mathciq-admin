@@ -15,13 +15,16 @@ export interface TgChannel {
   /** The 7 days of `days` by kind (the day sheet). */
   daysDetail?: { tips: number; unknown: number; info: number; repeats: number }[];
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
-  all?: { posts: number; tips: number; unknown: number; other: number; repeats: number; won: number; lost: number; pending: number; recognized: number | null; winrate: number | null; profit: number | null; roi: number | null; firstAt: string | null };
+  all?: { posts: number; tips: number; unknown: number; other: number; repeats: number; won: number; lost: number; pending: number; recognized: number | null; winrate: number | null; profit: number | null; roi: number | null; firstAt: string | null;
+    ours?: { won: number; lost: number; roi: number | null; onlyOurs: number }; confirmed?: number; mismatches?: number; honesty?: number | null;
+    live?: number; liveWon?: number; liveLost?: number; deleted?: number; edited?: number };
 }
 export interface TgList {
   channels: TgChannel[]; invites: { name: string; link: string; who: string[] }[]; days: string[];
   totals: { channels: number; running: number; posts24h: number; tips24h: number; recognized: number | null; unknown7d: number; queue?: number; settled30d: number; winrate30d: number | null; pending: number };
   /** How posts are read: the AI model (GEMINI_API_KEY on the server) or OCR, and how it went since the server started. */
-  reader?: { ai: boolean; model: string | null; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
+  alerts?: { unknown: number; mismatches: number };
+  reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> }; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
   night: boolean; nextAt: string | null;
 }
 export interface TgPost {
@@ -29,10 +32,15 @@ export interface TgPost {
   matchId: string | null; team1: string | null; team2: string | null; market: string | null; pick: string | null; odds: number | null; result: "Win" | "Loss" | "Void" | null; score: string | null; fixedBy: string | null; title?: string | null;
   /** What the slip on the screenshot shows and the money on it. */
   slip?: string | null; stake?: number | null; currency?: string | null; payout?: number | null;
+  /** Our own check: the result by our scores, who settled it, the channel's claim disproved, placed after the start, deleted / edited by the channel. */
+  ourResult?: "Win" | "Loss" | null; settledBy?: "ours" | "slip" | null; mismatch?: boolean; isLive?: boolean; deletedAt?: string | null; editedAt?: string | null;
+  legs?: { team1: string; team2: string; market: string; pick: string | null; odds: number | null; result?: "Win" | "Loss" | null }[] | null;
+  /** The match of our feed now: live / upcoming with its score. */
+  live?: { status: string; score1: number | null; score2: number | null; start: string };
   /** Screenshots of the post (t.me CDN) and the text OCR read on them. */
   photos?: string[]; ocr?: string | null;
 }
-export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string }
+export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; status?: string }
 export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean } | { ok: false; error: string };
 
 export const fetchTgSources = () => api.get<TgList>("/admin/tg-sources");
