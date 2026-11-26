@@ -39,7 +39,7 @@ export interface TgPost {
   slip?: string | null; stake?: number | null; currency?: string | null; payout?: number | null;
   /** Our own check: the result by our scores, who settled it, the channel's claim disproved, placed after the start, deleted / edited by the channel. */
   ourOdds?: number | null; oddsHigh?: boolean; claim?: { won?: number | null; total?: number | null; period?: string | null } | null;
-  ourResult?: "Win" | "Loss" | null; settledBy?: "ours" | "slip" | null; mismatch?: boolean; isLive?: boolean; deletedAt?: string | null; editedAt?: string | null;
+  ourResult?: "Win" | "Loss" | null; settledBy?: "ours" | "slip" | "admin" | null; mismatch?: boolean; isLive?: boolean; deletedAt?: string | null; editedAt?: string | null;
   legs?: { team1: string; team2: string; market: string; pick: string | null; odds: number | null; result?: "Win" | "Loss" | null }[] | null;
   /** The match of our feed now: live / upcoming with its score. */
   live?: { status: string; score1: number | null; score2: number | null; start: string };

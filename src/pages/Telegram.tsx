@@ -55,7 +55,10 @@ function Legs({ p }: { p: TgPost }) {
 const RES0 = (r: TgPost["result"]): [string, string] | null => r === "Win" ? ["Виграш", "is-ok"] : r === "Loss" ? ["Програш", "is-bad"] : r === "Void" ? ["Повернення", "is-off"] : null;
 const SLIP: Record<string, [string, string]> = { won: ["Виграш", "is-ok"], lost: ["Програш", "is-bad"], pending: ["Очікується", "is-wait"], cashout: ["Продано", "is-off"], void: ["Повернення", "is-off"] };
 /** What this post shows: its own slip (a pending slip stays «Очікується» even after the tip was won), else the settled result. */
-const RES = (p: TgPost): [string, string] | null => (p.kind === "bet" || p.reason === "Результат") && p.slip && SLIP[p.slip] ? SLIP[p.slip] : p.kind === "bet" ? RES0(p.result) : null;
+const RES = (p: TgPost): [string, string] | null =>
+  // settled by our scores or by the admin: the result, whatever the slip on the screenshot says («очікується» when it was posted)
+  p.kind === "bet" && p.result && (p.settledBy === "ours" || p.settledBy === "admin" || p.ourResult) ? RES0(p.result)
+  : (p.kind === "bet" || p.reason === "Результат") && p.slip && SLIP[p.slip] ? SLIP[p.slip] : p.kind === "bet" ? RES0(p.result) : null;
 const CUR: Record<string, string> = { UAH: "₴", RUB: "₽", USD: "$", EUR: "€", USDT: "USDT", KZT: "₸" };
 const cash = (n: number, c: string) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${CUR[c] || c}`;
 const money = (n: number | null | undefined) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("uk-UA")}`);
