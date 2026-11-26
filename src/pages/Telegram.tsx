@@ -187,8 +187,7 @@ export default function Telegram() {
                 <div className="v3-mxp-ptiles">
                   <div><span>Прогнозів</span><b>{A ? A.tips : c.tips7d}</b></div>
                   <div><span>Розпізнано</span><b>{A?.recognized != null ? `${A.recognized}%` : "—"}</b></div>
-                  {c.money?.length ? <div className="v3-tg-mtile"><span>Прибуток</span>{c.money.map((m) => <b key={m.currency} className={tone(m.profit)}>{cash(m.profit, m.currency)}</b>)}</div>
-                    : <div><span>Прибуток</span><b className={tone(A?.profit)}>{money(A?.profit)}</b></div>}
+                  <div><span>Вінрейт</span><b className={A?.winrate == null ? "" : A.winrate >= 55 ? "is-ok" : A.winrate < 45 ? "is-bad" : ""}>{A?.winrate != null ? `${A.winrate}%` : "—"}{A && A.won + A.lost ? <small> · {A.won}–{A.lost}</small> : null}</b></div>
                 </div>
                 {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""} · перевірено {hhmm(c.checkedAt)}</small></div>}
               </div>

@@ -227,3 +227,4 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-mtile b + b { margin-top: 2px; font-size: 14px; }
 .v3-mxp-ptiles b.is-ok, .v3-tg-kv b.is-ok, .v3-tg-mtile b.is-ok { color: #1f7a45; }
 .v3-mxp-ptiles b.is-bad, .v3-tg-kv b.is-bad, .v3-tg-mtile b.is-bad { color: #c2341f; }
+.v3-mxp-ptiles b small { font-size: 12px; font-weight: 500; color: #6b7384; }
