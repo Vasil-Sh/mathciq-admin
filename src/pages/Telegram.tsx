@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, ExternalLink, History, Info, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, History, Info, Trophy, LayoutGrid, List, Play, Plus, RefreshCw, Search, Send, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -161,7 +161,13 @@ export default function Telegram() {
           <div className="v3-sum is-static"><span className="v3-sum-l">Розпізнано</span><strong className="v3-sum-v"><RollingNumber key={`r${t?.recognized}`} text={t?.recognized != null ? `${t.recognized}%` : "—"} /></strong><span className="v3-sum-n"><span className="v3-pay-note">{t ? ((t.queue ?? t.unknown7d) ? `${t.queue ?? t.unknown7d} ${plural(t.queue ?? t.unknown7d, "чекає", "чекають", "чекають")} розбору` : "черга порожня") : "…"}</span></span></div>
         </section>
 
-        {data?.best && data.channels.length > 1 && <div className="v3-tg-best"><span aria-hidden="true">🏆</span><span><b>Канал тижня:</b> {data.best.title || `@${data.best.handle}`} · ROI {pct(data.best.roi)} · {data.best.won}–{data.best.lost}</span></div>}
+        {data?.best && data.channels.length > 1 && (() => { const b = data.best!, ch = data.channels.find((x) => x.handle === b.handle); return (
+          <button type="button" className="v3-tg-best" onClick={() => void openCh(b.handle)}>
+            <span className="v3-tg-bestic" aria-hidden="true"><Trophy size={20} /></span>
+            <span className="v3-tg-bestt"><small>Канал тижня</small><strong>{b.title || `@${b.handle}`}</strong><em>{b.won}–{b.lost} за 7 днів{ch?.all?.honesty != null ? ` · чесність ${ch.all.honesty}%` : ""}</em></span>
+            <span className="v3-tg-bestr"><b className={b.roi >= 0 ? "is-ok" : "is-bad"}>{pct(b.roi)}</b><small>ROI</small></span>
+          </button>
+        ); })()}
         {data?.alerts && ((data.alerts.unknown > (seen.unknown ?? 0)) || (data.alerts.mismatches > (seen.mismatches ?? 0))) && (
           <div className="v3-tg-alert" role="status">
             <span><b>Нове в черзі:</b> {[data.alerts.unknown > (seen.unknown ?? 0) ? `${data.alerts.unknown - (seen.unknown ?? 0)} ${plural(data.alerts.unknown - (seen.unknown ?? 0), "нерозпізнаний пост", "нерозпізнані пости", "нерозпізнаних постів")}` : "", data.alerts.mismatches > (seen.mismatches ?? 0) ? `${data.alerts.mismatches - (seen.mismatches ?? 0)} ${plural(data.alerts.mismatches - (seen.mismatches ?? 0), "розбіжність", "розбіжності", "розбіжностей")} з нашим рахунком` : ""].filter(Boolean).join(" · ")}</span>
@@ -195,7 +201,7 @@ export default function Telegram() {
                 <small>Лічильники — з останнього запуску сервера</small>
               </div>
             ); })()}
-            {data.channels.length > 1 && <div className="v3-tg-sort" role="group" aria-label="Сортування">{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}</div>}
+            {data.channels.length > 1 && <div className="v3-mxp-bar v3-tg-sortbar"><div className="v3-mxp-days" role="group" aria-label="Сортування">{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}</div></div>}
             {[...data.channels].sort((x, y) => sort === "roi" ? (y.all?.ours?.roi ?? y.all?.roi ?? -1e9) - (x.all?.ours?.roi ?? x.all?.roi ?? -1e9) : sort === "win" ? (y.all?.winrate ?? -1) - (x.all?.winrate ?? -1) : sort === "honest" ? (y.all?.honesty ?? -1) - (x.all?.honesty ?? -1) : 0).map((c, i) => { const mx = Math.max(1, ...c.days); const A = c.all; const wk = c.days.reduce((x, n) => x + n, 0); return (
               <div key={c.handle} className={`v3-mxp-pc v3-tg-pc${c.status === "run" ? "" : " is-paused"}${opening === c.handle ? " is-opening" : ""}`} style={{ animationDelay: `${i * 60}ms` }} role="button" tabIndex={0} aria-label={`Відкрити ${c.title || c.handle}`} onClick={() => !opening && void openCh(c.handle)} onKeyDown={(e) => { if (e.key === "Enter" && !opening) void openCh(c.handle); }}>
                 <div className="v3-mxp-ph">
@@ -356,27 +362,38 @@ function ChannelStats({ handle }: { handle: string }) {
   const [st, setSt] = useState<TgStats | null>(null);
   useEffect(() => { setSt(null); fetchTgStats(handle).then(setSt).catch(() => setSt(null)); }, [handle]);
   if (!st || (!st.chart.length && !st.summaries.length)) return null;
-  const W = 300, H = 90, pts = st.chart, all = pts.flatMap((p) => [p.claimed, p.ours, 0]), lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
-  const x = (i: number) => (pts.length < 2 ? W / 2 : (i / (pts.length - 1)) * W), y = (v: number) => H - ((v - lo) / span) * (H - 8) - 4;
+  const pts = st.chart.length === 1 ? [{ day: st.chart[0].day, claimed: 0, ours: 0 }, ...st.chart] : st.chart;
+  const W = 320, H = 120, P = 6, all = pts.flatMap((p) => [p.claimed, p.ours, 0]), lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
+  const x = (i: number) => P + (i / Math.max(1, pts.length - 1)) * (W - 2 * P), y = (v: number) => P + (1 - (v - lo) / span) * (H - 2 * P);
   const line = (k: "claimed" | "ours") => pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
-  const last = pts[pts.length - 1];
-  const row = (r: TgStats["byGame"][number]) => <li key={r.name}><span>{r.name}</span><b>{r.winrate}%</b><small>{r.won}–{r.lost}{r.roi != null ? ` · ROI ${r.roi > 0 ? "+" : r.roi < 0 ? "−" : ""}${Math.abs(r.roi)}%` : ""}</small></li>;
+  const area = `${line("ours")} L${x(pts.length - 1).toFixed(1)},${y(0).toFixed(1)} L${x(0).toFixed(1)},${y(0).toFixed(1)} Z`;
+  const last = pts[pts.length - 1], same = st.chart.every((p) => p.claimed === p.ours), sgn = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}`;
+  const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("uk-UA", { day: "numeric", month: "short", timeZone: "UTC" });
+  const rows = (title: string, list: TgStats["byGame"]) => list.length > 0 && <div className="v3-tg-wr"><span className="v3-tg-sth">{title}</span>{list.map((r) => (
+    <div key={r.name} className="v3-tg-wrrow"><span className="n">{r.name}</span><span className="bar" aria-hidden="true"><i style={{ width: `${r.winrate}%` }} className={r.winrate >= 55 ? "is-ok" : r.winrate < 45 ? "is-bad" : ""} /></span><b>{r.winrate}%</b><small>{r.won}–{r.lost}{r.roi != null ? ` · ROI ${sgn(r.roi)}%` : ""}</small></div>
+  ))}</div>;
   return (
     <div className="v3-tg-stats">
-      {pts.length > 0 && <>
-        <span className="v3-tg-sth">Прибуток по днях <small>(по 100 на прогноз)</small></span>
-        <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart" role="img" aria-label={`Прибуток: за каналом ${last.claimed}, за нашим рахунком ${last.ours}`}>
-          <line x1="0" x2={W} y1={y(0)} y2={y(0)} className="zero" />
-          <path d={line("claimed")} className="claimed" />
+      {st.chart.length > 0 && <div className="v3-tg-chartbox">
+        <div className="v3-tg-chh"><span><small>Прибуток по днях</small><b className={last.ours >= 0 ? "is-ok" : "is-bad"}>{sgn(last.ours)}</b><em>по 100 на прогноз</em></span>
+          <span className="v3-tg-legend">{!same && <i className="claimed">За каналом {sgn(last.claimed)}</i>}<i className="ours">{same ? "Канал і наш рахунок збігаються" : "За нашим рахунком"}</i></span></div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart" role="img" aria-label={`Прибуток за нашим рахунком ${sgn(last.ours)}${same ? "" : `, за каналом ${sgn(last.claimed)}`}`}>
+          <defs><linearGradient id="v3tgfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f7bff" stopOpacity=".22" /><stop offset="1" stopColor="#2f7bff" stopOpacity="0" /></linearGradient></defs>
+          <line x1={P} x2={W - P} y1={y(0)} y2={y(0)} className="zero" />
+          <path d={area} fill="url(#v3tgfill)" />
+          {!same && <path d={line("claimed")} className="claimed" />}
           <path d={line("ours")} className="ours" />
+          <circle cx={x(pts.length - 1)} cy={y(last.ours)} r="4" className="dot" />
         </svg>
-        <div className="v3-tg-legend"><span className="claimed">За каналом {last.claimed > 0 ? "+" : ""}{last.claimed}</span><span className="ours">За нашим рахунком {last.ours > 0 ? "+" : ""}{last.ours}</span></div>
-      </>}
-      {(st.byGame.length > 0 || st.byMarket.length > 0) && <div className="v3-tg-split">
-        {st.byGame.length > 0 && <ul><li className="h">Гра</li>{st.byGame.map(row)}</ul>}
-        {st.byMarket.length > 0 && <ul><li className="h">Ставка</li>{st.byMarket.map(row)}</ul>}
+        <div className="v3-tg-chx"><span>{day(st.chart[0].day)}</span><span>{day(st.chart[st.chart.length - 1].day)}</span></div>
       </div>}
-      {(st.streaks.best > 1 || st.streaks.worst < -1) && <p className="v3-tg-streak">Серії: найдовша виграшна <b>{st.streaks.best}</b> · програшна <b>{Math.abs(st.streaks.worst)}</b> · зараз <b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} виграші` : st.streaks.current < 0 ? `${-st.streaks.current} програші` : "—"}</b></p>}
+      {(st.streaks.best > 0 || st.streaks.worst < 0) && <div className="v3-tg-streaks">
+        <div><small>Виграші поспіль</small><b className="is-ok">{st.streaks.best}</b></div>
+        <div><small>Програші поспіль</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
+        <div><small>Зараз</small><b className={st.streaks.current > 0 ? "is-ok" : st.streaks.current < 0 ? "is-bad" : ""}>{st.streaks.current > 0 ? `${st.streaks.current} ✓` : st.streaks.current < 0 ? `${-st.streaks.current} ✗` : "—"}</b></div>
+      </div>}
+      {rows("Вінрейт за грою", st.byGame)}
+      {rows("Вінрейт за ставкою", st.byMarket)}
       {st.summaries.length > 0 && <div className="v3-tg-claims"><span className="v3-tg-sth">Підсумки каналу і наші дані</span>
         {st.summaries.map((s) => <p key={s.at}>{when(s.at)}{s.period ? ` · ${s.period}` : ""}: канал <b>{s.claimed.won ?? "?"}/{s.claimed.total ?? "?"}</b> · у нас <b className={s.claimed.won != null && s.ours.total && s.claimed.won > s.ours.won ? "is-bad" : ""}>{s.ours.won}/{s.ours.total}</b></p>)}
       </div>}
