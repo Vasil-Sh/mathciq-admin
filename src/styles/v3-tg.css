@@ -313,3 +313,5 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-claims { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 14px; background: #f1f3f7; }
 .v3-tg-claims p { margin: 0; font-size: 12px; color: #4a5263; line-height: 1.45; }
 .v3-tg-claims b.is-bad { color: #c2341f; }
+/* the page's gap spaces these: same room above and below */
+.v3-tg > .v3-tg-best, .v3-tg > .v3-tg-alert { margin: 0; }
