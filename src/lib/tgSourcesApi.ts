@@ -4,6 +4,8 @@ export type TgStatus = "run" | "stop" | "err" | "block";
 export interface TgChannel {
   handle: string; title: string | null; subscribers: number | null; game: "cs2" | "dota2" | "both"; isTest: boolean; paused: boolean; addedBy: string | null;
   lastPostAt: string | null; checkedAt: string | null; error: string | null; status: TgStatus;
+  /** A private channel (handle «priv-<id>») read through our Telegram account: its invite hash. */
+  invite?: string | null;
   /** Paused by the server (silent for 14 days) and failed reads in a row. */
   autoPaused?: string | null; fails?: number;
   posts7d: number; tips7d: number; unknown7d: number; recognized: number | null; settled: number; wins: number; winrate: number | null; roi: number | null; pending: number;
@@ -30,8 +32,14 @@ export interface TgList {
   /** The best channel of the last 7 days (ROI, ≥ 3 settled tips). */
   best?: { handle: string; title: string | null; roi: number; won: number; lost: number } | null;
   reader?: { ai: boolean; model: string | null; quota?: { used: number; limit: number; day: string; byModel: Record<string, number> };
-    readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; ok: number; failed: number; restUntil: string | null; lastError: string | null }[]; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
+    readers?: { id: string; label: string; model: string; hasKey: boolean; keyName: string; today: number; ok: number; failed: number; restUntil: string | null; lastError: string | null; read30?: number; wrong30?: number; accuracy?: number | null }[];
+    /** Requests not spent since the server started: by rules, a channel's template, a slip read before, posts read in one request. */
+    saved?: { rules: number; template: number; cache: number; batch: number; since: string };
+    /** The reference check: the posts the admin sorted, read again by every reader. */
+    golden?: { at?: string; posts?: number; readers?: { id: string; label: string; ok: number; total: number; skipped: number; misses: string[] }[]; running: boolean; done: number; total: number }; aiCalls: number; aiFailed: number; aiError: string | null; ocrImages: number; ocrFailed: number; ocrAvgMs: number | null; ocrError: string | null };
   night: boolean; nextAt: string | null;
+  /** Our Telegram account for private channels (TG_API_ID, TG_API_HASH, TG_SESSION on the server). */
+  account?: { enabled: boolean; connectedAt: string | null; error: string | null };
 }
 export interface TgPost {
   handle: string; postId: number; postedAt: string; text: string; kind: "bet" | "other" | "unknown"; reason: string | null; game: string | null;
@@ -48,7 +56,7 @@ export interface TgPost {
   photos?: string[]; ocr?: string | null;
 }
 export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; status?: string }
-export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean } | { ok: false; error: string };
+export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean; private?: boolean; joined?: boolean } | { ok: false; error: string };
 
 export const fetchTgSources = () => api.get<TgList>("/admin/tg-sources");
 export const fetchTgPosts = (handle: string) => api.get<{ posts: TgPost[] }>(`/admin/tg-sources/${encodeURIComponent(handle)}/posts`).then((r) => r.posts);
@@ -69,6 +77,7 @@ export interface TgStats {
   summaries: { at: string; period: string | null; claimed: { won: number | null; total: number | null }; ours: { won: number; total: number } }[];
 }
 export const fetchTgStats = (handle: string) => api.get<TgStats>(`/admin/tg-sources/${encodeURIComponent(handle)}/stats`);
+export const runTgGolden = () => api.post<{ ok: true; running: boolean }>("/admin/tg-sources/golden");
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
 export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);
