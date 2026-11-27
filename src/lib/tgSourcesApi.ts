@@ -6,6 +6,8 @@ export interface TgChannel {
   lastPostAt: string | null; checkedAt: string | null; error: string | null; status: TgStatus;
   /** A private channel (handle «priv-<id>») read through our Telegram account: its invite hash. */
   invite?: string | null;
+  /** The bookmakers its slips come from, most used first. */
+  bookmakers?: string[];
   /** Paused by the server (silent for 14 days) and failed reads in a row. */
   autoPaused?: string | null; fails?: number;
   posts7d: number; tips7d: number; unknown7d: number; recognized: number | null; settled: number; wins: number; winrate: number | null; roi: number | null; pending: number;
@@ -40,6 +42,8 @@ export interface TgList {
   night: boolean; nextAt: string | null;
   /** Our Telegram account for private channels (TG_API_ID, TG_API_HASH, TG_SESSION on the server). */
   account?: { enabled: boolean; connectedAt: string | null; error: string | null };
+  /** t.me limits our requests: the pause until (null when none), how often since the start. */
+  tme?: { limitedUntil: string | null; limitedCount: number; lastStatus: number | null };
 }
 export interface TgPost {
   handle: string; postId: number; postedAt: string; text: string; kind: "bet" | "other" | "unknown"; reason: string | null; game: string | null;
@@ -58,6 +62,9 @@ export interface TgPost {
   readBy?: string | null;
   /** One more bet of the post #partOf (an album of slips, several bet lines). */
   partOf?: number | null;
+  /** Why the saved tip is doubtful (the caption, the slip or the money say something else). */
+  doubt?: string | null;
+  bookmaker?: string | null;
   /** This post replies to the post #replyTo of the channel. */
   replyTo?: number | null;
 }
@@ -91,6 +98,9 @@ export const fetchTgSlips = (handle: string) => api.get<{ slips: TgSlip[] }>(`/a
 export const fetchTgPostsPage = (handle: string, filter: string, before?: string) => api.get<{ posts: TgPost[]; more?: boolean }>(`/admin/tg-sources/${encodeURIComponent(handle)}/posts?filter=${filter}${before ? `&before=${encodeURIComponent(before)}` : ""}`);
 export const rereadTgPost = (handle: string, postId: number) => api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}/reread`);
 export const bulkTgInfo = (items: { handle: string; postId: number }[]) => api.post<{ ok: true; n: number }>("/admin/tg-posts/bulk", { items });
+export interface TgCandidateCh { handle: string; seenIn: string[]; mentions: number; lastAt: string }
+export const fetchTgCandidates = () => api.get<{ candidates: TgCandidateCh[] }>("/admin/tg-sources/candidates").then((r) => r.candidates);
+export const dismissTgCandidate = (h: string) => api.delete(`/admin/tg-sources/candidates/${encodeURIComponent(h)}`);
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
 export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map" | "MapHandicap" | "MapTotal"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);

@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, bulkTgInfo, fetchTgPostsPage, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -51,6 +51,7 @@ function Marks({ p }: { p: TgPost }) {
   if (p.oddsHigh && p.ourOdds) m.push([`Кф вище нашого ${odds(p.ourOdds)}`, "is-warn"]);
   if (p.deletedAt) m.push(["Видалено", "is-bad"]);
   if (p.editedAt) m.push(["Змінено", "is-off"]);
+  if (p.doubt) m.push(["Сумнівно", "is-warn"]);
   if (p.partOf) m.push(["Ще одна ставка з поста", "is-off"]);
   if (p.replyTo && p.reason === "Результат") m.push(["Відповідь на прогноз", "is-ours"]);
   return m.length ? <>{m.map(([t, c]) => <em key={t} className={`v3-tg-st ${c}`}>{t}</em>)}</> : null;
@@ -85,6 +86,28 @@ function masonry(xs: TgPost[]): [TgPost[], TgPost[]] {
     cols[i].push(p); h[i] += est;
   }
   return cols;
+}
+
+/** «Можна додати»: channels our channels point to (links, @mentions), most mentioned first. */
+function Candidates({ onAdd }: { onAdd: (h: string) => void }) {
+  const [list, setList] = useState<TgCandidateCh[] | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { fetchTgCandidates().then(setList).catch(() => setList([])); }, []);
+  if (!list?.length) return null;
+  const shown = open ? list : list.slice(0, 3);
+  return (
+    <div className="v3-tg-cands">
+      <div className="v3-tg-candh"><b>Можна додати</b><small>канали, на які посилаються ваші канали</small></div>
+      {shown.map((c) => (
+        <div key={c.handle} className="v3-tg-cand">
+          <span className="v3-tg-candn"><b>@{c.handle}</b><small>{c.mentions} {plural(c.mentions, "згадка", "згадки", "згадок")} · у {c.seenIn.map((h) => `@${h}`).join(", ")}</small></span>
+          <button type="button" className="is-add" onClick={() => onAdd(c.handle)}>Додати</button>
+          <button type="button" className="is-x" aria-label={`Сховати @${c.handle}`} onClick={() => { void dismissTgCandidate(c.handle).catch(() => {}); setList((xs) => (xs || []).filter((x) => x.handle !== c.handle)); }}><X size={14} aria-hidden="true" /></button>
+        </div>
+      ))}
+      {list.length > 3 && <button type="button" className="v3-tg-candmore" onClick={() => setOpen((o) => !o)}>{open ? "Згорнути" : `Ще ${list.length - 3}`}</button>}
+    </div>
+  );
 }
 
 /** What a slip's bet is, in words: a win in the match or on a map, a handicap, a total. */
@@ -184,6 +207,7 @@ export default function Telegram() {
   const [posts, setPosts] = useState<TgPost[] | null>(null);
   const [fix, setFix] = useState<TgPost | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [addLink, setAddLink] = useState(""); // «Можна додати» → the sheet opens with the link filled in
   const [stopAsk, setStopAsk] = useState<TgChannel | null>(null);
   const [delAsk, setDelAsk] = useState<TgChannel | null>(null);
   const [day, setDay] = useState<{ ch: TgChannel; i: number } | null>(null);
@@ -324,6 +348,8 @@ export default function Telegram() {
           !data ? <div className="v3-tg-list" aria-hidden="true">{[0, 1, 2].map((i) => <div key={i} className="v3-tg-card is-skel"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div>)}</div>
           : !data.channels.length && !data.invites.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Send size={20} /></span><strong>Каналів ще немає</strong><span>Додайте публічний канал кнопкою «+» або дочекайтесь, поки користувач Pro додасть посилання t.me/… у «Telegram-групи».</span><button type="button" onClick={() => setAddOpen(true)}>Додати канал</button></div>
           : <div className="v3-tg-list">
+            {data.tme?.limitedUntil && <p className="v3-tg-tme">Telegram тимчасово обмежив наші запити — збір продовжиться о {hhmm(data.tme.limitedUntil)}. Паузи між каналами збільшено.</p>}
+            <Candidates onAdd={(h) => { setAddLink(`https://t.me/${h}`); setAddOpen(true); }} />
             {data.reader && (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
               <div className="v3-tg-reader">
                 <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em></div>
@@ -424,7 +450,7 @@ export default function Telegram() {
       <Dialog open={!!ch} onOpenChange={(o) => { if (!o) { if (sel) markChSeen(sel); setSel(null); } }}>
         <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
           {ch && <>
-            <div className="v3-tg-sh"><span className="v3-tg-av is-l"><TgAvatar handle={ch.handle} name={ch.title || ch.handle} color={colorOf(ch.handle)} /></span><span className="v3-tg-chn"><DialogTitle>{ch.title || `@${ch.handle}`}</DialogTitle><DialogDescription>{at(ch.handle)} · {GAME[ch.game]}{ch.subscribers ? ` · ${ch.subscribers.toLocaleString("uk-UA")} підписників` : ""}{ch.isTest ? " · тестовий" : ""}</DialogDescription></span></div>
+            <div className="v3-tg-sh"><span className="v3-tg-av is-l"><TgAvatar handle={ch.handle} name={ch.title || ch.handle} color={colorOf(ch.handle)} /></span><span className="v3-tg-chn"><DialogTitle>{ch.title || `@${ch.handle}`}</DialogTitle><DialogDescription>{at(ch.handle)} · {GAME[ch.game]}{ch.subscribers ? ` · ${ch.subscribers.toLocaleString("uk-UA")} підписників` : ""}{ch.isTest ? " · тестовий" : ""}</DialogDescription>{!!ch.bookmakers?.length && <span className="v3-tg-books">Ставить у: {ch.bookmakers.join(" · ")}</span>}</span></div>
             {ch.status === "block" ? <p className="v3-tg-warn">Заблоковано в «Підтримці». Пости не збираємо, статистику не показуємо.</p>
               : ch.status === "err" ? <p className="v3-tg-warn is-bad">{ch.error}. Перевірте, чи канал публічний і чи не змінив нікнейм.</p> : null}
             {ch.status !== "block" && !ch.money?.length && <div className="v3-tg-bank is-empty"><div className="v3-tg-bankh"><span>Гроші каналу за квитками</span><b>—</b></div><small className="v3-tg-bankn">Квитків із сумою ставки ще не було — гроші порахуємо, коли канал покаже квиток зі ставкою.</small></div>}
@@ -453,7 +479,7 @@ export default function Telegram() {
               <div className="v3-tg-kv">
                 <div><span>ROI за каналом</span><b className={tone(ch.all.roi)}>{pct(ch.all.roi)}</b></div>
                 <div><span>ROI за нашим рахунком</span><b className={tone(ch.all.ours?.roi)}>{pct(ch.all.ours?.roi)}</b></div>
-                <div><span>Чесність</span><b className={ch.all.honesty == null ? "" : ch.all.honesty >= 90 ? "is-ok" : ch.all.honesty >= 70 ? "is-warn" : "is-bad"}>{ch.all.honesty != null ? `${ch.all.honesty}%` : "—"}<small> · {ch.all.confirmed ?? 0} ✓ {ch.all.mismatches ?? 0} ✗</small></b></div>
+                <div><span>Чесність</span><b className={ch.all.honesty == null ? "" : ch.all.honesty >= 90 ? "is-ok" : ch.all.honesty >= 70 ? "is-warn" : "is-bad"}>{ch.all.honesty != null ? `${ch.all.honesty}%` : "—"}</b><small className="v3-tg-honest">{[ch.all.mismatches ? `розбіжн. ${ch.all.mismatches}` : "", ch.all.deletedLost ? `видал. програшів ${ch.all.deletedLost}` : "", ch.all.liveWon ? `наживо виграно ${ch.all.liveWon}` : ""].filter(Boolean).join(" · ") || "без підозр"}</small></div>
                 <div><span>Ставки наживо</span><b>{ch.all.live ?? 0}{ch.all.live ? <small> · {ch.all.liveWon ?? 0}–{ch.all.liveLost ?? 0}</small> : null}</b></div>
               </div>
               <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
@@ -540,7 +566,7 @@ export default function Telegram() {
       </Dialog>
 
       <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
-      <AddSheet open={addOpen} online={online} onOpenChange={setAddOpen} onDone={() => { setAddOpen(false); void load(); }} />
+      <AddSheet open={addOpen} online={online} start={addLink} onOpenChange={(o) => { setAddOpen(o); if (!o) setAddLink(""); }} onDone={() => { setAddOpen(false); setAddLink(""); void load(); }} />
     </div>
   );
 }
@@ -695,7 +721,8 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
       <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet v3-tg-fix">
         {post && <>
           <DialogTitle>Розібрати пост</DialogTitle>
-          <DialogDescription>{post.title || `@${post.handle}`} · {when(post.postedAt)}</DialogDescription>
+          <DialogDescription>{post.title || `@${post.handle}`} · {when(post.postedAt)}{post.bookmaker ? ` · ${post.bookmaker}` : ""}</DialogDescription>
+          {post.doubt && <p className="v3-tg-doubt"><b>Сумнівно.</b> {post.doubt}. Перевірте й збережіть — або «Перечитати цей пост».</p>}
           <Shots urls={post.photos} big />
           {post.text && <div className="v3-tg-ftx">{mark(post.text)}</div>}
           {post.ocr && <details className="v3-tg-ocr"><summary>Прочитано зі скріну</summary><div>{mark(post.ocr)}</div></details>}
@@ -745,14 +772,14 @@ function FixSheet({ post, online, onClose, onDone }: { post: TgPost | null; onli
 }
 
 /** «Додати канал»: a public link → what we see there → start reading (a test channel is hidden from users). */
-function AddSheet({ open, online, onOpenChange, onDone }: { open: boolean; online: boolean; onOpenChange: (o: boolean) => void; onDone: (handle: string) => void }) {
+function AddSheet({ open, online, start = "", onOpenChange, onDone }: { open: boolean; online: boolean; start?: string; onOpenChange: (o: boolean) => void; onDone: (handle: string) => void }) {
   const [link, setLink] = useState("");
   const [pv, setPv] = useState<TgPreview | null>(null);
   const [checking, setChecking] = useState(false);
   const [game, setGame] = useState<"cs2" | "dota2" | "both">("both");
   const [test, setTest] = useState(true);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (open) { setLink(""); setPv(null); setGame("both"); setTest(true); } }, [open]);
+  useEffect(() => { if (open) { setLink(start); setPv(null); setGame("both"); setTest(true); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const v = link.trim();
     if (v.length < 5) { setPv(null); return; }

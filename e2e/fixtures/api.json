@@ -1293,6 +1293,12 @@
    "body": {
     "errors": []
    }
+  },
+  "GET /admin/tg-sources/candidates": {
+   "status": 200,
+   "body": {
+    "candidates": []
+   }
   }
  }
 }
