@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, rereadTgDoubtful, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, rereadTgDoubtful, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fetchTgSample, checkTgPost, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -183,6 +183,45 @@ function SlipList({ handle, title }: { handle: string; title: string }) {
   </>);
 }
 
+/** «Перевірити 10 постів»: random posts of the week one by one — read right or not (wrong → the post opens to be fixed). */
+function CheckSheet({ open, online, onClose, onFix }: { open: boolean; online: boolean; onClose: (changed: boolean) => void; onFix: (p: TgPost) => void }) {
+  const [list, setList] = useState<TgPost[] | null>(null);
+  const [i, setI] = useState(0);
+  const [ok, setOk] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (!open) return; setList(null); setI(0); setOk(0); fetchTgSample().then(setList).catch(() => setList([])); }, [open]);
+  const p = list?.[i];
+  const answer = async (right: boolean) => {
+    if (!p || busy) return;
+    setBusy(true);
+    try { await checkTgPost(p.handle, p.postId, right); if (right) setOk((n) => n + 1); setI((n) => n + 1); if (!right) onFix(p); }
+    catch (e) { toast.error("Не вдалося зберегти", { description: (e as Error).message }); }
+    finally { setBusy(false); }
+  };
+  const done = !!list && i >= list.length;
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(i > 0); }}>
+      <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
+        <DialogTitle>Перевірка постів</DialogTitle>
+        <DialogDescription>{!list ? "Беремо випадкові пости за 7 днів…" : !list.length ? "Неперевірених постів за 7 днів немає" : done ? `Перевірено ${list.length}` : `${i + 1} з ${list.length} · чи правильно ми прочитали пост?`}</DialogDescription>
+        {list && list.length > 0 && !done && <span className="v3-tg-goldbar" aria-hidden="true"><i style={{ width: `${Math.round((i / list.length) * 100)}%` }} /></span>}
+        {p && !done && <div className="v3-tg-chk">
+          <span className="v3-tg-unh"><span className="v3-tg-av is-s"><TgAvatar handle={p.handle} name={p.title || p.handle} color={colorOf(p.handle)} /></span><b>{p.title || `@${p.handle}`}</b><small>{when(p.postedAt)}</small></span>
+          <span className="v3-tg-unb"><Shots urls={p.photos} big /><MoreText text={p.text || (p.photos?.length ? "Скрін без підпису" : "")} /></span>
+          <div className="v3-tg-chkr"><small>Ми прочитали{p.readBy && READ[p.readBy] ? ` · ${READ[p.readBy]}` : ""}</small>
+            {p.kind === "bet" ? <b>{p.team1} — {p.team2}<span>{MARKET(p)}{p.odds ? ` · кф ${odds(p.odds)}` : ""}{p.stake ? ` · ${p.stake.toLocaleString("uk-UA")} ${p.currency ? CUR[p.currency] || p.currency : ""}` : ""}</span></b>
+              : <b>{KIND(p)[0]}<span>не прогноз</span></b>}</div>
+        </div>}
+        {done && list && <div className="v3-tg-chkdone"><b className={ok / list.length >= 0.9 ? "is-ok" : ok / list.length < 0.7 ? "is-bad" : ""}>{Math.round((ok / list.length) * 100)}%</b><span>{ok} з {list.length} прочитано правильно</span></div>}
+        <div className="v3-mxp-acts">
+          {p && !done ? <><button type="button" className="is-red" disabled={!online || busy} onClick={() => void answer(false)}>Ні, виправити</button><button type="button" className="is-green" disabled={!online || busy} onClick={() => void answer(true)}>Правильно</button></>
+            : <button type="button" className="is-grey" onClick={() => onClose(i > 0)}>Закрити</button>}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /** A post's text on a grid card, a few lines with an arrow to read it all or fold it (a screenshot card: the caption under it). */
 function MoreText({ text, cap }: { text: string; cap?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -236,6 +275,7 @@ export default function Telegram() {
   const [more, setMore] = useState(false);
   // posts in the sheet: a filter and «Показати ще» (pages of 30)
   const [rankOpen, setRankOpen] = useState(false);
+  const [checkOpen, setCheckOpen] = useState(false);
   // «Нерозпізнані»: several posts picked and made «Інфо» at once
   const [pickMode, setPickMode] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -359,6 +399,14 @@ export default function Telegram() {
             {data.reader && (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
               <div className="v3-tg-reader">
                 <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em></div>
+                {data.accuracy && data.accuracy.posts > 0 && (() => { const a = data.accuracy; const t = (v: number | null) => v == null ? "" : v >= 90 ? "is-ok" : v < 70 ? "is-bad" : "is-warn"; return (
+                  <div className="v3-tg-acc7">
+                    <div className="v3-tg-acch"><span><small>Точність за 7 днів</small><b className={t(a.percent)}>{a.percent ?? "—"}%</b><em>{a.posts} {plural(a.posts, "пост", "пости", "постів")} · виправлено {a.wrong} · не розпізнано {a.missed}</em></span>
+                      <button type="button" disabled={!online} onClick={() => setCheckOpen(true)}>Перевірити 10</button></div>
+                    {a.checked > 0 && <small className="v3-tg-accn">Вибірка: {a.checkedOk} з {a.checked} правильно{a.checkedPercent != null ? ` · ${a.checkedPercent}%` : ""}</small>}
+                    <ul>{a.readers.map((x) => <li key={x.id}><span>{x.label}</span><i aria-hidden="true"><i style={{ width: `${x.percent ?? 0}%` }} className={t(x.percent)} /></i><b className={t(x.percent)}>{x.percent ?? "—"}%</b><small>{x.posts}</small></li>)}</ul>
+                  </div>
+                ); })()}
                 <div className="v3-tg-rtiles">
                   {r.ai ? <>
                     {(() => { const cur = r.readers?.find((x) => x.label === r.model && x.hasKey) ?? r.readers?.find((x) => x.hasKey && !(x.restUntil && new Date(x.restUntil).getTime() > Date.now())); const used = cur ? cur.today : r.quota?.used ?? r.aiCalls, lim = cur ? cur.limit : r.quota?.limit; return <div title={cur ? `Запити читача «${cur.label}» сьогодні` : undefined}><span>Сьогодні</span><b className={lim && used >= lim * 0.9 ? "is-warn" : ""}>{lim ? `${used} з ${cur?.limitGuess ? "≈" : ""}${lim}` : used}</b>{cur && <small className="v3-tg-rdr">{cur.label}</small>}</div>; })()}
@@ -580,6 +628,7 @@ export default function Telegram() {
         </DialogContent>
       </Dialog>
 
+      <CheckSheet open={checkOpen} online={online} onClose={(changed) => { setCheckOpen(false); if (changed) void load(); }} onFix={(p) => setFix(p)} />
       <FixSheet post={fix} online={online} onClose={() => setFix(null)} onDone={() => { setFix(null); void load(); if (sel) getPosts(sel).then(setPosts).catch(() => {}); }} />
       <AddSheet open={addOpen} online={online} start={addLink} onOpenChange={(o) => { setAddOpen(o); if (!o) setAddLink(""); }} onDone={() => { setAddOpen(false); setAddLink(""); void load(); }} />
     </div>
@@ -637,6 +686,10 @@ function ChannelStats({ handle }: { handle: string }) {
         <div><small>Найдовша виграшна</small><b className="is-ok">{st.streaks.best}</b></div>
         <div><small>Найдовша програшна</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
       </div>}
+      {st.chase && (() => { const c = st.chase, cur = st.money?.currency || "", f = (v: number) => `${v.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ${CUR[cur] || cur}`; return (
+        <div className={`v3-tg-chase${c.chasing ? " is-bad" : ""}`}><span><small>Відіграш після програшу</small><b>{c.chasing ? `Так, ставка +${c.rise}%` : c.rise > 0 ? `Ні, +${c.rise}%` : `Ні, ${c.rise}%`}</b></span>
+          <em>Після програшу в середньому {f(c.afterLoss)} ({c.nLoss}), після виграшу {f(c.afterWin)} ({c.nWin})</em></div>
+      ); })()}
       {rows("Вінрейт за грою", st.byGame)}
       {rows("Вінрейт за ставкою", st.byMarket)}
       {st.summaries.length > 0 && <div className="v3-tg-claims"><span className="v3-tg-sth">Підсумки каналу і наші дані</span>

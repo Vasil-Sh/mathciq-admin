@@ -48,6 +48,9 @@ export interface TgList {
   tme?: { limitedUntil: string | null; limitedCount: number; lastStatus: number | null };
   /** «Сумнівно»: how many are open, and the «Перечитати сумнівні» run. */
   doubts?: { open: number; running: boolean; done: number; total: number };
+  /** Readers over the last 7 days: posts read, corrected by the admin (or found wrong in a check), not read at all. */
+  accuracy?: { posts: number; wrong: number; missed: number; checked: number; checkedOk: number; percent: number | null; checkedPercent: number | null;
+    readers: { id: string; label: string; posts: number; wrong: number; missed: number; checked: number; percent: number | null }[] } | null;
 }
 export interface TgPost {
   handle: string; postId: number; postedAt: string; text: string; kind: "bet" | "other" | "unknown"; reason: string | null; game: string | null;
@@ -77,6 +80,8 @@ export type TgPreview = { ok: true; handle: string; title: string | null; subscr
 
 export const fetchTgSources = () => api.get<TgList>("/admin/tg-sources");
 export const fetchTgPosts = (handle: string) => api.get<{ posts: TgPost[] }>(`/admin/tg-sources/${encodeURIComponent(handle)}/posts`).then((r) => r.posts);
+export const fetchTgSample = () => api.get<{ posts: TgPost[] }>("/admin/tg-posts/sample").then((r) => r.posts);
+export const checkTgPost = (handle: string, postId: number, ok: boolean) => api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}/check`, { ok });
 export const fetchTgUnrecognized = () => api.get<{ posts: TgPost[] }>("/admin/tg-posts/unrecognized").then((r) => r.posts);
 export const fetchTgMatches = (q: string) => api.get<{ matches: TgMatch[] }>(`/admin/tg-posts/matches?q=${encodeURIComponent(q)}`).then((r) => r.matches);
 export const previewTgChannel = (link: string) => api.post<TgPreview>("/admin/tg-sources/preview", { link });
@@ -93,6 +98,8 @@ export interface TgStats {
   byGame: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
   byMarket: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
   streaks: { best: number; worst: number; current: number };
+  /** The stake after a lost slip against the one after a won slip; chasing — 30%+ more after a loss. */
+  chase?: { afterLoss: number; afterWin: number; nLoss: number; nWin: number; rise: number; chasing: boolean } | null;
   summaries: { at: string; period: string | null; claimed: { won: number | null; total: number | null }; ours: { won: number; total: number } }[];
 }
 export const fetchTgStats = (handle: string) => api.get<TgStats>(`/admin/tg-sources/${encodeURIComponent(handle)}/stats`);

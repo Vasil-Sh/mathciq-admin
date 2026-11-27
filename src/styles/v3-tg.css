@@ -556,3 +556,47 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-pt { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
 .v3-tg-pt .hit { fill: transparent; stroke: none; }
 .v3-tg-pt:active circle:not(.hit), .v3-tg-pt:focus-visible circle:not(.hit) { r: 5; }
+/* «Точність за 7 днів»: the big percent, a check of 10 posts, a bar per reader */
+.v3-tg-acc7 { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #f7f8fa; }
+.v3-tg-acch { display: flex; align-items: center; gap: 10px; }
+.v3-tg-acch > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.v3-tg-acch small { font-size: 11px; color: #6b7384; }
+.v3-tg-acch b { font-size: 22px; font-weight: 700; line-height: 1.15; color: #11151c; }
+.v3-tg-acch em { font-style: normal; font-size: 11px; color: #6b7384; }
+.v3-tg-acch button { flex-shrink: 0; height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: #2f7bff; color: #fff; font: 600 13px Inter, sans-serif; transition: transform .12s ease; }
+.v3-tg-acch button:active { transform: scale(.97); }
+.v3-tg-acch button:disabled { background: #c9d7ff; }
+.v3-tg-accn { font-size: 11px; color: #4a5263; }
+.v3-tg-acc7 ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.v3-tg-acc7 li { display: grid; grid-template-columns: minmax(0, 1fr) 64px 38px 26px; align-items: center; gap: 8px; font-size: 12px; }
+.v3-tg-acc7 li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #11151c; }
+.v3-tg-acc7 li > i { display: block; height: 5px; border-radius: 3px; background: #e2e5eb; overflow: hidden; }
+.v3-tg-acc7 li > i > i { display: block; height: 100%; border-radius: 3px; background: #8a93a2; }
+.v3-tg-acc7 li b { text-align: right; font-weight: 700; }
+.v3-tg-acc7 li small { text-align: right; font-size: 11px; color: #8a93a2; }
+.v3-tg-acc7 .is-ok { color: #1f7a45; } .v3-tg-acc7 i.is-ok { background: #1fb155; }
+.v3-tg-acc7 .is-warn { color: #8a5a00; } .v3-tg-acc7 i.is-warn { background: #f0a500; }
+.v3-tg-acc7 .is-bad { color: #c2341f; } .v3-tg-acc7 i.is-bad { background: #e5484d; }
+/* «Перевірка постів»: one post, what we read, right or not */
+.v3-tg-chk { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; background: #f1f3f7; }
+.v3-tg-chkr { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 12px; background: #fff; }
+.v3-tg-chkr small { font-size: 11px; color: #6b7384; }
+.v3-tg-chkr b { display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 700; color: #11151c; }
+.v3-tg-chkr b span { font-size: 13px; font-weight: 500; color: #2450c4; }
+.v3-tg-chkdone { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 0; }
+.v3-tg-chkdone b { font-size: 34px; font-weight: 700; color: #11151c; }
+.v3-tg-chkdone b.is-ok { color: #1f7a45; } .v3-tg-chkdone b.is-bad { color: #c2341f; }
+.v3-tg-chkdone span { font-size: 13px; color: #6b7384; }
+.v3-tg-sheet .v3-mxp-acts .is-red { background: #e5484d; color: #fff; }
+.v3-tg-sheet .v3-mxp-acts .is-red:disabled, .v3-tg-sheet .v3-mxp-acts .is-green:disabled { opacity: .5; }
+/* «Відіграш після програшу» in the channel's stats */
+.v3-tg-chase { display: flex; flex-direction: column; gap: 3px; padding: 9px 10px; border-radius: 12px; background: #f1f3f7; }
+.v3-tg-chase > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.v3-tg-chase small { font-size: 11px; color: #6b7384; }
+.v3-tg-chase b { font-size: 14px; font-weight: 700; color: #1f7a45; white-space: nowrap; }
+.v3-tg-chase.is-bad b { color: #c2341f; }
+.v3-tg-chase em { font-style: normal; font-size: 11px; color: #6b7384; }
+.v3-tg-chk .v3-tg-unh { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.v3-tg-chk .v3-tg-unh b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.v3-tg-chk .v3-tg-unh small { flex-shrink: 0; font-size: 12px; color: #6b7384; }
+.v3-tg-chk .v3-tg-unb { display: flex; flex-direction: column; gap: 8px; }
