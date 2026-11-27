@@ -116,13 +116,14 @@
   /* full width without 100vw (no sideways scroll); logo · tabs in the middle · search, journal, errors · avatar */
   .v3-shell:has(.v3-dash, .v3-uw) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 10px; width: 100%; max-width: none; margin: 0; padding: 12px max(24px, calc((100% - 1170px) / 2)); background: #121316; box-shadow: none; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-nav-group { display: contents; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { justify-self: center; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { justify-self: center; min-width: auto; max-width: none; overflow: visible; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-nav::-webkit-scrollbar { display: none; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-audit-slot.is-desk { display: flex; align-items: center; gap: 8px; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-header-end { margin-left: 0; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav > .v3-pill { top: 0; bottom: 0; border-radius: 10px; background: #3a6df0; box-shadow: none; }
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav > .v3-pill { display: none; }
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink.is-active { background: #3a6df0; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink { min-height: 36px; padding: 0 9px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink.is-active { color: #fff; font-weight: 600; }
   .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
@@ -449,4 +450,11 @@
 @media (min-width: 1600px) {
   body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-chart-total { display: none !important; }
   body:has(.v3-dash) .v3-dash .v3-chart-card > .v3-chart-total.v3-hide-wide { display: flex !important; }
+}
+
+/* Header never scrolls sideways when the window is narrowed or zoomed: it gets compact instead */
+@media (min-width: 768px) and (max-width: 1260px) {
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-logo-badge { display: none; }
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink { padding: 0 7px; }
+  .v3-shell:has(.v3-dash, .v3-uw) .v3-header { column-gap: 8px; }
 }

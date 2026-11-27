@@ -133,22 +133,25 @@ export function DeleteWeb({ user, settings, open, busy, onOpenChange, onConfirm 
   const n = user.paidCount || 0;
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="v3-modal v3-uwm v3-uwm-del sm:max-w-[460px]" role="alertdialog">
-        <span className="v3-uwm-ico is-red" aria-hidden="true"><Trash2 size={18} /></span>
-        <DialogTitle className="v3-modal-title">Видалити @{user.username}?</DialogTitle>
-        <DialogDescription className="v3-modal-sub">Обліковий запис і доступ буде видалено назавжди. Записи оплат лишаться в історії з цим логіном.</DialogDescription>
-        <dl className="v3-uwm-sum">
-          <div><dt>Підписка</dt><dd>{p.plan}{user.endDate ? ` · до ${shortDate(user.endDate)}` : ""}</dd></div>
-          <div><dt>Оплати в історії</dt><dd>{n} · {money(user.paidTotal || 0)}</dd></div>
-          <div><dt>Ставки</dt><dd>видаляться разом з акаунтом</dd></div>
-        </dl>
-        <label className="v3-uwm-f"><span>Введіть логін, щоб підтвердити</span><input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={user.username} autoComplete="off" autoFocus /></label>
-        <div className="v3-uwm-foot">
-          <span>Цю дію неможливо скасувати · запишеться в журнал</span>
-          <div>
-            <button type="button" className="v3-uwb" onClick={() => onOpenChange(false)} disabled={busy}>Скасувати</button>
-            <button type="button" className="v3-uwb is-red" disabled={!ok || busy} onClick={onConfirm}>{busy ? "Видаляємо…" : "Видалити назавжди"}</button>
-          </div>
+      <DialogContent className="v3-aupanel v3-udelp" role="alertdialog" onOpenAutoFocus={(e) => { e.preventDefault(); (document.getElementById("udel-login") as HTMLInputElement | null)?.focus(); }}>
+        <div className="v3-aup-h">
+          <DialogTitle>Видалити користувача</DialogTitle>
+          <button type="button" className="v3-aup-x" aria-label="Закрити" disabled={busy} onClick={() => onOpenChange(false)}><X size={16} aria-hidden="true" /></button>
+        </div>
+        <div className="v3-udelp-body">
+          <div className="v3-udelp-who"><span className="v3-uwm-ico is-red" aria-hidden="true"><Trash2 size={18} /></span><div><strong>@{user.username}</strong><small>{p.plan}{user.endDate ? ` · до ${shortDate(user.endDate)}` : ""}</small></div></div>
+          <DialogDescription className="v3-udelp-txt">Обліковий запис і доступ буде видалено назавжди. Записи оплат лишаться в історії з цим логіном.</DialogDescription>
+          <dl className="v3-uwm-sum">
+            <div><dt>Підписка</dt><dd>{p.plan}{user.endDate ? ` · до ${shortDate(user.endDate)}` : ""}</dd></div>
+            <div><dt>Оплати в історії</dt><dd>{n} · {money(user.paidTotal || 0)}</dd></div>
+            <div><dt>Ставки</dt><dd>видаляться разом з акаунтом</dd></div>
+          </dl>
+          <label className="v3-uwm-f"><span>Введіть логін, щоб підтвердити</span><input id="udel-login" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={user.username} autoComplete="off" /></label>
+          <p className="v3-udelp-note">Цю дію неможливо скасувати · запишеться в журнал дій</p>
+        </div>
+        <div className="v3-udelp-foot">
+          <button type="button" className="v3-uwb" onClick={() => onOpenChange(false)} disabled={busy}>Скасувати</button>
+          <button type="button" className="v3-uwb is-red" disabled={!ok || busy} onClick={onConfirm}>{busy ? "Видаляємо…" : "Видалити назавжди"}</button>
         </div>
       </DialogContent>
     </Dialog>

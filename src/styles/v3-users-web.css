@@ -31,19 +31,20 @@
   .v3-uw-tabs button { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: #11151c; font: 600 12px Inter, sans-serif; cursor: pointer; transition: color .2s; }
   .v3-uw-tabs button.is-on { color: #fff; }
   .v3-uw-tabs button b { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #e5484d; color: #fff; font-size: 10px; font-weight: 700; }
-  .v3-uw-search { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; max-width: 300px; height: 38px; padding: 0 12px; border-radius: 10px; background: #fff; color: #8a93a3; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); transition: box-shadow .15s; }
+  .v3-uw-search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; max-width: 360px; height: 38px; padding: 0 12px; border-radius: 10px; background: #fff; color: #8a93a3; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); transition: box-shadow .15s; }
   .v3-uw-search:focus-within { box-shadow: 0 0 0 2px #3a6df0; }
   .v3-uw-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #11151c; font: 400 13px Inter, sans-serif; }
   .v3-uw-search input::-webkit-search-cancel-button { display: none; }
   .v3-uw-search input::placeholder { color: #8a93a3; }
   .v3-uw-search button { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: #eef0f4; color: #6b7384; cursor: pointer; }
-  .v3-uw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .v3-uw-chips button { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 10px; border: 0; border-radius: 9px; background: #dfe3ea; color: #3c4350; font: 600 12px Inter, sans-serif; white-space: nowrap; cursor: pointer; transition: background-color .15s, color .15s, box-shadow .15s; }
-  .v3-uw-chips button span { font-weight: 500; color: #6b7384; font-variant-numeric: tabular-nums; }
-  .v3-uw-chips button.is-on { background: #fff; color: #11151c; box-shadow: 0 1px 3px rgba(16, 24, 40, .1); }
-  .v3-uw-chips button.is-on span { color: #3a6df0; }
-  @media (hover: hover) { .v3-uw-chips button:not(.is-on):hover { background: #d4d9e2; color: #11151c; } }
-  .v3-uw-sortrow { display: flex; justify-content: flex-end; margin: 8px 0 8px; }
+  /* filter chips — same as «Сьогодні · Завтра · Тиждень» in Матчі: count in a bubble on the corner */
+  .v3-uw-chips { display: flex; flex-wrap: wrap; gap: 10px 8px; padding-top: 6px; }
+  .v3-uw-chips button { position: relative; display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #e3e6eb; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; cursor: pointer; transition: background-color .2s, box-shadow .2s; }
+  .v3-uw-chips button.is-on { background: #fff; font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+  .v3-uw-chips button b { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid #e9ecf2; border-radius: 10px; background: #8a92a0; color: #fff; font-size: 10px; font-weight: 600; line-height: 14px; text-align: center; font-variant-numeric: tabular-nums; box-sizing: border-box; }
+  .v3-uw-chips button.is-on b { background: #3a6df0; }
+  @media (hover: hover) { .v3-uw-chips button:not(.is-on):hover { background: #d9dde4; } }
+  .v3-uw-sortrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 12px; }
   .v3-uw-sort > button { min-height: 30px; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #3c4350 !important; font: 600 12px Inter, sans-serif; }
   .v3-uw-off { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; background: #fff4e0; color: #7a4f00; font-size: 12px; }
   .v3-uw-off span { flex: 1; }
@@ -214,6 +215,18 @@
   .v3-uwm-sum dd { margin: 0; font-weight: 600; text-align: right; }
   .v3-uwm-card { padding: 0 !important; background: transparent !important; box-shadow: none !important; }
   .v3-uwm-card .v3-uwc { position: static; }
+
+  /* delete — a panel on the right */
+  .v3-udelp-body { display: flex; flex: 1; flex-direction: column; gap: 14px; overflow-y: auto; overscroll-behavior: contain; padding: 4px 18px 18px; }
+  .v3-udelp-who { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: #fdeceb; animation: v3-row-in .3s cubic-bezier(.2, .9, .25, 1) both; }
+  .v3-udelp-who .v3-uwm-ico { background: #fff; }
+  .v3-udelp-who div { display: flex; flex-direction: column; gap: 2px; }
+  .v3-udelp-who strong { font-size: 15px; }
+  .v3-udelp-who small { font-size: 12px; color: #7d2a1d; }
+  .v3-udelp-txt { margin: 0; font-size: 12px; line-height: 1.5; color: #6b7384; }
+  .v3-udelp-note { margin: 0; font-size: 11px; color: #6b7384; }
+  .v3-udelp-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 18px 18px; border-top: 1px solid #eef0f4; }
+  .v3-udelp-foot .v3-uwb { min-height: 42px; flex: 1; border-radius: 12px; }
 
   /* history panel */
   .v3-uhist .v3-uhist-sub { margin: -6px 18px 6px; font-size: 12px; color: #6b7384; }

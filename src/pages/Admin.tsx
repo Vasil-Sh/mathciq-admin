@@ -545,12 +545,13 @@ export default function Admin() {
         </div>}
         {tab === "users" && !emptyPlatform && <>
           <label className="v3-uw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={13} /></button>}</label>
-          <div className="v3-uw-chips" role="group" aria-label="Фільтр">
-            {WCHIPS.map(([k, l]) => <button key={k} type="button" className={wchip === k ? "is-on" : ""} aria-pressed={wchip === k} onClick={() => setWchip(k)}>{l} <span>{users === null ? "" : wcounts[k]}</span></button>)}
-          </div>
         </>}
       </div>
-      {tab === "users" && !emptyPlatform && <div className="v3-uw-sortrow"><Dropdown className="is-light v3-uw-sort" ariaLabel="Сортування" value={wsort} onChange={(v) => setWsort(v as WSort)} options={[{ value: "end", label: "Спершу ті, хто закінчується" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} /></div>}
+      {tab === "users" && !emptyPlatform && <div className="v3-uw-sortrow">
+        <div className="v3-uw-chips" role="group" aria-label="Фільтр">
+          {WCHIPS.map(([k, l]) => <button key={k} type="button" className={wchip === k ? "is-on" : ""} aria-pressed={wchip === k} onClick={() => setWchip(k)}>{l}{users !== null && <b>{wcounts[k]}</b>}</button>)}
+        </div>
+        <Dropdown className="is-light v3-uw-sort" ariaLabel="Сортування" value={wsort} onChange={(v) => setWsort(v as WSort)} options={[{ value: "end", label: "Спершу ті, хто закінчується" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} /></div>}
       {!online && <div className="v3-uw-off" role="status"><WifiOff size={15} aria-hidden="true" /><span>Немає інтернету. Список станом на {updatedAt || "—"} — створення, оплати й продовження недоступні.</span><button type="button" className="v3-uwb" onClick={() => { if (navigator.onLine) load(); else toast.info("Досі немає з’єднання"); }}>Перевірити ще раз</button></div>}
       {tab === "excl" ? <SelfLimitationsTab web onCount={setExclCount} /> : <>
         {error && users !== null && <div className="v3-uw-off" role="alert"><AlertTriangle size={15} aria-hidden="true" /><span>Не вдалося оновити список: {error}. Показано дані станом на {updatedAt}.</span><button type="button" className="v3-uwb" onClick={load}>Спробувати ще раз</button></div>}
