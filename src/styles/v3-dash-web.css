@@ -271,7 +271,8 @@
   body:has(.v3-dash) .v3-dash .v3-ret-bar.is-on { background: #3a6df0; }
   body:has(.v3-dash) .v3-dash .v3-ret-months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; margin-top: 6px; font-size: 10px; color: #6b7384; text-align: center; }
   body:has(.v3-dash) .v3-dash .v3-ret-months .is-on { color: #11151c; font-weight: 700; }
-  body:has(.v3-dash) .v3-dash .v3-ret-tip { background: #11151c; color: #fff; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tip { background: #fff; color: #5f6878; box-shadow: 0 0 0 1px #e6e9ee, 0 8px 20px rgba(16, 24, 40, .14); }
+  body:has(.v3-dash) .v3-dash .v3-ret-bar.is-cur:not(.is-on) { background: repeating-linear-gradient(135deg, #5b8cff 0 4px, #3a6df0 4px 8px); }
   body:has(.v3-dash) .v3-dash .v3-ret-side { display: none; }
 
   /* тарифи: кільце по центру, легенда під ним */

@@ -126,13 +126,13 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
               return (
                 <div key={m.month} className="v3-ret-col" tabIndex={0}>
                   <span className={on ? "is-on" : undefined}>{m.rate === null ? "—" : `${m.rate}%`}</span>
-                  <div className={`v3-ret-bar${on ? " is-on" : ""}`} style={{ height: m.rate === null ? "4%" : `${Math.max(6, m.rate)}%`, animationDelay: `${i * 0.06}s` }} />
+                  <div className={`v3-ret-bar${on ? " is-on" : ""}${web && i === months.length - 1 ? " is-cur" : ""}`} style={{ height: m.rate === null ? "4%" : `${Math.max(6, m.rate)}%`, animationDelay: `${i * 0.06}s` }} />
                   <span className="v3-ret-tip" role="tooltip">{MONTHS_FULL[mIdx(m.month)]}<b>{m.rate === null ? "немає даних" : `${m.rate}%`}</b>{m.total ? `продовжили ${m.renewed} з ${m.total}` : "підписки не закінчувались"}{i > 0 && m.rate !== null && months[i - 1].rate !== null ? <em>{(m.rate - (months[i - 1].rate as number)) >= 0 ? "+" : "−"}{Math.abs(m.rate - (months[i - 1].rate as number))} п. до попереднього</em> : null}</span>
                 </div>
               );
             })}
           </div>
-          <div className="v3-ret-months">{months.map((m) => <span key={m.month} className={m.month === focus?.month ? "is-on" : undefined}>{MONTHS[mIdx(m.month)]}</span>)}</div>
+          <div className="v3-ret-months">{months.map((m, i) => <span key={m.month} className={m.month === focus?.month || (web && !focus && i === months.length - 1) ? "is-on" : undefined}>{MONTHS[mIdx(m.month)]}</span>)}</div>
         </div>
       )}
 
