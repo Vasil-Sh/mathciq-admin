@@ -605,6 +605,10 @@
   .v3-adw-tools { margin-bottom: 14px; }
   .v3-adw-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 10px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); font-size: 12px; font-weight: 600; animation: v3-tag-pop .3s cubic-bezier(.2, .9, .25, 1.3) both; }
   .v3-adw-chip svg { color: #e8590c; }
+  /* accent: a soft orange glow pulses behind the chip, a ring pulses from the icon (existing keyframes v3-tg-pulse, v3-halo) */
+  .v3-adw-chip { position: relative; isolation: isolate; }
+  .v3-adw-chip::before { content: ""; position: absolute; inset: -4px; z-index: -1; border-radius: 14px; border: 4px solid rgba(232, 89, 12, .2); animation: v3-tg-pulse 1.8s ease-in-out infinite; pointer-events: none; }
+  .v3-adw-chip::after { content: ""; position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; margin-top: -7.5px; border-radius: 50%; background: rgba(232, 89, 12, .35); animation: v3-halo 1.8s ease-out infinite; pointer-events: none; }
   .v3-adw-card { position: relative; min-width: 0; padding: 16px; border-radius: 18px; background: #fff; box-shadow: var(--adw-sh, 0 1px 2px rgba(16, 24, 40, .04)); animation: v3-row-in .4s cubic-bezier(.2, .9, .25, 1) both; }
   .v3-adw-card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
   .v3-adw-card h2 > span { font-size: 12px; font-weight: 500; color: #6b7384; }
@@ -893,7 +897,8 @@
   @media (max-width: 960px) { .v3-adw-slots { grid-template-columns: minmax(0, 1fr); } .v3-adw-bncols { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 100px 34px; } .v3-adw-bncols > :nth-child(3), .v3-adw-bncols > :nth-child(4) { display: none; } }
 }
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
-  .v3-adw-card, .v3-adw-tr, .v3-adw-bm, .v3-adw-panel, .v3-adw-bars i, .v3-adw-menu, .v3-adw-chip { animation: none !important; }
+  .v3-adw-card, .v3-adw-tr, .v3-adw-bm, .v3-adw-panel, .v3-adw-bars i, .v3-adw-menu, .v3-adw-chip, .v3-adw-chip::before, .v3-adw-chip::after { animation: none !important; }
+  .v3-adw-chip::after { display: none; }
 }
 
 /* ══ Реклама · веб: редактор банера — світле компактне вікно ══ */
