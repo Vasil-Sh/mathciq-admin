@@ -88,7 +88,7 @@ export const resolveTgPost = (handle: string, postId: number, who: "channel" | "
 export const archiveTgChannel = (handle: string, pages = 5) => api.post<{ ok: true; pages: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/archive`, { pages });
 export interface TgStats {
   /** The channel's money slip by slip in its main currency: the balance after each settled slip. */
-  money?: { currency: string; points: { at: string; balance: number }[] } | null;
+  money?: { currency: string; points: { postId?: number; at: string; balance: number }[] } | null;
   chart: { day: string; claimed: number; ours: number }[];
   byGame: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
   byMarket: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];

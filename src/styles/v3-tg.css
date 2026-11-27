@@ -552,3 +552,7 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-honest, .v3-tg-skill { margin-top: 8px; }
 .v3-tg-pend { white-space: nowrap; }
 .v3-tg-kv b:has(.v3-tg-pend) { white-space: nowrap; }
+/* «Гроші каналу»: each point opens its slip — a wide invisible target around the small dot */
+.v3-tg-pt { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+.v3-tg-pt .hit { fill: transparent; stroke: none; }
+.v3-tg-pt:active circle:not(.hit), .v3-tg-pt:focus-visible circle:not(.hit) { r: 5; }

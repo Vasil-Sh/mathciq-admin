@@ -151,25 +151,31 @@ function RankSheet({ open, onOpenChange, channels, onPick }: { open: boolean; on
   );
 }
 
+/** One slip: the match, the market, the stake → payout, the odds and what it brought. */
+function SlipItem({ x }: { x: TgSlip }) {
+  const RS: Record<string, [string, string]> = { Win: ["Виграш", "is-ok"], Loss: ["Програш", "is-bad"], Void: ["Повернення", "is-off"] };
+  const c = x.currency ? (CUR[x.currency] || x.currency) : ""; const n = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 }); const r = x.result ? RS[x.result] : null;
+  return (
+          <li className={x.counted ? "" : "is-off"}>
+            <span className="v3-tg-sl1"><small>{when(x.postedAt)}</small><b>{x.team1 && x.team2 ? `${x.team1} — ${x.team2}` : x.pick || "—"}</b>{r ? <em className={`v3-tg-st ${r[1]}`}>{r[0]}</em> : x.counted ? <em className="v3-tg-st is-warn">Очікується</em> : null}</span>
+            {x.market && <span className="v3-tg-sl3">{slipMarket(x)}</span>}
+            <span className="v3-tg-sl2">{n(x.stake)} {c}{x.payout ? ` → ${n(x.payout)} ${c}` : ""}{x.odds ? ` · кф ${odds(x.odds)}` : ""}<b className={x.profit == null ? "" : tone(x.profit)}>{x.counted ? (x.profit == null ? "у грі" : cash(x.profit, x.currency || "")) : x.why}</b></span>
+          </li>
+  );
+}
+
 /** Every slip with money the channel showed: which are in «Гроші каналу», with what profit, and why the others are not. */
 function SlipList({ handle, title }: { handle: string; title: string }) {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<TgSlip[] | null>(null);
   useEffect(() => { fetchTgSlips(handle).then(setList).catch(() => setList([])); }, [handle]);
-  const RS: Record<string, [string, string]> = { Win: ["Виграш", "is-ok"], Loss: ["Програш", "is-bad"], Void: ["Повернення", "is-off"] };
   return (<>
     <button type="button" className="v3-tg-slipt" onClick={() => setOpen(true)}><Ticket size={16} aria-hidden="true" />Квитки зі ставками{list ? ` · ${list.length}` : ""}</button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
         <DialogTitle>Квитки зі ставками</DialogTitle>
         <DialogDescription>{title} · кожен квиток із сумою, що показав канал</DialogDescription>
-        {!list ? <p className="v3-tg-note">Завантажуємо…</p> : !list.length ? <p className="v3-tg-note">Квитків із сумою ставки ще не було.</p> : <ul className="v3-tg-slips">{list.map((x) => { const c = x.currency ? (CUR[x.currency] || x.currency) : ""; const n = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 }); const r = x.result ? RS[x.result] : null; return (
-          <li key={x.postId} className={x.counted ? "" : "is-off"}>
-            <span className="v3-tg-sl1"><small>{when(x.postedAt)}</small><b>{x.team1 && x.team2 ? `${x.team1} — ${x.team2}` : x.pick || "—"}</b>{r ? <em className={`v3-tg-st ${r[1]}`}>{r[0]}</em> : x.counted ? <em className="v3-tg-st is-warn">Очікується</em> : null}</span>
-            {x.market && <span className="v3-tg-sl3">{slipMarket(x)}</span>}
-            <span className="v3-tg-sl2">{n(x.stake)} {c}{x.payout ? ` → ${n(x.payout)} ${c}` : ""}{x.odds ? ` · кф ${odds(x.odds)}` : ""}<b className={x.profit == null ? "" : tone(x.profit)}>{x.counted ? (x.profit == null ? "у грі" : cash(x.profit, x.currency || "")) : x.why}</b></span>
-          </li>
-        ); })}</ul>}
+        {!list ? <p className="v3-tg-note">Завантажуємо…</p> : !list.length ? <p className="v3-tg-note">Квитків із сумою ставки ще не було.</p> : <ul className="v3-tg-slips">{list.map((x) => <SlipItem key={x.postId} x={x} />)}</ul>}
         <p className="v3-tg-note">У «Гроші каналу» йдуть квитки прогнозів, кожен раз. Прибуток виграшу — виплата мінус ставка (або ставка × (кф − 1)).</p>
         <div className="v3-mxp-acts"><button type="button" className="is-grey" onClick={() => setOpen(false)}>Закрити</button></div>
       </DialogContent>
@@ -584,6 +590,11 @@ export default function Telegram() {
 function ChannelStats({ handle }: { handle: string }) {
   const [st, setSt] = useState<TgStats | null>(null);
   useEffect(() => { setSt(null); fetchTgStats(handle).then(setSt).catch(() => setSt(null)); }, [handle]);
+  // a point of «Гроші каналу» tapped: the slip behind it in a sheet
+  const [slipAt, setSlipAt] = useState<number | null>(null);
+  const [slips, setSlips] = useState<TgSlip[] | null>(null);
+  const openSlip = (id?: number) => { if (id == null) return; setSlipAt(id); if (!slips) fetchTgSlips(handle).then(setSlips).catch(() => setSlips([])); };
+  const shown = slipAt == null ? null : slips?.find((x) => x.postId === slipAt) ?? null;
   if (!st || (!st.chart.length && !st.summaries.length && !st.money?.points.length)) return null;
   const pts = st.chart.length === 1 ? [{ day: st.chart[0].day, claimed: 0, ours: 0 }, ...st.chart] : st.chart;
   const W = 320, H = 120, P = 6, all = pts.flatMap((p) => [p.claimed, p.ours, 0]), lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
@@ -610,7 +621,7 @@ function ChannelStats({ handle }: { handle: string }) {
         </svg>
         <div className="v3-tg-chx"><span>{day(st.chart[0].day)}</span><span>{day(st.chart[st.chart.length - 1].day)}</span></div>
       </div>}
-      {st.money && st.money.points.length > 0 && (() => { const mp = [{ at: "", balance: 0 }, ...st.money.points], cur = st.money.currency, vals = mp.map((p) => p.balance), mlo = Math.min(0, ...vals), mhi = Math.max(0, ...vals), ms = mhi - mlo || 1;
+      {st.money && st.money.points.length > 0 && (() => { const mp: { at: string; balance: number; postId?: number }[] = [{ at: "", balance: 0 }, ...st.money.points], cur = st.money.currency, vals = mp.map((p) => p.balance), mlo = Math.min(0, ...vals), mhi = Math.max(0, ...vals), ms = mhi - mlo || 1;
         const mx = (i: number) => P + (i / Math.max(1, mp.length - 1)) * (W - 2 * P), my = (v: number) => P + (1 - (v - mlo) / ms) * (H - 2 * P), lastB = vals[vals.length - 1];
         const ml = mp.map((p, i) => `${i ? "L" : "M"}${mx(i).toFixed(1)},${my(p.balance).toFixed(1)}`).join(" ");
         return <div className="v3-tg-chartbox">
@@ -618,7 +629,7 @@ function ChannelStats({ handle }: { handle: string }) {
           <svg viewBox={`0 0 ${W} ${H}`} className="v3-tg-chart is-money" role="img" aria-label={`Баланс каналу ${cash(lastB, cur)}`}>
             <line x1={P} x2={W - P} y1={my(0)} y2={my(0)} className="zero" />
             <path d={ml} className="ours" />
-            {mp.map((p, i) => i > 0 && <circle key={i} cx={mx(i)} cy={my(p.balance)} r="3" className={p.balance >= mp[i - 1].balance ? "up" : "down"} />)}
+            {mp.map((p, i) => i > 0 && <g key={i} className="v3-tg-pt" role="button" tabIndex={0} aria-label={`Квиток ${when(p.at)}`} onClick={() => openSlip(p.postId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSlip(p.postId); } }}><circle cx={mx(i)} cy={my(p.balance)} r="13" className="hit" /><circle cx={mx(i)} cy={my(p.balance)} r="3" className={p.balance >= mp[i - 1].balance ? "up" : "down"} /></g>)}
           </svg>
           <div className="v3-tg-chx"><span>{when(st.money.points[0].at)}</span><span>{when(st.money.points[st.money.points.length - 1].at)}</span></div>
         </div>; })()}
@@ -631,6 +642,14 @@ function ChannelStats({ handle }: { handle: string }) {
       {st.summaries.length > 0 && <div className="v3-tg-claims"><span className="v3-tg-sth">Підсумки каналу і наші дані</span>
         {st.summaries.map((s) => <p key={s.at}>{when(s.at)}{s.period ? ` · ${s.period}` : ""}: канал <b>{s.claimed.won ?? "?"}/{s.claimed.total ?? "?"}</b> · у нас <b className={s.claimed.won != null && s.ours.total && s.claimed.won > s.ours.won ? "is-bad" : ""}>{s.ours.won}/{s.ours.total}</b></p>)}
       </div>}
+      <Dialog open={slipAt != null} onOpenChange={(o) => { if (!o) setSlipAt(null); }}>
+        <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
+          <DialogTitle>Квиток</DialogTitle>
+          <DialogDescription>Ставка з графіка «Гроші каналу»</DialogDescription>
+          {!slips ? <p className="v3-tg-note">Завантажуємо…</p> : !shown ? <p className="v3-tg-note">Цього квитка вже немає в списку.</p> : <ul className="v3-tg-slips"><SlipItem x={shown} /></ul>}
+          <div className="v3-mxp-acts"><button type="button" className="is-grey" onClick={() => setSlipAt(null)}>Закрити</button></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
