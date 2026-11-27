@@ -520,7 +520,7 @@ small.v3-tg-note { margin-top: 6px; }
 @media (max-width: 767px) { .v3-tg-pfbar .v3-mxp-days button { flex: 1 1 auto; padding: 0 8px; font-size: 12.5px; } }
 
 /* trust: honesty's breakdown, a doubtful tip, the bookmakers, t.me limits, channels to add */
-.v3-tg-honest { display: block; margin-top: 2px; font-size: 11px; color: #6b7384; }
+.v3-tg-hsub { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: #6b7384; }
 .v3-tg-doubt { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: #fff3d6; color: #6b4500; font-size: 13px; line-height: 1.45; }
 .v3-tg-books { display: block; margin-top: 2px; font-size: 12px; color: #2450c4; font-weight: 600; }
 .v3-tg-tme { margin: 0; padding: 10px 12px; border-radius: 14px; background: #fff3d6; color: #6b4500; font-size: 13px; line-height: 1.45; }
@@ -548,3 +548,7 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-rankr .n .nn { display: flex; flex-direction: column; min-width: 0; }
 .v3-tg-rankr .n .nn small { font-size: 10px; font-weight: 500; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v3-tg-spinic { animation: v3-tg-spin .9s linear infinite; }
+/* «Наша перевірка» and «Уміння каналу» stand apart from the tiles above them */
+.v3-tg-honest, .v3-tg-skill { margin-top: 8px; }
+.v3-tg-pend { white-space: nowrap; }
+.v3-tg-kv b:has(.v3-tg-pend) { white-space: nowrap; }
