@@ -401,4 +401,9 @@
   body:has(.v3-tg) .v3-tg-seg3.is-5.v3-tg-resseg {display: flex; gap: 2px;}
   body:has(.v3-tg) .v3-tg-seg3.is-5.v3-tg-resseg button {flex: 1 1 auto; min-width: 0; padding: 0 5px; font-size: 12.5px; letter-spacing: -.02em; white-space: nowrap;}
   body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button b {border-color: #fff;}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days {padding: 3px; border-radius: 13px; background: #eceef2; overflow: visible; margin-top: 0;}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button {background: transparent;}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button.is-on {background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12);}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button b {top: -8px; right: -6px; border-color: #fff;}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button {flex: 1 1 auto; padding: 0 8px; font-size: 12.5px;}
 }

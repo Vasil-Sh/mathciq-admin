@@ -281,3 +281,5 @@
 .v3-st-errclr.is-top { flex-shrink: 0; min-height: 34px; padding: 0 14px; border: 0; border-radius: 10px; background: #fde2df; color: #c2341f; font: 600 13px Inter, sans-serif; white-space: nowrap; transition: background-color .15s, color .15s, transform .15s; }
 .v3-st-errclr.is-top:active { transform: scale(.96); }
 .v3-st-errclr.is-top.is-ask { background: #e5484d; color: #fff; }
+.v3-st-errclr.is-top { background: #e5484d; color: #fff; }
+.v3-st-errclr.is-top.is-ask { background: #c2341f; }

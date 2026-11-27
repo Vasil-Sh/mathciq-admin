@@ -154,10 +154,10 @@ function AdminShell() {
     return () => { live = false; window.clearInterval(t); window.removeEventListener("v3-server-errors", onVis); document.removeEventListener("visibilitychange", onVis); };
   }, []);
   const onErrors = pathname.startsWith("/settings") && hash === "#errors";
-  const errorsButton = errCount > 0 && (
-    <Link to="/settings#errors" className={`v3-audit v3-errs-btn${onErrors ? " is-active" : ""}`} aria-label={`Помилки сервера: ${errCount}`} aria-current={onErrors ? "page" : undefined} title="Помилки сервера">
+  const errorsButton = ( // always there; the count only when there are errors
+    <Link to="/settings#errors" className={`v3-audit v3-errs-btn${onErrors ? " is-active" : ""}`} aria-label={errCount ? `Помилки сервера: ${errCount}` : "Помилки сервера: немає"} aria-current={onErrors ? "page" : undefined} title="Помилки сервера">
       <Bug size={19} aria-hidden="true" />
-      {!onErrors && <span className="v3-count v3-count-float">{errCount > 99 ? "99+" : errCount}</span>}
+      {!onErrors && errCount > 0 && <span className="v3-count v3-count-float">{errCount > 99 ? "99+" : errCount}</span>}
     </Link>
   );
   const auditButton = (

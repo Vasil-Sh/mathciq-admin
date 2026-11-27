@@ -507,3 +507,14 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-posts.is-mason > ul { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; min-width: 0; }
 @media (max-width: 767px) { .v3-tg-pfbar .v3-mxp-days button b { border-color: #fff; } }
 .v3-tg-rdr { display: block; margin-top: 2px; font-size: 11px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* in the white sheet: the posts filter on a grey track (the white «on» button stands out), the grid cards a shade darker with an edge */
+@media (max-width: 767px) {
+  .v3-tg-pfbar .v3-mxp-days { padding: 3px; border-radius: 13px; background: #eceef2; overflow: visible; margin-top: 0; }
+  .v3-tg-pfbar .v3-mxp-days button { background: transparent; }
+  .v3-tg-pfbar .v3-mxp-days button.is-on { background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-tg-pfbar .v3-mxp-days button b { top: -8px; right: -6px; border-color: #fff; }
+}
+.v3-tg-posts.is-grid li, .v3-tg-posts.is-mason li { background: #eef0f4; box-shadow: inset 0 0 0 1px #e3e6eb; }
+.v3-tg-posts.is-mason li .v3-tg-st.is-off, .v3-tg-posts.is-mason li .v3-tg-rb:not(.is-ai):not(.is-ocr) { background: #fff; }
+@media (max-width: 767px) { .v3-tg-pfbar .v3-mxp-days button { flex: 1 1 auto; padding: 0 8px; font-size: 12.5px; } }
