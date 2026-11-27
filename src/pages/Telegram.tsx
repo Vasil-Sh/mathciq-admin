@@ -51,6 +51,8 @@ function Marks({ p }: { p: TgPost }) {
   if (p.oddsHigh && p.ourOdds) m.push([`Кф вище нашого ${odds(p.ourOdds)}`, "is-warn"]);
   if (p.deletedAt) m.push(["Видалено", "is-bad"]);
   if (p.editedAt) m.push(["Змінено", "is-off"]);
+  if (p.partOf) m.push(["Ще одна ставка з поста", "is-off"]);
+  if (p.replyTo && p.reason === "Результат") m.push(["Відповідь на прогноз", "is-ours"]);
   return m.length ? <>{m.map(([t, c]) => <em key={t} className={`v3-tg-st ${c}`}>{t}</em>)}</> : null;
 }
 function Legs({ p }: { p: TgPost }) {

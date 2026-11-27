@@ -56,6 +56,10 @@ export interface TgPost {
   photos?: string[]; ocr?: string | null;
   /** How it was read: ai, ocr, slip (a slip OCR read in full), caption (the tip from the caption), template, rules, cache. */
   readBy?: string | null;
+  /** One more bet of the post #partOf (an album of slips, several bet lines). */
+  partOf?: number | null;
+  /** This post replies to the post #replyTo of the channel. */
+  replyTo?: number | null;
 }
 export interface TgMatch { id: string; game: "cs2" | "dota2"; team1: string; team2: string; start: string; status?: string }
 export type TgPreview = { ok: true; handle: string; title: string | null; subscribers: number | null; posts: number; tipLike: number; recognized: number; exists: boolean; private?: boolean; joined?: boolean } | { ok: false; error: string };
