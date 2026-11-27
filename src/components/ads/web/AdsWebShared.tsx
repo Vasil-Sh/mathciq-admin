@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { MoreHorizontal, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -21,11 +21,19 @@ export type MenuItem = { label: string; icon?: ReactNode; red?: boolean; disable
 /** «⋯» button with a small menu under it. */
 export function Kebab({ items, label }: { items: MenuItem[]; label: string }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  // close on any click outside (a fixed scrim does not cover the page inside an animated card)
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", off); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", off); document.removeEventListener("keydown", esc); };
+  }, [open]);
   return (
-    <span className="v3-adw-keb" onClick={(e) => e.stopPropagation()}>
+    <span ref={ref} className="v3-adw-keb" onClick={(e) => e.stopPropagation()}>
       <button type="button" className="v3-adw-kebb" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}><MoreHorizontal size={16} aria-hidden="true" /></button>
       {open && <>
-        <span className="v3-pw-scrim" onClick={() => setOpen(false)} aria-hidden="true" />
         <span className="v3-adw-menu" role="menu" onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
           {items.map((it) => <button key={it.label} type="button" role="menuitem" autoFocus={it === items[0]} disabled={it.disabled} className={it.red ? "is-red" : ""} onClick={() => { setOpen(false); it.run(); }}>{it.icon}{it.label}</button>)}
         </span>

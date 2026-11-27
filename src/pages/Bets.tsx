@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowUp, BarChart3, Check, ChevronDown, Clock, Dices, RefreshCw, Search, Send, WifiOff, X } from "lucide-react";
+import { ArrowUp, BarChart3, Check, ChevronDown, ChevronUp, Clock, Dices, RefreshCw, Search, Send, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -532,6 +532,7 @@ export default function Bets() {
               </section>
             ))}
           {d?.status === "ok" && list.length > betShow && <button type="button" className="v3-uw-more v3-btw-betmore" onClick={() => setBetShow(betShow + BET_STEP)}>Показати ще {Math.min(BET_STEP, list.length - betShow)}<ChevronDown size={13} aria-hidden="true" /></button>}
+          {d?.status === "ok" && betShow > BET_STEP && list.length <= betShow && <button type="button" className="v3-uw-more v3-btw-betmore" onClick={() => { setBetShow(BET_STEP); document.querySelector(".v3-btw-allrow")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }}>Згорнути<ChevronUp size={13} aria-hidden="true" /></button>}
         </div>
       </aside>
     );

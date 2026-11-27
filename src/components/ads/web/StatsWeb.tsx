@@ -3,6 +3,7 @@ import { BarChart3 } from "lucide-react";
 import PillTrack from "@/components/PillTrack";
 import PartnerReport, { type ReportTarget } from "@/components/ads/PartnerReport";
 import { DateField } from "@/components/ui/date-field";
+import { WModal } from "./AdsWebShared";
 import { ctr, nf, placeLabel, type AdStats, type Bookmaker, type Promo } from "@/lib/adsModel";
 import { screenOf, shortDay } from "@/lib/bannersModel";
 import type { Banner } from "@/types";
@@ -25,6 +26,8 @@ export function statRows(stats: AdStats | null, banners: Banner[], bms: Bookmake
 
 export default function StatsWeb({ stats, error, range, setRange, rows }: { stats: AdStats | null; error: string; range: SRange; setRange: (r: SRange) => void; rows: SRow[] }) {
   const [custom, setCustom] = useState({ from: "", to: "" });
+  const [pick, setPick] = useState(false);
+  const [draft, setDraft] = useState({ from: "", to: "" });
   const [report, setReport] = useState<ReportTarget | null>(null);
   const key = "days" in range ? String(range.days) : "custom";
   const daily = stats?.daily || [];
@@ -41,15 +44,10 @@ export default function StatsWeb({ stats, error, range, setRange, rows }: { stat
           <div className="v3-adw-seg" role="group" aria-label="Період">
             <PillTrack active={key} />
             {[7, 14, 30].map((d) => <button key={d} type="button" className={key === String(d) ? "is-on" : ""} aria-pressed={key === String(d)} onClick={() => setRange({ days: d })}>{d} днів</button>)}
-            <button type="button" className={key === "custom" ? "is-on" : ""} aria-pressed={key === "custom"} onClick={() => { if (custom.from && custom.to) setRange(custom); else setRange({ from: "", to: "" }); }}>Свій</button>
+            <button type="button" className={key === "custom" ? "is-on" : ""} aria-pressed={key === "custom"} aria-haspopup="dialog" onClick={() => { setDraft(custom); setPick(true); }}>{key === "custom" && custom.from && custom.to ? `${shortDay(custom.from)} — ${shortDay(custom.to)}` : "Свій"}</button>
           </div>
         </div>
-        {key === "custom" && <div className="v3-adw-custom">
-          <div className="v3-uwm-f"><label id="sw-from-l">Від</label><DateField id="sw-from" labelledBy="sw-from-l" value={custom.from} onChange={(v) => { const c = { ...custom, from: v }; setCustom(c); if (c.from && c.to) setRange(c); }} /></div>
-          <div className="v3-uwm-f"><label id="sw-to-l">До</label><DateField id="sw-to" labelledBy="sw-to-l" value={custom.to} min={custom.from || undefined} onChange={(v) => { const c = { ...custom, to: v }; setCustom(c); if (c.from && c.to) setRange(c); }} /></div>
-        </div>}
         {error ? <div className="v3-uw-empty is-err" role="alert"><span>!</span><strong>Не вдалося завантажити статистику</strong><p>{error}</p></div>
-          : key === "custom" && !("from" in range && range.from && range.to) ? <div className="v3-uw-empty"><span><BarChart3 size={18} /></span><strong>Оберіть дати</strong><p>Покажемо кліки за вибраний період.</p></div>
           : !stats ? <div className="v3-adw-bars is-load" aria-busy="true">{Array.from({ length: 14 }, (_, i) => <span key={i}><i style={{ height: `${30 + ((i * 37) % 60)}%` }} /></span>)}</div>
           : empty ? <div className="v3-uw-empty"><span><BarChart3 size={18} /></span><strong>Статистики за цей період немає</strong><p>Покази й кліки з’являться після перших показів реклами.</p></div>
           : <>
@@ -75,6 +73,14 @@ export default function StatsWeb({ stats, error, range, setRange, rows }: { stat
           ))}
         </section>
       )}
+      <WModal open={pick} onClose={() => setPick(false)} width={420} title="Свій період" sub="Дні за Києвом, обидві дати включно">
+        <div className="v3-adwm-row">
+          <div className="v3-uwm-f"><label id="sw-from-l">Від</label><DateField id="sw-from" labelledBy="sw-from-l" value={draft.from} onChange={(v) => setDraft((d) => ({ ...d, from: v }))} /></div>
+          <div className="v3-uwm-f"><label id="sw-to-l">До</label><DateField id="sw-to" labelledBy="sw-to-l" value={draft.to} min={draft.from || undefined} onChange={(v) => setDraft((d) => ({ ...d, to: v }))} /></div>
+        </div>
+        {draft.from && draft.to && draft.from > draft.to && <small className="v3-adw-err">«До» раніше за «Від»</small>}
+        <div className="v3-uwm-foot"><span /><div><button type="button" className="v3-uwb" onClick={() => setPick(false)}>Скасувати</button><button type="button" className="v3-uwb is-green" disabled={!draft.from || !draft.to || draft.from > draft.to} onClick={() => { setCustom(draft); setRange(draft); setPick(false); }}>Показати</button></div></div>
+      </WModal>
       <PartnerReport target={report} onClose={() => setReport(null)} />
     </>
   );

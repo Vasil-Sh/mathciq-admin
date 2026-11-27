@@ -23,6 +23,9 @@ const daysTo = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`
 const host = (href?: string | null) => (href || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 /** Banner as the user sees it: the picture, or a purple card with the title when there is no picture yet. */
+/** «Завершено» is a solid red tag with white text */
+const BTag = ({ s }: { s: BStatus }) => <WTag cls={s === "done" ? "is-redfill" : STATUS[s].cls} label={STATUS[s].label} />;
+
 export function BannerArt({ b, dim }: { b: Pick<Banner, "title" | "imageUrl" | "href">; dim?: boolean }) {
   return (
     <div className={`v3-adw-art${dim ? " is-dim" : ""}${b.imageUrl ? " has-img" : ""}`}>
@@ -93,7 +96,7 @@ export default function BannersWeb({ banners, slots, stats, online, today, reloa
     const cl = entityStats(stats, "banner:", b.id);
     return (
       <article key={n} className="v3-adw-card v3-adw-slot" style={{ animationDelay: `${n * 40}ms` }}>
-        {head(<WTag cls={STATUS[bs].cls} label={STATUS[bs].label} />)}
+        {head(<BTag s={bs} />)}
         <button type="button" className="v3-adw-artbtn" aria-label={`Редагувати «${b.title}»`} onClick={() => openEdit(b)}><BannerArt b={b} dim={bs === "off" || bs === "done"} /></button>
         {soon && <div className="v3-adw-warn"><AlertTriangle size={14} aria-hidden="true" />{left === 0 ? "Сьогодні останній день" : `Закінчується через ${left} ${pl(left!, "день", "дні", "днів")}`} — {shortDay(b.endsOn!)}</div>}
         {bs === "done" && <div className="v3-adw-warn">Завершився {b.endsOn ? shortDay(b.endsOn) : ""} — у застосунку вже не показується</div>}
@@ -141,7 +144,7 @@ export default function BannersWeb({ banners, slots, stats, online, today, reloa
               <span>Слот {b.slot ?? 1} · {screenOf(b.screen).label}</span>
               <span>{periodText(b)}</span>
               <span className="is-r is-num">{nf(c.clicks)}</span>
-              <span><WTag cls={STATUS[s].cls} label={STATUS[s].label} /></span>
+              <span><BTag s={s} /></span>
               <span className="is-r"><Kebab label={`Дії: ${b.title}`} items={[
                 { label: "Редагувати", icon: <Pencil size={14} />, run: () => openEdit(b) },
                 ...(s !== "done" ? [{ label: b.active ? "Вимкнути показ" : "Увімкнути показ", icon: <Power size={14} />, disabled: !online, run: () => toggle(b) }] : []),
