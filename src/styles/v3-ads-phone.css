@@ -343,3 +343,9 @@
   .v3-ads .v3-ad-custom .v3-ad-cf > :last-child { width: 100%; }
   .v3-ads .v3-ad-custom > button { grid-column: 1 / -1; min-height: 42px; border-radius: 12px; }
 }
+
+/* an ended banner: grey like an off state, not a yellow warning — the slot is simply free */
+@media (max-width: 767px) {
+  .v3-ads .v3-bn-tag.is-done { background: #eef0f4; color: #4a5263; }
+  .v3-ads .v3-bn-done { background: #f1f3f7; color: #4a5263; }
+}

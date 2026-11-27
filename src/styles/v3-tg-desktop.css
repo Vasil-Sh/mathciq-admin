@@ -400,4 +400,5 @@
   body:has(.v3-tg) .v3-tg-pt4 b small {display: block; margin-top: 1px; font-size: 11px;}
   body:has(.v3-tg) .v3-tg-seg3.is-5.v3-tg-resseg {display: flex; gap: 2px;}
   body:has(.v3-tg) .v3-tg-seg3.is-5.v3-tg-resseg button {flex: 1 1 auto; min-width: 0; padding: 0 5px; font-size: 12.5px; letter-spacing: -.02em; white-space: nowrap;}
+  body:has(.v3-tg) .v3-tg-pfbar .v3-mxp-days button b {border-color: #fff;}
 }

@@ -478,3 +478,32 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-rankr .n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .v3-tg-rankr .is-ok { color: #1f7a45; }
 .v3-tg-rankr .is-bad { color: #c2341f; }
+
+/* 27.11 */
+.v3-tg-pend svg { vertical-align: -1px; margin-right: 2px; }
+.v3-tg-sl3 { font-size: 12px; font-weight: 600; color: #2450c4; }
+/* the sheets' notes stand apart from the list above them */
+.v3-tg-slips + .v3-tg-note, .v3-tg-rank + .v3-tg-note { margin-top: 12px; }
+/* the reference check runs: a spinner and a progress line */
+.v3-tg-goldh button { transition: transform .15s, background-color .2s; }
+.v3-tg-goldh button:active:not(:disabled) { transform: scale(.96); }
+.v3-tg-goldh button.is-run { display: inline-flex; align-items: center; gap: 6px; background: #2f7bff; opacity: .85; }
+.v3-tg-spin { width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #fff; animation: v3-tg-spin .8s linear infinite; }
+@keyframes v3-tg-spin { to { transform: rotate(360deg); } }
+.v3-tg-goldbar { display: block; height: 4px; border-radius: 2px; background: #e2e5eb; overflow: hidden; }
+.v3-tg-goldbar i { display: block; height: 100%; border-radius: 2px; background: #2f7bff; transition: width .4s; }
+/* the channel's buttons: refresh, re-read, archive — blue; «У Telegram» — Telegram's blue */
+.v3-mxp-acts .v3-tg-btn-blue, .v3-tg-reread.is-blue { background: #e8efff; color: #2450c4; }
+.v3-mxp-acts .v3-tg-btn-tg { background: #2aabee; color: #fff; }
+.v3-mxp-acts .v3-tg-btn-tg svg { color: #fff; }
+.v3-tg-reread { transition: transform .15s; }
+.v3-tg-reread:active:not(:disabled) { transform: scale(.98); }
+/* the posts filter: the matches' day buttons, with counts */
+.v3-tg-pfbar { margin: 0 0 12px; }
+.v3-tg-pfbar .v3-mxp-days button { position: relative; }
+
+/* grid posts: two independent columns — a card moves up under a short one */
+.v3-tg-posts.is-mason { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.v3-tg-posts.is-mason > ul { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; min-width: 0; }
+@media (max-width: 767px) { .v3-tg-pfbar .v3-mxp-days button b { border-color: #fff; } }
+.v3-tg-rdr { display: block; margin-top: 2px; font-size: 11px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
