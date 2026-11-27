@@ -574,7 +574,6 @@ export default function Payments() {
               </div>
             </>}
           </div>
-          <div className="v3-pw-chips" role="group" aria-label="Статус">{wsegs.map((x) => <button key={x.key} type="button" className={filt === x.key ? "is-on" : ""} aria-pressed={filt === x.key} onClick={() => { setFilt(x.key); setRk((v) => v + 1); }}>{x.label} <span>{cnt(x.key)}</span></button>)}</div>
         </>}
         <label className="v3-uw-search v3-pw-search"><Search size={15} aria-hidden="true" />
           {tab === "pay" ? <input type="search" aria-label="Пошук оплат" placeholder="Логін, № або промокод" value={q} onChange={(e) => { setQ(e.target.value); setRk((x) => x + 1); }} />
@@ -583,6 +582,7 @@ export default function Payments() {
           {(tab === "pay" ? q : tab === "ref" ? qRef : qPromo) && <button type="button" onClick={() => (tab === "pay" ? setQ("") : tab === "ref" ? setQRef("") : setQPromo(""))} aria-label="Очистити пошук"><X size={13} /></button>}
         </label>
       </div>
+      {tab === "pay" && <div className="v3-uw-sortrow v3-pw-chiprow"><div className="v3-uw-chips" role="group" aria-label="Статус">{wsegs.map((x) => <button key={x.key} type="button" className={filt === x.key ? "is-on" : ""} aria-pressed={filt === x.key} onClick={() => { setFilt(x.key); setRk((v) => v + 1); }}>{x.label}{rows !== null && <b>{cnt(x.key)}</b>}</button>)}</div></div>}
       <div key={tab} className="v3-pw-pane">
         {tab === "pay" && (error && rows === null
           ? <div className="v3-uw-list"><div className="v3-uw-empty is-err" role="alert"><span aria-hidden="true">!</span><strong>Не вдалося завантажити оплати</strong><p>Сервер не відповів. {error}</p><div><button type="button" className="v3-uwb is-green" onClick={() => load()}>Спробувати ще раз</button></div></div></div>

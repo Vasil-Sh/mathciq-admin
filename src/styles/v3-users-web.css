@@ -452,3 +452,6 @@
   body:has(.v3-pw) .v3-receipt-note { margin: 0; font-size: 11px; color: #6b7384; }
   body:has(.v3-pw) .v3-modal:has(.v3-receipt) > button.v3-modal-x { top: 16px; right: 16px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #eef0f4; color: #11151c; opacity: 1; }
 }
+@media (min-width: 768px) {
+  .v3-pw-chiprow { justify-content: flex-start; margin: 12px 0 0; }
+}
