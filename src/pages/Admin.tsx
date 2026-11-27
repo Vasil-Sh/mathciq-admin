@@ -507,7 +507,7 @@ export default function Admin() {
   );
   const wrows = (
     <div className="v3-uw-table" role="table" aria-label="Користувачі">
-      {(wlist.length > 0 || (users === null && loading)) && <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Тариф</span><span role="columnheader">Підписка</span><span role="columnheader" className="is-r">Днів лишилось</span><span role="columnheader">Роль</span></div>}
+      {(wlist.length > 0 || (users === null && loading)) && <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Тариф</span><span role="columnheader">Підписка</span><span role="columnheader" className="is-c">Днів лишилось</span><span role="columnheader">Роль</span></div>}
       {users === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-uw-tr is-skel" aria-hidden="true"><span className="v3-uw-who"><i className="is-av" /><i style={{ width: 120 }} /></span><i style={{ width: 60 }} /><i style={{ width: 80 }} /><i style={{ width: 24, justifySelf: "end" }} /><i style={{ width: 70 }} /></div>)
         : wlist.length ? wlist.slice(0, wshown).map((u, i) => {
           const admin = isAdmin(u), st = statusOf(u), tg = webTag(u), d = u.endDate ? daysLeft(u) : null, ageWarn = !admin && !u.ageConfirmed;
@@ -520,7 +520,7 @@ export default function Admin() {
               <span role="cell" className="v3-uw-who"><span className="v3-uw-av"><UserAvatar username={u.username} telegram={u.telegram} />{ageWarn && <b aria-label="вік не підтверджено">!</b>}</span><span><strong>@{hl(u.username, q)}</strong><small className={ageWarn ? "is-warn" : undefined}>{wline(u)}</small></span></span>
               <span role="cell">{admin ? "—" : planName(u.proUntil ? "pro" : u.plan || "trial")}</span>
               <span role="cell"><span className={`v3-uwt ${tg.cls}`}>{tg.label}</span></span>
-              <span role="cell" className={`is-r v3-uw-days${d !== null && d >= 0 && d <= 3 && !["cancelled", "ended"].includes(st) ? " is-red" : ""}`}>{admin ? "" : st === "cancelled" || st === "ended" || d === null ? "—" : Math.max(0, d)}</span>
+              <span role="cell" className={`is-c v3-uw-days${d !== null && d >= 0 && d <= 3 && !["cancelled", "ended"].includes(st) ? " is-red" : ""}`}>{admin ? "" : st === "cancelled" || st === "ended" || d === null ? "—" : Math.max(0, d)}</span>
               <span role="cell" className={admin ? "v3-uw-role is-admin" : "v3-uw-role"}>{u.isOwner ? "Овнер" : admin ? "Адмін" : "Користувач"}</span>
             </div>
           );
