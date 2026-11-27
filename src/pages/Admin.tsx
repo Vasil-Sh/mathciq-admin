@@ -150,6 +150,8 @@ export default function Admin() {
     const qq = urlParams.get("q"); if (qq) { setQ(qq); setTab("users"); if (isPhoneWidth()) { pageSearch.setQ(qq); pageSearch.setOpen(true); } }
     // ?status= is any list filter (all, paid, trial, basic, pro, ended, cancelled, closed, expiring); older links: active → paid, expired → closed
     const f = filterFromParam(urlParams.get("status"));
+    // the web's chips: the same filter where one exists (a dashboard link to «Пробні» opens on that chip)
+    if (f) setWchip(f === "paid" || f === "trial" || f === "expiring" || f === "cancelled" ? f : "all");
     if (f) { setFilter(f); setAgeOnly(false); setTab("users"); if (!qq) { setQ(""); if (isPhoneWidth()) { pageSearch.setQ(""); pageSearch.setOpen(false); } } }
     const so = urlParams.get("sort"); if (so && (SORTS as string[]).includes(so)) setSort(so as Sort);
   }, [urlParams]); // eslint-disable-line react-hooks/exhaustive-deps

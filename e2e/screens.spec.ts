@@ -50,8 +50,8 @@ test.describe("Користувачі", () => {
     await page.goto("/users");
     await expect(page.getByRole("heading", { name: "Користувачі" })).toBeVisible();
     await expect(page.getByText("@Gerrry").filter({ visible: true }).first()).toBeVisible();
-    // desktop: «Овнер» in the status column; phone: the role chip on the row
-    await expect(page.locator(".v3-st-owner, .v3-mrole").filter({ visible: true, hasText: "Овнер" }).first()).toBeVisible();
+    // desktop: «Овнер» in the role column; phone: the role chip on the row
+    await expect(page.locator(".v3-uw-role, .v3-mrole").filter({ visible: true, hasText: "Овнер" }).first()).toBeVisible();
     if (isPhone(page)) await expect(page.locator(".v3-mselect-dd button").first()).toContainText("Усі");
   });
 
@@ -63,7 +63,7 @@ test.describe("Користувачі", () => {
       await page.locator(".v3-dr").getByRole("link", { name: /Користувачі/ }).click();
       await expect(page).toHaveURL(/\/users$/);
     } else {
-      await expect(page.locator(".v3-seg button.is-on, .v3-fchip.is-on").first()).toContainText("Пробний");
+      await expect(page.locator(".v3-uw-chips button.is-on").first()).toContainText("Пробні");
     }
   });
 
@@ -85,7 +85,9 @@ test.describe("Користувачі", () => {
       await page.locator(".v3-search-btn").filter({ visible: true }).first().click();
       await expect(page.locator(".v3-hsearch-field input")).toBeVisible();
     } else {
-      await expect(page.locator(".v3-excl-search, input[placeholder*='Логін']").filter({ visible: true }).first()).toBeVisible();
+      // web: the tab per design — its list and the «Активні · Завершені» switch, no search of its own
+      await expect(page.getByRole("heading", { name: "Запити на самообмеження" })).toBeVisible();
+      await expect(page.locator(".v3-uw-seg button").filter({ hasText: "Активні" })).toBeVisible();
     }
   });
 });
