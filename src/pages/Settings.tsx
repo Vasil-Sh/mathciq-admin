@@ -958,7 +958,7 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
         : err ? <div className="v3-st-errnone"><span>Не вдалося завантажити: {err}</span><button type="button" onClick={load}>Спробувати ще раз</button></div>
         : !list.length ? <div className="v3-st-errz"><i aria-hidden="true"><Check size={22} strokeWidth={2.6} /></i><b>Помилок немає</b><span>Бекенд працює чисто — за 30 днів нічого не падало. Нові помилки з’являться тут самі.</span></div>
         : <>
-          <p className="v3-st-errsum"><span><b>{list.length} {plural(list.length, "помилка", "помилки", "помилок")}</b> · за 30 днів</span><span>{list.reduce((a, e) => a + e.count, 0)} {plural(list.reduce((a, e) => a + e.count, 0), "падіння", "падіння", "падінь")}</span></p>
+          <div className="v3-st-errtop"><p className="v3-st-errsum"><span><b>{list.length} {plural(list.length, "помилка", "помилки", "помилок")}</b> · за 30 днів</span><span>{list.reduce((a, e) => a + e.count, 0)} {plural(list.reduce((a, e) => a + e.count, 0), "падіння", "падіння", "падінь")}</span></p><AskButton className="v3-st-errclr is-top" label="Очистити" ask="Точно очистити?" busy={busy === "all"} onYes={() => void resolve("all")} /></div>
           <ul className="v3-st-errs">{list.map((e, i) => (
             <li key={e.id} className={open === e.id ? "is-open" : ""} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
               <button type="button" className="v3-st-errh" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>

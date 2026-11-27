@@ -274,3 +274,10 @@
 @media (max-width: 767px) {
   .v3-st-pskel > .v3-skel, .v3-st-pskel-chips .v3-skel { background: linear-gradient(90deg, #dde1e8, #d3d8e0, #dde1e8); background-size: 200% 100%; }
 }
+
+/* «Помилки сервера»: «Очистити» right at the top, next to the count */
+.v3-st-errtop { display: flex; align-items: center; gap: 10px; }
+.v3-st-errtop .v3-st-errsum { flex: 1; min-width: 0; }
+.v3-st-errclr.is-top { flex-shrink: 0; min-height: 34px; padding: 0 14px; border: 0; border-radius: 10px; background: #fde2df; color: #c2341f; font: 600 13px Inter, sans-serif; white-space: nowrap; transition: background-color .15s, color .15s, transform .15s; }
+.v3-st-errclr.is-top:active { transform: scale(.96); }
+.v3-st-errclr.is-top.is-ask { background: #e5484d; color: #fff; }
