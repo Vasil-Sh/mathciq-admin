@@ -239,3 +239,9 @@
   .v3-pay .v3-pay-gen { margin-right: -6px; background: #e6edff; color: #2f5fd8; font-weight: 600; }
   .v3-pay .v3-pay-gen:active { background: #d6e2ff; }
 }
+
+/* a tab's pane comes in from below on a phone — from the right it pushed the page 24 px wide for a moment (the screen jumped sideways) */
+@media (max-width: 767px) {
+  .v3-pay-pane { animation-name: v3-pay-tab-y; }
+  @keyframes v3-pay-tab-y { from { opacity: 0; transform: translateY(8px); } }
+}

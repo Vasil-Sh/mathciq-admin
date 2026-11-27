@@ -316,7 +316,8 @@ export default function Matches() {
   };
   const ovOf = (m: Match) => overrides?.find((o) => o.game === m.game && o.matchId === m.raw) || null;
 
-  const todayM = all.filter((m) => m.day === today);
+  // a match still live after midnight (started «yesterday») stays in «Сьогодні» until it ends
+  const todayM = all.filter((m) => m.day === today || m.status === "live");
   const liveN = all.filter((m) => m.status === "live").length;
   // Matches each parser brought for today (HLTV / tips.gg CS2 / tips.gg Dota 2)
   const cntFor = (name: string, list: Match[] = todayM) => { const f = (PARSER_META[name] || { feed: "cs2" as const }).feed; return f === "hltv" ? list.filter((m) => m.source === "HLTV").length : f === "liquipedia" ? list.filter((m) => m.source === "Liquipedia").length : f === "cito" ? list.filter((m) => m.source === "Cito").length : f === "pandascore" ? list.filter((m) => m.source === "PandaScore").length : f === "oddspapi" ? list.filter((m) => m.odds || m.source === "OddsPapi").length : f === "opendota" ? list.filter((m) => m.game === "dota2" && (m.source === "Liquipedia" || m.source === "OddsPapi")).length : list.filter((m) => m.game === f && m.source === "tips.gg").length; };
@@ -348,7 +349,7 @@ export default function Matches() {
   const todayBets = bets ? todayM.reduce((a, m) => a + betsFor(m).length, 0) : null;
 
   // ── Матчі: фільтри ──
-  const inDay = (m: Match, d: Day) => (d === "today" ? m.day === today : d === "tomorrow" ? m.day === addDays(today, 1) : m.day >= today && m.day <= addDays(today, 6));
+  const inDay = (m: Match, d: Day) => (d === "today" ? m.day === today || m.status === "live" : d === "tomorrow" ? m.day === addDays(today, 1) : (m.day >= today && m.day <= addDays(today, 6)) || m.status === "live");
   const needle = q.trim().toLowerCase();
   const list = all.filter((m) => inDay(m, day) && (game === "all" || m.game === game) && (st === "all" || m.status === st)
     && (!needle || `${m.t1} ${m.t2} ${m.tournament}`.toLowerCase().includes(needle)));
@@ -662,8 +663,9 @@ export default function Matches() {
     // «Тиждень»: by day — live matches sit first inside «Сьогодні», a separate «Наживо» group is only on «Сьогодні»
     if (day === "week") {
       const rank = (m: Match) => (m.status === "live" ? 0 : m.status === "plan" ? 1 : 2);
-      const days = [...new Set(xs.map((m) => m.day))].sort();
-      return days.map((d) => [d === today ? "Сьогодні" : d === addDays(today, 1) ? "Завтра" : dayShort(d), xs.filter((m) => m.day === d).sort((x, y) => rank(x) - rank(y))]) as [string, Match[]][];
+      const dayOf = (m: Match) => (m.status === "live" && m.day < today ? today : m.day); // live since yesterday — under «Сьогодні»
+      const days = [...new Set(xs.map(dayOf))].sort();
+      return days.map((d) => [d === today ? "Сьогодні" : d === addDays(today, 1) ? "Завтра" : dayShort(d), xs.filter((m) => dayOf(m) === d).sort((x, y) => rank(x) - rank(y))]) as [string, Match[]][];
     }
     const live = xs.filter((m) => m.status === "live"), plan = xs.filter((m) => m.status === "plan"), rest = xs.filter((m) => m.status !== "live" && m.status !== "plan");
     return [["Наживо", live], [day === "today" ? "Сьогодні" : "Заплановані", plan], ["Завершені", rest]] as [string, Match[]][];
