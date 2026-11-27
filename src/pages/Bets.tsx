@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowUp, BarChart3, Check, ChevronDown, Clock, Dices, RefreshCw, Search, Send, WifiOff } from "lucide-react";
+import { ArrowUp, BarChart3, Check, ChevronDown, Clock, Dices, RefreshCw, Search, Send, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import { fetchUserBets, fetchUsersOverview } from "@/lib/adminBetsApi";
@@ -16,7 +16,10 @@ import { Dropdown } from "@/components/ui/dropdown";
 import AllBetsDialog, { legMark } from "@/components/bets/AllBetsDialog";
 import { openTelegram } from "@/lib/telegram";
 import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
+import { CalendarDays, ArrowRight, Users as UsersIcon, ArrowUpDown } from "lucide-react";
+import { nativeAmount, nativeProfit } from "@/lib/betsModel";
 
+const planName = (u: AdminUserOverview) => (u.proUntil || u.plan === "pro" ? "Pro" : u.plan === "basic" ? "Базова" : "Пробний");
 const isAdminU = (u: AdminUserOverview) => u.role === "admin" || u.role === "owner" || !!u.isOwner;
 const hhmm = () => new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
 const SORTS: [Sort, string][] = [["bets", "Ставки"], ["staked", "Сума"], ["profit", "Профіт"], ["wr", "Вінрейт"]];
@@ -80,6 +83,13 @@ export default function Bets() {
   const [offTry, setOffTry] = useState(0);
   const [offBusy, setOffBusy] = useState(false);
   const firstOpen = useRef(true);
+  // Web (design «Ставки · веб»)
+  const web = !phone;
+  const [period, setPeriod] = useState<"all" | "cur" | "prev">("all");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [perOpen, setPerOpen] = useState(false);
+  const [bf, setBf] = useState<"all" | "win" | "loss" | "pending">("all");
+  const [xpOpen, setXpOpen] = useState<Set<string>>(new Set());
 
   const load = useCallback(async (manual = false) => {
     setBusy(true);
@@ -135,9 +145,9 @@ export default function Bets() {
 
   // Desktop opens the first player's bets, like the design; later the admin decides.
   useEffect(() => {
-    if (!wide || !firstOpen.current || !rows.length) return;
+    if (!(wide || web) || !firstOpen.current || !rows.length) return;
     firstOpen.current = false; toggle(rows[0].u);
-  }, [rows, wide]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rows, wide, web]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDetail(u: AdminUserOverview) {
     if (u.betCount === 0) { setDetails((d) => ({ ...d, [u.id]: { status: "ok", bets: [] } })); return; }
@@ -418,6 +428,155 @@ export default function Bets() {
     <div key={offTry} className={`v3-offline-users${offTry ? " v3-bt-shk" : ""}`} role="status"><WifiOff size={16} aria-hidden="true" /><span>{offTry ? `Досі немає інтернету (${offTry}). ` : "Немає інтернету. "}Підсумки станом на {updatedAt || "—"}, нові ставки не підвантажаться.</span><button type="button" className={`v3-btn v3-btn-ghost-dark v3-btn-sm${offBusy ? " v3-bt-busy" : ""}`} disabled={offBusy} onClick={() => { if (navigator.onLine) { load(true); return; } setOffBusy(true); window.setTimeout(() => { setOffBusy(false); setOffTry((x) => x + 1); }, 1000); }}>{offBusy ? <><RefreshCw size={13} className="v3-bt-rot" aria-hidden="true" />Перевіряємо…</> : "Перевірити ще раз"}</button></div>
   );
 
+  // ── Web (≥768 px): design «Ставки · веб» ──
+  const monthKey = (d: number) => { const n = new Date(); const x = new Date(n.getFullYear(), n.getMonth() + d, 1); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`; };
+  const perKey = period === "cur" ? monthKey(0) : period === "prev" ? monthKey(-1) : "";
+  const allLoaded = playing.length > 0 && playing.length <= MAX_FOR_DELTAS && playing.every((u) => details[u.id]?.status === "ok");
+  const inPer = (b: AdminUserBet) => (!perKey || (b.date || "").startsWith(perKey)) && (game === "all" || betView(b).game === game);
+  /** Stats from the loaded bets (used for «Цей / Минулий місяць»). */
+  const perStats = (u: AdminUserOverview): { s: Stats; usd: { bets: number; staked: number; profit: number; roi: number } | null } => {
+    const bs = (details[u.id]?.bets || []).filter(inPer);
+    const uahB = bs.filter((b) => !isUsd(b)), usdB = bs.filter(isUsd);
+    const wins = bs.filter((b) => b.result === "Win").length, losses = bs.filter((b) => b.result === "Loss").length;
+    const staked = uahB.reduce((a, b) => a + (Number(b.amount) || 0), 0), profit = uahB.reduce((a, b) => a + (Number(b.profit) || 0), 0);
+    const us = usdB.reduce((a, b) => a + nativeAmount(b), 0), up = usdB.reduce((a, b) => a + nativeProfit(b), 0);
+    return { s: { bets: bs.length, wins, losses, pending: bs.filter((b) => b.result === "Pending").length, staked, profit, wr: wins + losses ? (wins / (wins + losses)) * 100 : 0, roi: staked ? (profit / staked) * 100 : 0 }, usd: usdB.length ? { bets: usdB.length, staked: us, profit: up, roi: us ? (up / us) * 100 : 0 } : null };
+  };
+  const wStats = (u: AdminUserOverview) => (period === "all" ? { s: statsFor(u, game), usd: usdS(u) } : perStats(u));
+  const wRows = (() => {
+    const term = q.trim().toLowerCase().replace(/^@/, "");
+    const base = rows.filter(({ u }) => !term || u.username.toLowerCase().includes(term) || (u.telegram || "").toLowerCase().includes(term)).map(({ u }) => ({ u, ...wStats(u) }));
+    const list = period === "all" ? base : base.filter((r) => r.s.bets > 0 || showAll);
+    return list.sort((a, b) => (sort === "bets" ? b.s.bets - a.s.bets : sort === "staked" ? b.s.staked - a.s.staked : sort === "profit" ? b.s.profit - a.s.profit : b.s.wr - a.s.wr) || a.u.username.localeCompare(b.u.username));
+  })();
+  const wTot = wRows.reduce((a, r) => ({ bets: a.bets + r.s.bets, wins: a.wins + r.s.wins, losses: a.losses + r.s.losses, pending: a.pending + r.s.pending, staked: a.staked + r.s.staked, profit: a.profit + r.s.profit, ub: a.ub + (r.usd?.bets || 0), us: a.us + (r.usd?.staked || 0), up: a.up + (r.usd?.profit || 0), pl: a.pl + (r.s.bets > 0 ? 1 : 0) }), { bets: 0, wins: 0, losses: 0, pending: 0, staked: 0, profit: 0, ub: 0, us: 0, up: 0, pl: 0 });
+  const kTot = q.trim() || period !== "all" ? wTot : { bets: tot.bets, wins: tot.wins, losses: tot.losses, pending: tot.pending, staked: tot.staked, profit: tot.profit, ub: totUsd?.n || 0, us: totUsd?.s || 0, up: totUsd?.p || 0, pl: playing.length };
+  const kWr = kTot.wins + kTot.losses ? Math.round((kTot.wins / (kTot.wins + kTot.losses)) * 100) : 0;
+  const sel = wRows.find((r) => r.u.id === openId) || null;
+  const pick = (u: AdminUserOverview) => { if (openId === u.id) return; setBf("all"); setXpOpen(new Set()); toggle(u); };
+  const PERIODS: [typeof period, string][] = [["all", "За весь час"], ["cur", "Цей місяць"], ["prev", "Минулий місяць"]];
+  const nonPlay = people.length - playing.length;
+  const wEmpty = noBetsAtAll ? (
+    <div className="v3-uw-empty"><span aria-hidden="true"><Dices size={18} /></span><strong>Ставок ще немає</strong><p>Коли користувачі почнуть записувати ставки в застосунку, тут з’явиться їхня статистика.</p>{people.length > 0 && !showAll && <div><button type="button" className="v3-uwb is-green" onClick={() => setShowAll(true)}>Показати всіх · {people.length}</button></div>}</div>
+  ) : q.trim() ? (
+    <div className="v3-uw-empty"><span aria-hidden="true"><Search size={18} /></span><strong>Нікого не знайдено</strong><p>{game !== "all" ? `За запитом «${q.trim()}» у ${game} нікого немає.` : `За запитом «${q.trim()}» серед гравців нікого немає.`}</p><div><button type="button" className="v3-uwb is-green" onClick={clearSearch}>Скинути пошук</button></div></div>
+  ) : period !== "all" ? (
+    <div className="v3-uw-empty"><span aria-hidden="true"><CalendarDays size={18} /></span><strong>{period === "cur" ? "Цього місяця" : "Минулого місяця"} ставок немає</strong><p>Перемкніться на «За весь час».</p><div><button type="button" className="v3-uwb is-green" onClick={() => setPeriod("all")}>За весь час</button></div></div>
+  ) : (
+    <div className="v3-uw-empty"><span aria-hidden="true"><Dices size={18} /></span><strong>На {game} ставок немає</strong><p>Ніхто з гравців ще не ставив на {game}. Перемкніться на «Усі»{otherGames(game).length ? ` або ${otherGames(game).join(", ")}` : ""}.</p><div><button type="button" className="v3-uwb is-green" onClick={() => setGame("all")}>Показати всі ігри</button></div></div>
+  );
+  const wBar = (s: Stats) => { const w = Math.round(Math.min(100, Math.max(0, s.wr))); return s.wins + s.losses ? <span className="v3-btw-wr" aria-label={`${w}% виграшів`}><small className="is-w">{w}%</small><span><i style={{ flexGrow: w }} /><b style={{ flexGrow: 100 - w }} /></span><small className="is-l">{100 - w}%</small></span> : <span className="v3-btw-none">{s.bets ? "очікує" : "ще не грає"}</span>; };
+  const wTable = (
+    <div className="v3-uw-list v3-btw-list" aria-busy={busy}>
+      {loading ? <div className="v3-pwl-skel" aria-hidden="true">{[0, 1, 2, 3].map((i) => <i key={i} className={i === 0 ? "is-h" : undefined} />)}</div> : wRows.length === 0 ? wEmpty : <>
+        <div className="v3-uw-tr is-th v3-btw-tr" role="row"><span>Гравець{q.trim() && <em>Знайдено {wRows.length}</em>}</span><span>Ігри</span><span className="is-r">Ставок</span><span>Вінрейт</span><span className="is-r">Профіт ₴</span><span className="is-r">Профіт $</span></div>
+        <div key={rk} role="table" aria-label="Гравці">{wRows.slice(0, limit).map(({ u, s, usd: ux }, i) => (
+          <button key={u.id} type="button" className={`v3-uw-tr v3-btw-tr${openId === u.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 12) * 25}ms` }} aria-pressed={openId === u.id} onClick={() => pick(u)}>
+            <span className="v3-uw-who"><span className="v3-uw-av"><UserAvatar username={u.username} telegram={u.telegram} /></span><span><strong>@{hl(u.username, q)}{(u.lossStreak || 0) >= STREAK_ALERT && <b className="v3-btw-stk">{u.lossStreak} поспіль</b>}</strong><small>{isAdminU(u) ? (u.isOwner || u.role === "owner" ? "Овнер" : "Адмін") : u.betCount ? planName(u) : `${planName(u)} · ставок ще немає`}</small></span></span>
+            <span className="v3-uw-muted">{userGames(u).join(" · ") || "—"}</span>
+            <span className="is-r"><b>{s.bets.toLocaleString("uk-UA")}</b></span>
+            <span>{wBar(s)}</span>
+            <span className={`is-r v3-btw-n ${s.bets ? (s.profit >= 0 ? "is-pos" : "is-neg") : ""}`}>{s.bets ? signedMoney(s.profit) : "—"}</span>
+            <span className={`is-r v3-btw-n ${ux ? (ux.profit >= 0 ? "is-pos" : "is-neg") : ""}`}>{ux ? usd(ux.profit) : "—"}</span>
+          </button>
+        ))}</div>
+        {wRows.length > limit && <button type="button" className="v3-uw-more" onClick={() => setLimit(limit + PAGE)}>Показати ще {Math.min(PAGE, wRows.length - limit)}</button>}
+      </>}
+      {!loading && nonPlay > 0 && !q.trim() && (wRows.length > 0 || showAll) && <div className="v3-btw-more"><UsersIcon size={15} aria-hidden="true" /><span>{showAll ? "Показано всіх, разом з тими, хто ще не грає" : `${nonPlay} ${plural(nonPlay, "користувач ще не робить", "користувачі ще не роблять", "користувачів ще не роблять")} ставок`}</span><button type="button" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>{showAll ? "Сховати" : "Показати всіх"}<ChevronDown size={13} aria-hidden="true" style={{ transform: showAll ? "rotate(180deg)" : undefined }} /></button></div>}
+    </div>
+  );
+  const wSide = (() => {
+    if (!sel) return <aside className="v3-uwc is-empty"><span aria-hidden="true"><Dices size={18} /></span><p>{loading ? "Завантажуємо ставки…" : "Виберіть гравця ліворуч, щоб побачити його ставки"}</p></aside>;
+    const { u, s, usd: ux } = sel; const d = details[u.id];
+    const all = (d?.bets || []).filter(inPer).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
+    const cnt = (x: typeof bf) => (x === "all" ? all.length : all.filter((b) => betView(b).res === x || (x === "pending" && betView(b).res === "other")).length);
+    const list = bf === "all" ? all : all.filter((b) => betView(b).res === bf || (bf === "pending" && betView(b).res === "other"));
+    const uahBets = Math.max(0, s.bets - (ux?.bets || 0));
+    const days: { day: string; items: AdminUserBet[] }[] = [];
+    list.forEach((b) => { const k = (b.date || "").slice(0, 10); const last = days[days.length - 1]; if (last && last.day === k) last.items.push(b); else days.push({ day: k, items: [b] }); });
+    const MG = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
+    const dl = (k: string) => { const [y, m, dd] = k.split("-").map(Number); return y ? `${dd} ${MG[m - 1]}${y !== new Date().getFullYear() ? ` ${y}` : ""}` : "Без дати"; };
+    const daySum = (bs: AdminUserBet[]) => { const done = bs.filter((b) => b.result === "Win" || b.result === "Loss"); if (!done.length) return ""; const uah = done.filter((b) => !isUsd(b)).reduce((a, b) => a + (Number(b.profit) || 0), 0); const us = done.filter(isUsd).reduce((a, b) => a + nativeProfit(b), 0); return [done.some((b) => !isUsd(b)) ? signedMoney(uah) : "", done.some(isUsd) ? signedMoney(us, "USD") : ""].filter(Boolean).join(" · "); };
+    return (
+      <aside key={u.id} className="v3-pwd v3-btw-side">
+        <div className="v3-btw-sh"><UserAvatar username={u.username} telegram={u.telegram} /><div><h2>@{u.username}</h2><p>{s.bets.toLocaleString("uk-UA")} {plural(s.bets, "ставка", "ставки", "ставок")} · {Math.round(s.wr)}% виграшів{userGames(u).length ? ` · ${userGames(u).join(" · ")}` : ""}</p></div><Link className="v3-uwb is-white" to={`/users?q=${encodeURIComponent(u.username)}`}>Профіль<ArrowRight size={13} aria-hidden="true" /></Link></div>
+        {(uahBets > 0 || !ux) && <div className="v3-btw-box"><p>У гривнях · {uahBets} {plural(uahBets, "ставка", "ставки", "ставок")}</p><dl><div><dt>Профіт</dt><dd className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedMoney(s.profit)}</dd></div><div><dt>Обіг</dt><dd>{money(s.staked)}</dd></div><div><dt>ROI</dt><dd className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</dd></div></dl></div>}
+        {ux && <div className="v3-btw-box"><p>У доларах · {ux.bets} {plural(ux.bets, "ставка", "ставки", "ставок")}</p><dl><div><dt>Профіт</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{usd(ux.profit)}</dd></div><div><dt>Обіг</dt><dd>{money(ux.staked, "USD")}</dd></div><div><dt>ROI</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(ux.roi)}</dd></div></dl></div>}
+        {u.betCount > 0 && <div className="v3-btw-seg" role="group" aria-label="Результат">
+          <PillTrack active={bf} />
+          {([["all", "Усі"], ["win", "Виграш"], ["loss", "Програш"], ["pending", "Очікує"]] as const).map(([k, l]) => <button key={k} type="button" className={bf === k ? "is-on" : ""} aria-pressed={bf === k} onClick={() => { setBf(k); setXpOpen(new Set()); }}><b>{d?.status === "ok" ? cnt(k) : "…"}</b>{l}</button>)}
+        </div>}
+        <div className="v3-btw-bets">
+          {!d || d.status === "loading" ? <div className="v3-pwl-skel" aria-hidden="true"><i className="is-h" /><i /><i /></div>
+            : d.status === "err" ? <div className="v3-uw-empty is-err"><span aria-hidden="true">!</span><strong>{d.error === "offline" ? "Деталі недоступні офлайн" : "Не вдалося завантажити ставки"}</strong><div><button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => loadDetail(u)}>Спробувати ще раз</button></div></div>
+            : u.betCount === 0 ? <div className="v3-uw-empty"><span aria-hidden="true"><Clock size={18} /></span><strong>Ще жодної ставки</strong><p>Можна нагадати, як додати перший запис.</p>{u.telegram && <div><button type="button" className="v3-uwb" onClick={() => openTelegram((u.telegram || "").replace(/^@/, "").replace(/^https?:\/\/t\.me\//, ""))}><Send size={14} aria-hidden="true" />Написати в Telegram</button></div>}</div>
+            : !list.length ? <div className="v3-uw-empty"><strong>Таких ставок немає</strong><p>{bf === "pending" ? "Ставки без результату з’являться тут, поки матч не завершиться." : "Спробуйте інший фільтр."}</p></div>
+            : days.map((g) => (
+              <section key={g.day}>
+                <p className="v3-pwl-day"><b>{dl(g.day)}</b><span className={g.items.some((b) => b.result === "Loss") && !g.items.some((b) => b.result === "Win") ? "is-neg" : ""}>{daySum(g.items)}</span></p>
+                {g.items.map((b, j) => { const v = betView(b); const xo = xpOpen.has(b.id); return (
+                  <div key={b.id} className="v3-btw-bet" style={{ animationDelay: `${Math.min(j, 8) * 30}ms` }}>
+                    <div className="v3-btw-bet-l">
+                      <strong>{v.exp ? `Експрес · ${v.pick}` : v.title}<span className={`v3-uwt ${v.res === "win" ? "is-green" : v.res === "loss" ? "is-red" : "is-grey"}`}>{v.status}</span><span className="v3-uwt is-grey">{v.game}</span></strong>
+                      <small>{v.day}{v.exp ? ` · коеф. ${v.odds}` : ` · ${v.pick} · ${v.odds}`}</small>
+                    </div>
+                    <div className="v3-btw-bet-r"><small>{v.amount}</small><b className={v.res === "win" ? "is-pos" : v.res === "loss" ? "is-neg" : ""}>{v.profit}</b></div>
+                    {v.exp && v.legs.length > 0 && <button type="button" className="v3-btw-xp" aria-expanded={xo} aria-label={xo ? "Згорнути події" : "Показати події"} onClick={() => setXpOpen((p) => { const n = new Set(p); if (n.has(b.id)) n.delete(b.id); else n.add(b.id); return n; })}><ChevronDown size={14} aria-hidden="true" style={{ transform: xo ? "rotate(180deg)" : undefined }} /></button>}
+                    {v.exp && xo && <div className="v3-btw-legs">{v.legs.map((l, k) => { const m = legMark(v.res); return <div key={k}><b className={m.cls}>{m.mark}</b><span>{l.match}</span><small>{l.pick}</small><small>{l.odds}</small></div>; })}</div>}
+                  </div>
+                ); })}
+              </section>
+            ))}
+        </div>
+      </aside>
+    );
+  })();
+  const webPage = (
+    <div className="v3-page v3-uw v3-btw">
+      <section className="v3-uw-hero">
+        <div><h1>Ставки</h1><p>{loading ? "завантажуємо…" : !playing.length ? "ще ніхто не грає" : <>{playing.length} {plural(playing.length, "користувач грає", "користувачі грають", "користувачів грають")} · {PERIODS.find((x) => x[0] === period)![1].toLowerCase()}{updatedAt ? ` · оновлено ${updatedAt}` : ""}</>}</p></div>
+        <div className="v3-uw-hacts">
+          <div className="v3-pw-month">
+            <button type="button" className="v3-uwb is-white" aria-haspopup="listbox" aria-expanded={perOpen} onClick={() => setPerOpen((v) => !v)}><CalendarDays size={15} aria-hidden="true" />{PERIODS.find((x) => x[0] === period)![1]}<ChevronDown size={14} aria-hidden="true" /></button>
+            {perOpen && <><div className="v3-pw-scrim" onClick={() => setPerOpen(false)} aria-hidden="true" /><div className="v3-pw-pop is-right" role="listbox" aria-label="Період">
+              <p>Період статистики</p>
+              {PERIODS.map(([k, l]) => <button key={k} type="button" role="option" aria-selected={period === k} className={period === k ? "is-on" : ""} disabled={k !== "all" && !allLoaded} title={k !== "all" && !allLoaded ? "Ставки ще завантажуються" : undefined} onClick={() => { setPeriod(k); setPerOpen(false); setRk((x) => x + 1); }}><span>{l}</span>{period === k && <Check size={14} aria-hidden="true" />}</button>)}
+            </div></>}
+          </div>
+          <ExportCsvButton className="v3-uwb is-white" onClick={exportTable} disabled={!rows.length} />
+        </div>
+      </section>
+      {offline}
+      {error && users === null ? <div className="v3-uw-list"><div className="v3-uw-empty is-err" role="alert"><span aria-hidden="true">!</span><strong>Не вдалося завантажити ставки</strong><p>Сервер не відповідає. Спробуйте ще раз за хвилину.</p><div><button type="button" className="v3-uwb is-green" onClick={() => load()}>Спробувати ще раз</button></div></div></div> : <>
+        <section className="v3-pw-kpis" aria-label="Підсумки">
+          <div className="v3-pw-kpi is-on"><span>Ставок всього</span><strong>{loading ? "…" : <RollingNumber key={`wb-${kTot.bets}`} text={kTot.bets.toLocaleString("uk-UA")} />}</strong><small>{loading ? "" : kTot.bets ? `${kTot.wins} ${plural(kTot.wins, "виграш", "виграші", "виграшів")} · ${kTot.losses} ${plural(kTot.losses, "програш", "програші", "програшів")}${kTot.pending ? ` · ${kTot.pending} очікує` : ""}` : "ще ніхто не ставив"}</small></div>
+          <div className="v3-pw-kpi"><span>Профіт у гривнях</span><strong className={kTot.profit > 0 ? "is-pos" : kTot.profit < 0 ? "is-neg" : ""}>{loading ? "…" : <RollingNumber key={`wp-${kTot.profit}`} text={signedMoney(kTot.profit)} />}</strong><small>{loading ? "" : kTot.staked ? `ROI ${signedPct((kTot.profit / kTot.staked) * 100)} · обіг ${money(kTot.staked)}` : "ROI з’явиться після ставок"}</small></div>
+          <div className="v3-pw-kpi"><span>Профіт у доларах</span><strong className={kTot.up > 0 ? "is-pos" : kTot.up < 0 ? "is-neg" : ""}>{loading ? "…" : <RollingNumber key={`wu-${kTot.up}`} text={signedMoney(kTot.up, "USD")} />}</strong><small>{loading ? "" : kTot.ub ? `ROI ${signedPct(kTot.us ? (kTot.up / kTot.us) * 100 : 0)} · обіг ${money(kTot.us, "USD")}` : "ставок у доларах немає"}</small></div>
+          <div className="v3-pw-kpi"><span>Гравців</span><strong>{loading ? "…" : <>{kTot.pl} <em>з {people.length}</em></>}</strong><small>{loading ? "" : kTot.pl ? `вінрейт ${kWr}% · ${game === "all" ? "усі ігри" : game}` : "ще ніхто не грає"}</small></div>
+        </section>
+        <div className="v3-uw-tools v3-pw-tools">
+          <div className="v3-uw-tabs" role="group" aria-label="Фільтр за грою">
+            <PillTrack active={game} />
+            <button type="button" className={game === "all" ? "is-on" : ""} aria-pressed={game === "all"} onClick={() => setGame("all")}>Усі{playing.length ? <span className="v3-pw-tn">{playing.length}</span> : null}</button>
+            {[...gameCounts, ...["CS2", "Dota 2"].filter((g) => !gameCounts.some(([x]) => x === g)).map((g) => [g, 0] as [string, number])].map(([g, n]) => <button key={g} type="button" className={game === g ? "is-on" : ""} aria-pressed={game === g} onClick={() => setGame(g)}>{g}{n || game === g ? <span className="v3-pw-tn">{n}</span> : null}</button>)}
+          </div>
+          <div className="v3-pw-month">
+            <button type="button" className="v3-uwb is-white v3-btw-sortb" aria-haspopup="listbox" aria-expanded={sortOpen} onClick={() => setSortOpen((v) => !v)}><ArrowUpDown size={14} aria-hidden="true" /><span>Сортування:</span>{SORT_M[sort]}<ChevronDown size={14} aria-hidden="true" /></button>
+            {sortOpen && <><div className="v3-pw-scrim" onClick={() => setSortOpen(false)} aria-hidden="true" /><div className="v3-pw-pop" role="listbox" aria-label="Сортування гравців">
+              <p>Сортування гравців</p>
+              {SORTS.map(([k]) => <button key={k} type="button" role="option" aria-selected={sort === k} className={sort === k ? "is-on" : ""} onClick={() => { setSort(k); setSortOpen(false); }}><span>{SORT_M[k][0].toUpperCase() + SORT_M[k].slice(1)}</span>{sort === k && <Check size={14} aria-hidden="true" />}</button>)}
+            </div></>}
+          </div>
+          <label className={`v3-btw-only${!showAll ? " is-on" : ""}`}><input type="checkbox" checked={!showAll} onChange={(e) => setShowAll(!e.target.checked)} /><span aria-hidden="true">{!showAll && <Check size={12} strokeWidth={3} />}</span>Лише ті, хто грає</label>
+          <label className="v3-uw-search v3-pw-search v3-btw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук гравців" placeholder="Логін або Telegram" value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={13} /></button>}</label>
+        </div>
+        <section className="v3-uw-main is-pw v3-pw-pane">{wTable}{wSide}</section>
+      </>}
+      <AllBetsDialog user={allFor} bets={allFor ? details[allFor.id]?.bets || [] : []} open={allOpen} onOpenChange={setAllOpen} />
+    </div>
+  );
+
+  if (web) return webPage;
   return (
     <div className="v3-page v3-bets">
       <section className="v3-hero v3-hero-row">

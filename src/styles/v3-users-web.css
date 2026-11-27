@@ -465,3 +465,80 @@
   .v3-pw .v3-pswitch.is-on { background: #00b24b; }
   .v3-pw .v3-pswitch:disabled { opacity: .5; cursor: not-allowed; }
 }
+
+/* ══ Ставки · веб (≥768 px) — design «Ставки · веб». Shares .v3-uw* and .v3-pw* ══ */
+@media (min-width: 768px) {
+  .v3-btw .is-pos { color: #1f9d55; }
+  .v3-btw .is-neg { color: #e5484d; }
+  .v3-btw .v3-pw-kpi > strong em { font-size: 22px; font-style: normal; color: #3c4350; }
+  .v3-btw .v3-pw-kpi.is-on > strong { color: #fff; }
+  .v3-pw-pop.is-right { left: auto; right: 0; transform-origin: top right; }
+  .v3-pw-pop button:disabled { opacity: .45; cursor: not-allowed; }
+  .v3-btw-sortb span { font-weight: 500; color: #6b7384; }
+  .v3-btw-only { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); font: 600 12px Inter, sans-serif; cursor: pointer; user-select: none; }
+  .v3-btw-only input { position: absolute; opacity: 0; pointer-events: none; }
+  .v3-btw-only > span { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 0 0 1.5px #c3c9d4; color: #fff; transition: background-color .15s, box-shadow .15s; }
+  .v3-btw-only.is-on > span { background: #3a6df0; box-shadow: none; }
+  .v3-btw-only:focus-within { box-shadow: 0 0 0 2px #3a6df0; }
+  .v3-btw-search { max-width: 280px; }
+  .v3-btw-list { padding: 12px; }
+  .v3-btw-tr { grid-template-columns: minmax(0, 2fr) minmax(0, 1.1fr) minmax(0, .5fr) minmax(0, 1.5fr) minmax(0, .9fr) minmax(0, .7fr); width: 100%; border: 0; background: transparent; color: #11151c; font: 400 12px Inter, sans-serif; text-align: left; }
+  .v3-btw-tr.is-th span em { display: block; margin-top: 2px; font-style: normal; font-weight: 600; color: #11151c; }
+  .v3-btw-stk { display: inline-flex; align-items: center; height: 18px; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #fff1d6; color: #8a5a00; font-size: 10px; font-weight: 700; vertical-align: 1px; }
+  .v3-btw-wr { display: flex; align-items: center; gap: 6px; }
+  .v3-btw-wr > span { display: flex; flex: 1; gap: 3px; height: 6px; min-width: 60px; }
+  .v3-btw-wr i, .v3-btw-wr b { display: block; height: 100%; border-radius: 4px; transform-origin: left; animation: v3-grow-x .6s cubic-bezier(.2, .9, .25, 1) both; }
+  .v3-btw-wr i { background: #1f9d55; }
+  .v3-btw-wr b { background: #f06a6e; }
+  .v3-btw-wr small { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .v3-btw-wr small.is-w { color: #1f9d55; }
+  .v3-btw-wr small.is-l { color: #e5484d; }
+  .v3-btw-none { font-size: 11px; color: #8a93a3; }
+  .v3-btw-n { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .v3-btw-more { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; color: #6b7384; font-size: 12px; }
+  .v3-btw-more span { flex: 1; }
+  .v3-btw-more button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: #3a6df0; font: 600 12px Inter, sans-serif; cursor: pointer; }
+  .v3-btw-more button svg { transition: transform .2s; }
+  /* side */
+  .v3-btw-side { max-height: calc(100vh - 110px); }
+  .v3-btw-sh { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+  .v3-btw-sh > :first-child { width: 38px; height: 38px; font-size: 11px; }
+  .v3-btw-sh h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .v3-btw-sh p { margin: 2px 0 0; overflow: hidden; font-size: 11px; color: #6b7384; text-overflow: ellipsis; white-space: nowrap; }
+  .v3-btw-sh .v3-uwb { min-height: 32px; padding: 0 10px; }
+  .v3-btw-box { padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-btw-box p { margin: 0 0 6px; font-size: 11px; font-weight: 600; }
+  .v3-btw-box dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+  .v3-btw-box dt { font-size: 10px; color: #6b7384; }
+  .v3-btw-box dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .v3-btw-seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border-radius: 12px; background: #eef0f4; }
+  .v3-btw-seg > .v3-pill { top: 3px; bottom: 3px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-btw-seg button { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border: 0; border-radius: 9px; background: transparent; color: #6b7384; font: 500 11px Inter, sans-serif; cursor: pointer; transition: color .2s; }
+  .v3-btw-seg button b { font-size: 15px; font-weight: 700; color: #11151c; font-variant-numeric: tabular-nums; }
+  .v3-btw-seg button.is-on { color: #11151c; }
+  @media (hover: hover) { .v3-btw-seg button:not(.is-on):hover { color: #11151c; } }
+  .v3-btw-bets { flex: 1; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px; padding: 0 4px; }
+  .v3-btw-bets .v3-pwl-day { margin: 8px 2px 6px; }
+  .v3-btw-bets .v3-pwl-day span { color: #1f9d55; font-weight: 600; }
+  .v3-btw-bets .v3-pwl-day span.is-neg { color: #e5484d; }
+  .v3-btw-bet { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin-bottom: 6px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; animation: v3-row-in .3s cubic-bezier(.2, .9, .25, 1) both; }
+  .v3-btw-bet-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .v3-btw-bet-l strong { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+  .v3-btw-bet-l .v3-uwt { height: 18px; padding: 0 6px; font-size: 10px; }
+  .v3-btw-bet-l .v3-uwt.is-grey { background: #fff; }
+  .v3-btw-bet-l small { font-size: 10px; color: #6b7384; }
+  .v3-btw-bet-r { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-variant-numeric: tabular-nums; }
+  .v3-btw-bet-r small { font-size: 10px; color: #6b7384; }
+  .v3-btw-bet-r b { font-size: 13px; font-weight: 700; }
+  .v3-btw-xp { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 7px; background: #fff; color: #3c4350; cursor: pointer; }
+  .v3-btw-xp svg { transition: transform .2s; }
+  .v3-btw-legs { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid #e6e9ee; }
+  .v3-btw-legs div { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; font-size: 11px; animation: v3-row-in .25s cubic-bezier(.2, .9, .25, 1) both; }
+  .v3-btw-legs b { color: #8a93a3; text-align: center; }
+  .v3-btw-legs b.is-win { color: #1f9d55; }
+  .v3-btw-legs small { color: #6b7384; font-variant-numeric: tabular-nums; }
+  .v3-btw-side .v3-uw-empty { padding: 28px 12px; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .v3-btw-wr i, .v3-btw-wr b, .v3-btw-bet, .v3-btw-legs div { animation: none !important; }
+}
