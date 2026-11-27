@@ -823,6 +823,20 @@ function PromoWeb({ promos, online, settings, onToggle, onCreated, query = "" }:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [fresh, setFresh] = useState("");
+  const [typing, setTyping] = useState(false);
+  // «Згенерувати»: the code types itself letter by letter (same as on the phone)
+  function generate() {
+    if (typing) return;
+    const taken = new Set((promos || []).map((p) => p.code.toUpperCase()));
+    const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let c = "";
+    do { c = "MIQ" + Array.from({ length: 5 }, () => abc[Math.floor(Math.random() * abc.length)]).join(""); } while (taken.has(c));
+    setErr("");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setCode(c); return; }
+    setTyping(true); setCode("");
+    let i = 0;
+    const t = window.setInterval(() => { i += 1; setCode(c.slice(0, i)); if (i >= c.length) { window.clearInterval(t); setTyping(false); } }, 45);
+  }
   const basic = settings?.basicPrice || 300, pro = settings?.proPrice || 600;
   const v = Number(pctV);
   const okPct = Number.isInteger(v) && v > 0 && v <= 100;
@@ -864,7 +878,7 @@ function PromoWeb({ promos, online, settings, onToggle, onCreated, query = "" }:
       </div>
       <aside className="v3-uw-list v3-pw-new">
         <h2>Новий промокод</h2>
-        <label className="v3-uwm-f"><span>Код</span><input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/\s/g, "")); setErr(""); }} maxLength={100} autoComplete="off" placeholder="НАПР. NEWYEAR27" aria-invalid={!!err} /></label>
+        <div className="v3-uwm-f"><label htmlFor="pw-code">Код</label><span className={`v3-pw-codein${typing ? " is-typing" : ""}`}><input id="pw-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/\s/g, "")); setErr(""); }} maxLength={100} autoComplete="off" placeholder="НАПР. NEWYEAR27" aria-invalid={!!err} /><button type="button" className={`v3-pw-gen${typing ? " is-run" : ""}`} onClick={generate} aria-label="Згенерувати код"><Shuffle size={13} aria-hidden="true" />Згенерувати</button></span></div>
         <div className="v3-pwm-2">
           <label className="v3-uwm-f"><span>Знижка, %</span><input inputMode="numeric" value={pctV} onChange={(e) => setPctV(e.target.value.replace(/\D/g, "").slice(0, 3))} /></label>
           <label className="v3-uwm-f"><span>Ліміт</span><input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="без ліміту" /></label>

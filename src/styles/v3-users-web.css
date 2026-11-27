@@ -196,7 +196,7 @@
   .v3-uwm-opts button.is-on { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
   .v3-uwm-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .v3-uwm-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .v3-uwm-f > span { font-size: 12px; font-weight: 600; }
+  .v3-uwm-f > span, .v3-uwm-f > label { font-size: 12px; font-weight: 600; }
   .v3-uwm-f input, .v3-uwm .v3-uwm-f button[aria-haspopup] { box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #dde1e7; border-radius: 10px; background: #fff; color: #11151c; font: 400 13px Inter, sans-serif; outline: 0; transition: border-color .15s, box-shadow .15s; }
   .v3-uwm-f input:focus { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
   .v3-uwm-period { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 10px 12px; border-radius: 10px; background: #f4f6f9; font-size: 12px; color: #6b7384; }
@@ -541,4 +541,28 @@
 }
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
   .v3-btw-wr i, .v3-btw-wr b, .v3-btw-bet, .v3-btw-legs div { animation: none !important; }
+}
+@media (min-width: 768px) {
+  /* list and the card next to it are always the same height */
+  .v3-uw-main, .v3-uw-main.is-pw, .v3-uw-excl { align-items: stretch; }
+  .v3-uw-main > .v3-uw-list, .v3-uw-excl > .v3-uw-list { min-height: 0; }
+  .v3-uwc, .v3-pwd { position: static; }
+  .v3-btw-side { max-height: none; }
+  /* search fields: no blue ring when focused */
+  .v3-uw-search:focus-within, .v3-pwm-q:focus-within { box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
+  .v3-pwm-q:focus-within { box-shadow: inset 0 0 0 1px #dde1e7; }
+  .v3-uw-search input:focus, .v3-uw-search input:focus-visible, .v3-aup-search input:focus, .v3-aup-search input:focus-visible { outline: none; box-shadow: none; }
+  .v3-aup-search:focus-within { box-shadow: none; border-color: #dde1e7; }
+  /* «Немає в списку? Спершу створіть користувача» on one line */
+  .v3-pwm .v3-uwm-foot > span { max-width: none; white-space: nowrap; }
+  /* picked user: just the blue edge, no outer glow */
+  .v3-pwm-pick button.is-on { box-shadow: none; }
+  /* «Згенерувати» inside the promo code field */
+  .v3-pw-codein { position: relative; display: block; }
+  .v3-pw-codein input { padding-right: 116px !important; }
+  .v3-pw-codein.is-typing input { border-color: #3a6df0; }
+  .v3-pw-gen { position: absolute; top: 5px; right: 5px; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: #eef0f4; color: #11151c; font: 600 11px Inter, sans-serif; cursor: pointer; transition: background-color .15s, transform .15s ease-out; }
+  .v3-pw-gen:active { transform: scale(.96); }
+  .v3-pw-gen.is-run svg { animation: v3-spin .6s linear infinite; }
+  @media (hover: hover) { .v3-pw-gen:hover { background: #e3e6ec; } }
 }
