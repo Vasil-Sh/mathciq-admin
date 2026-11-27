@@ -26,7 +26,7 @@ import {
   PROMO_UI, promoState, shiftMonth, STATUS, type PaymentRow, type PayStatus, type PromoCode, deltaVs,
 } from "@/lib/paymentsModel";
 import type { AdminUserOverview, AppSettings } from "@/types";
-import { CalendarDays, ChevronDown, MoreHorizontal } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import { CancelRecordWeb, PAY_TAG, RecordPaymentWeb, RefundWeb, UserPaymentsWeb, methodText } from "@/components/payments/PaymentsWebDialogs";
 
 type Tab = "pay" | "ref" | "promo";
@@ -479,7 +479,7 @@ export default function Payments() {
         {p.status === "recorded" ? <>
           <div className="v3-pwd-acts">
             <button type="button" className="v3-uwb" disabled={!online || !u} title={!u ? "Користувача вже немає" : undefined} onClick={() => setWRefund(p)}>Повернути гроші</button>
-            <button type="button" className="v3-uwb is-softred" disabled={!online} onClick={() => setWCancel(p)}>Скасувати запис</button>
+            <button type="button" className="v3-uwb is-red" disabled={!online} onClick={() => setWCancel(p)}>Скасувати запис</button>
           </div>
           <p className="v3-pwd-hint">«Скасувати запис» — помилкова оплата (дубль).<br />«Повернути гроші» — коли ви повернули кошти людині.</p>
         </> : <p className="v3-pwd-hint">Запис закрито — змінити його вже не можна. Усе видно в журналі дій.</p>}
@@ -823,8 +823,6 @@ function PromoWeb({ promos, online, settings, onToggle, onCreated, query = "" }:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [fresh, setFresh] = useState("");
-  const [menu, setMenu] = useState<string | null>(null);
-  useEffect(() => { if (!menu) return; const c = () => setMenu(null); document.addEventListener("click", c); return () => document.removeEventListener("click", c); }, [menu]);
   const basic = settings?.basicPrice || 300, pro = settings?.proPrice || 600;
   const v = Number(pctV);
   const okPct = Number.isInteger(v) && v > 0 && v <= 100;
@@ -847,7 +845,7 @@ function PromoWeb({ promos, online, settings, onToggle, onCreated, query = "" }:
         <div className="v3-uw-excl-h"><div><h2>Промокоди</h2><p>Користувач називає код — ви вводите його під час запису оплати, сума рахується сама.</p></div></div>
         {promos === null ? <div className="v3-pwl-skel" aria-hidden="true"><i /><i /></div>
           : shownPromos.length ? <div className="v3-uw-table is-promo" role="table" aria-label="Промокоди">
-            <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Код</span><span role="columnheader">Знижка</span><span role="columnheader">Ліміт</span><span role="columnheader">Використано</span><span role="columnheader"><span className="sr-only">Дії</span></span></div>
+            <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Код</span><span role="columnheader">Знижка</span><span role="columnheader">Ліміт</span><span role="columnheader">Використано</span><span role="columnheader" className="is-r">Увімк.</span></div>
             {shownPromos.map((p, i) => {
               const st = promoState(p);
               return (
@@ -856,13 +854,7 @@ function PromoWeb({ promos, online, settings, onToggle, onCreated, query = "" }:
                   <span role="cell"><b>−{p.discountPercent}%</b></span>
                   <span role="cell" className="v3-uw-muted">{p.usageLimit ? `до ${p.usageLimit} разів` : "без ліміту"}</span>
                   <span role="cell" className="v3-uw-muted">{p.usedCount ? `${p.usedCount} ${plural(p.usedCount, "раз", "рази", "разів")}` : "0"}</span>
-                  <span role="cell" className="is-r v3-pw-pm">
-                    <button type="button" className="v3-uwc-dots" aria-label={`Дії з ${p.code}`} aria-haspopup="menu" aria-expanded={menu === p.id} onClick={(e) => { e.stopPropagation(); setMenu(menu === p.id ? null : p.id); }}><MoreHorizontal size={16} aria-hidden="true" /></button>
-                    {menu === p.id && <div className="v3-uwc-menu" role="menu" onClick={(e) => e.stopPropagation()}>
-                      <button type="button" role="menuitem" disabled={!online} onClick={() => { setMenu(null); onToggle(p); }}><span><b>{p.active ? "Вимкнути" : "Увімкнути"}</b><small>{p.active ? "більше не застосовується до нових оплат" : "знову можна застосувати в оплаті"}</small></span></button>
-                      <button type="button" role="menuitem" onClick={() => { setMenu(null); navigator.clipboard?.writeText(p.code).then(() => toast.info(`Код ${p.code} скопійовано`)).catch(() => {}); }}><span><b>Скопіювати код</b></span></button>
-                    </div>}
-                  </span>
+                  <span role="cell" className="is-r v3-pw-pm"><button type="button" role="switch" aria-checked={p.active} aria-label={`${p.code}: ${p.active ? "вимкнути" : "увімкнути"}`} title={p.active ? "Вимкнути промокод" : "Увімкнути промокод"} className={`v3-pswitch${p.active ? " is-on" : ""}`} disabled={!online} onClick={() => onToggle(p)}><span /></button></span>
                 </div>
               );
             })}

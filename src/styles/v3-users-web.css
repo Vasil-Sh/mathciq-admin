@@ -455,3 +455,13 @@
 @media (min-width: 768px) {
   .v3-pw-chiprow { justify-content: flex-start; margin: 12px 0 0; }
 }
+@media (min-width: 768px) {
+  /* promo codes and refunds: every row in its own grey block */
+  .v3-pw .v3-uw-table .v3-uw-tr.is-static { margin-bottom: 6px; background: #f4f6f9; }
+  @media (hover: hover) { .v3-pw .v3-uw-table .v3-uw-tr.is-static:hover { background: #edf0f5; } }
+  .v3-pw .v3-uw-tr.is-dim { opacity: 1; }
+  .v3-pw .v3-uw-tr.is-dim > :not(:last-child) { opacity: .55; }
+  .v3-pw .v3-pwl-promo { background: #fff; }
+  .v3-pw .v3-pswitch.is-on { background: #00b24b; }
+  .v3-pw .v3-pswitch:disabled { opacity: .5; cursor: not-allowed; }
+}

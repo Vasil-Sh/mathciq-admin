@@ -231,7 +231,7 @@ export function UserPaymentsWeb({ who, user, rows, online, onClose, onRecord, on
               <button type="button" className="v3-uwb is-green" disabled={!online} onClick={onRecord}>Записати оплату</button>
               <button type="button" className="v3-uwb" disabled={!online || st === "blocked"} onClick={onPro}>Pro на N днів</button>
               <button type="button" className="v3-uwb" disabled={!online || !canRefund} title={canRefund ? undefined : "Немає записаної оплати"} onClick={onRefund}>Повернути</button>
-              <button type="button" className="v3-uwb is-softred" disabled={!online || !["active", "soon", "urgent", "trial"].includes(st || "")} onClick={onCancelSub}>Скасувати підписку</button>
+              <button type="button" className="v3-uwb is-red" disabled={!online || !["active", "soon", "urgent", "trial"].includes(st || "")} onClick={onCancelSub}>Скасувати підписку</button>
             </div>
           )}
           <p className="v3-pwu-l">Оплати · {list.length}</p>
