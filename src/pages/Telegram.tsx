@@ -268,6 +268,9 @@ export default function Telegram() {
     if (!miss?.length) return;
     setChSeen((cur) => { const next = { ...cur }; for (const c of miss) next[c.handle] = c.all!.posts; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; });
   }, [data, chSeen]);
+  // the readers' block folded to its header (remembered)
+  const [readerFold, setReaderFold] = useState(() => { try { return localStorage.getItem("v3-tg-rfold") === "1"; } catch { return false; } });
+  const toggleReaderFold = () => setReaderFold((o) => { try { localStorage.setItem("v3-tg-rfold", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const toggleReaders = () => setReadersOpen((o) => { try { localStorage.setItem("v3-tg-readers", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
   const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
@@ -397,8 +400,9 @@ export default function Telegram() {
             {data.tme?.limitedUntil && <p className="v3-tg-tme">Telegram тимчасово обмежив наші запити — збір продовжиться о {hhmm(data.tme.limitedUntil)}. Паузи між каналами збільшено.</p>}
             <Candidates onAdd={(h) => { setAddLink(`https://t.me/${h}`); setAddOpen(true); }} />
             {data.reader && (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
-              <div className="v3-tg-reader">
-                <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em></div>
+              <div className={`v3-tg-reader${readerFold ? " is-fold" : ""}`}>
+                <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em><button type="button" className="v3-tg-rfold" aria-expanded={!readerFold} aria-label={readerFold ? "Розгорнути блок читачів" : "Згорнути блок читачів"} onClick={toggleReaderFold}><ChevronDown size={18} aria-hidden="true" className={readerFold ? "" : "is-up"} /></button></div>
+                {!readerFold && <>
                 {data.accuracy && data.accuracy.posts > 0 && (() => { const a = data.accuracy; const t = (v: number | null) => v == null ? "" : v >= 90 ? "is-ok" : v < 70 ? "is-bad" : "is-warn"; return (
                   <div className="v3-tg-acc7">
                     <div className="v3-tg-acch"><span><small>Точність за 7 днів</small><b className={t(a.percent)}>{a.percent ?? "—"}%</b><em>{a.posts} {plural(a.posts, "пост", "пости", "постів")} · виправлено {a.wrong} · не розпізнано {a.missed}</em></span>
@@ -437,6 +441,7 @@ export default function Telegram() {
                 {err && <p className="v3-tg-rerr"><b>Остання помилка</b>{err}{r.ai ? " — пост читає наступний у ланцюжку" : ""}</p>}
                 {data.account && (data.account.enabled ? <p className={`v3-tg-acc${data.account.error ? " is-bad" : ""}`}>{data.account.error ? `Акаунт Telegram: ${data.account.error}` : "Акаунт Telegram підключено — можна додавати приватні канали t.me/+…"}</p> : null)}
                 <small>Читають по черзі: якщо в одного ліміт або погана відповідь — наступний. Квиток із грошима читають двоє; якщо не згодні — пост іде в «Нерозпізнані». Точніший за вашими виправленнями читач стає першим. Справа — запитів сьогодні / денний ліміт («≈» — приблизний, уточниться, коли читач уперше дійде до ліміту).</small>
+                </>}
               </div>
             ); })()}
             {data.channels.length > 1 && <div className="v3-mxp-bar v3-tg-sortbar"><div className="v3-mxp-days" role="group" aria-label="Сортування">{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => { const nn = k === "new" ? data.channels.reduce((x, c) => x + Math.max(0, chSeen[c.handle] != null ? (c.all?.posts ?? 0) - chSeen[c.handle] : 0), 0) : 0; return <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}{nn ? <b>{nn > 99 ? "99+" : nn}</b> : null}</button>; })}</div></div>}
