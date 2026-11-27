@@ -43,6 +43,10 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
   const [initial, setInitial] = useState("");
   const [guard, setGuard] = useState(false);
   const [err, setErr] = useState<{ login?: string; dates?: string; tg?: string }>({});
+  // Web edit (design «Веб — Редагувати»): no plan tiles, the subscription dates go last.
+  const [web, setWeb] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches);
+  useEffect(() => { const mm = window.matchMedia("(min-width: 768px)"); const f = () => setWeb(mm.matches); mm.addEventListener("change", f); return () => mm.removeEventListener("change", f); }, []);
+  const webEdit = web && mode === "edit";
 
   useEffect(() => {
     if (!open) return;
@@ -96,11 +100,11 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             <legend>Основна інформація</legend>
             <div className="v3-form-grid">
               <div className="v3-field"><label htmlFor="uf-login">Логін <span className="v3-req">*</span></label><input id="uf-login" autoFocus={mode === "create" && !isPhoneWidth()} required aria-invalid={!!err.login} aria-describedby={err.login ? "uf-login-err" : undefined} value={f.username} onChange={(e) => { setF({ ...f, username: e.target.value }); if (err.login) setErr({ ...err, login: undefined }); }} placeholder="Логін без @" autoComplete="off" />{err.login ? <small id="uf-login-err" className="v3-field-err" role="alert">{err.login}</small> : <small className="v3-hint">Використовується для входу</small>}</div>
-              <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} aria-invalid={!!err.tg} aria-describedby={err.tg ? "uf-tg-err" : undefined} onChange={(e) => { setF({ ...f, telegram: e.target.value }); if (err.tg) setErr({ ...err, tg: undefined }); }} placeholder="@username або t.me/username" />{err.tg ? <small id="uf-tg-err" className="v3-field-err" role="alert">{err.tg}</small> : <small className="v3-hint">Контакт для зв’язку</small>}</div>
+              <div className="v3-field"><label htmlFor="uf-tg">Telegram</label><input id="uf-tg" value={f.telegram} aria-invalid={!!err.tg} aria-describedby={err.tg ? "uf-tg-err" : undefined} onChange={(e) => { setF({ ...f, telegram: e.target.value }); if (err.tg) setErr({ ...err, tg: undefined }); }} placeholder="@username або t.me/username" />{err.tg ? <small id="uf-tg-err" className="v3-field-err" role="alert">{err.tg}</small> : <small className={webEdit && !f.telegram.trim() ? "v3-hint is-warn" : "v3-hint"}>{webEdit ? (f.telegram.trim() ? "Контакт для зв’язку" : "не вказано") : "Контакт для зв’язку"}</small>}</div>
             </div>
           </fieldset>
 
-          {!isAdminRole && (
+          {!isAdminRole && !webEdit && (
             <fieldset disabled={busy} className="v3-form-sec">
               <legend>План</legend>
               <div className="v3-opts">
@@ -140,6 +144,17 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             {roleLock && <p className="v3-lock-note"><Lock size={13} aria-hidden="true" />{roleLock}</p>}
           </fieldset>
 
+          {webEdit && !isAdminRole && (
+            <fieldset disabled={busy} className="v3-form-sec v3-ufd-wdates">
+              <legend className="sr-only">Підписка</legend>
+              <div className="v3-form-grid">
+                <div className="v3-field"><label id="uf-start-l">Підписка: початок</label><DateField id="uf-start" labelledBy="uf-start-l" value={f.startDate} onChange={(v) => { setF({ ...f, startDate: v }); setErr({ ...err, dates: undefined }); }} /></div>
+                <div className="v3-field"><label id="uf-end-l">Підписка: кінець</label><DateField id="uf-end" labelledBy="uf-end-l" min={f.startDate} value={f.endDate} onChange={(v) => { setTouchedEnd(true); setF({ ...f, endDate: v }); setErr({ ...err, dates: undefined }); }} /><small className="v3-hint">зміна дат не записує оплату</small></div>
+              </div>
+              {err.dates && <p className="v3-field-err" role="alert">{err.dates}</p>}
+            </fieldset>
+          )}
+
           {guard && (
             <div className="v3-guard" role="alertdialog" aria-label="Незбережені зміни">
               <strong>Закрити без збереження?</strong><span>Зміни в цій формі буде втрачено.</span>
@@ -147,7 +162,7 @@ export default function UserFormDialog({ mode, open, user, settings, canAppointO
             </div>
           )}
           <div className="v3-modal-foot">
-            {dirty ? <span className="v3-dirty" role="status"><i aria-hidden="true" />Є незбережені зміни</span> : <span className="v3-hint">{mode === "create" ? "Пароль згенерується автоматично" : "Зміни запишуться в журнал дій"}</span>}
+            {dirty ? <span className="v3-dirty" role="status"><i aria-hidden="true" />Є незбережені зміни</span> : <span className="v3-hint">{mode === "create" ? (web ? "Пароль згенерується автоматично — покажемо його один раз" : "Пароль згенерується автоматично") : web ? "Зміни запишуться в журнал із попередніми значеннями" : "Зміни запишуться в журнал дій"}</span>}
             <div className="v3-modal-actions">
               <button type="button" className="v3-btn v3-btn-ghost" onClick={() => dlg(false)} disabled={busy}>Скасувати</button>
               <button type="submit" className="v3-btn v3-btn-blue" disabled={busy}>{busy ? "Зберігаємо…" : mode === "create" ? "Створити" : "Зберегти"}</button>

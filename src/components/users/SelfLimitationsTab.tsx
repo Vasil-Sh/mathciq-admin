@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Lock, Search, X } from "lucide-react";
+import { Lock, Search, Shield, X } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { api } from "@/lib/apiClient";
 import { plural, periodLabel } from "@/lib/dashboardInsights";
@@ -16,7 +16,7 @@ const when = (iso: string) => {
 };
 
 /** «Самообмеження» tab: requests are applied at once and cannot be lifted early. */
-export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) => void }) {
+export default function SelfLimitationsTab({ onCount, web }: { onCount?: (n: number) => void; web?: boolean }) {
   const [rows, setRows] = useState<Req[] | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"active" | "done">("active");
@@ -34,6 +34,55 @@ export default function SelfLimitationsTab({ onCount }: { onCount?: (n: number) 
   const needle = q.trim().replace(/^@/, "").toLowerCase();
   const hit = (r: Req) => !needle || r.username.toLowerCase().includes(needle) || (r.telegram || "").toLowerCase().replace(/^@/, "").includes(needle);
   const shown = (tab === "active" ? active : done).filter(hit);
+
+  if (web) {
+    const shortUntil = (iso: string) => { const d = new Date(iso); return `до ${d.toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" }).replace(" р.", "")}`; };
+    const filed = (iso: string) => { const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? when(iso) : d.toLocaleDateString("uk-UA", { day: "numeric", month: "short" }); };
+    const term = (n: number) => n % 30 === 0 ? `${n / 30} міс.` : n % 365 === 0 ? `${n / 365} р.` : `${n} ${plural(n, "день", "дні", "днів")}`;
+    return (
+      <section className="v3-uw-excl">
+        <div className="v3-uw-list v3-uw-excl-main">
+          <div className="v3-uw-excl-h">
+            <div><h2>Запити на самообмеження</h2><p>Користувач сам блокує свій акаунт на обраний термін. Блок застосовується одразу.</p></div>
+            <div className="v3-uw-seg" role="group" aria-label="Стан">
+              <PillTrack active={tab} />
+              <button type="button" className={tab === "active" ? "is-on" : ""} aria-pressed={tab === "active"} onClick={() => setTab("active")}>Активні · {active.length}</button>
+              <button type="button" className={tab === "done" ? "is-on" : ""} aria-pressed={tab === "done"} onClick={() => setTab("done")}>Завершені · {done.length}</button>
+            </div>
+          </div>
+          {error ? <p className="v3-uw-excl-err" role="alert">Не вдалося завантажити запити: {error}</p> : !rows ? <p className="v3-uw-excl-err" role="status">Завантаження…</p> : shown.length === 0 ? (
+            <div className="v3-uw-empty"><span aria-hidden="true"><Shield size={18} /></span><strong>{tab === "active" ? "Активних блоків немає" : "Завершених запитів ще немає"}</strong><p>{tab === "active" ? "Запит з’явиться тут, щойно користувач його надішле" : "Тут будуть блоки, термін яких минув"}</p></div>
+          ) : (
+            <div className="v3-uw-table is-excl" role="table" aria-label="Самообмеження">
+              <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Подано</span><span role="columnheader">Термін</span><span role="columnheader">Заблоковано</span><span role="columnheader" className="is-r">Стан</span></div>
+              {shown.map((r, i) => {
+                const left = r.until ? dayDiff(r.until) : 0;
+                const isNew = Date.now() - Date.parse(r.createdAt) < 864e5;
+                return (
+                  <div key={r.id} className="v3-uw-tr is-static" role="row" style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}>
+                    <span role="cell" className="v3-uw-who"><span className="v3-uw-av"><UserAvatar username={r.username} telegram={r.telegram} /></span><span><strong>@{r.username}</strong><small>{r.plan ? planName(r.plan) : "—"}</small></span></span>
+                    <span role="cell" className="v3-uw-muted">{filed(r.createdAt)}</span>
+                    <span role="cell"><b>{term(r.periodDays)}</b></span>
+                    <span role="cell" className="v3-uw-muted">{r.until ? shortUntil(r.until) : "—"}</span>
+                    <span role="cell" className="is-r">{tab === "active" ? <span className={`v3-uwt ${isNew ? "is-blue" : left <= 7 ? "is-amber" : "is-grey"}`}>{isNew ? "новий" : `ще ${left} ${plural(left, "день", "дні", "днів")}`}</span> : <span className="v3-uwt is-grey">{r.status === "denied" ? "відхилено" : "завершено"}</span>}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <aside className="v3-uw-list v3-uw-excl-side">
+          <h2>Як працює</h2>
+          <p className="v3-uw-excl-warn"><b>Зняти блок раніше не можна.</b> Ні адмін, ні овнер не можуть скасувати самообмеження до кінця терміну.</p>
+          <dl>
+            <div><dt>Під час блоку</dt><dd>вхід закрито, оплати не приймаються</dd></div>
+            <div><dt>Оплачені дні</dt><dd>не згорають — підписка продовжується на час блоку</dd></div>
+            <div><dt>Після терміну</dt><dd>доступ відкривається автоматично</dd></div>
+          </dl>
+        </aside>
+      </section>
+    );
+  }
 
   return (
     <section className="v3-excl">

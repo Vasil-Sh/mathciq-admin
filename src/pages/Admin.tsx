@@ -30,9 +30,15 @@ import type { AdminUserOverview, AppSettings } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 import ExportCsvButton from "@/components/ExportCsvButton";
+import UserWebCard, { webTag } from "@/components/users/UserWebCard";
+import { AddPaymentWeb, DeleteWeb, HistoryWeb, PasswordWeb } from "@/components/users/UsersWebDialogs";
+import { Lock, User as UserIcon } from "lucide-react";
 
 const PAGE_SIZE = 10;
 type Sort = "new" | "name";
+type WSort = "end" | "new" | "name";
+type WChip = "all" | "paid" | "trial" | "expiring" | "cancelled" | "age" | "admins";
+const WSORTS: WSort[] = ["end", "new", "name"];
 const FILTERS = USER_FILTERS;
 const SORTS: Sort[] = ["new", "name"];
 
@@ -60,6 +66,14 @@ export default function Admin() {
   const { user: me } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
   const xwide = useMedia("(min-width: 1600px)");
+  // Web (design «Користувачі · веб»): light page, table + card on the right from 1024 px.
+  const web = useMedia("(min-width: 768px)");
+  const split = useMedia("(min-width: 1024px)");
+  const [wchip, setWchip] = useState<WChip>("all");
+  const [wsort, setWsort] = useSessionFilter<WSort>("users.wsort", "end", WSORTS);
+  const [wshown, setWshown] = useState(50);
+  const [payFor, setPayFor] = useState<AdminUserOverview | null>(null);
+  const [histFor, setHistFor] = useState<AdminUserOverview | null>(null);
   const online = useOnline();
   const [users, setUsers] = useState<AdminUserOverview[] | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -181,6 +195,27 @@ export default function Admin() {
     return [...r].sort(by[sort]);
   }, [all, filter, ageOnly, q, sort]);
   useEffect(() => { setPage(1); setMobileShown(PAGE_SIZE); }, [filter, ageOnly, q, sort]);
+  // Web: chips count what the search leaves (design «пошук ter»: Усі 1 · Скасовані 1 …).
+  const wsearched = useMemo(() => {
+    const s = q.trim().toLowerCase().replace(/^@/, "");
+    return s ? all.filter((u) => u.username.toLowerCase().includes(s) || (u.telegram || "").toLowerCase().includes(s)) : all;
+  }, [all, q]);
+  const wmatch = (u: AdminUserOverview, c: WChip) => c === "all" ? true : c === "age" ? !isAdmin(u) && !u.ageConfirmed : c === "admins" ? isAdmin(u) : matches(u, c);
+  const wcounts = useMemo(() => {
+    const c: Record<WChip, number> = { all: 0, paid: 0, trial: 0, expiring: 0, cancelled: 0, age: 0, admins: 0 };
+    for (const u of wsearched) (Object.keys(c) as WChip[]).forEach((k) => { if (wmatch(u, k)) c[k]++; });
+    return c;
+  }, [wsearched]); // eslint-disable-line react-hooks/exhaustive-deps
+  const wlist = useMemo(() => {
+    const left = (u: AdminUserOverview) => isAdmin(u) ? 1e6 : !u.endDate ? 1e5 : daysLeft(u) < 0 ? 1e4 - daysLeft(u) : daysLeft(u);
+    const by: Record<WSort, (a: AdminUserOverview, b: AdminUserOverview) => number> = {
+      end: (a, b) => left(a) - left(b) || a.username.localeCompare(b.username),
+      new: (a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""),
+      name: (a, b) => a.username.localeCompare(b.username),
+    };
+    return wsearched.filter((u) => wmatch(u, wchip)).sort(by[wsort]);
+  }, [wsearched, wchip, wsort]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setWshown(50); }, [wchip, wsort, q]);
   useEffect(() => { sortMoved.current = true; }, [sort]);
   // Rows glide to their new place when the order changes (catalog · Data · sorting).
   useLayoutEffect(() => {
@@ -198,9 +233,9 @@ export default function Admin() {
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
   const paged = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const selected = all.find((u) => u.id === selectedId) || paged[0] || null;
+  const selected = web && split ? (wlist.find((u) => u.id === selectedId) || wlist[0] || null) : all.find((u) => u.id === selectedId) || (web ? null : paged[0]) || null;
 
-  const openCard = (u: AdminUserOverview) => { setSelectedId(u.id); setRowConfirm(null); if (!wide) setSheetOpen(true); };
+  const openCard = (u: AdminUserOverview) => { setSelectedId(u.id); setRowConfirm(null); if (web ? !split : !wide) setSheetOpen(true); };
 
   async function extend(u: AdminUserOverview) {
     const prev = u.endDate;
@@ -236,7 +271,7 @@ export default function Admin() {
         const planTxt = f.role !== "user" ? (f.role === "owner" ? "Овнер" : "Адміністратор") : plan === "trial" ? `План ${settings?.trialPlan === "basic" ? "Базова" : "Pro"} · пробний ${settings?.trialDays || 7} днів` : `План ${plan === "pro" ? "Pro" : "Базова"}`;
         toast.success(`@${r.username} створено`, {
           description: `${planTxt}${f.role === "user" && f.endDate ? ` · до ${f.endDate.split("-").reverse().slice(0, 2).join(".")}` : ""}`,
-          action: r.userId ? { label: "Відкрити", onClick: () => { setTab("users"); setSelectedId(r.userId!); if (!wide) setSheetOpen(true); } } : undefined,
+          action: r.userId ? { label: "Відкрити", onClick: () => { setTab("users"); setSelectedId(r.userId!); if (web ? !split : !wide) setSheetOpen(true); } } : undefined,
         });
       } else {
         const u = form.user;
@@ -267,7 +302,7 @@ export default function Admin() {
   }
   async function doReset() {
     if (!resetting) return;
-    try { const r = await authService.resetPassword(resetting.id); setResetting(null); setPassword({ username: r.username, password: r.password, meta: "новий пароль", title: "Пароль скинуто" }); }
+    try { const r = await authService.resetPassword(resetting.id); setResetting(null); setPassword({ username: r.username || resetting.username, password: r.password, meta: "новий пароль", title: "Пароль скинуто" }); }
     catch (e) { toast.error((e as Error).message); }
   }
 
@@ -442,6 +477,115 @@ export default function Admin() {
     </div>
   );
 
+  // ── Web (≥768 px): design «Користувачі · веб» ──
+  const WCHIPS: [WChip, string][] = [["all", "Усі"], ["paid", "Платні"], ["trial", "Пробні"], ["expiring", "Закінчуються"], ["cancelled", "Скасовані"], ["age", "Вік ?"], ["admins", "Адміни"]];
+  const wline = (u: AdminUserOverview) => {
+    const st = statusOf(u), pk = u.proUntil ? "pro" : u.plan || "trial";
+    if (isAdmin(u)) return "повний доступ";
+    if (!u.ageConfirmed) return "вік не підтверджено";
+    if (st === "blocked") return `самообмеження до ${shortDate(u.selfLimitedUntil!)}`;
+    if (st === "cancelled") return `скасовано ${shortDate(u.subscriptionCancelledAt || u.cancelledAt || u.endDate)}`;
+    if (st === "ended") return `закінчилась ${shortDate(u.endDate)}`;
+    return `${planName(pk)} · до ${shortDate(u.endDate)}`;
+  };
+  const wcard = selected && (
+    <UserWebCard key={selected.id} user={selected} settings={settings} extendDays={extendDays} online={online}
+      deleteReason={deleteBlockReason(me, ro(selected))}
+      resetReason={canResetPassword(me, ro(selected)) ? null : "Скидати пароль адміністратора може лише овнер"}
+      onEdit={() => setForm({ mode: "edit", user: selected })} onDelete={() => setDeleting(selected)} onResetPassword={() => setResetting(selected)}
+      onExtend={() => setExtendFor(selected)} onAddPayment={() => setPayFor(selected)} onHistory={() => setHistFor(selected)} />
+  );
+  const wempty = emptyPlatform ? (
+    <div className="v3-uw-empty"><span aria-hidden="true"><UserPlus size={20} /></span><strong>Додайте першого користувача</strong><p>Тут будуть облікові записи, підписки й оплати. Поки є лише {admins === 1 ? "ваш акаунт" : "акаунти адміністраторів"}.</p><div><button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => setForm({ mode: "create" })}>Створити користувача</button></div></div>
+  ) : (
+    <div className="v3-uw-empty"><span aria-hidden="true"><Search size={20} /></span><strong>Нікого не знайдено</strong>
+      <p>{q.trim() ? `За запитом «${q.trim()}»${wchip !== "all" ? " з цим фільтром" : ""} нікого немає. Перевірте логін або спробуйте Telegram — шукаємо в обох.` : "У цьому фільтрі нікого немає."}</p>
+      <div>{(q.trim() || wchip !== "all") && <button type="button" className="v3-uwb is-green" onClick={() => { setQ(""); setWchip("all"); }}>{q.trim() ? "Скинути пошук" : "Показати всіх"}</button>}{q.trim() && <Link className="v3-uwb" to={`/audit?q=${encodeURIComponent(q.trim())}`}>Шукати в журналі дій</Link>}</div>
+    </div>
+  );
+  const wrows = (
+    <div className="v3-uw-table" role="table" aria-label="Користувачі">
+      {(wlist.length > 0 || (users === null && loading)) && <div className="v3-uw-tr is-th" role="row"><span role="columnheader">Користувач</span><span role="columnheader">Тариф</span><span role="columnheader">Підписка</span><span role="columnheader" className="is-r">Днів лишилось</span><span role="columnheader">Роль</span></div>}
+      {users === null && loading ? Array.from({ length: 6 }, (_, i) => <div key={i} className="v3-uw-tr is-skel" aria-hidden="true"><span className="v3-uw-who"><i className="is-av" /><i style={{ width: 120 }} /></span><i style={{ width: 60 }} /><i style={{ width: 80 }} /><i style={{ width: 24, justifySelf: "end" }} /><i style={{ width: 70 }} /></div>)
+        : wlist.length ? wlist.slice(0, wshown).map((u, i) => {
+          const admin = isAdmin(u), st = statusOf(u), tg = webTag(u), d = u.endDate ? daysLeft(u) : null, ageWarn = !admin && !u.ageConfirmed;
+          const sel = split && selected?.id === u.id;
+          return (
+            <div key={u.id} role="row" tabIndex={0} aria-selected={sel || undefined} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
+              ref={(el) => { if (el) rowEls.current.set(u.id, el); else rowEls.current.delete(u.id); }}
+              className={`v3-uw-tr${sel ? " is-sel" : ""}${newId === u.id ? " is-new" : ""}${leavingId === u.id ? " is-leaving" : ""}`}
+              onClick={() => openCard(u)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(u); } }}>
+              <span role="cell" className="v3-uw-who"><span className="v3-uw-av"><UserAvatar username={u.username} telegram={u.telegram} />{ageWarn && <b aria-label="вік не підтверджено">!</b>}</span><span><strong>@{hl(u.username, q)}</strong><small className={ageWarn ? "is-warn" : undefined}>{wline(u)}</small></span></span>
+              <span role="cell">{admin ? "—" : planName(u.proUntil ? "pro" : u.plan || "trial")}</span>
+              <span role="cell"><span className={`v3-uwt ${tg.cls}`}>{tg.label}</span></span>
+              <span role="cell" className={`is-r v3-uw-days${d !== null && d >= 0 && d <= 3 && !["cancelled", "ended"].includes(st) ? " is-red" : ""}`}>{admin ? "" : st === "cancelled" || st === "ended" || d === null ? "—" : Math.max(0, d)}</span>
+              <span role="cell" className={admin ? "v3-uw-role is-admin" : "v3-uw-role"}>{u.isOwner ? "Овнер" : admin ? "Адмін" : "Користувач"}</span>
+            </div>
+          );
+        }) : wempty}
+    </div>
+  );
+  const webPage = (
+    <div className="v3-page v3-uw">
+      <section className="v3-uw-hero">
+        <div>
+          <h1>Користувачі</h1>
+          <p>{all.length} {plural(all.length, "запис", "записи", "записів")} · {counts.paid} {plural(counts.paid, "платний", "платних", "платних")} · {counts.trial} на пробному{updatedAt ? ` · оновлено ${updatedAt}` : ""}</p>
+        </div>
+        <div className="v3-uw-hacts">
+          {!emptyPlatform && <ExportCsvButton className="v3-uwb is-white" onClick={exportCsv} disabled={!list.length} />}
+          <button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => setForm({ mode: "create" })}><Plus size={15} aria-hidden="true" />Новий користувач</button>
+        </div>
+      </section>
+      <div className="v3-uw-tools">
+        {!(emptyPlatform && !exclCount) && <div className="v3-uw-tabs" role="tablist" aria-label="Розділи">
+          <PillTrack active={tab} />
+          <button type="button" role="tab" aria-selected={tab === "users"} className={tab === "users" ? "is-on" : ""} onClick={() => setTab("users")}>Усі користувачі</button>
+          <button type="button" role="tab" aria-selected={tab === "excl"} className={tab === "excl" ? "is-on" : ""} onClick={() => setTab("excl")}>Самообмеження{exclCount ? <b>{exclCount}</b> : null}</button>
+        </div>}
+        {tab === "users" && !emptyPlatform && <>
+          <label className="v3-uw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук користувачів" placeholder="Логін або Telegram" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" onClick={() => setQ("")} aria-label="Очистити пошук"><X size={13} /></button>}</label>
+          <div className="v3-uw-chips" role="group" aria-label="Фільтр">
+            {WCHIPS.map(([k, l]) => <button key={k} type="button" className={wchip === k ? "is-on" : ""} aria-pressed={wchip === k} onClick={() => setWchip(k)}>{l} <span>{users === null ? "" : wcounts[k]}</span></button>)}
+          </div>
+        </>}
+      </div>
+      {tab === "users" && !emptyPlatform && <div className="v3-uw-sortrow"><Dropdown className="is-light v3-uw-sort" ariaLabel="Сортування" value={wsort} onChange={(v) => setWsort(v as WSort)} options={[{ value: "end", label: "Спершу ті, хто закінчується" }, { value: "new", label: "Нові спочатку" }, { value: "name", label: "За логіном" }]} /></div>}
+      {!online && <div className="v3-uw-off" role="status"><WifiOff size={15} aria-hidden="true" /><span>Немає інтернету. Список станом на {updatedAt || "—"} — створення, оплати й продовження недоступні.</span><button type="button" className="v3-uwb" onClick={() => { if (navigator.onLine) load(); else toast.info("Досі немає з’єднання"); }}>Перевірити ще раз</button></div>}
+      {tab === "excl" ? <SelfLimitationsTab web onCount={setExclCount} /> : <>
+        {error && users !== null && <div className="v3-uw-off" role="alert"><AlertTriangle size={15} aria-hidden="true" /><span>Не вдалося оновити список: {error}. Показано дані станом на {updatedAt}.</span><button type="button" className="v3-uwb" onClick={load}>Спробувати ще раз</button></div>}
+        <section className={`v3-uw-main${split ? "" : " is-one"}`}>
+          <div className="v3-uw-list" aria-busy={loading}>
+            {error && users === null ? (
+              <div className="v3-uw-empty is-err" role="alert"><span aria-hidden="true">!</span><strong>Не вдалося завантажити користувачів</strong><p>Сервер не відповів. Фільтри й пошук збережено.{showErr ? ` (${error})` : ""}</p><div><button type="button" className="v3-uwb is-green" onClick={load}>Спробувати ще раз</button><button type="button" className="v3-uwb" aria-expanded={showErr} onClick={() => setShowErr((v) => !v)}>{showErr ? "Сховати" : "Деталі"}</button></div></div>
+            ) : wrows}
+            {wlist.length > wshown && <button type="button" className="v3-uw-more" onClick={() => setWshown(wshown + 50)}>Показати ще {Math.min(50, wlist.length - wshown)}</button>}
+          </div>
+          {split && (wcard || <aside className="v3-uwc is-empty"><span aria-hidden="true"><UserIcon size={18} /></span><p>Виберіть користувача ліворуч</p></aside>)}
+        </section>
+      </>}
+      {!split && <Dialog open={sheetOpen && !!selected} onOpenChange={setSheetOpen}><DialogContent className="v3-modal v3-uwm v3-uwm-card sm:max-w-[420px]"><DialogTitle className="sr-only">Картка користувача</DialogTitle><DialogDescription className="sr-only">Підписка, профіль і дії</DialogDescription>{wcard}</DialogContent></Dialog>}
+      {extendFor && <ExtendConfirmDialog open={!!extendFor} onOpenChange={(o) => { if (!o) setExtendFor(null); }} items={[{ user: { id: extendFor.id, username: extendFor.username, role: extendFor.role, telegram: extendFor.telegram, priceMonth: String(extendFor.priceMonth || ""), startDate: extendFor.startDate, endDate: extendFor.endDate }, days: daysLeft(extendFor) }]} days={extendDays} busy={false} subtitle="Дата закінчення зсунеться без запису оплати." onConfirm={() => extend(extendFor)} />}
+      <UserFormDialog mode={form?.mode || "create"} open={!!form} user={form?.mode === "edit" ? form.user : null} settings={settings}
+        canAppointOwner={!!me?.isOwner} roleLock={form?.mode === "edit" ? roleLockReason(me, ro(form.user)) : null} busy={saving}
+        onOpenChange={(o) => { if (!o) setForm(null); }} onSave={saveForm}
+        telegramTakenBy={(tg) => { const k = normTg(tg); return k ? all.find((u) => normTg(u.telegram) === k)?.username ?? null : null; }} />
+      <PasswordWeb data={password} telegram={password ? all.find((u) => u.username === password.username)?.telegram : null} onClose={() => setPassword(null)} />
+      <DeleteWeb user={deleting} settings={settings} open={!!deleting} busy={busyDelete} onOpenChange={(o) => { if (!o) setDeleting(null); }} onConfirm={doDelete} />
+      <AddPaymentWeb user={payFor} settings={settings} open={!!payFor} onOpenChange={(o) => { if (!o) setPayFor(null); }} onSaved={load} />
+      <HistoryWeb user={histFor} open={!!histFor} onOpenChange={(o) => { if (!o) setHistFor(null); }} />
+      <Dialog open={!!resetting} onOpenChange={(o) => { if (!o) setResetting(null); }}>
+        <DialogContent className="v3-modal v3-uwm sm:max-w-[440px]">
+          <span className="v3-uwm-ico" aria-hidden="true"><Lock size={18} /></span>
+          <DialogTitle className="v3-modal-title">Скинути пароль @{resetting?.username}?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">Старий пароль перестане працювати, усі сесії завершаться. Новий покажемо один раз — передайте його користувачу.</DialogDescription>
+          <div className="v3-uwm-foot"><span>Запишеться в журнал дій</span><div><button type="button" className="v3-uwb" onClick={() => setResetting(null)}>Скасувати</button><button type="button" className="v3-uwb is-green" onClick={doReset}>Скинути пароль</button></div></div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+  if (web) return webPage;
   return (
     <div className="v3-page v3-users">
       <section className="v3-hero v3-hero-row">
