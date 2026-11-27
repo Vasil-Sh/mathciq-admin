@@ -6,6 +6,8 @@ export interface TgChannel {
   lastPostAt: string | null; checkedAt: string | null; error: string | null; status: TgStatus;
   /** A private channel (handle «priv-<id>») read through our Telegram account: its invite hash. */
   invite?: string | null;
+  /** Skill: CLV (its odds against the closing odds), its best / worst kind of bet, whom it copies. */
+  skill?: { clv: { avg: number; n: number } | null; best: { kind: string; n: number; roi: number } | null; worst: { kind: string; n: number; roi: number } | null; copies: { from: string; n: number } | null };
   /** The bookmakers its slips come from, most used first. */
   bookmakers?: string[];
   /** Paused by the server (silent for 14 days) and failed reads in a row. */
@@ -17,7 +19,7 @@ export interface TgChannel {
   /** A running re-read / first read of a new channel: posts to read and read so far. */
   progress?: { total: number; done: number; kind: "reread" | "add" | "collect" | "archive" } | null;
   /** Real money from the bet slips, per currency (won → paid − staked, lost → −staked). */
-  money?: { currency: string; profit: number; staked: number; bets: number; won?: number; lost?: number; wins?: number; losses?: number; open?: number; openBets?: number; profitUsd?: number | null; stakedUsd?: number | null }[];
+  money?: { currency: string; profit: number; staked: number; bets: number; won?: number; lost?: number; wins?: number; losses?: number; open?: number; openBets?: number; profitUsd?: number | null; stakedUsd?: number | null; roi?: number | null }[];
   /** The 7 days of `days` by kind (the day sheet). */
   daysDetail?: { tips: number; unknown: number; info: number; repeats: number }[];
   /** All time: posts by kind, tips settled at 100 on the odds (profit in those units). */
@@ -44,6 +46,8 @@ export interface TgList {
   account?: { enabled: boolean; connectedAt: string | null; error: string | null };
   /** t.me limits our requests: the pause until (null when none), how often since the start. */
   tme?: { limitedUntil: string | null; limitedCount: number; lastStatus: number | null };
+  /** «Сумнівно»: how many are open, and the «Перечитати сумнівні» run. */
+  doubts?: { open: number; running: boolean; done: number; total: number };
 }
 export interface TgPost {
   handle: string; postId: number; postedAt: string; text: string; kind: "bet" | "other" | "unknown"; reason: string | null; game: string | null;
@@ -101,6 +105,7 @@ export const bulkTgInfo = (items: { handle: string; postId: number }[]) => api.p
 export interface TgCandidateCh { handle: string; seenIn: string[]; mentions: number; lastAt: string }
 export const fetchTgCandidates = () => api.get<{ candidates: TgCandidateCh[] }>("/admin/tg-sources/candidates").then((r) => r.candidates);
 export const dismissTgCandidate = (h: string) => api.delete(`/admin/tg-sources/candidates/${encodeURIComponent(h)}`);
+export const rereadTgDoubtful = () => api.post<{ ok: true }>("/admin/tg-posts/reread-doubtful");
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
 export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map" | "MapHandicap" | "MapTotal"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);

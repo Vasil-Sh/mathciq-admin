@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, rereadTgDoubtful, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -135,7 +135,7 @@ function RankSheet({ open, onOpenChange, channels, onPick }: { open: boolean; on
           <div className="v3-tg-rankh" role="row"><span role="columnheader">Канал</span>{H.map(([key, l]) => <button key={key} type="button" role="columnheader" aria-sort={k === key ? "descending" : "none"} className={k === key ? "is-on" : ""} onClick={() => setK(key)}>{l}</button>)}</div>
           {rows.map((c, i) => { const roi = val(c, "roi"), mon = val(c, "money"); return (
             <button key={c.handle} type="button" role="row" className="v3-tg-rankr" onClick={() => onPick(c.handle)}>
-              <span className="n"><i>{i + 1}</i><b>{c.title || at(c.handle)}</b></span>
+              <span className="n"><i>{i + 1}</i><span className="nn"><b>{c.title || at(c.handle)}</b>{(c.skill?.best || c.skill?.copies) && <small>{c.skill?.copies ? `копіює @${c.skill.copies.from}` : `сильний ${c.skill!.best!.kind}`}</small>}</span></span>
               <span className={tone(roi)}>{pct(roi)}</span>
               <span>{c.all?.winrate != null ? `${c.all.winrate}%` : "—"}</span>
               <span>{c.all?.honesty != null ? `${c.all.honesty}%` : "—"}</span>
@@ -260,7 +260,7 @@ export default function Telegram() {
   }, []);
   useEffect(() => { void load(); }, [load]);
   // while a channel is being re-read: refresh every 5 s for the progress
-  const reading = !!data?.channels.some((c) => c.progress) || !!data?.reader?.golden?.running;
+  const reading = !!data?.channels.some((c) => c.progress) || !!data?.reader?.golden?.running || !!data?.doubts?.running;
   useEffect(() => { if (!reading) return; const id = setInterval(() => void load(), 5_000); return () => clearInterval(id); }, [reading, load]);
   // The sheet opens once its posts are here, so it never jumps from placeholders to a taller sheet.
   const cache = useRef(new Map<string, TgPost[]>());
@@ -418,6 +418,7 @@ export default function Telegram() {
                   <div><span>Вінрейт</span><b className={A?.winrate == null ? "" : A.winrate >= 55 ? "is-ok" : A.winrate < 45 ? "is-bad" : ""}>{A?.winrate != null ? `${A.winrate}%` : "—"}{A && A.won + A.lost ? <small> · {A.won}–{A.lost}</small> : null}</b></div>
                   {(() => { const m = c.money?.[0]; return <div><span>Гроші</span><b className={m ? tone(m.profit) : ""}>{m ? <>{cash(m.profit, m.currency).replace(/\s\S+$/, "")}<small> {CUR[m.currency] || m.currency}{c.money!.length > 1 ? ` +${c.money!.length - 1}` : ""}</small></> : "—"}</b></div>; })()}
                 </div>
+                {c.skill?.copies && <p className="v3-tg-copy">Копіює @{c.skill.copies.from} · {c.skill.copies.n} {plural(c.skill.copies.n, "прогноз", "прогнози", "прогнозів")}</p>}
                 {A && A.posts > 0 && <div className="v3-mxp-podds"><p>Усього постів {A.posts}: прогнозів {A.tips}, нерозпізнаних {A.unknown}, інфо {A.other}{A.repeats ? `, повторів ${A.repeats}` : ""}</p><small>{A.won + A.lost ? `Розраховано ${A.won + A.lost}: ${A.won} виграш · ${A.lost} програш · ROI ${pct(A.roi)}` : "Розрахованих прогнозів ще немає"}{A.pending ? ` · очікують ${A.pending}` : ""}</small></div>}
                 <p className="v3-tg-when">{c.paused ? <>Зупинено · перевірено {when(c.checkedAt)}</> : <><i aria-hidden="true" />Перевірено {when(c.checkedAt)}{data.nextAt && !c.progress ? ` · наступна перевірка о ${hhmm(data.nextAt)}` : ""}</>}</p>
               </div>
@@ -432,6 +433,7 @@ export default function Telegram() {
           unk === null ? <div className="v3-tg-list" aria-hidden="true"><div className="v3-tg-card is-skel"><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" /></div></div>
           : !unk.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Check size={20} /></span><strong>Усе розібрано</strong><span>За 7 днів немає постів, схожих на прогноз, які ми не зрозуміли.</span></div>
           : <div className="v3-tg-list">
+            {(data?.doubts?.open || data?.doubts?.running) ? <button type="button" className="v3-tg-reread is-blue" disabled={!online || data.doubts.running} onClick={() => void rereadTgDoubtful().then(() => { toast.success("Перечитуємо сумнівні"); setTimeout(() => void load(), 2_000); }).catch((e) => toast.error("Не вдалося", { description: (e as Error).message }))}><RefreshCw size={15} aria-hidden="true" className={data.doubts.running ? "v3-tg-spinic" : ""} />{data.doubts.running ? `Перечитуємо ${data.doubts.done} з ${data.doubts.total}…` : `Перечитати сумнівні · ${data.doubts.open}`}</button> : null}
             <div className="v3-tg-pickbar">{pickMode ? <><span>Вибрано {picked.size}</span><button type="button" onClick={() => setPicked(new Set(unk.map(keyOf)))}>Усі</button><button type="button" onClick={() => { setPickMode(false); setPicked(new Set()); }}>Скасувати</button></> : <button type="button" onClick={() => setPickMode(true)}><Check size={14} aria-hidden="true" />Вибрати кілька</button>}</div>
             {unk.map((p) => (
               <button key={`${p.handle}/${p.postId}`} type="button" className={`v3-tg-card v3-tg-un${pickMode ? " is-pick" : ""}${picked.has(keyOf(p)) ? " is-picked" : ""}`} aria-pressed={pickMode ? picked.has(keyOf(p)) : undefined} onClick={() => (pickMode ? togglePick(p) : setFix(p))}>
@@ -462,6 +464,7 @@ export default function Telegram() {
                   <div className="is-ok"><small>Виграв</small><b>{m.won ? "+" : ""}{f(m.won)}</b><em>{m.wins ?? 0} {plural(m.wins ?? 0, "ставка", "ставки", "ставок")}</em></div>
                   <div className="is-bad"><small>Програв</small><b>{m.lost ? "−" : ""}{f(m.lost)}</b><em>{m.losses ?? 0} {plural(m.losses ?? 0, "ставка", "ставки", "ставок")}</em></div>
                 </div>
+                {m.roi != null && <small className="v3-tg-bankn">Окупність грошей <b className={tone(m.roi)}>{pct(m.roi)}</b> — прибуток на кожні 100 поставлених, великі ставки важать більше</small>}
                 {!!m.openBets && <small className="v3-tg-bankn">Ще в грі: {f(m.open)} · {m.openBets} {plural(m.openBets, "ставка", "ставки", "ставок")}</small>}
               </div>
             ); })}
@@ -484,6 +487,12 @@ export default function Telegram() {
               </div>
               <small>{ch.all.ours?.onlyOurs ? `${ch.all.ours.onlyOurs} ${plural(ch.all.ours.onlyOurs, "прогноз канал не закрив", "прогнози канал не закрив", "прогнозів канал не закрив")} — перевірили ми. ` : ""}{ch.all.deleted ? `Видалено каналом: ${ch.all.deleted}${ch.all.deletedLost ? `, з них програшних ${ch.all.deletedLost}` : ""}. ` : ""}{ch.all.oddsHigh ? `Кф помітно вищий за наш: ${ch.all.oddsHigh}. ` : ""}{ch.all.edited ? `Змінено після публікації: ${ch.all.edited}.` : ""}</small>
             </div> : null}
+            {ch.skill && (ch.skill.clv || ch.skill.best || ch.skill.copies) && <div className="v3-tg-skill">
+              <span className="v3-tg-skillh">Уміння каналу</span>
+              {ch.skill.clv && <p><b className={tone(ch.skill.clv.avg)}>{ch.skill.clv.avg > 0 ? "+" : ""}{ch.skill.clv.avg}%</b> CLV · кф каналу проти кф перед стартом, {ch.skill.clv.n} {plural(ch.skill.clv.n, "ставка", "ставки", "ставок")}<small>{ch.skill.clv.avg > 1 ? "Бере ціну раніше за ринок — ознака вміння, а не везіння" : ch.skill.clv.avg < -1 ? "Бере гірші кф, ніж ринок перед матчем" : "На рівні ринку"}</small></p>}
+              {ch.skill.best && <p>Найсильніший у ставках {ch.skill.best.kind}: <b className={tone(ch.skill.best.roi)}>{pct(ch.skill.best.roi)}</b>{ch.skill.worst && ch.skill.worst.roi < 0 ? <> · {ch.skill.worst.kind} у мінусі <b className="is-bad">{pct(ch.skill.worst.roi)}</b></> : null}</p>}
+              {ch.skill.copies && <p className="is-warn">Копіює <b>@{ch.skill.copies.from}</b> — {ch.skill.copies.n} {plural(ch.skill.copies.n, "прогноз", "прогнози", "прогнозів")} той канал виклав раніше</p>}
+            </div>}
             <button type="button" className="v3-tg-slipt" onClick={() => setMore(true)}><BarChart3 size={16} aria-hidden="true" />Статистика каналу</button>
             <Dialog open={more} onOpenChange={setMore}>
               <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
