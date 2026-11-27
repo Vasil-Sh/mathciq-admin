@@ -639,6 +639,7 @@
   @media (hover: hover) { .v3-adw-tr:not(.is-th):not(.is-sel):hover { background: #f5f7fb; } }
   .v3-adw-tr .is-r { justify-self: end; text-align: right; }
   .v3-adw-tr .is-num { font-variant-numeric: tabular-nums; }
+  .v3-adw-tr .is-c { justify-self: center; text-align: center; }
   .v3-adw-tr b { font-weight: 700; }
   .v3-adw-tr.is-sel .v3-uwt { background: #fff; }
   .v3-uwt.is-redfill { background: #e5484d; color: #fff; }

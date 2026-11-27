@@ -136,14 +136,14 @@ export default function BannersWeb({ banners, slots, stats, online, today, reloa
               {([["all", "Усі", banners.length], ["live", "Активні", counts.live], ["sched", "У черзі", counts.sched], ["off", "Вимкнені", counts.off]] as [CF, string, number][]).map(([k, l, c]) => <button key={k} type="button" className={cf === k ? "is-on" : ""} aria-pressed={cf === k} onClick={() => setCf(k)}>{l} · {c}</button>)}
             </div>
           </div>
-          <div className="v3-adw-tr v3-adw-bncols is-th"><span>Банер</span><span>Місце</span><span>Період</span><span className="is-r">Кліки · 7 дн.</span><span>Статус</span><span /></div>
+          <div className="v3-adw-tr v3-adw-bncols is-th"><span>Банер</span><span>Місце</span><span>Період</span><span className="is-c">Кліки · 7 дн.</span><span>Статус</span><span /></div>
           {rows.length === 0 && <p className="v3-adw-none">Немає кампаній із таким статусом</p>}
           {rows.map((b, i) => { const s = statusOf(b, today), c = entityStats(stats, "banner:", b.id); return (
             <div key={b.id} className="v3-adw-tr v3-adw-bncols" role="button" tabIndex={0} style={{ animationDelay: `${i * 30}ms` }} onClick={() => openEdit(b)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(b); } }}>
               <span className="v3-adw-bname">{b.imageUrl ? <img src={b.imageUrl} alt="" /> : <i aria-hidden="true" />}<strong>{b.title}</strong></span>
               <span>Слот {b.slot ?? 1} · {screenOf(b.screen).label}</span>
               <span>{periodText(b)}</span>
-              <span className="is-r is-num">{nf(c.clicks)}</span>
+              <span className="is-c is-num">{nf(c.clicks)}</span>
               <span><BTag s={s} /></span>
               <span className="is-r"><Kebab label={`Дії: ${b.title}`} items={[
                 { label: "Редагувати", icon: <Pencil size={14} />, run: () => openEdit(b) },
