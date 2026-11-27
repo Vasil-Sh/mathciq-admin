@@ -499,13 +499,14 @@ export default function Bets() {
     const daySum = (bs: AdminUserBet[]) => { const done = bs.filter((b) => b.result === "Win" || b.result === "Loss"); if (!done.length) return ""; const uah = done.filter((b) => !isUsd(b)).reduce((a, b) => a + (Number(b.profit) || 0), 0); const us = done.filter(isUsd).reduce((a, b) => a + nativeProfit(b), 0); return [done.some((b) => !isUsd(b)) ? signedMoney(uah) : "", done.some(isUsd) ? signedMoney(us, "USD") : ""].filter(Boolean).join(" · "); };
     return (
       <aside key={u.id} className="v3-pwd v3-btw-side">
-        <div className="v3-btw-sh"><UserAvatar username={u.username} telegram={u.telegram} /><div><h2>@{u.username}</h2><p>{s.bets.toLocaleString("uk-UA")} {plural(s.bets, "ставка", "ставки", "ставок")} · {Math.round(s.wr)}% виграшів{userGames(u).length ? ` · ${userGames(u).join(" · ")}` : ""}</p></div><Link className="v3-uwb is-white" to={`/users?q=${encodeURIComponent(u.username)}`}>Профіль<ArrowRight size={13} aria-hidden="true" /></Link></div>
+        <div className="v3-btw-sh"><UserAvatar username={u.username} telegram={u.telegram} /><div><h2>@{u.username}</h2><p>{s.bets.toLocaleString("uk-UA")} {plural(s.bets, "ставка", "ставки", "ставок")} · {Math.round(s.wr)}% виграшів{userGames(u).length ? ` · ${userGames(u).join(" · ")}` : ""}</p></div><Link className="v3-uwb is-green" to={`/users?q=${encodeURIComponent(u.username)}`}>Профіль<ArrowRight size={13} aria-hidden="true" /></Link></div>
         {(uahBets > 0 || !ux) && <div className="v3-btw-box"><p>У гривнях · {uahBets} {plural(uahBets, "ставка", "ставки", "ставок")}</p><dl><div><dt>Профіт</dt><dd className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedMoney(s.profit)}</dd></div><div><dt>Обіг</dt><dd>{money(s.staked)}</dd></div><div><dt>ROI</dt><dd className={s.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(s.roi)}</dd></div></dl></div>}
         {ux && <div className="v3-btw-box"><p>У доларах · {ux.bets} {plural(ux.bets, "ставка", "ставки", "ставок")}</p><dl><div><dt>Профіт</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{usd(ux.profit)}</dd></div><div><dt>Обіг</dt><dd>{money(ux.staked, "USD")}</dd></div><div><dt>ROI</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(ux.roi)}</dd></div></dl></div>}
         {u.betCount > 0 && <div className="v3-btw-seg" role="group" aria-label="Результат">
           <PillTrack active={bf} />
           {([["all", "Усі"], ["win", "Виграш"], ["loss", "Програш"], ["pending", "Очікує"]] as const).map(([k, l]) => <button key={k} type="button" className={bf === k ? "is-on" : ""} aria-pressed={bf === k} onClick={() => { setBf(k); setXpOpen(new Set()); }}><b>{d?.status === "ok" ? cnt(k) : "…"}</b>{l}</button>)}
         </div>}
+        {u.betCount > 0 && d?.status === "ok" && <div className="v3-btw-allrow"><span>Останні ставки</span><button type="button" onClick={() => openAll(u)} aria-haspopup="dialog">Усі {(d.bets || []).length.toLocaleString("uk-UA")} {plural((d.bets || []).length, "ставка", "ставки", "ставок")}<ArrowRight size={13} aria-hidden="true" /></button></div>}
         <div className="v3-btw-bets">
           {!d || d.status === "loading" ? <div className="v3-pwl-skel" aria-hidden="true"><i className="is-h" /><i /><i /></div>
             : d.status === "err" ? <div className="v3-uw-empty is-err"><span aria-hidden="true">!</span><strong>{d.error === "offline" ? "Деталі недоступні офлайн" : "Не вдалося завантажити ставки"}</strong><div><button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => loadDetail(u)}>Спробувати ще раз</button></div></div>
@@ -522,7 +523,7 @@ export default function Bets() {
                     </div>
                     <div className="v3-btw-bet-r"><small>{v.amount}</small><b className={v.res === "win" ? "is-pos" : v.res === "loss" ? "is-neg" : ""}>{v.profit}</b></div>
                     {v.exp && v.legs.length > 0 && <button type="button" className="v3-btw-xp" aria-expanded={xo} aria-label={xo ? "Згорнути події" : "Показати події"} onClick={() => setXpOpen((p) => { const n = new Set(p); if (n.has(b.id)) n.delete(b.id); else n.add(b.id); return n; })}><ChevronDown size={14} aria-hidden="true" style={{ transform: xo ? "rotate(180deg)" : undefined }} /></button>}
-                    {v.exp && xo && <div className="v3-btw-legs">{v.legs.map((l, k) => { const m = legMark(v.res); return <div key={k}><b className={m.cls}>{m.mark}</b><span>{l.match}</span><small>{l.pick}</small><small>{l.odds}</small></div>; })}</div>}
+                    {v.exp && xo && <div className="v3-btw-legs">{v.legs.map((l, k) => { const m = legMark(v.res); return <div key={k}><b className={m.cls}>{m.cls === "is-win" ? <Check size={10} strokeWidth={3.4} aria-label="зайшла" /> : <i aria-hidden="true" />}</b><span>{l.match}</span><small>{l.pick}</small><small>{l.odds}</small></div>; })}</div>}
                   </div>
                 ); })}
               </section>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import PillTrack from "@/components/PillTrack";
 import UserAvatar from "@/components/UserAvatar";
@@ -52,7 +52,7 @@ export default function AllBetsDialog({ user, bets, open, onOpenChange }: { user
       <div key={b.id} className="v3-ab-bet" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>
         <div className="v3-ab-h"><strong>{v.title}</strong><span className={`v3-ab-res is-${v.res}`} style={{ animationDelay: `${150 + Math.min(i, 10) * 35}ms` }}><i />{v.status}</span></div>
         <div className="v3-ab-m"><span className="v3-ab-g">{v.game}</span>{v.exp ? v.pick : `${v.pick} · ${v.odds}`}{v.exp ? ` · ${v.odds}` : ""}</div>
-        {v.legs.length > 0 && <div className="v3-ab-legs">{v.legs.map((l, q) => { const m = legMark(v.res); return <div key={q} className="v3-ab-leg" style={{ animationDelay: `${150 + Math.min(i, 10) * 35 + q * 50}ms` }}><b className={m.cls}>{m.mark}</b><span>{l.match}</span><em>{[l.pick, l.odds].filter(Boolean).join(" · ")}</em></div>; })}</div>}
+        {v.legs.length > 0 && <div className="v3-ab-legs">{v.legs.map((l, q) => { const m = legMark(v.res); return <div key={q} className="v3-ab-leg" style={{ animationDelay: `${150 + Math.min(i, 10) * 35 + q * 50}ms` }}><b className={m.cls}>{m.cls === "is-win" ? <Check size={10} strokeWidth={3.4} aria-label="зайшла" /> : <i aria-hidden="true" />}</b><span>{l.match}</span><em>{[l.pick, l.odds].filter(Boolean).join(" · ")}</em></div>; })}</div>}
         <div className="v3-ab-f"><span>{v.amount}</span><strong className={v.res === "win" ? "is-pos-d" : v.res === "loss" ? "is-neg-d" : "v3-ab-dim"}>{v.profit}</strong></div>
       </div>
     );
@@ -61,7 +61,7 @@ export default function AllBetsDialog({ user, bets, open, onOpenChange }: { user
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="v3-modal v3-ab">
+      <DialogContent className="v3-modal v3-ab" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="v3-ab-head">
           <UserAvatar username={user.username} telegram={user.telegram} className="v3-ab-av" />
           <div className="v3-ab-who">

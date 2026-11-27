@@ -566,3 +566,26 @@
   .v3-pw-gen.is-run svg { animation: v3-spin .6s linear infinite; }
   @media (hover: hover) { .v3-pw-gen:hover { background: #e3e6ec; } }
 }
+@media (min-width: 768px) {
+  .v3-uw-hero { position: relative; z-index: 6; }
+  .v3-btw-bets { scrollbar-width: none; }
+  .v3-btw-bets::-webkit-scrollbar { display: none; }
+  .v3-btw-legs b { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #dfe3ea; color: #fff; }
+  .v3-btw-legs b.is-win { background: #1f9d55; color: #fff; }
+  .v3-btw-legs b i { width: 4px; height: 4px; border-radius: 50%; background: #8a93a3; }
+  .v3-btw-legs div { grid-template-columns: 16px minmax(0, 1fr) auto auto; }
+  .v3-btw-allrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: -4px; font-size: 12px; font-weight: 600; }
+  .v3-btw-allrow button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: #3a6df0; font: 600 12px Inter, sans-serif; cursor: pointer; }
+  @media (hover: hover) { .v3-btw-allrow button:hover { text-decoration: underline; } }
+}
+@media (min-width: 768px) {
+  /* «Усі ставки» window on the web bets page: the result filter as white-on-grey, leg marks in circles */
+  body:has(.v3-btw) .v3-ab .v3-ab-f4 { border-radius: 12px; background: #eef0f4; }
+  body:has(.v3-btw) .v3-ab .v3-ab-f4 > .v3-pill { border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  body:has(.v3-btw) .v3-ab .v3-ab-f4 button.is-on, body:has(.v3-btw) .v3-ab .v3-ab-f4 button.is-on b { color: #11151c; }
+  @media (hover: hover) { body:has(.v3-btw) .v3-ab .v3-ab-f4 button:not(.is-on):hover { color: #11151c; } }
+  body:has(.v3-btw) .v3-ab .v3-ab-leg b { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #dfe3ea; color: #fff; }
+  body:has(.v3-btw) .v3-ab .v3-ab-leg b.is-win { background: #1f9d55; color: #fff; }
+  body:has(.v3-btw) .v3-ab .v3-ab-leg b i { width: 4px; height: 4px; border-radius: 50%; background: #8a93a3; }
+}
+@media (min-width: 768px) { body:has(.v3-btw) .v3-ab:focus, body:has(.v3-btw) .v3-ab:focus-visible { outline: none; } }
