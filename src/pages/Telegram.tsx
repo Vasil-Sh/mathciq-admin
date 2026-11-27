@@ -432,7 +432,7 @@ export default function Telegram() {
                 ); })}<li className="is-off"><span className="v3-tg-rn">{r.readers.length + 1}</span><span className="v3-tg-rl"><b>OCR</b><small>запасний варіант без ключів</small></span><em>{r.ocrImages}</em></li></ul>}
                 {!!r.readers?.length && readersOpen && r.golden && (() => { const g = r.golden; return (
                   <div className="v3-tg-gold">
-                    <div className="v3-tg-goldh"><span><b>Перевірка на еталоні</b><small>{g.running ? `Читаємо ${g.done} з ${g.total}…` : g.at ? `${g.posts} ${plural(g.posts ?? 0, "пост", "пости", "постів")}, розібраних вручну · ${when(g.at)}` : "Кожен читач заново читає пости, які ви розібрали вручну"}</small></span>
+                    <div className="v3-tg-goldh"><span><b>Перевірка на еталоні</b><small>{g.running ? `Читаємо ${g.done} з ${g.total}…` : g.at ? `${g.posts} ${plural(g.posts ?? 0, "пост", "пости", "постів")}, розібраних чи підтверджених вами · ${when(g.at)}` : "Кожен читач заново читає пости, які ви розібрали чи підтвердили в «Перевірити 10»"}</small></span>
                       <button type="button" className={g.running ? "is-run" : ""} disabled={!online || g.running} onClick={() => void golden()}>{g.running ? <><i className="v3-tg-spin" aria-hidden="true" />{g.done}/{g.total}</> : "Перевірити"}</button></div>
                     {g.running && <span className="v3-tg-goldbar" aria-hidden="true"><i style={{ width: `${g.total ? Math.round((g.done / g.total) * 100) : 0}%` }} /></span>}
                     {!g.running && g.readers?.map((x) => <p key={x.id}><span>{x.label}</span><b className={x.total && x.ok / x.total >= 0.9 ? "is-ok" : x.total && x.ok / x.total < 0.7 ? "is-bad" : ""}>{x.total ? `${x.ok} з ${x.total} · ${Math.round((x.ok / x.total) * 100)}%` : "не відповів"}</b>{x.misses[0] && <small>{x.misses[0]}</small>}</p>)}
@@ -440,7 +440,7 @@ export default function Telegram() {
                 ); })()}
                 {err && <p className="v3-tg-rerr"><b>Остання помилка</b>{err}{r.ai ? " — пост читає наступний у ланцюжку" : ""}</p>}
                 {data.account && (data.account.enabled ? <p className={`v3-tg-acc${data.account.error ? " is-bad" : ""}`}>{data.account.error ? `Акаунт Telegram: ${data.account.error}` : "Акаунт Telegram підключено — можна додавати приватні канали t.me/+…"}</p> : null)}
-                <small>Читають по черзі: якщо в одного ліміт або погана відповідь — наступний. Квиток із грошима читають двоє; якщо не згодні — пост іде в «Нерозпізнані». Точніший за вашими виправленнями читач стає першим. Справа — запитів сьогодні / денний ліміт («≈» — приблизний, уточниться, коли читач уперше дійде до ліміту).</small>
+                <small>Читають по черзі: якщо в одного ліміт або погана відповідь — наступний. Квиток із грошима читають двоє; якщо не згодні — пост іде в «Нерозпізнані». Точніший за вашими виправленнями й перевірками читач стає першим. Справа — запитів сьогодні / денний ліміт («≈» — приблизний, уточниться, коли читач уперше дійде до ліміту).</small>
                 </>}
               </div>
             ); })()}
