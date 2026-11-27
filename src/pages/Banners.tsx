@@ -15,6 +15,7 @@ import { useMedia, useOnline } from "@/hooks/useMediaOnline";
 import type { AppSettings, Banner, BannerSlotState } from "@/types";
 import PillTrack from "@/components/PillTrack";
 import ExportCsvButton from "@/components/ExportCsvButton";
+import AdsWeb from "@/components/ads/web/AdsWeb";
 
 type Tab = "banners" | "telegram" | "bookmakers" | "stats";
 const TABS: { id: Tab; label: string }[] = [{ id: "banners", label: "Банери" }, { id: "telegram", label: "Telegram-групи" }, { id: "bookmakers", label: "Букмекери" }, { id: "stats", label: "Статистика" }];
@@ -89,6 +90,14 @@ export default function Banners() {
   const sub = tab === "banners" ? `${live} ${live === 1 ? "банер показується" : "банерів показується"} · ${2 - occupied} ${2 - occupied === 1 ? "слот вільний" : "слоти вільні"}`
     : `${live + bmLive.length + prLive.length} розміщень · ${week ? nf(week.totals.clicks) : "—"} кліків за 7 днів`;
 
+  if (!phone) return (
+    <AdsWeb tab={tab} setTab={(t) => setParams(t === "banners" ? {} : { tab: t })} online={online} today={today}
+      banners={banners} slots={slots} bnErr={error} loadBanners={load} setBanners={(fn) => setBannersState((b) => fn(b || []))} setSlots={(fn) => setSlotsState((s) => fn(s))}
+      editor={editor} setEditor={setEditor}
+      bms={bms} bmErr={bmErr} setBms={(fn) => setBms((l) => fn(l || []))} promos={promos} prErr={prErr} setPromos={(fn) => setPromos((l) => fn(l || []))}
+      week={week} settings={settings} setSettings={setSettings} loadAds={loadAds}
+      creatingBm={creatingBm} setCreatingBm={setCreatingBm} creatingPr={creatingPr} setCreatingPr={setCreatingPr} />
+  );
   return (
     <div className="v3-page v3-ads">
       <section className="v3-hero v3-hero-row">
