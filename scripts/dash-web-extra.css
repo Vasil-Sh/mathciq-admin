@@ -43,6 +43,7 @@
   .v3-dw-pseg > .v3-pill { top: 3px; bottom: 3px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
   .v3-dw-pseg button { position: relative; z-index: 1; min-height: 30px; border: 0; border-radius: 8px; background: transparent; color: #5f6878; font: 500 12px Inter, sans-serif; }
   .v3-dw-pseg button.is-on { color: #11151c; font-weight: 600; }
+  @media (hover: hover) { .v3-dw-pop .v3-dw-pseg button:not(.is-on):hover { color: #11151c; } }
   .v3-dw-pseg:not(.has-pill) button.is-on { background: #fff; }
   .v3-dw-pyear { display: flex; align-items: center; justify-content: space-between; }
   .v3-dw-pyear b { font-size: 14px; font-weight: 700; }
@@ -280,6 +281,7 @@
   .v3-aup-seg > .v3-pill { top: 3px; bottom: 3px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
   .v3-aup-seg button { position: relative; z-index: 1; min-height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #5f6878; font: 500 12px Inter, sans-serif; white-space: nowrap; }
   .v3-aup-seg button.is-on { color: #11151c; font-weight: 600; }
+  @media (hover: hover) { .v3-aupanel .v3-aup-seg button:not(.is-on):hover { color: #11151c; } }
   .v3-aup-seg:not(.has-pill) button.is-on { background: #fff; }
   .v3-aup-search { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid #dde1e7; border-radius: 10px; color: #9aa3b2; }
   .v3-aup-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: #11151c; font: 400 12px Inter, sans-serif; outline: 0; }
