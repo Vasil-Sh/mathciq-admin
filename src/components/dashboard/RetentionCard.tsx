@@ -6,6 +6,9 @@ import WriteButton from "@/components/dashboard/WriteButton";
 import { composeMessage } from "@/lib/messages";
 import type { AppSettings } from "@/types";
 import RollingNumber from "@/components/RollingNumber";
+import { useMedia } from "@/hooks/useMediaOnline";
+import { RetentionDialog } from "@/components/dashboard/WebDialogs";
+import { downloadCsv } from "@/lib/csv";
 
 const MONTHS = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
 const MONTHS_FULL = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -44,6 +47,8 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
   // phone: the last 6 months as bars; tap one to see that month (like «Оплати за місяцями»)
   const mini = months.slice(-6);
   const [pick, setPick] = useState<string | null>(null);
+  const web = useMedia("(min-width: 768px)");
+  const [details, setDetails] = useState(false);
   useEffect(() => {
     if (!pick) return;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setPick(null); };
@@ -62,7 +67,9 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
           <h2 id="ret-title" className="v3-h2">Утримання</h2>
           <p className="v3-note v3-hide-mobile"><span className="v3-hide-wide">Хто продовжив підписку після її закінчення</span><span className="v3-only-wide">Хто продовжив підписку</span> · {t.label}</p>
         </div>
-        <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile v3-hide-wide">Деталі <span className="v3-ar" aria-hidden="true">→</span></Link>
+        {web && focus
+          ? <button type="button" className="v3-ret-more v3-link-btn" onClick={() => setDetails(true)}>Деталі <span className="v3-ar" aria-hidden="true">→</span></button>
+          : <Link to="/users?status=expired" className="v3-ret-more v3-hide-mobile v3-hide-wide">Деталі <span className="v3-ar" aria-hidden="true">→</span></Link>}
         <span className="v3-note v3-only-mobile">{t.label}</span>
       </div>
 
@@ -149,6 +156,9 @@ export default function RetentionCard({ retained, churned, byMonth, focusMonth, 
           {avg !== null && <p className="v3-note v3-ret-avg v3-only-wide">Середнє утримання за 12 місяців — {avg}%.</p>}
         </div>
       )}
+      {web && focus && <RetentionDialog open={details} onOpenChange={setDetails} focus={focus} months={months} current={keys[keys.length - 1]} lapsed={(list || []).filter((l) => (l.user.endDate || "").slice(0, 7) === focus.month)}
+        renderWrite={(l) => { const tg = telegramLink(l.user.telegram); return tg ? <WriteButton href={tg} dark message={composeMessage("tplLapsed", settings, l.user)} /> : null; }}
+        onExport={() => downloadCsv(`matchiq-retention-${focusMonth}.csv`, ["Місяць", "Закінчились", "Продовжили", "Пішли", "Утримання, %"], months.map((m) => [`${MONTHS_FULL[mIdx(m.month)]} ${m.month.slice(0, 4)}`, m.total, m.renewed, m.ended, m.rate ?? ""]))} />}
     </section>
   );
 }

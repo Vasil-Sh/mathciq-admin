@@ -10,6 +10,8 @@ import { daysLabel, expiringUsers, extendedEndDate, money, shortDate } from "@/l
 import ExtendConfirmDialog from "@/components/ExtendConfirmDialog";
 import RetentionCard from "@/components/dashboard/RetentionCard";
 import ChurnRiskCard from "@/components/dashboard/ChurnRiskCard";
+import PeriodPopover from "@/components/dashboard/PeriodPopover";
+import { ExportPaymentsDialog } from "@/components/dashboard/WebDialogs";
 import PeriodMenu from "@/components/dashboard/PeriodMenu";
 import UserAvatar from "@/components/UserAvatar";
 import RollingNumber from "@/components/RollingNumber";
@@ -61,6 +63,10 @@ function useOnline() {
 
 export default function Dashboard() {
   const phoneW = useMedia("(max-width: 767px)");
+  /** web (≥ 768 px): the light design «Дашборд · веб (у стилі мобільного)» — two columns, «Потребує уваги» and «Матчі за 7 днів» on the right */
+  const web = !phoneW;
+  const [compare, setCompare] = useState(true);
+  const [exportOpen, setExportOpen] = useState(false);
   const now = kyivNow();
   const online = useOnline();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -306,10 +312,15 @@ export default function Dashboard() {
         <p className="v3-subtitle">
           {emptyPlatform
             ? <><span className="v3-hide-mobile">Тут з’являться оплати, підписки й активність, щойно на платформі будуть перші користувачі.</span><span className="v3-only-mobile">Показники з’являться після перших користувачів і оплат.</span></>
-            : <><span className="v3-hide-mobile">Оплати, підписки й активність MatchIQ — за обраний період.</span>{updatedAt && <span className="v3-dim v3-only-mobile">Оновлено {updatedAt}</span>}</>}
+            : <><span className="v3-hide-mobile">Оплати, підписки й активність MatchIQ за обраний період{updatedAt ? ` · оновлено ${updatedAt}` : ""}</span>{updatedAt && <span className="v3-dim v3-only-mobile">Оновлено {updatedAt}</span>}</>}
         </p>
       </div>
-      <div className="v3-chips" role="group" aria-label="Період">
+      {web ? <div className="v3-chips v3-dw-tools" role="group" aria-label="Період">
+        <PeriodPopover value={period} year={now.year} month={now.month} compare={compare} onCompare={setCompare} onChange={setPeriod} />
+        <button type="button" className="v3-dw-refresh" onClick={() => load(true)} disabled={refreshing || !online} title="Автооновлення раз на хвилину">
+          {refreshDone ? <Check size={15} strokeWidth={2.6} aria-hidden="true" /> : <RefreshCw size={15} aria-hidden="true" className={refreshing ? "animate-spin" : undefined} />}<span>{refreshing ? "Оновлюємо…" : "Оновити"}</span>
+        </button>
+      </div> : <div className="v3-chips" role="group" aria-label="Період">
         <div className="v3-seg v3-pseg v3-hide-mobile">
           <PillTrack active={`${period}-${periodChips.length}`} />
           {periodChips.map((c) => <button key={c.key} type="button" className={period === c.key ? "is-on" : ""} aria-pressed={period === c.key} onClick={() => setPeriod(c.key)}>{c.label}</button>)}
@@ -325,7 +336,7 @@ export default function Dashboard() {
           {loadedAt > 0 && online && !refreshing && <svg key={loadedAt} className="v3-ar-ring" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.4" /><circle className="v3-ar-p" cx="10" cy="10" r="8" fill="none" stroke="#5a8cff" strokeWidth="2.4" strokeLinecap="round" style={{ animationDuration: `${REFRESH_MS}ms` }} /></svg>}
           <RefreshCw size={14} className={`v3-ref-ic${refreshing ? " animate-spin" : ""}`} aria-hidden="true" /><span className="v3-hide-mobile">Оновити</span>
         </button>
-      </div>
+      </div>}
     </section>
   );
 
@@ -528,7 +539,7 @@ export default function Dashboard() {
 
   const ptrLabel = refreshing && pull ? "Оновлюємо…" : pull >= PULL_GO ? "Відпустіть, щоб оновити" : "Потягніть, щоб оновити";
   return (
-    <div className={`v3-page v3-dash${pulling ? " is-pulling" : ""}`} style={pull ? { transform: `translateY(${pull}px)` } : undefined}>
+    <div className={`v3-page v3-dash${pulling ? " is-pulling" : ""}${compare ? "" : " no-compare"}`} style={pull ? { transform: `translateY(${pull}px)` } : undefined}>
       <div className="v3-ptr v3-only-mobile" aria-hidden={!pull} style={{ opacity: Math.min(1, pull / 40) }}>
         <svg className={refreshing && pull ? "is-spin" : ""} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="2.6" /><circle cx="12" cy="12" r="9" fill="none" stroke="#5a8cff" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="56.5" strokeDashoffset={refreshing && pull ? 40 : 56.5 - Math.min(1, pull / PULL_GO) * 56.5} transform="rotate(-90 12 12)" /></svg>
         <span>{ptrLabel}</span>
@@ -610,11 +621,11 @@ export default function Dashboard() {
             </div>
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}
-            <ExportCsvButton className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={exportCsv} disabled={isEmpty} title={isEmpty ? "Експорт з’явиться після першої оплати" : undefined} />
+            <ExportCsvButton className="v3-btn v3-btn-ghost-dark v3-export v3-hide-mobile" onClick={web ? () => setExportOpen(true) : exportCsv} disabled={isEmpty} title={isEmpty ? "Експорт з’явиться після першої оплати" : undefined} />
             <div className="v3-seg" role="group" aria-label="Показник графіка">
               <PillTrack active={mode} />
               <button type="button" className={mode === "pay" ? "is-on" : ""} aria-pressed={mode === "pay"} onClick={() => setMode("pay")}>Оплати</button>
-              <button type="button" className={mode === "est" ? "is-on" : ""} aria-pressed={mode === "est"} onClick={() => setMode("est")}><span className="v3-hide-mobile">Вартість підписок</span><span className="v3-only-mobile">Підписки</span></button>
+              <button type="button" className={mode === "est" ? "is-on" : ""} aria-pressed={mode === "est"} onClick={() => setMode("est")}>{web ? "Підписки" : <><span className="v3-hide-mobile">Вартість підписок</span><span className="v3-only-mobile">Підписки</span></>}</button>
             </div>
             </div>
           </div>
@@ -665,7 +676,7 @@ export default function Dashboard() {
             <div className="v3-feed-blank"><span className="v3-empty-halo" aria-hidden="true"><span className="v3-chart-empty-ico v3-empty-float"><Wallet size={20} strokeWidth={1.8} /></span></span><strong>Тут з’являться оплати</strong><small>Останні оплати й ті, хто не продовжив підписку, — щойно будуть перші користувачі.</small></div>
           </section>
         </div>}
-        {!isEmpty && retCard && <div className="v3-ret-slot v3-ret-top">{retCard}</div>}
+        {!isEmpty && !web && retCard && <div className="v3-ret-slot v3-ret-top">{retCard}</div>}
         {!isEmpty && <div className={`v3-dash-side${calmSide ? " is-calm" : ""}`}>
         {!attentionCount && !usersError ? calmCompact : <aside className="v3-wcard v3-attention">
           <div className="v3-attn-head"><h2 className="v3-h2">Потребує уваги</h2>{attentionCount > 0 && <span className="v3-tag v3-tag-red">{attentionCount}</span>}</div>
@@ -726,13 +737,23 @@ export default function Dashboard() {
               </div>
             </> : null}
         </aside>}
-        {view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}</section>}
-        {feedBlock}
+        {!web && view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{view.planTotal > 0 && plansBlock("")}</section>}
+        {!web && feedBlock}
+        {web && <MatchesWeekCard />}
         </div>}
       </section>
+      {web && !isEmpty && (retTotal > 0 || view.planTotal > 0 || risk) && (
+        <section className="v3-dash-pair v3-dw-pair">
+          {(retTotal > 0 || view.planTotal > 0) && <div className={`v3-dw-two${retTotal > 0 && view.planTotal > 0 ? "" : " is-one"}`}>
+            {retTotal > 0 && <div className="v3-ret-slot">{retCard}</div>}
+            {view.planTotal > 0 && <section className="v3-dcard v3-side-plans">{plansBlock("")}</section>}
+          </div>}
+          {risk && <ChurnRiskCard settings={settings} rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
+        </section>
+      )}
       </div>
 
-      {!isEmpty && (retTotal > 0 || (risk && overview)) && (
+      {!web && !isEmpty && (retTotal > 0 || (risk && overview)) && (
         <section className="v3-dash-pair">
           {retTotal > 0 && <div className="v3-ret-slot v3-ret-pair">{retCard}</div>}
           {risk && <ChurnRiskCard settings={settings} rows={risk} inactiveDays={inactiveDays} lossStreak={lossStreak} thresholdsFromSettings={!!settings?.churnInactiveDays} />}
@@ -743,6 +764,7 @@ export default function Dashboard() {
       {isEmpty && <div className="v3-dcard v3-calm-row v3-only-mobile"><span className="v3-calm-ico" aria-hidden="true"><Check size={18} strokeWidth={2} /></span><div><strong>Усе спокійно</strong><small>Немає підписок, що закінчуються</small></div></div>}
       {isEmpty && <Link to="/users" className="v3-btn v3-btn-primary v3-btn-block v3-only-mobile v3-mobile-cta">Створити першого користувача</Link>}
 
+      {web && <ExportPaymentsDialog open={exportOpen} onOpenChange={setExportOpen} month={period === "year" ? now.key : period} year={now.year} basicPrice={settings?.basicPrice} proPrice={settings?.proPrice} />}
       <ExtendConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} items={expiring} days={extendDays} busy={extending} onConfirm={extendSelected} />
     </div>
   );

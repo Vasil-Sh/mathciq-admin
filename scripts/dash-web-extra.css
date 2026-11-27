@@ -1,0 +1,298 @@
+
+/* ══ Дашборд · веб (у стилі мобільного): розкладка, шапка, вибір періоду ══ */
+@media (min-width: 768px) {
+  body:has(.v3-dash), .v3-shell:has(.v3-dash) { background: #e9ecf2; }
+  .v3-shell:has(.v3-dash) .v3-stars { display: none; }
+
+  /* шапка — темна смуга на всю ширину, посередині вкладки, праворуч квадратні кнопки й аватар */
+  .v3-shell:has(.v3-dash) .v3-header { position: sticky; top: 0; z-index: 30; max-width: none; margin: 0 calc(50% - 50vw) 0; padding: 12px max(24px, calc(50vw - 585px)); background: #121316; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
+  .v3-shell:has(.v3-dash) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-nav > .v3-pill { top: 0; bottom: 0; border-radius: 10px; background: #3a6df0; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-navlink { min-height: 36px; padding: 0 12px; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
+  .v3-shell:has(.v3-dash) .v3-navlink.is-active { color: #fff; font-weight: 600; }
+  .v3-shell:has(.v3-dash) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
+  .v3-shell:has(.v3-dash) .v3-search-btn, .v3-shell:has(.v3-dash) .v3-header .v3-audit { width: 36px; height: 36px; border: 0; border-radius: 10px; background: #26282d; color: #e6e9ef; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-header .v3-audit.is-active { background: #3a6df0; color: #fff; }
+
+  /* сторінка: світла, колонка до 1170 px */
+  body:has(.v3-dash) .v3-dash { max-width: 1170px; margin-left: auto; margin-right: auto; gap: 14px; }
+  body:has(.v3-dash) .v3-dash .v3-hero { display: flex; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 4px 0 0; }
+  body:has(.v3-dash) .v3-dash .v3-hero > div:first-child { display: block; }
+  body:has(.v3-dash) .v3-dash .v3-title { font-size: 30px; line-height: 1.1; letter-spacing: -.03em; }
+  body:has(.v3-dash) .v3-dash .v3-subtitle { max-width: none; margin: 4px 0 0; }
+  body:has(.v3-dash) .v3-dash.no-compare .v3-dl { display: none; }
+
+  /* період і «Оновити» — білі кнопки */
+  .v3-dw-tools { display: flex; align-items: center; gap: 8px; margin: 0; }
+  .v3-dw-period { position: relative; }
+  .v3-dw-pbtn, .v3-dw-refresh { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: #fff; color: #11151c; font: 600 13px Inter, sans-serif; box-shadow: 0 1px 2px rgba(16, 24, 40, .06); cursor: pointer; transition: box-shadow .2s, transform .15s ease-out; }
+  .v3-dw-pbtn > svg:last-child { color: #6b7384; transition: transform .2s cubic-bezier(.2, 0, 0, 1); }
+  .v3-dw-pbtn > svg.is-flipped { transform: rotate(180deg); }
+  .v3-dw-pbtn[aria-expanded="true"] { box-shadow: 0 0 0 3px rgba(58, 109, 240, .18); }
+  .v3-dw-refresh:not(:disabled):active, .v3-dw-pbtn:active { transform: scale(.96); }
+  .v3-dw-refresh:disabled { opacity: .6; cursor: default; }
+  .v3-dw-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; display: flex; flex-direction: column; gap: 10px; width: 300px; padding: 12px; border-radius: 16px; background: #fff; color: #11151c; box-shadow: 0 16px 40px rgba(16, 24, 40, .18), 0 0 0 1px rgba(16, 24, 40, .05); animation: v3-menu-in .16s ease-out; transform-origin: top right; }
+  .v3-dw-pseg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 10px; background: #eef0f4; }
+  .v3-dw-pseg > .v3-pill { top: 3px; bottom: 3px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-dw-pseg button { position: relative; z-index: 1; min-height: 30px; border: 0; border-radius: 8px; background: transparent; color: #5f6878; font: 500 12px Inter, sans-serif; }
+  .v3-dw-pseg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-dw-pseg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-dw-pyear { display: flex; align-items: center; justify-content: space-between; }
+  .v3-dw-pyear b { font-size: 14px; font-weight: 700; }
+  .v3-dw-pyear button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #11151c; }
+  .v3-dw-pyear button:disabled { color: #c3c9d4; }
+  .v3-dw-pgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .v3-dw-pgrid button { height: 34px; border: 0; border-radius: 8px; background: #f1f3f6; color: #11151c; font: 500 12px Inter, sans-serif; cursor: pointer; transition: background-color .15s, color .15s; }
+  .v3-dw-pgrid button:disabled { background: transparent; color: #c3c9d4; cursor: default; }
+  .v3-dw-pgrid button.is-prev { background: #dfe8ff; color: #2f5fd8; }
+  .v3-dw-pgrid button.is-on { background: #3a6df0; color: #fff; font-weight: 600; }
+  .v3-dw-pgrid.is-year button.is-on { background: #dfe8ff; color: #2f5fd8; }
+  .v3-dw-phint { margin: 0; font-size: 11px; line-height: 1.45; color: #6b7384; }
+  .v3-dw-pcmp { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; border-radius: 10px; background: #f4f6f9; font-size: 12px; font-weight: 500; cursor: pointer; }
+  .v3-dw-pcmp input { position: absolute; opacity: 0; pointer-events: none; }
+  .v3-dw-pcmp > span { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px #c3c9d4; color: #fff; }
+  .v3-dw-pcmp input:checked + span { background: #3a6df0; box-shadow: none; }
+  .v3-dw-pcmp input:focus-visible + span { outline: 2px solid #3a6df0; outline-offset: 2px; }
+  .v3-dw-pacts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v3-dw-pgrey, .v3-dw-pgreen { height: 38px; border: 0; border-radius: 10px; background: #eef0f4; color: #11151c; font: 600 13px Inter, sans-serif; cursor: pointer; transition: transform .15s ease-out; }
+  .v3-dw-pgreen { background: #00b24b; color: #fff; }
+  .v3-dw-pgrey:active, .v3-dw-pgreen:active { transform: scale(.96); }
+
+  /* підсумки: 4 в ряд, другий ряд — 1 + 1 + «Витрати AI» на дві */
+  body:has(.v3-dash) .v3-dash .v3-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+  body:has(.v3-dash) .v3-dash .v3-kpis-second .v3-kpi-wide-sm { grid-column: span 2; }
+  body:has(.v3-dash) .v3-dash .v3-kpi { display: flex; flex-direction: column; gap: 4px; min-height: 112px; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-n { margin-top: auto; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 12px; row-gap: 2px; min-height: 0; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-ico { display: grid; place-items: center; grid-column: 1; grid-row: 1 / 3; width: 38px; height: 38px; border-radius: 10px; background: #eef2ff; color: #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-l { grid-column: 2; grid-row: 1; align-self: end; font-size: 13px; color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-l .v3-kpi-ico { display: none; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-n { grid-column: 2; grid-row: 2; align-self: start; margin: 0; font-size: 11px; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-v { grid-column: 3; grid-row: 1 / 3; font-size: 26px; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-ai .v3-kpi-ai-side { display: none; }
+
+  /* дві колонки: ліворуч підсумки, графік, утримання з тарифами, ризик; праворуч «Потребує уваги» і «Матчі за 7 днів» */
+  body:has(.v3-dash) .v3-dash-top:not(.is-empty) { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+  body:has(.v3-dash) .v3-dash-top > .v3-dash-main:not(.v3-dash-onboard) { display: contents; }
+  body:has(.v3-dash) .v3-dash-top .v3-dash-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; grid-column: 1; grid-row: auto; }
+  body:has(.v3-dash) .v3-dash-top .v3-dash-side > * { flex: none; }
+  body:has(.v3-dash) .v3-dw-pair { display: flex; flex-direction: column; gap: 14px; grid-column: 1; margin: 0; }
+  body:has(.v3-dash) .v3-dw-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+  body:has(.v3-dash) .v3-dw-two.is-one { grid-template-columns: minmax(0, 1fr); }
+  body:has(.v3-dash) .v3-dw-two > .v3-ret-slot { display: flex; min-width: 0; }
+  body:has(.v3-dash) .v3-dw-two > .v3-ret-slot > * { flex: 1; }
+  body:has(.v3-dash) .v3-dw-two > .v3-side-plans { display: flex !important; flex-direction: column; margin: 0; }
+
+  /* білі картки */
+  body:has(.v3-dash) .v3-dash .v3-wcard, body:has(.v3-dash) .v3-dash .v3-dcard { border: 0; border-radius: 20px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  body:has(.v3-dash) .v3-dash .v3-chart-card, body:has(.v3-dash) .v3-dash .v3-attention, body:has(.v3-dash) .v3-dash .v3-side-plans, body:has(.v3-dash) .v3-dash .v3-ret-card, body:has(.v3-dash) .v3-dash .v3-risk-card, body:has(.v3-dash) .v3-dash .v3-mw { padding: 18px; }
+  body:has(.v3-dash) .v3-dash .v3-note, body:has(.v3-dash) .v3-dash .v3-note-dark { color: #6b7384; font-size: 11px; }
+  body:has(.v3-dash) .v3-dash .v3-head-link, body:has(.v3-dash) .v3-dash .v3-ret-more { color: #3a6df0; font-size: 12px; font-weight: 600; }
+  body:has(.v3-dash) .v3-dash .v3-export { height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: #fff; color: #11151c; box-shadow: inset 0 0 0 1px #dde1e7; font-size: 12px; font-weight: 600; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-seg { padding: 3px; border-radius: 10px; background: #eef0f4; }
+
+  /* «Потребує уваги»: рядки сірими плашками зі стрілкою */
+  body:has(.v3-dash) .v3-dash .v3-attn-head .v3-h2 { font-size: 15px; }
+  body:has(.v3-dash) .v3-dash .v3-attention > .v3-note-dark:not(.v3-attn-sub) { display: none; }
+  body:has(.v3-dash) .v3-dash .v3-alerts { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 0; padding: 0; }
+  body:has(.v3-dash) .v3-dash .v3-alert-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 0; border-radius: 12px; background: #f4f6f9; color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-alert-row .v3-exp-who strong { font-size: 12px; }
+  body:has(.v3-dash) .v3-dash .v3-alert-row .v3-exp-who small { font-size: 11px; color: #6b7384; }
+  body:has(.v3-dash) .v3-dash .v3-alert-cta { color: #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-alert-cta > .v3-hide-mobile { display: none; }
+  body:has(.v3-dash) .v3-dash .v3-attn-sub { margin: 12px 0 6px; font-size: 11px; }
+  body:has(.v3-dash) .v3-dash .v3-exp-list { display: flex; flex-direction: column; gap: 8px; }
+  body:has(.v3-dash) .v3-dash .v3-exp-row { padding: 10px 12px; border: 0; border-radius: 12px; background: #f4f6f9; color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-xall { margin-top: 12px; }
+  body:has(.v3-dash) .v3-dash .v3-xall-btn { min-height: 42px; border-radius: 12px; background: #11151c; color: #fff; font-size: 13px; }
+  body:has(.v3-dash) .v3-dash .v3-xall-avs { display: none; }
+  body:has(.v3-dash) .v3-dash .v3-xall-pick { color: #3a6df0; font-size: 12px; }
+
+  /* «Ризик відтоку»: таблиця, чорні «Написати» */
+  body:has(.v3-dash) .v3-dash .v3-risk-row { border-color: #eef0f4; color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-risk-table { color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-dcard .v3-write, body:has(.v3-dash) .v3-dash .v3-wcard .v3-write { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font-size: 12px; }
+
+  /* права колонка поруч, якщо місця досить */
+  @media (min-width: 1024px) {
+    body:has(.v3-dash) .v3-dash-top:not(.is-empty) { grid-template-columns: minmax(0, 1fr) 340px; column-gap: 16px; }
+    body:has(.v3-dash) .v3-dash-top .v3-dash-side { grid-column: 2; grid-row: 1 / span 4; }
+  }
+}
+@media (min-width: 768px) {
+  /* другий ряд підсумків: 1 + 1 + «Витрати AI» на дві колонки */
+  body:has(.v3-dash) .v3-dash .v3-kpis-second > * { grid-column: auto !important; }
+  body:has(.v3-dash) .v3-dash .v3-kpis-second > .v3-kpi-wide-sm { grid-column: span 2 !important; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-bar { height: 6px; border-radius: 999px; background: #eef0f4; }
+  body:has(.v3-dash) .v3-dash .v3-kpi-bar > .v3-fill { border-radius: 999px; background: #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-kpi.is-hero .v3-kpi-bar { background: rgba(255, 255, 255, .25); }
+  body:has(.v3-dash) .v3-dash .v3-kpi.is-hero .v3-kpi-bar > .v3-fill { background: #fff; }
+
+  /* підписи під заголовками карток — сірі */
+  body:has(.v3-dash) .v3-dash .v3-dcard .v3-note, body:has(.v3-dash) .v3-dash .v3-risk-card .v3-note-dark, body:has(.v3-dash) .v3-dash .v3-wcard .v3-note-dark { color: #6b7384; }
+  body:has(.v3-dash) .v3-dash .v3-risk-card .v3-inline-link { color: #3a6df0; }
+
+  /* утримання: світлі плитки, «Деталі →» праворуч від заголовка */
+  body:has(.v3-dash) .v3-dash .v3-ret-card .v3-card-head { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-card { position: relative; }
+  body:has(.v3-dash) .v3-dash .v3-ret-card .v3-ret-more { position: absolute; top: 18px; right: 18px; display: inline-flex !important; }
+  body:has(.v3-dash) .v3-dash .v3-ret-big.v3-only-wide { display: none !important; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles > div { display: block !important; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; box-shadow: none; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles > div:has(.is-blue) { background: #eef2ff; box-shadow: none; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles > div > span { font-size: 11px; color: #6b7384; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles > div:has(.is-blue) > span { color: #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles strong { margin-top: 4px; font-size: 24px; font-weight: 400; color: #11151c; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles strong.is-blue { color: #3a6df0; font-weight: 400; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles strong.is-red { color: #e5484d; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tiles small { font-size: 12px; color: #6b7384; }
+  body:has(.v3-dash) .v3-dash .v3-ret-chart { margin-top: 14px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-bars-head { display: flex !important; color: #6b7384; font-size: 11px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-bars { height: 80px; gap: 6px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-col > span:first-child { font-size: 10px; color: #9aa3b2; text-align: center; }
+  body:has(.v3-dash) .v3-dash .v3-ret-col > span.is-on { color: #3a6df0; font-weight: 700; }
+  body:has(.v3-dash) .v3-dash .v3-ret-bar { border-radius: 5px; }
+  body:has(.v3-dash) .v3-dash .v3-ret-bar.is-on { background: #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-ret-months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; margin-top: 6px; font-size: 10px; color: #6b7384; text-align: center; }
+  body:has(.v3-dash) .v3-dash .v3-ret-months .is-on { color: #11151c; font-weight: 700; }
+  body:has(.v3-dash) .v3-dash .v3-ret-tip { background: #11151c; color: #fff; }
+  body:has(.v3-dash) .v3-dash .v3-ret-side { display: none; }
+
+  /* тарифи: кільце по центру, легенда під ним */
+  body:has(.v3-dash) .v3-dash .v3-side-plans .v3-dial-wrap { flex-direction: column; align-items: stretch; gap: 16px; margin-top: 14px; }
+  body:has(.v3-dash) .v3-dash .v3-side-plans .v3-sring { align-self: center; }
+  body:has(.v3-dash) .v3-dash .v3-side-plans .v3-dial-legend { width: 100%; }
+  body:has(.v3-dash) .v3-dash .v3-dial-hint { display: none; }
+
+  /* шапка: аватар без імені, «Admin» сірою міткою */
+  .v3-shell:has(.v3-dash) .v3-account-copy { display: none; }
+  .v3-shell:has(.v3-dash) .v3-account-btn { gap: 6px; padding: 0; border: 0; background: transparent; color: #9aa3b2; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-account-btn .v3-avatar { width: 32px; height: 32px; border-radius: 9px; }
+}
+@media (min-width: 768px) {
+  .v3-shell:has(.v3-dash) .v3-logo-badge { border: 0; background: #2a2c31; color: #9aa3b2; }
+  .v3-shell:has(.v3-dash) .v3-header .v3-count { background: #e5484d; color: #fff; }
+}
+@media (min-width: 768px) {
+  body:has(.v3-dash) .v3-dw-pair > * { min-height: 0; height: auto; flex: none; }
+}
+@media (min-width: 768px) {
+  .v3-dw-pop:focus { outline: none; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-seg button span { margin: 0; padding: 0; background: none; }
+}
+
+/* ══ Вікна дашборду на вебі: «Написати», «Експорт оплат», «Утримання · деталі», «Матчі за день» ══ */
+@media (min-width: 768px) {
+  .v3-dwm { display: flex; flex-direction: column; gap: 10px; color: #11151c; }
+  .v3-dwm .v3-modal-title { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .v3-dwm .v3-modal-sub { margin-top: -6px; font-size: 12px; color: #6b7384; }
+  .v3-dwm-l { margin-top: 4px; font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-dwm-lrow { display: flex; justify-content: space-between; }
+  .v3-dwm-lrow small { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .v3-dwm-green { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: #00b24b !important; color: #fff !important; text-decoration: none; }
+  .v3-dwm-green:disabled { opacity: .5; }
+  .v3-dwm .v3-btn-ghost { border: 0; background: #eef0f4; color: #11151c; }
+  .v3-dwm .v3-modal-foot { margin-top: 6px; padding-top: 12px; border-top: 1px solid #eef0f4; }
+  .v3-dwm .v3-hint { max-width: 300px; font-size: 11px; line-height: 1.45; color: #6b7384; }
+
+  .v3-dwm-who { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-dwm-who > span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .v3-dwm-who strong { font-size: 13px; }
+  .v3-dwm-who small { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; color: #6b7384; }
+  .v3-dwm-who .v3-tag { border: 0; font-size: 11px; }
+  .v3-dwm-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; background: #fff; color: #3c4350; }
+  .v3-dwm-link { font-size: 12px; font-weight: 600; color: #3a6df0; text-decoration: none; }
+  .v3-dwm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .v3-dwm-chips button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: #eef0f4; color: #11151c; font: 600 12px Inter, sans-serif; cursor: pointer; transition: background-color .15s, color .15s; }
+  .v3-dwm-chips button.is-on { background: #3a6df0; color: #fff; }
+  .v3-dwm-ta { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #dde1e7; border-radius: 12px; background: #fff; color: #11151c; font: 400 13px/1.55 Inter, sans-serif; resize: vertical; outline: 0; }
+  .v3-dwm-ta:focus { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
+  .v3-dwm-tg { display: flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: 10px; background: #eef2ff; color: #2f5fd8; font-size: 11px; }
+
+  .v3-dwm-radios { display: flex; flex-direction: column; gap: 8px; }
+  .v3-dwm-radios button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #e3e6eb; border-radius: 12px; background: #fff; color: #11151c; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .v3-dwm-radios button > i { flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #c3c9d4; }
+  .v3-dwm-radios button.is-on { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
+  .v3-dwm-radios button.is-on > i { box-shadow: inset 0 0 0 5px #3a6df0; }
+  .v3-dwm-radios span { display: flex; flex-direction: column; gap: 2px; }
+  .v3-dwm-radios strong { font-size: 13px; }
+  .v3-dwm-radios small { font-size: 11px; color: #6b7384; }
+  .v3-dwm-cols { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .v3-dwm-cols label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; cursor: pointer; }
+
+  .v3-dwm-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .v3-dwm-tiles > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-dwm-tiles > div.is-blue { background: #eef2ff; }
+  .v3-dwm-tiles > div.is-bad { background: #fdeceb; }
+  .v3-dwm-tiles small { font-size: 11px; color: #6b7384; }
+  .v3-dwm-tiles > div.is-blue small, .v3-dwm-tiles > div.is-blue b { color: #3a6df0; }
+  .v3-dwm-tiles b { font-size: 24px; font-weight: 400; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .v3-dwm-tiles b em { font-style: normal; font-size: 12px; color: #6b7384; }
+  .v3-dwm-tiles b.is-red, .v3-dwm-tiles > div.is-bad b { color: #e5484d; }
+  .v3-dwm-tiles.is-3 b { font-size: 22px; font-weight: 600; }
+  .v3-dwm-table { display: flex; flex-direction: column; font-size: 12px; }
+  .v3-dwm-table > div { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); align-items: center; min-height: 36px; padding: 0 6px; border-bottom: 1px solid #eef0f4; }
+  .v3-dwm-table > div > span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .v3-dwm-table > div.is-th { min-height: 28px; font-size: 11px; color: #6b7384; }
+  .v3-dwm-table > div.is-on { border-radius: 8px; background: #f4f6f9; font-weight: 600; }
+  .v3-dwm-table .is-red { color: #e5484d; }
+  .v3-dwm-table .is-blue { color: #3a6df0; }
+  .v3-dwm-table .is-live { color: #8a5a00; font-weight: 600; }
+  .v3-dwm-lapsed { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .v3-dwm-lapsed li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #f4f6f9; }
+  .v3-dwm-lapsed li > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .v3-dwm-lapsed a { color: #11151c; text-decoration: none; font-size: 13px; }
+  .v3-dwm-lapsed small { font-size: 11px; color: #6b7384; }
+  .v3-dwm .v3-write { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: #11151c; color: #fff; font-size: 12px; }
+  .v3-dwm-src { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+  .v3-dwm-src li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 34px; border-bottom: 1px solid #eef0f4; font-size: 13px; }
+  .v3-dwm-src li:last-child { border-bottom: 0; }
+  .v3-dwm-src i { width: 8px; height: 8px; border-radius: 3px; }
+  .v3-dwm-src b { font-variant-numeric: tabular-nums; }
+
+  /* «Матчі за 7 днів»: стовпчики — кнопки дня, «Звідки матчі» — у вікні дня */
+  body:has(.v3-dash) .v3-mw-bars > span[role="button"] { cursor: pointer; border-radius: 6px; outline-offset: 2px; }
+  body:has(.v3-dash) .v3-mw-bars > span[role="button"]:hover i { filter: brightness(.95); }
+  body:has(.v3-dash) .v3-mw-bars > span[role="button"]:focus-visible { outline: 2px solid #3a6df0; }
+  body:has(.v3-dash) .v3-dash .v3-mw-src { display: none; }
+  body:has(.v3-dash) .v3-mw-go { display: grid; place-items: center; color: #8a93a2; }
+
+  /* «Ризик відтоку» · «Написати»: кнопка з іконкою */
+  body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+  /* панель журналу справа (кнопка з годинником у шапці) */
+  .v3-aupanel { position: fixed !important; inset: 0 0 0 auto !important; left: auto !important; top: 0 !important; transform: none !important; display: flex; flex-direction: column; width: min(420px, 100vw) !important; max-width: none !important; height: 100dvh; max-height: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: #fff !important; color: #11151c; box-shadow: -16px 0 40px rgba(16, 24, 40, .18) !important; animation: v3-slide-in .28s cubic-bezier(.2, .9, .25, 1) both !important; }
+  .v3-aupanel > button.v3-modal-x, .v3-aupanel > button[class*="absolute"] { display: none; }
+  .v3-aup-h { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 10px; }
+  .v3-aup-h h2 { margin: 0; font-size: 18px; font-weight: 600; }
+  .v3-aup-h h2 small { margin-left: 6px; font-size: 11px; font-weight: 500; color: #6b7384; }
+  .v3-aup-x { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #eef0f4; color: #11151c; cursor: pointer; }
+  .v3-aup-bar { display: flex; align-items: center; gap: 8px; padding: 0 18px 10px; }
+  .v3-aup-seg { display: flex; padding: 3px; border-radius: 10px; background: #eef0f4; }
+  .v3-aup-seg > .v3-pill { top: 3px; bottom: 3px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .v3-aup-seg button { position: relative; z-index: 1; min-height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #5f6878; font: 500 12px Inter, sans-serif; white-space: nowrap; }
+  .v3-aup-seg button.is-on { color: #11151c; font-weight: 600; }
+  .v3-aup-seg:not(.has-pill) button.is-on { background: #fff; }
+  .v3-aup-search { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid #dde1e7; border-radius: 10px; color: #9aa3b2; }
+  .v3-aup-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: #11151c; font: 400 12px Inter, sans-serif; outline: 0; }
+  .v3-aup-search:focus-within { border-color: #3a6df0; box-shadow: 0 0 0 3px rgba(58, 109, 240, .12); }
+  .v3-aup-list { flex: 1; min-height: 0; padding: 0 18px 12px; overflow-y: auto; overscroll-behavior: contain; }
+  .v3-aup-day { margin: 10px 0 8px; font-size: 12px; font-weight: 600; color: #6b7384; }
+  .v3-aup-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; margin-bottom: 8px; padding: 12px; border-radius: 12px; background: #f4f6f9; animation: v3-row-in .3s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .v3-aup-dot { width: 7px; height: 7px; margin-top: 5px; border-radius: 50%; }
+  .v3-aup-card small { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7384; }
+  .v3-aup-card p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+  .v3-aup-card p strong { font-weight: 600; color: #3a6df0; }
+  .v3-aup-chip { display: inline-flex; align-items: center; height: 22px; margin-top: 6px; padding: 0 8px; border-radius: 6px; background: #fff; font-size: 11px; font-weight: 600; }
+  .v3-aup-link { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: #3a6df0; text-decoration: none; }
+  .v3-aup-res { padding: 0 6px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+  .v3-aup-res.is-err { background: #fde2df; color: #c2341f; }
+  .v3-aup-res.is-warn { background: #fff1d6; color: #7a4f00; }
+  .v3-aup-card.is-skel i { display: block; height: 10px; border-radius: 6px; background: #e6e9ee; }
+  .v3-aup-card.is-skel i + i { width: 70%; }
+  .v3-aup-empty { margin: 30px 0; font-size: 13px; color: #6b7384; text-align: center; }
+  .v3-aup-all { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 18px 18px; min-height: 46px; border-radius: 12px; background: #00b24b; color: #fff; font: 600 14px Inter, sans-serif; text-decoration: none; transition: transform .15s ease-out; }
+  .v3-aup-all:active { transform: scale(.96); }
+}
+@media (prefers-reduced-motion: reduce) { .v3-aupanel, .v3-aup-card, .v3-dw-pop { animation: none !important; } }

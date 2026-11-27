@@ -30,6 +30,7 @@ import "./styles/v3-ads-phone.css";
 import "./styles/v3-support-phone.css";
 import "./styles/v3-audit-phone.css";
 import "./styles/v3-settings-phone.css";
+import "./styles/v3-dash-web.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

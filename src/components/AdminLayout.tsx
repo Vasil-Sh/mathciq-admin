@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getExpiringWindow } from "@/lib/usersModel";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
-import { BarChart3, Bug, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard, LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X, Send } from "lucide-react";
+import { BarChart3, Bug, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard, LogOut, Megaphone, Menu, MessageCircle, Search, Settings2, Swords, Users, X, Send } from "lucide-react";
 import CommandPalette from "@/components/CommandPalette";
 import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
@@ -16,6 +16,7 @@ import MobileDrawer, { MobileTabBar } from "@/components/MobileDrawer";
 import PillTrack from "@/components/PillTrack";
 import { PageSearchProvider, usePageSearchHost, isPhoneWidth } from "@/lib/pageSearch";
 import { fetchServerErrors } from "@/lib/serverErrorsApi";
+import AuditPanel from "@/components/AuditPanel";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -142,6 +143,7 @@ function AdminShell() {
   );
   // phone: a 🐞 next to the journal while the backend has unresolved errors (count = kinds of errors)
   const [errCount, setErrCount] = useState(0);
+  const [auditPanel, setAuditPanel] = useState(false);
   useEffect(() => {
     let live = true;
     const load = () => { if (!isPhoneWidth() || document.visibilityState === "hidden") return; fetchServerErrors().then((l) => { if (live) setErrCount(l.length); }).catch(() => {}); };
@@ -159,7 +161,7 @@ function AdminShell() {
     </Link>
   );
   const auditButton = (
-    <Link to="/audit" onClick={(ev) => { if (onAudit && isPhoneWidth()) { ev.preventDefault(); window.dispatchEvent(new Event("v3-audit-hist")); } }} className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
+    <Link to="/audit" onClick={(ev) => { if (onAudit && isPhoneWidth()) { ev.preventDefault(); window.dispatchEvent(new Event("v3-audit-hist")); } else if (!onAudit && !isPhoneWidth() && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) { ev.preventDefault(); setAuditPanel(true); } }} className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
       <History size={19} aria-hidden="true" />
       {auditCount && !onAudit && <span className="v3-count v3-count-float">{auditCount}</span>}
     </Link>
@@ -195,11 +197,12 @@ function AdminShell() {
               <div className="v3-account-menu" role="menu">
                 <div className="v3-account-head">
                   <UserAvatar username={user?.username || "admin"} telegram={user?.telegram} className="v3-avatar v3-avatar-ink" />
-                  <span><strong>@{handle}</strong><small>{roleName}{loginNote && ` · ${loginNote}`}</small></span>
+                  <span><strong>@{handle}</strong><small><b className="v3-menu-role">{roleName}</b>{loginNote && ` ${loginNote}`}</small></span>
                 </div>
-                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" />Мій пароль</Link>
-                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><MonitorSmartphone size={17} aria-hidden="true" /><span className="v3-menu-label">Активні сесії</span>{sessionCount !== null && <span className="v3-menu-count">{sessionCount}</span>}</Link>
+                <Link role="menuitem" to="/settings#account" className="v3-menu-item"><KeyRound size={17} aria-hidden="true" /><span className="v3-menu-label">Мій профіль і безпека<small>пароль і сесії{sessionCount !== null ? ` · ${sessionCount}` : ""}</small></span></Link>
                 <Link role="menuitem" to={`/audit?actor=${encodeURIComponent(handle)}`} className="v3-menu-item"><History size={17} aria-hidden="true" /><span className="v3-menu-label">Мої дії в журналі</span>{myActions !== null && <span className="v3-menu-count">{myActions}</span>}</Link>
+                <Link role="menuitem" to="/settings" className="v3-menu-item"><Settings2 size={17} aria-hidden="true" /><span className="v3-menu-label">Налаштування</span></Link>
+                <button role="menuitem" type="button" className="v3-menu-item" onClick={() => { setAccountOpen(false); setCmdOpen(true); }}><Search size={17} aria-hidden="true" /><span className="v3-menu-label">Швидкий пошук</span><kbd className="v3-menu-kbd">Ctrl K</kbd></button>
                 <div className="v3-menu-sep" />
                 <button role="menuitem" type="button" className="v3-menu-item is-danger" onClick={() => { setAccountOpen(false); setLogoutOpen(true); }}><LogOut size={17} aria-hidden="true" />Вийти</button>
               </div>
@@ -209,6 +212,7 @@ function AdminShell() {
         </div>
         <HeaderSearch />
       </header>
+      <AuditPanel open={auditPanel} onOpenChange={setAuditPanel} me={handle} />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} links={[...navigation, { label: "Журнал дій", href: "/audit", icon: History }].map(({ label, href, icon }) => ({ label, href, icon }))} />
 
       <MobileDrawer open={mobileOpen} onOpenChange={setMobileOpen} username={handle} telegram={user?.telegram} role={roleName} badges={badges} auditCount={onAudit ? "" : auditCount} onLogout={() => setLogoutOpen(true)} />

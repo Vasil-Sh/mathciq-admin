@@ -8,6 +8,9 @@ import { shortDate } from "@/lib/subscriptions";
 import { relDay } from "@/lib/dashboardInsights";
 import { idleText, plural, streakText, telegramLink, type RiskRow } from "@/lib/dashboardInsights";
 import UserAvatar from "@/components/UserAvatar";
+import { useMedia } from "@/hooks/useMediaOnline";
+import { Send } from "lucide-react";
+import { WriteDialog } from "@/components/dashboard/WebDialogs";
 
 type Tab = "all" | "idle" | "streak";
 const LIMIT = 5;
@@ -18,6 +21,8 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
   const msg = (r: RiskRow) => composeMessage("tplInactive", settings, r.user, r.idleDays);
   const [tab, setTab] = useState<Tab>("all");
   const [expanded, setExpanded] = useState(false);
+  const web = useMedia("(min-width: 768px)");
+  const [writeFor, setWriteFor] = useState<RiskRow | null>(null);
 
   const idle = rows.filter((r) => r.inactive);
   const streak = rows.filter((r) => r.losing);
@@ -67,7 +72,7 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
                   <span role="cell" className="v3-risk-sig">{signals(r)}</span>
                   <span role="cell" className="v3-risk-end v3-only-wide">{r.user.lastBetDate ? relDay(r.user.lastBetDate) : "ще не ставив"}</span>
                   <span role="cell" className={r.daysLeft <= 7 ? "v3-risk-end is-soon" : "v3-risk-end"}>до {shortDate(r.user.endDate)}</span>
-                  <span role="cell">{tg ? <WriteButton href={tg} message={msg(r)} /> : null}</span>
+                  <span role="cell">{tg ? (web ? <button type="button" className="v3-btn-pill v3-write" onClick={() => setWriteFor(r)}><Send size={13} aria-hidden="true" />Написати</button> : <WriteButton href={tg} message={msg(r)} />) : null}</span>
                 </div>
               );
             })}
@@ -92,6 +97,8 @@ export default function ChurnRiskCard({ rows, inactiveDays, lossStreak, threshol
       )}
 
       <p className="v3-note-dark v3-risk-foot v3-hide-mobile">Неактивні — {inactiveDays}+ днів без нових ставок. Серія — {lossStreak}+ програшів поспіль.{thresholdsFromSettings && <> Пороги можна змінити в <Link to="/settings" className="v3-inline-link">Налаштуваннях</Link>.</>}</p>
+      {writeFor && <WriteDialog open={!!writeFor} onOpenChange={(o) => { if (!o) setWriteFor(null); }} who={writeFor.user} tg={telegramLink(writeFor.user.telegram) || ""} settings={settings} idleDays={writeFor.idleDays}
+        signal={<>{writeFor.losing && <span className="v3-tag v3-tag-red">{streakText(writeFor.streak)}</span>}{writeFor.inactive && <span className="v3-tag v3-tag-gray">{idleText(writeFor)}</span>}</>} />}
     </section>
   );
 }
