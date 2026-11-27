@@ -268,9 +268,9 @@ export default function Telegram() {
     if (!miss?.length) return;
     setChSeen((cur) => { const next = { ...cur }; for (const c of miss) next[c.handle] = c.all!.posts; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; });
   }, [data, chSeen]);
-  // the readers' block folded to its header (remembered)
-  const [readerFold, setReaderFold] = useState(() => { try { return localStorage.getItem("v3-tg-rfold") === "1"; } catch { return false; } });
-  const toggleReaderFold = () => setReaderFold((o) => { try { localStorage.setItem("v3-tg-rfold", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
+  // the readers' block folded to its header — folded until the admin opens it (remembered)
+  const [readerFold, setReaderFold] = useState(() => { try { return localStorage.getItem("v3-tg-rfold2") !== "0"; } catch { return true; } });
+  const toggleReaderFold = () => setReaderFold((o) => { try { localStorage.setItem("v3-tg-rfold2", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const toggleReaders = () => setReadersOpen((o) => { try { localStorage.setItem("v3-tg-readers", o ? "0" : "1"); } catch { /* private mode */ } return !o; });
   const [seen, setSeen] = useState(() => { try { return JSON.parse(localStorage.getItem("v3-tg-seen") || "{}") as { unknown?: number; mismatches?: number }; } catch { return {}; } });
   const markSeen = () => { const a = data?.alerts; if (!a) return; setSeen(a); try { localStorage.setItem("v3-tg-seen", JSON.stringify(a)); } catch { /* private mode */ } };
@@ -401,7 +401,7 @@ export default function Telegram() {
             <Candidates onAdd={(h) => { setAddLink(`https://t.me/${h}`); setAddOpen(true); }} />
             {data.reader && (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
               <div className={`v3-tg-reader${readerFold ? " is-fold" : ""}`}>
-                <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em><button type="button" className="v3-tg-rfold" aria-expanded={!readerFold} aria-label={readerFold ? "Розгорнути блок читачів" : "Згорнути блок читачів"} onClick={toggleReaderFold}><ChevronDown size={18} aria-hidden="true" className={readerFold ? "" : "is-up"} /></button></div>
+                <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em><button type="button" className="v3-tg-rfold2" aria-expanded={!readerFold} aria-label={readerFold ? "Розгорнути блок читачів" : "Згорнути блок читачів"} onClick={toggleReaderFold}><ChevronDown size={18} aria-hidden="true" className={readerFold ? "" : "is-up"} /></button></div>
                 {!readerFold && <>
                 {data.accuracy && data.accuracy.posts > 0 && (() => { const a = data.accuracy; const t = (v: number | null) => v == null ? "" : v >= 90 ? "is-ok" : v < 70 ? "is-bad" : "is-warn"; return (
                   <div className="v3-tg-acc7">
