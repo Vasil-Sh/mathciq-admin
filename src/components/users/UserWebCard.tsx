@@ -105,7 +105,7 @@ export default function UserWebCard({ user, settings, extendDays, online, delete
       <div className="v3-uwc-sub">
         <div className="v3-uwc-sub-h">
           <strong>{admin ? "Повний доступ" : plan.plan}</strong>
-          <small>{admin ? "без обмежень" : user.plan === "trial" || user.proUntil || plan.price === "—" ? plan.price : `${plan.price} / ${extendDays} днів`}</small>
+          {!admin && <small>{user.plan === "trial" || user.proUntil || plan.price === "—" ? plan.price : `${plan.price} / ${extendDays} днів`}</small>}
           <span className={`v3-uwt ${tag.cls}`}>{tag.label}</span>
         </div>
         {!admin && <>
