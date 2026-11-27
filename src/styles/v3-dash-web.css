@@ -432,6 +432,11 @@
   body:has(.v3-dash) .v3-dash .v3-risk-row { grid-template-columns: minmax(0, 1.2fr) minmax(190px, 1.7fr) minmax(0, .9fr) 120px; }
   body:has(.v3-dash) .v3-dash .v3-risk-row > :last-child { justify-self: end; }
   body:has(.v3-dash) .v3-dash .v3-risk-sig { flex-wrap: nowrap; }
+  /* user rows in grey blocks, like the attention rows */
+  body:has(.v3-dash) .v3-dash .v3-risk-row:not(.v3-risk-th) { margin: 0 0 8px; padding: 10px 12px; border: 0; border-radius: 12px; background: #f4f6f9; }
+  body:has(.v3-dash) .v3-dash .v3-risk-th { margin: 0; padding: 0 12px 8px; border: 0; }
+  @media (hover: hover) { body:has(.v3-dash) .v3-dash .v3-risk-row:not(.v3-risk-th):hover { background: #edf0f5; } }
+  body:has(.v3-dash) .v3-dash .v3-risk-row .v3-tag-gray { background: #fff; }
   body:has(.v3-dash) .v3-dash .v3-risk-sig .v3-tag { white-space: nowrap; }
   @media (hover: hover) { body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write:hover { background: #2b3240; translate: 0 -1px; box-shadow: 0 4px 10px rgba(17, 21, 28, .18); } }
   body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write:active { transform: scale(.96); }
