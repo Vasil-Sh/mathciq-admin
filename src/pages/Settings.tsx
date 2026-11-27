@@ -146,13 +146,13 @@ export default function Settings() {
   const [sec, setSec] = useState<SecKey | "all">(() => (location.hash.slice(1) as SecKey) || "tariffs");
   const [mSec, setMSec] = useState<SecKey | "all">(() => (location.hash.slice(1) as SecKey) || "all");
   // «Пароль і сесії» from the menu links to /settings#account — also when Settings is already open
-  const { hash } = useLocation();
+  const { hash, key: locKey } = useLocation();
   useEffect(() => {
     const k = hash.slice(1) as SecKey;
     if (!k || !SECS.some((x) => x.key === k)) return;
     setSec(k); setMSec(k); markSeen(k);
     window.scrollTo({ top: 0, behavior: "auto" });
-  }, [hash]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hash, locKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [here, setHere] = useState<SecKey>("tariffs");
   // phone: keep the chosen section chip in view
   useEffect(() => {
@@ -943,7 +943,7 @@ function ErrorsSection({ all, n }: { all: boolean; n: number }) {
   useEffect(() => { load(); }, [load]);
   const resolve = async (id: number | "all") => {
     setBusy(id);
-    try { await resolveServerError(id); setList((xs) => (id === "all" ? [] : (xs || []).filter((x) => x.id !== id))); toast.success(id === "all" ? "Список очищено" : "Позначено як вирішене"); }
+    try { await resolveServerError(id); setList((xs) => (id === "all" ? [] : (xs || []).filter((x) => x.id !== id))); window.dispatchEvent(new Event("v3-server-errors")); toast.success(id === "all" ? "Список очищено" : "Позначено як вирішене"); }
     catch (e) { toast.error("Не вдалося", { description: e instanceof Error ? e.message : "" }); }
     setBusy(null);
   };

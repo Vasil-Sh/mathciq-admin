@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getExpiringWindow } from "@/lib/usersModel";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
-import { BarChart3, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard, LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X, Send } from "lucide-react";
+import { BarChart3, Bug, Check, ChevronDown, CircleDollarSign, CreditCard, History, KeyRound, LayoutDashboard, LogOut, Megaphone, Menu, MessageCircle, MonitorSmartphone, Search, Settings2, Swords, Users, X, Send } from "lucide-react";
 import CommandPalette from "@/components/CommandPalette";
 import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
@@ -15,6 +15,7 @@ import StarField from "./StarField";
 import MobileDrawer, { MobileTabBar } from "@/components/MobileDrawer";
 import PillTrack from "@/components/PillTrack";
 import { PageSearchProvider, usePageSearchHost, isPhoneWidth } from "@/lib/pageSearch";
+import { fetchServerErrors } from "@/lib/serverErrorsApi";
 
 type NavKey = "support" | "matches";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
@@ -64,7 +65,7 @@ function HeaderSearch() {
 
 function AdminShell() {
   const pageSearch = usePageSearchHost();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { user, logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -139,6 +140,24 @@ function AdminShell() {
       <span className="v3-tip" role="tooltip">Швидкий пошук <kbd>Ctrl K</kbd></span>
     </span>
   );
+  // phone: a 🐞 next to the journal while the backend has unresolved errors (count = kinds of errors)
+  const [errCount, setErrCount] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const load = () => { if (!isPhoneWidth() || document.visibilityState === "hidden") return; fetchServerErrors().then((l) => { if (live) setErrCount(l.length); }).catch(() => {}); };
+    load();
+    const t = window.setInterval(load, 60_000);
+    const onVis = () => load();
+    window.addEventListener("v3-server-errors", onVis); document.addEventListener("visibilitychange", onVis);
+    return () => { live = false; window.clearInterval(t); window.removeEventListener("v3-server-errors", onVis); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+  const onErrors = pathname.startsWith("/settings") && hash === "#errors";
+  const errorsButton = errCount > 0 && (
+    <Link to="/settings#errors" className={`v3-audit v3-errs-btn${onErrors ? " is-active" : ""}`} aria-label={`Помилки сервера: ${errCount}`} aria-current={onErrors ? "page" : undefined} title="Помилки сервера">
+      <Bug size={19} aria-hidden="true" />
+      {!onErrors && <span className="v3-count v3-count-float">{errCount > 99 ? "99+" : errCount}</span>}
+    </Link>
+  );
   const auditButton = (
     <Link to="/audit" onClick={(ev) => { if (onAudit && isPhoneWidth()) { ev.preventDefault(); window.dispatchEvent(new Event("v3-audit-hist")); } }} className={`v3-audit${onAudit ? " is-active" : ""}`} aria-label={auditCount ? `Журнал дій: ${auditCount} нових змін` : "Журнал дій"} aria-current={onAudit ? "page" : undefined} title="Журнал дій">
       <History size={19} aria-hidden="true" />
@@ -186,7 +205,7 @@ function AdminShell() {
               </div>
             )}
           </div>
-          <span className="v3-audit-slot is-mob">{!pathname.startsWith("/dashboard") && searchButton}{auditButton}</span>
+          <span className="v3-audit-slot is-mob">{!pathname.startsWith("/dashboard") && searchButton}{errorsButton}{auditButton}</span>
         </div>
         <HeaderSearch />
       </header>
