@@ -13,7 +13,7 @@ import { AdMark, DeleteAsk, Kebab, WEmpty, WModal, WSwitch, WTag } from "./AdsWe
 const EMPTY: PromoInput = { name: "", handle: "", subscribers: null, description: "", placement: "telegram-top", game: "", startsOn: null, endsOn: null, active: true, reviewStatus: "pending", rejectReason: "", priceNote: "" };
 const clean = (h: string) => h.trim().replace(/^https?:\/\/t\.me\//i, "").replace(/^@/, "").replace(/\/.*$/, "");
 /** pending text with a future start reads «Заплановано» (as in the design), otherwise «На перевірці» */
-const tagOf = (p: Promo) => { const s = promoStatus(p); return s === "pending" ? (p.startsOn && p.startsOn > new Date().toISOString().slice(0, 10) ? { cls: "is-sched", label: "Заплановано" } : { cls: "is-done", label: "На перевірці" }) : PR_STATUS[s]; };
+const tagOf = (p: Promo) => { const s = promoStatus(p); return s === "pending" ? (p.startsOn && p.startsOn > new Date().toISOString().slice(0, 10) ? { cls: "is-sched", label: "Заплановано" } : { cls: "is-done", label: "На перевірці" }) : s === "rejected" ? { cls: "is-redfill", label: PR_STATUS[s].label } : PR_STATUS[s]; };
 const range = (p: Pick<Promo, "startsOn" | "endsOn">) => (p.startsOn && p.endsOn ? `${p.startsOn.slice(0, 7) === p.endsOn.slice(0, 7) ? shortDay(p.startsOn).split(" ")[0] : shortDay(p.startsOn)} — ${shortDay(p.endsOn)}` : p.startsOn || p.endsOn ? periodText(p) : "без терміну");
 
 type Props = {

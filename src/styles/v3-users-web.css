@@ -603,7 +603,7 @@
   .v3-adw .v3-pw-kpi > strong.is-warn { color: #d9480f; }
   .v3-adw .v3-pw-kpi > strong.is-sm { font-size: 26px; }
   .v3-adw-tools { margin-bottom: 14px; }
-  .v3-adw-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 10px; background: #fff4db; color: #8a5300; font-size: 12px; font-weight: 600; animation: v3-tag-pop .3s cubic-bezier(.2, .9, .25, 1.3) both; }
+  .v3-adw-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 10px; background: #fff; color: #11151c; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); font-size: 12px; font-weight: 600; animation: v3-tag-pop .3s cubic-bezier(.2, .9, .25, 1.3) both; }
   .v3-adw-chip svg { color: #e8590c; }
   .v3-adw-card { position: relative; min-width: 0; padding: 16px; border-radius: 18px; background: #fff; box-shadow: var(--adw-sh, 0 1px 2px rgba(16, 24, 40, .04)); animation: v3-row-in .4s cubic-bezier(.2, .9, .25, 1) both; }
   .v3-adw-card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
@@ -642,7 +642,7 @@
   .v3-adw-tr .is-c { justify-self: center; text-align: center; }
   .v3-adw-tr b { font-weight: 700; }
   .v3-adw-tr.is-sel .v3-uwt { background: #fff; }
-  .v3-uwt.is-redfill { background: #e5484d; color: #fff; }
+  .v3-uwt.is-redfill, .v3-adw-tr.is-sel .v3-uwt.is-redfill { background: #e5484d; color: #fff; }
   .v3-adw-tg .v3-adw-tr:not(.is-th), .v3-adw-camp .v3-adw-tr:not(.is-th) { margin-top: 6px; background: #f3f5f8; box-shadow: none !important; }
   .v3-adw-tg .v3-adw-tr.is-th, .v3-adw-camp .v3-adw-tr.is-th { border-bottom: 0; }
   .v3-adw-tg .v3-adw-tr.is-sel { background: #e6eeff; box-shadow: inset 0 0 0 1px #c9d8fb !important; }
@@ -671,7 +671,7 @@
   .v3-adw-art strong { display: block; font-size: 17px; font-weight: 700; }
   .v3-adw-art small { display: block; margin-top: 2px; font-size: 11px; opacity: .8; }
   .v3-adw-art .v3-adw-mark { position: absolute; top: 8px; right: 8px; background: rgba(10, 12, 18, .7); }
-  .v3-adw-warn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; background: #fff4db; color: #6b4300; font-size: 12px; font-weight: 500; line-height: 1.4; }
+  .v3-adw-warn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; background: #f3f5f8; color: #3c4350; font-size: 12px; font-weight: 500; line-height: 1.4; }
   .v3-adw-warn svg { flex-shrink: 0; color: #e8590c; }
   .v3-adw-warn.is-red { background: #fdeceb; color: #9f2a1c; }
   .v3-adw-warn.is-red svg { color: #d92d20; }
@@ -719,7 +719,8 @@
   .v3-adw-tiles span { font-size: 11px; color: #6b7384; }
   .v3-adw-tiles b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .v3-adw-seen { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; border-radius: 12px; background: #f3f5f8; }
-  .v3-adw-seen p { margin: 0; font-size: 12px; line-height: 1.5; }
+  .v3-adw-seen { max-width: 100%; box-sizing: border-box; }
+  .v3-adw-seen p { max-width: 100%; margin: 0; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .v3-adw-seen mark, .v3-adw-tgprev mark { border-radius: 3px; background: #fde2df; color: #9f2a1c; }
   .v3-adw-panel .v3-adw-dl > div:first-child { border-top: 0; }
   .v3-adw-panel-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
@@ -824,7 +825,7 @@
   .v3-adw-chk li.is-bad { color: #9f2a1c; }
   .v3-adw-chk li.is-bad svg { color: #d92d20; }
   .v3-adwm .v3-adw-dl > div:first-child { border-top: 0; }
-  .v3-adw-quote { margin: 0; padding: 10px 12px; border-radius: 10px; background: #f3f5f8; font-size: 12px; line-height: 1.5; color: #3c4350; }
+  .v3-adw-quote { overflow-wrap: anywhere; margin: 0; padding: 10px 12px; border-radius: 10px; background: #f3f5f8; font-size: 12px; line-height: 1.5; color: #3c4350; }
   .v3-adw-chk-card { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 1px solid transparent; border-radius: 12px; background: #f3f5f8; color: #11151c; font: inherit; text-align: left; cursor: pointer; transition: background-color .15s, border-color .15s, box-shadow .15s; }
   .v3-adw-chk-card i { display: grid; place-items: center; width: 18px; height: 18px; flex-shrink: 0; border: 1.5px solid #c3c9d2; border-radius: 5px; background: #fff; color: #fff; transition: background-color .15s, border-color .15s; }
   .v3-adw-chk-card strong { display: block; font-size: 13px; font-weight: 600; }
