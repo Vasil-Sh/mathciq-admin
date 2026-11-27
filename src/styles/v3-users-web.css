@@ -590,3 +590,9 @@
   body:has(.v3-btw) .v3-ab .v3-ab-leg b i { width: 4px; height: 4px; border-radius: 50%; background: #8a93a3; }
 }
 @media (min-width: 768px) { body:has(.v3-btw) .v3-ab:focus, body:has(.v3-btw) .v3-ab:focus-visible { outline: none; } }
+/* «Ставки» on the web: «Показати ще» under the player's last bets */
+@media (min-width: 768px) {
+  .v3-btw-betmore { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; margin: 10px 0 4px; padding: 10px 14px; color: #2f6fed; transition: background-color .15s ease, transform .12s ease; }
+  .v3-btw-betmore:active { transform: scale(.98); }
+  @media (hover: hover) { .v3-btw-betmore:hover { background: #e4e8ef; } }
+}

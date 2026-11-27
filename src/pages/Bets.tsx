@@ -90,6 +90,9 @@ export default function Bets() {
   const [perOpen, setPerOpen] = useState(false);
   const [bf, setBf] = useState<"all" | "win" | "loss" | "pending">("all");
   const [xpOpen, setXpOpen] = useState<Set<string>>(new Set());
+  // web: the player's bets 5 at a time, «Показати ще» below
+  const BET_STEP = 5;
+  const [betShow, setBetShow] = useState(BET_STEP);
 
   const load = useCallback(async (manual = false) => {
     setBusy(true);
@@ -453,7 +456,7 @@ export default function Bets() {
   const kTot = q.trim() || period !== "all" ? wTot : { bets: tot.bets, wins: tot.wins, losses: tot.losses, pending: tot.pending, staked: tot.staked, profit: tot.profit, ub: totUsd?.n || 0, us: totUsd?.s || 0, up: totUsd?.p || 0, pl: playing.length };
   const kWr = kTot.wins + kTot.losses ? Math.round((kTot.wins / (kTot.wins + kTot.losses)) * 100) : 0;
   const sel = wRows.find((r) => r.u.id === openId) || null;
-  const pick = (u: AdminUserOverview) => { if (openId === u.id) return; setBf("all"); setXpOpen(new Set()); toggle(u); };
+  const pick = (u: AdminUserOverview) => { if (openId === u.id) return; setBf("all"); setXpOpen(new Set()); setBetShow(BET_STEP); toggle(u); };
   const PERIODS: [typeof period, string][] = [["all", "За весь час"], ["cur", "Цей місяць"], ["prev", "Минулий місяць"]];
   const nonPlay = people.length - playing.length;
   const wEmpty = noBetsAtAll ? (
@@ -493,7 +496,7 @@ export default function Bets() {
     const list = bf === "all" ? all : all.filter((b) => betView(b).res === bf || (bf === "pending" && betView(b).res === "other"));
     const uahBets = Math.max(0, s.bets - (ux?.bets || 0));
     const days: { day: string; items: AdminUserBet[] }[] = [];
-    list.forEach((b) => { const k = (b.date || "").slice(0, 10); const last = days[days.length - 1]; if (last && last.day === k) last.items.push(b); else days.push({ day: k, items: [b] }); });
+    list.slice(0, betShow).forEach((b) => { const k = (b.date || "").slice(0, 10); const last = days[days.length - 1]; if (last && last.day === k) last.items.push(b); else days.push({ day: k, items: [b] }); });
     const MG = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
     const dl = (k: string) => { const [y, m, dd] = k.split("-").map(Number); return y ? `${dd} ${MG[m - 1]}${y !== new Date().getFullYear() ? ` ${y}` : ""}` : "Без дати"; };
     const daySum = (bs: AdminUserBet[]) => { const done = bs.filter((b) => b.result === "Win" || b.result === "Loss"); if (!done.length) return ""; const uah = done.filter((b) => !isUsd(b)).reduce((a, b) => a + (Number(b.profit) || 0), 0); const us = done.filter(isUsd).reduce((a, b) => a + nativeProfit(b), 0); return [done.some((b) => !isUsd(b)) ? signedMoney(uah) : "", done.some(isUsd) ? signedMoney(us, "USD") : ""].filter(Boolean).join(" · "); };
@@ -504,7 +507,7 @@ export default function Bets() {
         {ux && <div className="v3-btw-box"><p>У доларах · {ux.bets} {plural(ux.bets, "ставка", "ставки", "ставок")}</p><dl><div><dt>Профіт</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{usd(ux.profit)}</dd></div><div><dt>Обіг</dt><dd>{money(ux.staked, "USD")}</dd></div><div><dt>ROI</dt><dd className={ux.profit >= 0 ? "is-pos" : "is-neg"}>{signedPct(ux.roi)}</dd></div></dl></div>}
         {u.betCount > 0 && <div className="v3-btw-seg" role="group" aria-label="Результат">
           <PillTrack active={bf} />
-          {([["all", "Усі"], ["win", "Виграш"], ["loss", "Програш"], ["pending", "Очікує"]] as const).map(([k, l]) => <button key={k} type="button" className={bf === k ? "is-on" : ""} aria-pressed={bf === k} onClick={() => { setBf(k); setXpOpen(new Set()); }}><b>{d?.status === "ok" ? cnt(k) : "…"}</b>{l}</button>)}
+          {([["all", "Усі"], ["win", "Виграш"], ["loss", "Програш"], ["pending", "Очікує"]] as const).map(([k, l]) => <button key={k} type="button" className={bf === k ? "is-on" : ""} aria-pressed={bf === k} onClick={() => { setBf(k); setXpOpen(new Set()); setBetShow(BET_STEP); }}><b>{d?.status === "ok" ? cnt(k) : "…"}</b>{l}</button>)}
         </div>}
         {u.betCount > 0 && d?.status === "ok" && <div className="v3-btw-allrow"><span>Останні ставки</span><button type="button" onClick={() => openAll(u)} aria-haspopup="dialog">Усі {(d.bets || []).length.toLocaleString("uk-UA")} {plural((d.bets || []).length, "ставка", "ставки", "ставок")}<ArrowRight size={13} aria-hidden="true" /></button></div>}
         <div className="v3-btw-bets">
@@ -528,6 +531,7 @@ export default function Bets() {
                 ); })}
               </section>
             ))}
+          {d?.status === "ok" && list.length > betShow && <button type="button" className="v3-uw-more v3-btw-betmore" onClick={() => setBetShow(betShow + BET_STEP)}>Показати ще {Math.min(BET_STEP, list.length - betShow)}<ChevronDown size={13} aria-hidden="true" /></button>}
         </div>
       </aside>
     );
