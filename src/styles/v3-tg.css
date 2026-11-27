@@ -606,3 +606,5 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-rfold svg { transition: transform .2s ease; }
 .v3-tg-rfold svg.is-up { transform: rotate(180deg); }
 .v3-tg-reader.is-fold { gap: 0; }
+/* «Перевірка постів»: the progress bar apart from the line above and the post below */
+.v3-tg-chkbar { flex-shrink: 0; margin: 10px 0 14px; }

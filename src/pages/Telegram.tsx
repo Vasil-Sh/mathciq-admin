@@ -204,7 +204,7 @@ function CheckSheet({ open, online, onClose, onFix }: { open: boolean; online: b
       <DialogContent className="v3-sheet v3-pay-sheet v3-tg-sheet">
         <DialogTitle>Перевірка постів</DialogTitle>
         <DialogDescription>{!list ? "Беремо випадкові пости за 7 днів…" : !list.length ? "Неперевірених постів за 7 днів немає" : done ? `Перевірено ${list.length}` : `${i + 1} з ${list.length} · чи правильно ми прочитали пост?`}</DialogDescription>
-        {list && list.length > 0 && !done && <span className="v3-tg-goldbar" aria-hidden="true"><i style={{ width: `${Math.round((i / list.length) * 100)}%` }} /></span>}
+        {list && list.length > 0 && !done && <span className="v3-tg-goldbar v3-tg-chkbar" aria-hidden="true"><i style={{ width: `${Math.round((i / list.length) * 100)}%` }} /></span>}
         {p && !done && <div className="v3-tg-chk">
           <span className="v3-tg-unh"><span className="v3-tg-av is-s"><TgAvatar handle={p.handle} name={p.title || p.handle} color={colorOf(p.handle)} /></span><b>{p.title || `@${p.handle}`}</b><small>{when(p.postedAt)}</small></span>
           <span className="v3-tg-unb"><Shots urls={p.photos} big /><MoreText text={p.text || (p.photos?.length ? "Скрін без підпису" : "")} /></span>
