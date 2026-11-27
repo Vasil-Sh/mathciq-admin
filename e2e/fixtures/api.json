@@ -1287,6 +1287,12 @@
      }
     ]
    }
+  },
+  "GET /admin/server-errors": {
+   "status": 200,
+   "body": {
+    "errors": []
+   }
   }
  }
 }
