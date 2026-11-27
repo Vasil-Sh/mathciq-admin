@@ -616,8 +616,8 @@ export default function Dashboard() {
         <div className="v3-dcard v3-chart-card">
           <div className="v3-card-head">
             <div>
-              <h2 className="v3-h2">{mode === "pay" ? "Оплати" : "Вартість підписок"} за місяцями</h2>
-              <p className="v3-note">{isEmpty ? `${view.year} · ручний облік оплат` : <>{mode === "pay" ? "Ручний облік, без скасованих оплат" : "Оцінка за поточними тарифами, не платежі"} · {view.year}</>}</p>
+              <h2 className="v3-h2">{mode === "pay" ? "Оплати" : web ? "Підписки" : "Вартість підписок"} за місяцями</h2>
+              <p className="v3-note">{isEmpty ? `${view.year} · ручний облік оплат` : <>{mode === "pay" ? "Ручний облік, без скасованих оплат" : (web ? "Оцінка за тарифами" : "Оцінка за поточними тарифами, не платежі")} · {view.year}</>}</p>
             </div>
             <div className="v3-chart-tools">
             {!isEmpty && <div className="v3-chart-total v3-only-wide"><strong>{money(view.total)}</strong><span>за рік</span></div>}

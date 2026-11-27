@@ -6,7 +6,7 @@
 
   /* шапка — темна смуга на всю ширину, посередині вкладки, праворуч квадратні кнопки й аватар */
   /* full width without 100vw (no sideways scroll); logo · tabs in the middle · search, journal, errors · avatar */
-  .v3-shell:has(.v3-dash) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 16px; width: 100%; max-width: none; margin: 0; padding: 12px max(24px, calc((100% - 1360px) / 2)); background: #121316; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 10px; width: 100%; max-width: none; margin: 0; padding: 12px max(24px, calc((100% - 1170px) / 2)); background: #121316; box-shadow: none; }
   .v3-shell:has(.v3-dash) .v3-nav-group { display: contents; }
   .v3-shell:has(.v3-dash) .v3-nav { justify-self: center; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   .v3-shell:has(.v3-dash) .v3-nav::-webkit-scrollbar { display: none; }
@@ -15,7 +15,7 @@
   .v3-shell:has(.v3-dash) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
   .v3-shell:has(.v3-dash) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .v3-shell:has(.v3-dash) .v3-nav > .v3-pill { top: 0; bottom: 0; border-radius: 10px; background: #3a6df0; box-shadow: none; }
-  .v3-shell:has(.v3-dash) .v3-navlink { min-height: 36px; padding: 0 11px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
+  .v3-shell:has(.v3-dash) .v3-navlink { min-height: 36px; padding: 0 9px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
   .v3-shell:has(.v3-dash) .v3-navlink.is-active { color: #fff; font-weight: 600; }
   .v3-shell:has(.v3-dash) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
   .v3-shell:has(.v3-dash) .v3-search-btn, .v3-shell:has(.v3-dash) .v3-header .v3-audit { width: 36px; height: 36px; border: 0; border-radius: 10px; background: #26282d; color: #e6e9ef; box-shadow: none; }
@@ -305,4 +305,32 @@
 @media (prefers-reduced-motion: reduce) { .v3-aupanel, .v3-aup-card, .v3-dw-pop { animation: none !important; } }
 @media (min-width: 768px) {
   html:has(.v3-dash) { scrollbar-color: #c3c9d4 #e9ecf2; }
+}
+
+@media (min-width: 768px) {
+  /* fixes 27.11: chart head never wraps (switching Оплати/Підписки keeps the layout), green export same height as the toggle */
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-card-head { flex-wrap: nowrap; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-card-head > div:first-child { min-width: 0; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-chart-tools { flex: none; gap: 16px; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 84px; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card .v3-seg button { padding: 0 12px; }
+  body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-export { height: 34px; min-height: 34px; padding: 0 14px; background: #00b24b; color: #fff; box-shadow: none; }
+  body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-export:disabled { background: #e3e7ee; color: #8a93a3; }
+  @media (hover: hover) { body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-export:not(:disabled):hover { background: #009e42; color: #fff; } }
+  body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-export:not(:disabled):active { transform: scale(.96); }
+  /* risk table: header and rows share fixed columns, signal on one line, «Написати» hover */
+  body:has(.v3-dash) .v3-dash .v3-risk-row { grid-template-columns: minmax(0, 1.2fr) minmax(190px, 1.7fr) minmax(0, .9fr) 120px; }
+  body:has(.v3-dash) .v3-dash .v3-risk-row > :last-child { justify-self: end; }
+  body:has(.v3-dash) .v3-dash .v3-risk-sig { flex-wrap: nowrap; }
+  body:has(.v3-dash) .v3-dash .v3-risk-sig .v3-tag { white-space: nowrap; }
+  @media (hover: hover) { body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write:hover { background: #2b3240; translate: 0 -1px; box-shadow: 0 4px 10px rgba(17, 21, 28, .18); } }
+  body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write:active { transform: scale(.96); }
+  body:has(.v3-dash) .v3-dash .v3-risk-card button.v3-write { transition: background-color .18s, translate .18s, box-shadow .18s, transform .15s ease-out; }
+}
+@media (min-width: 1600px) {
+  body:has(.v3-dash) .v3-dash .v3-risk-row { grid-template-columns: minmax(0, 1.2fr) minmax(190px, 1.7fr) minmax(0, .9fr) minmax(0, .8fr) 120px; }
+}
+@media (min-width: 1600px) {
+  body:has(.v3-dash) .v3-dash .v3-chart-tools .v3-chart-total { display: none !important; }
+  body:has(.v3-dash) .v3-dash .v3-chart-card > .v3-chart-total.v3-hide-wide { display: flex !important; }
 }
