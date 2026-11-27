@@ -106,7 +106,8 @@ test.describe("Оплати", () => {
       await page.locator(".v3-search-btn").filter({ visible: true }).first().click();
       return page.locator(".v3-hsearch-field input");
     };
-    const ref = isPhone(page) ? await headerSearch() : page.getByPlaceholder("№, логін або причина");
+    // web: one search field in the toolbar, its hint follows the tab
+    const ref = isPhone(page) ? await headerSearch() : page.getByPlaceholder("Логін або № оплати");
     await expect(ref).toBeVisible();
     await expect(page.getByText("@Ter").filter({ visible: true }).first()).toBeVisible();
     await ref.fill("нікого-такого");
@@ -121,13 +122,16 @@ test.describe("Оплати", () => {
     await expect(page.getByText("PRO20").first()).toBeVisible();
   });
 
-  test("wide screen: search is on the left in every tab", async ({ page }) => {
+  test("web: one search field in the toolbar, its hint follows the tab", async ({ page }) => {
     test.skip(isPhone(page), "desktop layout");
     await page.goto("/payments");
-    const tools = page.locator(".v3-pay-list .v3-pay-tools").first();
-    await expect(tools.locator(":scope > *").first()).toHaveClass(/v3-search/);
+    const field = page.locator(".v3-pw-search input");
+    await expect(field).toHaveCount(1);
+    await expect(field).toHaveAttribute("placeholder", "Логін, № або промокод");
     await page.getByRole("tab", { name: /Повернення/ }).click();
-    await expect(page.locator(".v3-pay-hrow > *").first()).toHaveClass(/v3-search/);
+    await expect(field).toHaveAttribute("placeholder", "Логін або № оплати");
+    await page.getByRole("tab", { name: /Промокоди/ }).click();
+    await expect(field).toHaveAttribute("placeholder", "Код промокоду");
   });
 });
 
@@ -136,6 +140,14 @@ test.describe("Ставки", () => {
     await page.goto("/bets");
     await expect(page.getByRole("heading", { name: "Ставки" })).toBeVisible();
     await expect(page.getByText("@admin").first()).toBeVisible();
+    if (!isPhone(page)) {
+      // web: ₴ and $ in their own columns — «Профіт $» of @admin is +33 $
+      const row = page.locator(".v3-btw-tr").filter({ hasText: "@admin" }).first();
+      await expect(row.locator(".v3-btw-n").nth(1)).toHaveText(/\+33\s\$/);
+      await expect(row.locator(".v3-btw-n").nth(0)).toContainText("₴");
+      await expect(page.getByText("Адміни й овнери")).toHaveCount(0);
+      return;
+    }
     const usd = page.locator(".v3-bt-usd").filter({ hasText: "+33 $" }).filter({ visible: true }).first();
     await expect(usd).toBeVisible();
     // The $ text lines up with the ₴ text above it (phone: right edges, desktop: left edges of the column)
@@ -153,9 +165,15 @@ test.describe("Ставки", () => {
 
   test("«Усі ставки» shows «У гривнях» and «У доларах» with counts; the $ bet is in dollars", async ({ page }) => {
     await page.goto("/bets");
-    const row = (isPhone(page) ? page.locator(".v3-bt-mcard") : page.locator(".v3-bt-tr")).first();
-    if ((await row.getAttribute("aria-expanded")) !== "true") await row.click(); // desktop opens the first user by itself
-    await page.locator(".v3-bt-allbtn, .v3-bt-lnk").filter({ visible: true }).first().click();
+    if (isPhone(page)) {
+      const row = page.locator(".v3-bt-mcard").first();
+      if ((await row.getAttribute("aria-expanded")) !== "true") await row.click();
+      await page.locator(".v3-bt-allbtn, .v3-bt-lnk").filter({ visible: true }).first().click();
+    } else {
+      // web: pick the player on the left, «Усі N ставок» in the panel on the right
+      await page.locator(".v3-btw-tr").filter({ hasText: "@admin" }).first().click();
+      await page.locator(".v3-btw-allrow button").click();
+    }
     const dlg = page.getByRole("dialog");
     await expect(dlg.getByText(/У гривнях · \d+ став/)).toBeVisible();
     await expect(dlg.getByText("У доларах · 1 ставка")).toBeVisible();
@@ -166,6 +184,16 @@ test.describe("Ставки", () => {
 
   test("CS2 tab keeps the $ line, Dota 2 has none", async ({ page }) => {
     await page.goto("/bets");
+    if (!isPhone(page)) {
+      // web: the «Профіт $» column — filled on CS2 (the $ bet is CS2), empty («—») on Dota 2
+      await page.locator(".v3-pw-tools .v3-uw-tabs button").filter({ hasText: "CS2" }).click();
+      await expect(page.locator(".v3-btw-tr").filter({ hasText: "@admin" }).first().locator(".v3-btw-n").nth(1)).toHaveText(/\$/);
+      await page.locator(".v3-pw-tools .v3-uw-tabs button").filter({ hasText: "Dota 2" }).click();
+      const rows = page.locator(".v3-btw-tr:not(.is-th)");
+      await expect(rows.first()).toBeVisible();
+      for (const r of await rows.all()) await expect(r.locator(".v3-btw-n").nth(1)).toHaveText("—");
+      return;
+    }
     await page.getByRole("button", { name: /CS2/ }).first().click();
     await expect(page.locator(".v3-bt-usd").filter({ hasText: "$" }).first()).toBeVisible();
     await page.getByRole("button", { name: /Dota 2/ }).first().click();
