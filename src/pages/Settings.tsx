@@ -131,7 +131,7 @@ export default function Settings() {
   const { user } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
   const phone = useMedia("(max-width: 767px)");
-  const secs = SECS.filter((x) => (x.key !== "nav" && x.key !== "errors") || phone);
+  const secs = SECS.filter((x) => x.key !== "nav" || phone);
   const online = useOnline();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [meta, setMeta] = useState<SettingsMeta>({});
@@ -434,7 +434,7 @@ export default function Settings() {
     </Section>
   );
   const nav = phone && show("nav") && <NavSection key="nav" phone={phone} all={all} n={n("nav")} badge={badgeOf("nav")} />;
-  const errorsSec = phone && show("errors") && <ErrorsSection key="errors" all={all} n={n("errors")} />;
+  const errorsSec = show("errors") && <ErrorsSection key="errors" all={all} n={n("errors")} />;
   const body = [tariffs, trial || trialPhone, ai, texts, alerts || alertsPhone, receipt, templates, account, banners || bannersPhone, nav, errorsSec];
 
   return (

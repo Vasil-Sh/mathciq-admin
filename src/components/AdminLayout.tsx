@@ -141,12 +141,12 @@ function AdminShell() {
       <span className="v3-tip" role="tooltip">Швидкий пошук <kbd>Ctrl K</kbd></span>
     </span>
   );
-  // phone: a 🐞 next to the journal while the backend has unresolved errors (count = kinds of errors)
+  // a 🐞 next to the journal while the backend has unresolved errors (count = kinds of errors)
   const [errCount, setErrCount] = useState(0);
   const [auditPanel, setAuditPanel] = useState(false);
   useEffect(() => {
     let live = true;
-    const load = () => { if (!isPhoneWidth() || document.visibilityState === "hidden") return; fetchServerErrors().then((l) => { if (live) setErrCount(l.length); }).catch(() => {}); };
+    const load = () => { if (document.visibilityState === "hidden") return; fetchServerErrors().then((l) => { if (live) setErrCount(l.length); }).catch(() => {}); };
     load();
     const t = window.setInterval(load, 60_000);
     const onVis = () => load();
@@ -184,7 +184,7 @@ function AdminShell() {
             </NavLink>
           ))}
         </nav>
-          <span className="v3-audit-slot is-desk">{searchButton}{auditButton}</span>
+          <span className="v3-audit-slot is-desk">{searchButton}{errorsButton}{auditButton}</span>
         </div>
         <div className="v3-header-end">
           <div className="v3-account" ref={accountRef}>

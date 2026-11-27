@@ -113,11 +113,17 @@
   .v3-shell:has(.v3-dash) .v3-stars { display: none; }
 
   /* шапка — темна смуга на всю ширину, посередині вкладки, праворуч квадратні кнопки й аватар */
-  .v3-shell:has(.v3-dash) .v3-header { position: sticky; top: 0; z-index: 30; max-width: none; margin: 0 calc(50% - 50vw) 0; padding: 12px max(24px, calc(50vw - 585px)); background: #121316; box-shadow: none; }
+  /* full width without 100vw (no sideways scroll); logo · tabs in the middle · search, journal, errors · avatar */
+  .v3-shell:has(.v3-dash) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 16px; width: 100%; max-width: none; margin: 0; padding: 12px max(24px, calc((100% - 1360px) / 2)); background: #121316; box-shadow: none; }
+  .v3-shell:has(.v3-dash) .v3-nav-group { display: contents; }
+  .v3-shell:has(.v3-dash) .v3-nav { justify-self: center; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .v3-shell:has(.v3-dash) .v3-nav::-webkit-scrollbar { display: none; }
+  .v3-shell:has(.v3-dash) .v3-audit-slot.is-desk { display: flex; align-items: center; gap: 8px; }
+  .v3-shell:has(.v3-dash) .v3-header-end { margin-left: 0; }
   .v3-shell:has(.v3-dash) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
   .v3-shell:has(.v3-dash) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .v3-shell:has(.v3-dash) .v3-nav > .v3-pill { top: 0; bottom: 0; border-radius: 10px; background: #3a6df0; box-shadow: none; }
-  .v3-shell:has(.v3-dash) .v3-navlink { min-height: 36px; padding: 0 12px; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
+  .v3-shell:has(.v3-dash) .v3-navlink { min-height: 36px; padding: 0 11px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
   .v3-shell:has(.v3-dash) .v3-navlink.is-active { color: #fff; font-weight: 600; }
   .v3-shell:has(.v3-dash) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
   .v3-shell:has(.v3-dash) .v3-search-btn, .v3-shell:has(.v3-dash) .v3-header .v3-audit { width: 36px; height: 36px; border: 0; border-radius: 10px; background: #26282d; color: #e6e9ef; box-shadow: none; }
@@ -276,7 +282,8 @@
   /* шапка: аватар без імені, «Admin» сірою міткою */
   .v3-shell:has(.v3-dash) .v3-account-copy { display: none; }
   .v3-shell:has(.v3-dash) .v3-account-btn { gap: 6px; padding: 0; border: 0; background: transparent; color: #9aa3b2; box-shadow: none; }
-  .v3-shell:has(.v3-dash) .v3-account-btn .v3-avatar { width: 32px; height: 32px; border-radius: 9px; }
+  .v3-shell:has(.v3-dash) .v3-account-btn .v3-avatar { width: 32px; height: 32px; border-radius: 9px; background: #3a6df0; color: #fff; overflow: hidden; }
+  .v3-shell:has(.v3-dash) .v3-account-btn .v3-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 }
 @media (min-width: 768px) {
   .v3-shell:has(.v3-dash) .v3-logo-badge { border: 0; background: #2a2c31; color: #9aa3b2; }
@@ -404,3 +411,6 @@
   .v3-aup-all:active { transform: scale(.96); }
 }
 @media (prefers-reduced-motion: reduce) { .v3-aupanel, .v3-aup-card, .v3-dw-pop { animation: none !important; } }
+@media (min-width: 768px) {
+  html:has(.v3-dash) { scrollbar-color: #c3c9d4 #e9ecf2; }
+}
