@@ -517,10 +517,21 @@ export default function Telegram() {
     const postsCard = sel && wCh && (
       <div className="v3-adw-card v3-tgw-posts" key={`p-${wCh.handle}`}>
         <div className="v3-tgw-ph"><h2>Останні пости <small>· {wCh.title || at(wCh.handle)} · перевірено {hhmm(wCh.checkedAt)}</small></h2>
-          <div className="v3-uw-chips" role="radiogroup" aria-label="Які пости">{([["all", "Усі"], ["tips", "Прогнози"], ["slips", "Квитки"], ["unknown", "Нерозпізнані"]] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={pf === k} className={pf === k ? "is-on" : ""} onClick={() => pickPf(k)}>{l}{pcount[k] != null ? <b>{pcount[k]}</b> : null}</button>)}</div></div>
+          <div className="v3-uw-chips" role="radiogroup" aria-label="Які пости">{([["all", "Усі"], ["tips", "Прогнози"], ["slips", "Квитки"], ["unknown", "Нерозпізнані"]] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={pf === k} className={pf === k ? "is-on" : ""} onClick={() => pickPf(k)}>{l}{pcount[k] != null ? <b>{pcount[k]}</b> : null}</button>)}</div>
+          <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} /></button><button type="button" className={view === "grid" ? "is-on" : ""} aria-pressed={view === "grid"} aria-label="Картками" onClick={() => pickView("grid")}><LayoutGrid size={15} /></button></div></div>
         {shown === null || (plist?.loading && !plist.items.length) ? <div className="v3-adw-skel">{[0, 1, 2].map((i) => <i key={i} style={{ height: 64 }} />)}</div>
           : !shown.length ? <p className="v3-mxw-none">{pf === "all" ? "Постів ще немає — перший збір за кілька хвилин." : "Таких постів немає."}</p>
-          : <ul className="v3-tgw-plist">{shown.map((p, i) => (
+          : view === "grid" ? <ul key="grid" className="v3-tgw-pgrid">{shown.map((p, i) => (
+            <li key={`${p.postId}-${i}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}>
+              {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : null}
+              {p.kind === "bet" && p.team1 && <b className="v3-tgw-pgb">{p.team1} — {p.team2} · {MARKET(p)}</b>}
+              {(p.text || !p.photos?.length) && <MoreText text={p.text || "—"} cap={!!p.photos?.length} />}
+              <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}{p.score && !p.slip ? ` · ${p.score}` : ""}</em>}<Marks p={p} /></span>
+              <span className="v3-tgw-pgf"><small><b>№{postNo(p)}</b> · {when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>{READ[p.readBy || ""] ? <i className={`v3-tg-rb is-${p.readBy}`}>{READ[p.readBy!]}</i> : null}</span>
+              <button type="button" className="v3-tgw-pgfix" onClick={() => setFix({ ...p, title: wCh.title })}>{p.kind === "unknown" ? "Розібрати" : "Змінити розбір"}</button>
+            </li>
+          ))}</ul>
+          : <ul key="list" className="v3-tgw-plist">{shown.map((p, i) => (
             <li key={`${p.postId}-${i}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}>
               {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : null}
               <span className="v3-tgw-pm">
