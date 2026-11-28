@@ -169,7 +169,7 @@ function AdminShell() {
 
   return (
     // phone: the light screens set the light canvas from the URL at once — not after their lazy chunk loads (no dark flash between screens)
-    <div className="v3-shell" data-light={/^\/(dashboard|users|payments|matches|bets|banners|support|audit|settings|telegram)(\/|$)/.test(pathname) ? "" : undefined} data-web={/^\/(dashboard|users|payments|matches|bets|banners|support|audit|settings)(\/|$)/.test(pathname) ? "" : undefined}>
+    <div className="v3-shell" data-light={/^\/(dashboard|users|payments|matches|bets|banners|support|audit|settings|telegram)(\/|$)/.test(pathname) ? "" : undefined} data-web={/^\/(dashboard|users|payments|matches|bets|banners|support|audit|settings|telegram)(\/|$)/.test(pathname) ? "" : undefined}>
       {/* Фон «Зоряний пил»: рідкі крихітні точки ледь мерехтять (дизайн «Основа · фон застосунку») */}
       <StarField />
       <a href="#main-content" className="skip-link">Перейти до вмісту</a>
