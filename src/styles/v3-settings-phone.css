@@ -283,3 +283,8 @@
 .v3-st-errclr.is-top.is-ask { background: #e5484d; color: #fff; }
 .v3-st-errclr.is-top { background: #e5484d; color: #fff; }
 .v3-st-errclr.is-top.is-ask { background: #c2341f; }
+/* the tariffs' note: grey, the «!» alone in yellow — not a yellow block */
+@media (max-width: 767px) {
+  .v3-st-pnote { background: #fff; color: #4a5263; }
+  .v3-st-pnote b { display: grid; place-items: center; flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: #fff3dc; color: #8a5a00; font-size: 11px; }
+}

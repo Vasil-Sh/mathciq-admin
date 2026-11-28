@@ -99,6 +99,8 @@ export interface TgStats {
   byMarket: { name: string; won: number; lost: number; winrate: number; roi: number | null }[];
   streaks: { best: number; worst: number; current: number };
   /** The stake after a lost slip against the one after a won slip; chasing — 30%+ more after a loss. */
+  /** Newest first, the current month always there: tips, winrate, ROI (1 unit a tip), the slips' money in the main currency. */
+  months?: { month: string; won: number; lost: number; winrate: number | null; roi: number | null; money: number | null; slips: number; moneyRoi: number | null }[];
   chase?: { afterLoss: number; afterWin: number; nLoss: number; nWin: number; rise: number; chasing: boolean } | null;
   summaries: { at: string; period: string | null; claimed: { won: number | null; total: number | null }; ours: { won: number; total: number } }[];
 }
@@ -114,5 +116,5 @@ export const fetchTgCandidates = () => api.get<{ candidates: TgCandidateCh[] }>(
 export const dismissTgCandidate = (h: string) => api.delete(`/admin/tg-sources/candidates/${encodeURIComponent(h)}`);
 export const rereadTgDoubtful = () => api.post<{ ok: true }>("/admin/tg-posts/reread-doubtful");
 export const deleteTgChannel = (handle: string) => api.delete<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}`);
-export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map" | "MapHandicap" | "MapTotal"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
+export const fixTgPost = (handle: string, postId: number, body: { kind: "other"; reason?: "Повтор" | "Опитування" | "Підсумок" | "Повернення" | null } | { kind: "bet"; matchId: string; market: "Match Winner" | "Total" | "Handicap" | "Map" | "MapHandicap" | "MapTotal"; side?: 1 | 2; line?: number; over?: boolean; map?: number; odds?: number | null; remember?: boolean; result?: "auto" | "pending" | "Win" | "Loss" | "Void" }) =>
   api.post<{ ok: true }>(`/admin/tg-posts/${encodeURIComponent(handle)}/${postId}`, body);

@@ -130,6 +130,9 @@ export default function Matches() {
   useEffect(() => { if (!isPhoneWidth()) return; if (tab === "teams") setTq(pageSearch.q); else { setQ(pageSearch.q); setRk((x) => x + 1); } }, [pageSearch.q]); // eslint-disable-line react-hooks/exhaustive-deps
   const [tf, setTf] = useState<"all" | "dup" | "logo">("all");
   const [tg, setTg] = useState<"all" | Game>("all");
+  const [tFiltOpen, setTFiltOpen] = useState(false);
+  // phone «Парсери»: the parsers by what they bring — matches or odds
+  const [pKind, setPKind] = useState<"matches" | "odds">("matches");
   const [tLimit, setTLimit] = useState(80);
   // Телефон: команди списком або блоками по дві в ряд (запам’ятовуємо вибір)
   const [tView, setTView] = useState<"list" | "grid">(() => { try { const v = localStorage.getItem("mx-team-view"); return v === "grid" || v === "list" ? v : isPhoneWidth() ? "grid" : "list"; } catch { return "list"; } });
@@ -843,9 +846,12 @@ export default function Matches() {
     : [h.ok ? `${h.ok} ${plural(h.ok, "успішний запуск", "успішні запуски", "успішних запусків")}` : "", h.bad ? `${h.bad} ${plural(h.bad, "збій", "збої", "збоїв")}` : ""].filter(Boolean).join(" · ");
   const SRC_NAME = { pandascore: "PandaScore", cito: "Cito" } as const;
   const conflictsN = issues.filter((x) => x.kind === "conflict").length;
+  const isOddsP = (p: ParserState) => !!p.odds || p.name === "oddspapi";
+  const pKinds = [["matches", "Матчі", (parsers || []).filter((p) => !isOddsP(p)).length], ["odds", "Коефіцієнти", (parsers || []).filter(isOddsP).length]] as const;
   const phoneParsers = (
     <section className="v3-mxp-ps">
-      {issues.length > 0 && <button type="button" className={`v3-mxp-iss${conflictsN ? " is-warn" : ""}`} onClick={() => setIssuesOpen(true)}>
+      <div className="v3-mxp-bar"><div className="v3-mxp-days is-teams is-two" role="group" aria-label="Тип парсерів">{pKinds.map(([k, l, n]) => <button key={k} type="button" className={pKind === k ? "is-on" : ""} aria-pressed={pKind === k} onClick={() => setPKind(k)}>{l}{parsers && <b>{n}</b>}</button>)}</div></div>
+      {pKind === "matches" && issues.length > 0 && <button type="button" className={`v3-mxp-iss${conflictsN ? " is-warn" : ""}`} onClick={() => setIssuesOpen(true)}>
         <AlertTriangle size={16} aria-hidden="true" />
         <span><b>{conflictsN ? `Розбіжності рахунку · ${conflictsN}` : "Розбіжностей немає"}</b><small>{issues.length - conflictsN ? `закрито за PandaScore і Cito · ${issues.length - conflictsN}` : "джерела по-різному бачать рахунок — перевірте перед розрахунком ставок"}</small></span>
         <ChevronRight size={16} aria-hidden="true" />
@@ -875,7 +881,7 @@ export default function Matches() {
       </Dialog>
       {parsers === null ? Array.from({ length: 2 }, (_, i) => <div key={i} className="v3-mxp-pc is-skel" aria-hidden="true"><span className="v3-skel v3-skel-light" style={{ width: "40%" }} /><span className="v3-skel v3-skel-light" /><span className="v3-skel v3-skel-light" style={{ width: "70%" }} /></div>)
         : !parsers.length ? <div className="v3-mxp-none"><span className="v3-mxp-none-ic" aria-hidden="true"><Activity size={20} /></span><strong>Парсерів немає</strong><span>Бекенд не повідомив про жодне джерело матчів. Щойно парсер запуститься, він з’явиться тут.</span></div>
-        : parsers.map((p, i) => {
+        : parsers.filter((p) => (pKind === "odds") === isOddsP(p)).map((p, i) => {
           const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
           const ps = pState(p), r = running[p.name], cnt = cntFor(p.name), hrs = hoursOf(p.name);
           return (
@@ -1076,9 +1082,11 @@ export default function Matches() {
   const teamLast = (t: Team) => { const tn = normTeam(t.name);
     return known.filter((m) => m.game === t.game && m.status === "done" && m.s1 != null && m.s2 != null && (m.s1 || m.s2) && (normTeam(m.t1) === tn || normTeam(m.t2) === tn))
       .sort((a, b) => b.ts - a.ts)
-      // the same match from two sources (Liquipedia + PandaScore, an older id in the history): one opponent within 6 h
+      // the same match from two sources (Liquipedia + PandaScore, an older id in the history): one opponent within 6 h,
+      // or one opponent and the same score on the same day (sources that disagree on the start by hours)
       .filter((m, i, xs) => { const opp = (x: Match) => normTeam(normTeam(x.t1) === tn ? x.t2 : x.t1);
-        return !xs.slice(0, i).some((y) => y.id === m.id || (Math.abs(y.ts - m.ts) < 6 * 3_600_000 && opp(y) === opp(m))); })
+        const sc = (x: Match) => (normTeam(x.t1) === tn ? `${x.s1}:${x.s2}` : `${x.s2}:${x.s1}`);
+        return !xs.slice(0, i).some((y) => y.id === m.id || (opp(y) === opp(m) && (Math.abs(y.ts - m.ts) < 6 * 3_600_000 || (y.day === m.day && sc(y) === sc(m))))); })
       .slice(0, 5)
       .map((m) => { const first = normTeam(m.t1) === tn; const a = first ? m.s1! : m.s2!, b = first ? m.s2! : m.s1!;
         return { id: m.id, r: (a > b ? "W" : a < b ? "L" : "D") as "W" | "L" | "D", opp: first ? m.t2 : m.t1, oppLogo: first ? m.logo2 : m.logo1, score: `${a}:${b}`, day: m.day, tour: m.tournament }; }); };
@@ -1165,8 +1173,18 @@ export default function Matches() {
           {phone ? (
             <div className="v3-mxp-bar">
               <div className="v3-mxp-days is-teams" role="group" aria-label="Фільтр">{([["all", "Усі", tfOpts[0].n], ["logo", "Без лого", tfOpts[2].n], ["dup", "Дублікати", tfOpts[1].n]] as [typeof tf, string, number][]).map(([k, l, n]) => <button key={k} type="button" className={tf === k ? "is-on" : ""} aria-pressed={tf === k} onClick={() => setTf(k)}>{l}<b>{n}</b></button>)}</div>
+              <button type="button" className={`v3-mxp-fbtn${tg !== "all" ? " is-on" : ""}`} aria-label="Фільтр" aria-haspopup="dialog" onClick={() => setTFiltOpen(true)}><Filter size={16} aria-hidden="true" /></button>
               {/* «Дублікати» are pair cards — no list / tiles there, so the switch is greyed out */}
               <div className={`v3-mxp-view${tf === "dup" ? " is-off" : ""}`} role="group" aria-label="Вигляд" title={tf === "dup" ? "У «Дублікатах» лише картки пар" : undefined}><button type="button" disabled={tf === "dup"} className={tView === "list" && tf !== "dup" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} aria-hidden="true" /></button><button type="button" disabled={tf === "dup"} className={tView === "grid" && tf !== "dup" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Плитками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} aria-hidden="true" /></button></div>
+              <Dialog open={tFiltOpen} onOpenChange={setTFiltOpen}>
+                <DialogContent className="v3-sheet v3-pay-sheet v3-mxp-filt">
+                  <div className="v3-mxp-fh"><DialogTitle>Фільтр</DialogTitle>{tg !== "all" && <button type="button" onClick={() => setTg("all")}>Скинути</button>}</div>
+                  <DialogDescription className="sr-only">Гра команд</DialogDescription>
+                  <span className="v3-mxp-fl">Гра</span>
+                  <div className="v3-mxp-seg" role="group" aria-label="Гра"><PillTrack active={tg} />{([["all", "Усі"], ["cs2", "CS2"], ["dota2", "Dota 2"]] as const).map(([k, l]) => <button key={k} type="button" className={tg === k ? "is-on" : ""} aria-pressed={tg === k} onClick={() => setTg(k)}>{l}</button>)}</div>
+                  <button type="button" className="v3-mxp-apply" onClick={() => setTFiltOpen(false)}>Показати {tList.length} {plural(tList.length, "команду", "команди", "команд")}</button>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (() => { const sb = <label className={wide ? "v3-search" : "v3-msearch"}><Search size={16} aria-hidden="true" /><input type="search" aria-label="Пошук команди" placeholder="Назва або написання" value={tq} onChange={(e) => setTq(e.target.value)} />{tq && <button type="button" onClick={() => setTq("")} aria-label="Очистити пошук"><X size={14} /></button>}</label>;
             return wide ? sb : <div className="v3-mx-srow">{sb}<button type="button" className="v3-mx-vbtn" onClick={flipView} aria-label={tView === "list" ? "Показати блоками" : "Показати списком"} title={tView === "list" ? "Блоки" : "Список"}><span key={tView} className="v3-mx-vico">{tView === "list" ? <LayoutGrid size={18} /> : <List size={18} />}</span></button></div>; })()}

@@ -40,7 +40,7 @@ export default function MatchesWeekCard() {
     <Wrap web={web}>
       <div className="v3-mw-h">
         <span className="v3-kpi-l"><span className="v3-kpi-ico"><Gamepad2 size={16} aria-hidden="true" /></span>Матчі за 7 днів</span>
-        {web ? <Link to="/matches?tab=parsers" className="v3-mw-go" aria-label="Відкрити парсери"><ChevronRight size={18} aria-hidden="true" /></Link> : <ChevronRight size={18} aria-hidden="true" />}
+        <Link to="/matches?tab=parsers" className="v3-mw-go" aria-label="Відкрити парсери"><ChevronRight size={18} aria-hidden="true" /></Link>
       </div>
       {!r ? <div className="v3-mw-skel" aria-hidden="true"><i /><i /><i /><i /></div> : (
         <>
@@ -50,7 +50,11 @@ export default function MatchesWeekCard() {
             <div><b>{r.withOdds}<em>{r.total ? ` · ${oddsPct}%` : ""}</em></b><small>з коефіцієнтами</small></div>
             <div><b>{r.scoreDelayMin == null ? "—" : mins(r.scoreDelayMin)}</b><small>{r.lateScores ? `рахунок після завершення · ${r.lateScores} ${plural(r.lateScores, "матч", "матчі", "матчів")}` : "рахунок одразу з завершенням"}</small></div>
           </div>
-          <div className="v3-mw-bars" aria-hidden={web ? undefined : true} role={web ? "group" : undefined} aria-label={web ? "Матчі за днями — оберіть день" : undefined}>{r.days.map((d) => <span key={d.day} title={`${dShort(d.day)}: ${d.total}`} {...(web ? { role: "button", tabIndex: 0, "aria-label": `${dShort(d.day)}: ${d.total} матчів`, onClick: () => setDay(d.day), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDay(d.day); } } } : {})}><i style={{ height: `${Math.round((d.total / max) * 100)}%` }}>{d.withOdds > 0 && <u style={{ height: `${Math.round((d.withOdds / Math.max(1, d.total)) * 100)}%` }} />}</i><small>{new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" })}</small></span>)}</div>
+          <div className="v3-mw-bars" role="group" aria-label="Матчі за днями — оберіть день">{r.days.map((d) => { const pick = () => setDay(web ? d.day : day === d.day ? null : d.day); return <span key={d.day} title={`${dShort(d.day)}: ${d.total}`} className={!web && day === d.day ? "is-sel" : day && !web ? "is-dim" : undefined} role="button" tabIndex={0} aria-pressed={web ? undefined : day === d.day} aria-label={`${dShort(d.day)}: ${d.total} матчів`} onClick={pick} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }}><i style={{ height: `${Math.round((d.total / max) * 100)}%` }}>{d.withOdds > 0 && <u style={{ height: `${Math.round((d.withOdds / Math.max(1, d.total)) * 100)}%` }} />}</i><small>{new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "short", timeZone: "UTC" })}</small></span>; })}</div>
+          {!web && day && (() => { const d = r.days.find((x) => x.day === day); if (!d) return null; const pct = d.total ? Math.round((d.withOdds / d.total) * 100) : 0; return (
+            <div className="v3-mw-day" aria-live="polite"><b>{new Date(`${d.day}T12:00:00Z`).toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}</b>
+              <ul><li><span>Зібрано</span><b>{d.total} {plural(d.total, "матч", "матчі", "матчів")}</b></li><li><span>Без рахунку</span><b className={d.noScore ? "is-bad" : "is-ok"}>{d.noScore}</b></li><li><span>З коефіцієнтами</span><b>{d.withOdds}{d.total ? ` · ${pct}%` : ""}</b></li></ul></div>
+          ); })()}
           {!!r.bySource?.length && <div className="v3-mw-src"><small>Звідки матчі</small><ul>{r.bySource.map((x) => <li key={x.source}><span>{SOURCE[x.source] || x.source}</span><b>{x.n}</b></li>)}</ul></div>}
           <p className="v3-mw-note">{partial ? `Рахуємо з ${dShort(r.since!)} — тиждень заповниться до ${dShort(new Date(Date.parse(`${r.since}T12:00:00Z`) + 6 * 86_400_000).toISOString().slice(0, 10))}. ` : ""}Темніша частина стовпчика — матчі з коефіцієнтами.</p>
         </>
@@ -60,9 +64,7 @@ export default function MatchesWeekCard() {
   );
 }
 
-/** phone: the whole card is a link to the parsers; web: a card (its bars open a day), the arrow is the link */
-function Wrap({ web, children }: { web: boolean; children: React.ReactNode }) {
-  return web
-    ? <section className="v3-wcard v3-mw" aria-label="Матчі за 7 днів">{children}</section>
-    : <Link to="/matches?tab=parsers" className="v3-wcard v3-mw" aria-label="Матчі за 7 днів — відкрити парсери">{children}</Link>;
+/** a card: its bars show a day (phone: under the bars, web: a dialog), the arrow opens the parsers */
+function Wrap({ children }: { web: boolean; children: React.ReactNode }) {
+  return <section className="v3-wcard v3-mw" aria-label="Матчі за 7 днів">{children}</section>;
 }

@@ -608,3 +608,25 @@ small.v3-tg-note { margin-top: 6px; }
 .v3-tg-reader.is-fold { gap: 0; }
 /* «Перевірка постів»: the progress bar apart from the line above and the post below */
 .v3-tg-chkbar { flex-shrink: 0; margin: 10px 0 14px; }
+/* «Прогнозів 8 · ⏱ 1»: the waiting count stays on the number's line (a tile's small and an svg are blocks otherwise) */
+b > small.v3-tg-pend.v3-tg-pend { display: inline-flex; align-items: center; gap: 2px; margin: 0 0 0 2px; font-size: 13px; font-weight: 500; color: #6b7384; white-space: nowrap; vertical-align: baseline; }
+b > small.v3-tg-pend.v3-tg-pend svg { display: inline-block; flex-shrink: 0; margin: 0; }
+/* the post's number in the channel, before its time */
+.v3-tg-pno { margin-right: 6px; font-weight: 600; color: #4a5263; font-variant-numeric: tabular-nums; }
+/* «Порівняння місяців»: this month and the picked one side by side, the difference, the months to pick */
+.v3-tg-mcmp { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #e6e9ef; border-radius: 16px; background: #fff; }
+.v3-tg-mcmp2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.v3-tg-mct { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; border-radius: 12px; background: #f1f3f7; animation: v3-tg-mct-in .2s ease; }
+.v3-tg-mct small { font-size: 12px; color: #6b7384; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-tg-mct b { font-size: 18px; font-weight: 700; color: #11151c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-tg-mct.is-ok b { color: #1f7a45; } .v3-tg-mct.is-bad b { color: #c2341f; }
+.v3-tg-mct em { font-style: normal; font-size: 11px; color: #6b7384; }
+.v3-tg-mct.is-none em { font-size: 12px; line-height: 1.35; }
+.v3-tg-mcmpd { margin: 0; font-size: 13px; font-weight: 600; color: #4a5263; }
+.v3-tg-mcmpd.is-ok { color: #1f7a45; } .v3-tg-mcmpd.is-bad { color: #c2341f; }
+.v3-tg-mchips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px; }
+.v3-tg-mchips::-webkit-scrollbar { display: none; }
+.v3-tg-mchips button { flex-shrink: 0; height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: #f1f3f7; color: #4a5263; font: 600 13px Inter, sans-serif; transition: background-color .15s ease, color .15s ease, transform .12s ease; }
+.v3-tg-mchips button.is-on { background: #2f7bff; color: #fff; }
+.v3-tg-mchips button:active { transform: scale(.96); }
+@keyframes v3-tg-mct-in { from { opacity: .4; } to { opacity: 1; } }

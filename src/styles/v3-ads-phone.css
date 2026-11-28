@@ -349,3 +349,9 @@
   .v3-ads .v3-bn-tag.is-done { background: #eef0f4; color: #4a5263; }
   .v3-ads .v3-bn-done { background: #f1f3f7; color: #4a5263; }
 }
+/* the preview's text: a long word wraps instead of leaving the card; «Редагувати» under the review buttons — blue, white text */
+@media (max-width: 767px) {
+  .v3-ad-tgcard, .v3-ad-tgdesc { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+  .v3-ad-cedit { width: 100%; min-height: 48px; margin-top: 8px; border-radius: 14px; background: #3a6df0; color: #fff; font-size: 15px; transition: transform .12s ease, background-color .15s ease; }
+  .v3-ad-cedit:active { transform: scale(.98); background: #2f5fd6; }
+}

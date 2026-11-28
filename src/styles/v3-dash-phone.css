@@ -223,3 +223,22 @@
   .v3-mw-skel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .v3-mw-skel i { height: 58px; border-radius: 12px; background: #eef0f4; }
 }
+/* «Матчі за 7 днів» on a phone: a bar shows its day under the bars (tap again to hide) */
+@media (max-width: 767px) {
+  .v3-mw-bars span { cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
+  .v3-mw-bars span i { transition: background-color .15s ease, opacity .15s ease; }
+  .v3-mw-bars span.is-dim i { opacity: .45; }
+  .v3-mw-bars span.is-sel i { background: #b9ccf8; }
+  .v3-mw-bars span.is-sel small { color: #11151c; font-weight: 600; }
+  .v3-mw-bars span:focus-visible i { box-shadow: 0 0 0 2px #3a6df0; }
+  .v3-mw-day { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #f1f3f7; animation: v3-mw-in .18s ease; }
+  .v3-mw-day > b { font-size: 13px; font-weight: 700; color: #11151c; }
+  .v3-mw-day > b::first-letter { text-transform: uppercase; }
+  .v3-mw-day ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .v3-mw-day li { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #4a5263; }
+  .v3-mw-day li b { font-weight: 700; color: #11151c; }
+  .v3-mw-day li b.is-bad { color: #c2341f; } .v3-mw-day li b.is-ok { color: #1f7a45; }
+  .v3-mw-go { display: grid; place-items: center; width: 32px; height: 32px; margin: -6px -8px -6px 0; border-radius: 10px; color: #4a5263; }
+  .v3-mw-go:active { background: #f1f3f7; }
+  @keyframes v3-mw-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}
