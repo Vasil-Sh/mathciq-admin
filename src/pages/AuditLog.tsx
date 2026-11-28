@@ -14,6 +14,7 @@ import { Dropdown } from "@/components/ui/dropdown";
 import ExportCsvButton from "@/components/ExportCsvButton";
 import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 import { logoutOthers } from "@/lib/adminSettingsApi";
+import AuditWeb from "@/components/audit/AuditWeb";
 
 type Summary = { today: number; week: number; failed7: number; security7: number; lastFailed: Entry | null; lastSecurity: Entry | null; topActor: { name: string; week: number } | null };
 type Actor = { name: string; telegram: string | null; week: number; total: number };
@@ -52,7 +53,7 @@ function group(entries: Entry[]): Item[] {
   return out;
 }
 
-export default function AuditLog() {
+function AuditLegacy() {
   const [params, setParams] = useSearchParams();
   const { user: me } = useAuth();
   const wide = useMedia("(min-width: 1180px)");
@@ -542,4 +543,10 @@ export default function AuditLog() {
       </Dialog>
     </div>
   );
+}
+
+/** Phone keeps its own layout; from 768 px the light web page. */
+export default function AuditLog() {
+  const phone = useMedia("(max-width: 767px)");
+  return phone ? <AuditLegacy /> : <AuditWeb />;
 }
