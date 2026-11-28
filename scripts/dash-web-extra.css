@@ -1,29 +1,29 @@
 
 /* ══ Дашборд · веб (у стилі мобільного): розкладка, шапка, вибір періоду ══ */
 @media (min-width: 768px) {
-  body:has(.v3-dash, .v3-uw), .v3-shell:has(.v3-dash, .v3-uw) { background: #e9ecf2; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-stars { display: none; }
+  body:has(.v3-shell[data-web], .v3-dash, .v3-uw), .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) { background: #e9ecf2; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-stars { display: none; }
 
   /* шапка — темна смуга на всю ширину, посередині вкладки, праворуч квадратні кнопки й аватар */
   /* full width without 100vw (no sideways scroll); logo · tabs in the middle · search, journal, errors · avatar */
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 10px; width: 100%; max-width: none; margin: 0; padding: 12px 24px; background: #121316; box-shadow: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav-group { display: contents; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { justify-self: center; min-width: auto; max-width: none; overflow: visible; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav::-webkit-scrollbar { display: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-audit-slot.is-desk { display: flex; align-items: center; gap: 8px; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-audit-slot.is-mob { display: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { display: flex; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-account { display: block; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header-end { margin-left: 0; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav > .v3-pill { display: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink.is-active { background: #3a6df0; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink { min-height: 36px; padding: 0 9px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink.is-active { color: #fff; font-weight: 600; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-search-btn, .v3-shell:has(.v3-dash, .v3-uw) .v3-header .v3-audit { width: 36px; height: 36px; border: 0; border-radius: 10px; background: #26282d; color: #e6e9ef; box-shadow: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header .v3-audit.is-active { background: #3a6df0; color: #fff; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: 10px; width: 100%; max-width: none; margin: 0; padding: 12px 24px; background: #121316; box-shadow: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav-group { display: contents; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav { justify-self: center; min-width: auto; max-width: none; overflow: visible; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav::-webkit-scrollbar { display: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-audit-slot.is-desk { display: flex; align-items: center; gap: 8px; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-audit-slot.is-mob { display: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav { display: flex; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account { display: block; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header-end { margin-left: 0; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav-group { border: 0; background: transparent; box-shadow: none; padding: 0; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav > .v3-pill { display: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink.is-active { background: #3a6df0; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink { min-height: 36px; padding: 0 9px; white-space: nowrap; border-radius: 10px; color: #e6e9ef; font-size: 13px; font-weight: 500; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink.is-active { color: #fff; font-weight: 600; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink:not(.is-active):hover { background: rgba(255, 255, 255, .06); }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-search-btn, .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header .v3-audit { width: 36px; height: 36px; border: 0; border-radius: 10px; background: #26282d; color: #e6e9ef; box-shadow: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header .v3-audit.is-active { background: #3a6df0; color: #fff; }
 
   /* сторінка: світла, колонка до 1170 px */
   body:has(.v3-dash) .v3-dash { max-width: 1170px; margin-left: auto; margin-right: auto; gap: 14px; }
@@ -178,15 +178,15 @@
   body:has(.v3-dash) .v3-dash .v3-dial-hint { display: none; }
 
   /* шапка: аватар без імені, «Admin» сірою міткою */
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-account-copy { display: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-account-btn { box-sizing: border-box; gap: 6px; height: 36px; min-height: 36px; padding: 3px 8px 3px 3px; border: 0; border-radius: 10px; background: #26282d; color: #9aa3b2; box-shadow: none; transition: background-color .15s; }
-  @media (hover: hover) { .v3-shell:has(.v3-dash, .v3-uw) .v3-account-btn:hover { background: #2f3238; } }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-account-btn .v3-avatar { width: 30px; height: 30px; border-radius: 7px; background: #3a6df0; color: #fff; overflow: hidden; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-account-btn .v3-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account-copy { display: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account-btn { box-sizing: border-box; gap: 6px; height: 36px; min-height: 36px; padding: 3px 8px 3px 3px; border: 0; border-radius: 10px; background: #26282d; color: #9aa3b2; box-shadow: none; transition: background-color .15s; }
+  @media (hover: hover) { .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account-btn:hover { background: #2f3238; } }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account-btn .v3-avatar { width: 30px; height: 30px; border-radius: 7px; background: #3a6df0; color: #fff; overflow: hidden; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-account-btn .v3-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 }
 @media (min-width: 768px) {
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-logo-badge { border: 0; background: #3a6df0; color: #fff; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header .v3-count { background: #e5484d; color: #fff; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-logo-badge { border: 0; background: #3a6df0; color: #fff; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header .v3-count { background: #e5484d; color: #fff; }
 }
 @media (min-width: 768px) {
   body:has(.v3-dash) .v3-dw-pair > * { min-height: 0; height: auto; flex: none; }
@@ -350,20 +350,20 @@
 
 /* Header never scrolls sideways when the window is narrowed or zoomed: it gets compact instead */
 @media (min-width: 768px) and (max-width: 1260px) {
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-logo-badge { display: none; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink { padding: 0 7px; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header { column-gap: 8px; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-logo-badge { display: none; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink { padding: 0 7px; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header { column-gap: 8px; }
 }
 
 /* Narrow web window: tabs move to a second row under the logo and buttons */
 @media (min-width: 768px) and (max-width: 1099px) {
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-header { row-gap: 8px; padding-bottom: 8px; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-nav { grid-row: 2; grid-column: 1 / -1; justify-self: center; flex-wrap: wrap; justify-content: center; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-navlink { min-height: 32px; padding: 0 6px; font-size: 12.5px; }
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-audit-slot.is-desk { justify-self: end; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-header { row-gap: 8px; padding-bottom: 8px; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-nav { grid-row: 2; grid-column: 1 / -1; justify-self: center; flex-wrap: wrap; justify-content: center; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-navlink { min-height: 32px; padding: 0 6px; font-size: 12.5px; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-audit-slot.is-desk { justify-self: end; }
 }
 
 /* Black footer on the light web pages, content on the same edges as the header */
 @media (min-width: 768px) {
-  .v3-shell:has(.v3-dash, .v3-uw) .v3-footer { max-width: none; margin-top: 24px; padding: 18px max(24px, calc((100% - 1170px) / 2)); background: #121316; color: #9aa3b2; }
+  .v3-shell:is([data-web], :has(.v3-dash, .v3-uw)) .v3-footer { max-width: none; margin-top: 24px; padding: 18px max(24px, calc((100% - 1170px) / 2)); background: #121316; color: #9aa3b2; }
 }
