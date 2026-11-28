@@ -26,6 +26,7 @@ import { askBadgePermission, isStandalone, useBadgePermission } from "@/lib/appB
 import { DEFAULT_TABS, TAB_OPTIONS, TAB_SLOTS, saveTabs, useTabs, type TabKey } from "@/lib/tabbar";
 import { setExpiringWindow } from "@/lib/usersModel";
 import { fetchServerErrors, resolveServerError, type ServerError } from "@/lib/serverErrorsApi";
+import SettingsWeb, { SaveBar, type WSec } from "@/components/settings/SettingsWeb";
 
 type SecKey = "tariffs" | "trial" | "ai" | "texts" | "alerts" | "receipt" | "templates" | "account" | "banners" | "nav" | "errors";
 const SECS: { key: SecKey; label: string; icon: typeof CreditCard; badge?: string; dark?: boolean }[] = [
@@ -153,6 +154,9 @@ export default function Settings() {
     setSec(k); setMSec(k); markSeen(k);
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [hash, locKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const W_SECS: WSec[] = ["tariffs", "trial", "ai", "texts", "alerts", "receipt", "templates", "banners", "account", "errors"];
+  const [wsec, setWsec] = useState<WSec>(() => { const h = location.hash.slice(1) as WSec; return W_SECS.includes(h) ? h : "tariffs"; });
+  useEffect(() => { const h = hash.slice(1) as WSec; if (W_SECS.includes(h)) setWsec(h); }, [hash, locKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [here, setHere] = useState<SecKey>("tariffs");
   // phone: keep the chosen section chip in view
   useEffect(() => {
@@ -285,6 +289,15 @@ export default function Settings() {
         <span className="v3-skel v3-skel-light" style={{ width: "90%", height: 13, marginTop: 10 }} />
         <div className="v3-st-pskel-chips">{[84, 96, 70, 110].map((w, i) => <span key={i} className="v3-skel v3-skel-light" style={{ width: w }} />)}</div>
         <div className="v3-st-pskel-card">{[0, 1, 2, 3].map((i) => <div key={i}><span><span className="v3-skel v3-skel-light" style={{ width: "60%", height: 15 }} /><span className="v3-skel v3-skel-light" style={{ width: "42%", height: 11 }} /></span><span className="v3-skel v3-skel-light" style={{ width: 96, height: 34, borderRadius: 10 }} /></div>)}</div>
+        <span className="sr-only" role="status">Завантаження налаштувань…</span>
+      </div>
+    );
+  }
+  if (loading && !settings && !phone) {
+    return (
+      <div className="v3-page v3-uw v3-stw">
+        <section className="v3-uw-hero"><div><h1>Налаштування</h1><p>завантажуємо…</p></div></section>
+        <div className="v3-sw-layout v3-adw-skel" aria-busy="true"><div className="v3-adw-card">{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} style={{ height: 36, marginBottom: 8 }} />)}</div><div className="v3-adw-card">{[24, 60, 40, 40].map((h, i) => <i key={i} style={{ height: h, marginBottom: 10 }} />)}</div></div>
         <span className="sr-only" role="status">Завантаження налаштувань…</span>
       </div>
     );
@@ -437,6 +450,47 @@ export default function Settings() {
   const errorsSec = show("errors") && <ErrorsSection key="errors" all={all} n={n("errors")} />;
   const body = [tariffs, trial || trialPhone, ai, texts, alerts || alertsPhone, receipt, templates, account, banners || bannersPhone, nav, errorsSec];
 
+  const dialogs = (<>
+      <Dialog open={!!leaveTo} onOpenChange={(o) => { if (!o && !leaving) setLeaveTo(null); }}>
+        <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
+          <div className="v3-modal-iconrow">
+            <span className="v3-modal-ico is-amber" aria-hidden="true"><AlertTriangle size={22} /></span>
+            <div>
+              <DialogTitle className="v3-modal-title">Залишити без збереження?</DialogTitle>
+              <DialogDescription className="v3-modal-sub">{changed.length === 1 ? `Зміна «${describeChange(changed[0], saved, cur)}» не збережеться.` : `${changed.length} ${plural(changed.length, "зміна", "зміни", "змін")} не збережуться: ${changed.slice(0, 3).map((k) => describeChange(k, saved, cur)).join(", ")}${changed.length > 3 ? "…" : ""}.`}</DialogDescription>
+            </div>
+          </div>
+          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
+            <button type="button" className="v3-btn v3-btn-ghost" disabled={leaving} onClick={() => { const to = leaveTo!; setLeaveTo(null); setCur(saved); navigate(to); }}>Не зберігати</button>
+            <button type="button" className={`v3-btn v3-btn-primary${leaving ? " is-busy" : ""}`} disabled={leaving || !online} onClick={async () => { setLeaving(true); const ok = await doSave(); setLeaving(false); if (ok) { const to = leaveTo!; setLeaveTo(null); navigate(to); } else setLeaveTo(null); }}>{leaving ? "Зберігаємо…" : "Зберегти й перейти"}</button>
+          </div></div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={priceAsk} onOpenChange={setPriceAsk}>
+        <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
+          <DialogTitle className="v3-modal-title">{cur.proPrice !== saved.proPrice && cur.basicPrice !== saved.basicPrice ? `Змінити ціни: Базова ${saved.basicPrice} → ${cur.basicPrice} ₴, Pro ${saved.proPrice} → ${cur.proPrice} ₴?` : cur.proPrice !== saved.proPrice ? `Змінити ціну Pro: ${saved.proPrice} → ${cur.proPrice} ₴?` : `Змінити ціну Базової: ${saved.basicPrice} → ${cur.basicPrice} ₴?`}</DialogTitle>
+          <DialogDescription className="v3-modal-sub">
+            Нова ціна з’явиться в застосунку одразу.{ov ? ` ${people(cur.proPrice !== saved.proPrice ? ov.plans.pro : ov.plans.basic)} на ${cur.proPrice !== saved.proPrice ? "Pro" : "Базовій"} доживуть поточний період за ${cur.proPrice !== saved.proPrice ? saved.proPrice : saved.basicPrice} ₴, наступна оплата — ${cur.proPrice !== saved.proPrice ? cur.proPrice : cur.basicPrice} ₴.` : " Поточні підписки доживають до кінця за старою ціною."}
+          </DialogDescription>
+          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
+            <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setPriceAsk(false)}>Скасувати</button>
+            <button type="button" className="v3-btn v3-btn-primary" onClick={() => { setPriceAsk(false); void doSave(); }}>{cur.proPrice !== saved.proPrice && cur.basicPrice !== saved.basicPrice ? "Змінити ціни" : "Змінити ціну"}</button>
+          </div></div>
+        </DialogContent>
+      </Dialog>
+  </>);
+  if (!phone) return (
+    <div className="v3-page v3-uw v3-stw">
+      <section className="v3-uw-hero"><div><h1>Налаштування</h1><p>Зміни діють у застосунку одразу — без релізу. Кожна зміна потрапляє в журнал дій.</p></div></section>
+      {!online && <div className="v3-uw-off" role="status"><WifiOff size={15} aria-hidden="true" /><span>Немає інтернету. Зміни не збережуться — дочекайтесь з’єднання.</span></div>}
+      <SettingsWeb sec={wsec} setSec={(k) => { setWsec(k); history.replaceState(null, "", `#${k}`); }} cur={cur} saved={saved} set={set} changed={changed}
+        settings={settings!} meta={meta} onSettings={(st, m) => { setSettings(st); setMeta(m); }} ov={ov} online={online} me={user?.username || ""} owner={!!user?.isOwner} lastIn={lastIn}
+        bar={(dirty || save === "fail") && <SaveBar n={changed.length} busy={save === "busy"} fail={save === "fail"} err={saveErr} online={online} onCancel={onCancel} onSave={onSave} />} />
+      {dialogs}
+    </div>
+  );
+
   return (
     <div className={`v3-page v3-settings${phone ? " is-phone" : ""}`}>
       {phone ? <section className="v3-hero v3-st-phero" key={`h-${pSec}`}>
@@ -490,34 +544,7 @@ export default function Settings() {
         </div>
       )}
 
-      <Dialog open={!!leaveTo} onOpenChange={(o) => { if (!o && !leaving) setLeaveTo(null); }}>
-        <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
-          <div className="v3-modal-iconrow">
-            <span className="v3-modal-ico is-amber" aria-hidden="true"><AlertTriangle size={22} /></span>
-            <div>
-              <DialogTitle className="v3-modal-title">Залишити без збереження?</DialogTitle>
-              <DialogDescription className="v3-modal-sub">{changed.length === 1 ? `Зміна «${describeChange(changed[0], saved, cur)}» не збережеться.` : `${changed.length} ${plural(changed.length, "зміна", "зміни", "змін")} не збережуться: ${changed.slice(0, 3).map((k) => describeChange(k, saved, cur)).join(", ")}${changed.length > 3 ? "…" : ""}.`}</DialogDescription>
-            </div>
-          </div>
-          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
-            <button type="button" className="v3-btn v3-btn-ghost" disabled={leaving} onClick={() => { const to = leaveTo!; setLeaveTo(null); setCur(saved); navigate(to); }}>Не зберігати</button>
-            <button type="button" className={`v3-btn v3-btn-primary${leaving ? " is-busy" : ""}`} disabled={leaving || !online} onClick={async () => { setLeaving(true); const ok = await doSave(); setLeaving(false); if (ok) { const to = leaveTo!; setLeaveTo(null); navigate(to); } else setLeaveTo(null); }}>{leaving ? "Зберігаємо…" : "Зберегти й перейти"}</button>
-          </div></div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={priceAsk} onOpenChange={setPriceAsk}>
-        <DialogContent className="v3-modal sm:max-w-[480px]" role="alertdialog">
-          <DialogTitle className="v3-modal-title">{cur.proPrice !== saved.proPrice && cur.basicPrice !== saved.basicPrice ? `Змінити ціни: Базова ${saved.basicPrice} → ${cur.basicPrice} ₴, Pro ${saved.proPrice} → ${cur.proPrice} ₴?` : cur.proPrice !== saved.proPrice ? `Змінити ціну Pro: ${saved.proPrice} → ${cur.proPrice} ₴?` : `Змінити ціну Базової: ${saved.basicPrice} → ${cur.basicPrice} ₴?`}</DialogTitle>
-          <DialogDescription className="v3-modal-sub">
-            Нова ціна з’явиться в застосунку одразу.{ov ? ` ${people(cur.proPrice !== saved.proPrice ? ov.plans.pro : ov.plans.basic)} на ${cur.proPrice !== saved.proPrice ? "Pro" : "Базовій"} доживуть поточний період за ${cur.proPrice !== saved.proPrice ? saved.proPrice : saved.basicPrice} ₴, наступна оплата — ${cur.proPrice !== saved.proPrice ? cur.proPrice : cur.basicPrice} ₴.` : " Поточні підписки доживають до кінця за старою ціною."}
-          </DialogDescription>
-          <div className="v3-modal-foot"><span /><div className="v3-modal-actions">
-            <button type="button" className="v3-btn v3-btn-ghost" onClick={() => setPriceAsk(false)}>Скасувати</button>
-            <button type="button" className="v3-btn v3-btn-primary" onClick={() => { setPriceAsk(false); void doSave(); }}>{cur.proPrice !== saved.proPrice && cur.basicPrice !== saved.basicPrice ? "Змінити ціни" : "Змінити ціну"}</button>
-          </div></div>
-        </DialogContent>
-      </Dialog>
+      {dialogs}
     </div>
   );
 }
