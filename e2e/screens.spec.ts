@@ -213,8 +213,10 @@ test.describe("Журнал дій", () => {
       await expect(page.getByRole("dialog").getByText("Фільтр", { exact: true })).toBeVisible();
       return;
     }
-    await page.locator(".v3-au-mdd .v3-dd-btn, .v3-au-wdd .v3-dd-btn").first().click();
-    await expect(page.getByRole("listbox").or(page.getByRole("menu")).first()).toBeVisible();
+    // web: the period and the author are our own menus
+    await page.locator(".v3-aw-dd").first().click();
+    await expect(page.getByRole("menu").first()).toBeVisible();
+    await expect(page.getByRole("menuitemradio", { name: "7 днів" })).toBeVisible();
   });
 
   test("phone: tap a record to open its details; the header has the journal button", async ({ page }) => {
@@ -228,6 +230,13 @@ test.describe("Журнал дій", () => {
 
   test("a user's history: banner with «Увесь журнал» button", async ({ page }) => {
     await page.goto("/audit?userId=3&username=Gerrry");
+    if (!isPhone(page)) {
+      // web: the user's history is a filter chip; «Скинути все» brings back the whole journal
+      await expect(page.locator(".v3-aw-fchips").getByText("Історія @Gerrry")).toBeVisible();
+      await page.locator(".v3-aw-fchips").getByRole("button", { name: "Скинути все" }).click();
+      await expect(page.locator(".v3-aw-fchips")).toHaveCount(0);
+      return;
+    }
     await expect(page.getByText("Історія @Gerrry")).toBeVisible();
     await expect(page.locator(".v3-au-hist-btn")).toHaveText("Увесь журнал");
   });
