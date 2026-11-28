@@ -1691,8 +1691,9 @@
 @media (min-width: 768px) {
   .v3-tgw-ph .v3-mxw-view { margin-left: auto; margin-top: 6px; background: #f3f5f8; }
   .v3-tgw-ph .v3-mxw-view button:not(.is-on) { background: none; }
-  .v3-tgw-pgrid { columns: 3 220px; column-gap: 10px; margin: 0; padding: 0; list-style: none; }
-  .v3-tgw-pgrid li { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding: 10px; break-inside: avoid; border-radius: 14px; background: #f3f5f8; animation: v3-row-in .3s ease-out both; }
+  .v3-tgw-pgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  .v3-tgw-pgrid ul { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; min-width: 0; }
+  .v3-tgw-pgrid li { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: #f3f5f8; animation: v3-row-in .3s ease-out both; }
   .v3-tgw-pgrid .v3-tg-shots { display: block; }
   .v3-tgw-pgrid .v3-tg-shots a { display: block; }
   .v3-tgw-pgrid .v3-tg-shots img { width: 100%; height: 120px; border-radius: 10px; object-fit: cover; }
@@ -1721,3 +1722,11 @@
 @media (max-width: 767px) { .v3-rfb { padding: 16px 14px 24px; } .v3-rfb-k { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3-rfb-k i:nth-child(n+3) { display: none; } }
 @media (prefers-reduced-motion: reduce) { .v3-rfb i, .v3-rfb-c i { animation: none; } }
 @media (min-width: 768px) { .v3-adw-skel:has(> i), .v3-adw-skel > .v3-adw-card:has(> i) { display: flex; flex-direction: column; gap: 8px; } .v3-adw-skel i { flex-shrink: 0; margin-bottom: 0 !important; } }
+@media (min-width: 768px) {
+  .v3-tgw-pgrid li, .v3-tgw-plist li { position: relative; }
+  .v3-tgw-pno { position: absolute; top: -6px; right: -6px; z-index: 2; display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 2px solid #fff; border-radius: 999px; background: #8a92a0; color: #fff; font: 700 10.5px Inter, sans-serif; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .v3-tgw-pno.is-new { background: #3a6df0; letter-spacing: .03em; animation: v3-tag-pop .3s cubic-bezier(.2, .9, .25, 1.3) both; }
+  .v3-tgw-pgrid { padding-top: 6px; padding-right: 6px; }
+  .v3-tgw-plist { padding-top: 6px; padding-right: 6px; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) { .v3-tgw-pno.is-new { animation: none; } }

@@ -90,6 +90,16 @@ function masonry(xs: TgPost[]): [TgPost[], TgPost[]] {
   }
   return cols;
 }
+/** The same in n columns, each post with its place in the list (for the corner number on the web cards). */
+function masonryN(xs: TgPost[], n: number): { p: TgPost; i: number }[][] {
+  const cols: { p: TgPost; i: number }[][] = Array.from({ length: n }, () => []), h = Array(n).fill(0) as number[];
+  xs.forEach((p, i) => {
+    const est = (p.photos?.length ? 190 : 40) + Math.min(p.text.length, p.photos?.length ? 70 : 130) * 0.5 + 60 + (p.kind === "bet" ? 40 : 0);
+    const k = h.indexOf(Math.min(...h));
+    cols[k].push({ p, i }); h[k] += est;
+  });
+  return cols;
+}
 
 /** «Можна додати»: channels our channels point to (links, @mentions), most mentioned first. */
 function Candidates({ onAdd }: { onAdd: (h: string) => void }) {
@@ -259,6 +269,7 @@ export default function Telegram() {
   const phone = useMedia("(max-width: 767px)");
   const [wq, setWq] = useState("");
   const [rOpen, setROpen] = useState(false);
+  const [freshN, setFreshN] = useState(0);
   const rPopRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (!rOpen) return; const f = (e: PointerEvent) => { const t = e.target as HTMLElement; if (rPopRef.current?.contains(t) || t.closest?.("[role=dialog].v3-sheet")) return; setROpen(false); }; const k = (e: KeyboardEvent) => { if (e.key === "Escape") setROpen(false); }; document.addEventListener("pointerdown", f); document.addEventListener("keydown", k); return () => { document.removeEventListener("pointerdown", f); document.removeEventListener("keydown", k); }; }, [rOpen]);
   const [data, setData] = useState<TgList | null>(null);
@@ -341,6 +352,7 @@ export default function Telegram() {
   const [opening, setOpening] = useState<string | null>(null);
   const getPosts = (h: string) => fetchTgPosts(h).then((p) => { cache.current.set(h, p); return p; });
   const openCh = async (h: string) => {
+    { const c0 = data?.channels.find((c) => c.handle === h); setFreshN(c0 && chSeen[h] != null ? Math.max(0, (c0.all?.posts ?? 0) - chSeen[h]) : 0); }
     markChSeen(h);
     const hit = cache.current.get(h);
     if (hit) { setPosts(hit); setSel(h); getPosts(h).then((p) => setPosts((cur) => (cur === hit ? p : cur))).catch(() => {}); return; }
@@ -521,8 +533,9 @@ export default function Telegram() {
           <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={view === "list" ? "is-on" : ""} aria-pressed={view === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} /></button><button type="button" className={view === "grid" ? "is-on" : ""} aria-pressed={view === "grid"} aria-label="Картками" onClick={() => pickView("grid")}><LayoutGrid size={15} /></button></div></div>
         {shown === null || (plist?.loading && !plist.items.length) ? <div className="v3-adw-skel">{[0, 1, 2].map((i) => <i key={i} style={{ height: 64 }} />)}</div>
           : !shown.length ? <p className="v3-mxw-none">{pf === "all" ? "Постів ще немає — перший збір за кілька хвилин." : "Таких постів немає."}</p>
-          : view === "grid" ? <ul key="grid" className="v3-tgw-pgrid">{shown.map((p, i) => (
+          : view === "grid" ? <div key="grid" className="v3-tgw-pgrid">{masonryN(shown, 3).map((col, ci) => <ul key={ci}>{col.map(({ p, i }) => (
             <li key={`${p.postId}-${i}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}>
+              {pf === "all" && i < freshN ? <span className="v3-tgw-pno is-new">NEW</span> : <span className="v3-tgw-pno">{i + 1}</span>}
               {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : null}
               {p.kind === "bet" && p.team1 && <b className="v3-tgw-pgb">{p.team1} — {p.team2} · {MARKET(p)}</b>}
               {(p.text || !p.photos?.length) && <MoreText text={p.text || "—"} cap={!!p.photos?.length} />}
@@ -530,9 +543,10 @@ export default function Telegram() {
               <span className="v3-tgw-pgf"><small><b>№{postNo(p)}</b> · {when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}</small>{READ[p.readBy || ""] ? <i className={`v3-tg-rb is-${p.readBy}`}>{READ[p.readBy!]}</i> : null}</span>
               <button type="button" className="v3-tgw-pgfix" onClick={() => setFix({ ...p, title: wCh.title })}>{p.kind === "unknown" ? "Розібрати" : "Змінити розбір"}</button>
             </li>
-          ))}</ul>
+          ))}</ul>)}</div>
           : <ul key="list" className="v3-tgw-plist">{shown.map((p, i) => (
             <li key={`${p.postId}-${i}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}>
+              {pf === "all" && i < freshN ? <span className="v3-tgw-pno is-new">NEW</span> : <span className="v3-tgw-pno">{i + 1}</span>}
               {p.photos?.length ? <Shots urls={p.photos.slice(0, 1)} /> : null}
               <span className="v3-tgw-pm">
                 <b>{p.kind === "bet" && p.team1 ? `${p.team1} — ${p.team2} · ${MARKET(p)}` : (p.text || "Скрін без підпису").slice(0, 120)}</b>
