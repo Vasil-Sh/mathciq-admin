@@ -1730,3 +1730,10 @@
   .v3-tgw-plist { padding-top: 6px; padding-right: 6px; }
 }
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) { .v3-tgw-pno.is-new { animation: none; } }
+@media (min-width: 768px) {
+  .v3-tgw-who .v3-tg-av { position: relative; }
+  .v3-tgw-new { top: -5px; right: -7px; border: 2px solid #fff; height: 19px; line-height: 15px; animation: v3-tag-pop .3s cubic-bezier(.2, .9, .25, 1.3) both; }
+  .v3-tgw-cols.is-sel .v3-tgw-new { border-color: #eef3ff; }
+  .v3-tgw-nn { display: inline-grid; place-items: center; min-width: 17px; height: 17px; margin-left: 5px; padding: 0 4px; border-radius: 9px; background: #e5484d; color: #fff; font-size: 10px; font-weight: 700; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) { .v3-tgw-new { animation: none; } }
