@@ -35,7 +35,7 @@ function Step({ value, min, max, step = 1, unit, label, onChange }: { value: num
       <button type="button" aria-label={`${label}: менше`} disabled={value <= min} onClick={() => onChange(clamp(value - step))}>−</button>
       <input inputMode="numeric" aria-label={label} value={txt} onChange={(e) => setTxt(e.target.value.replace(/\D/g, ""))} onBlur={() => { const v = clamp(Number(txt) || min); setTxt(String(v)); onChange(v); }} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       <button type="button" aria-label={`${label}: більше`} disabled={value >= max} onClick={() => onChange(clamp(value + step))}>+</button>
-      {unit && <em>{unit}</em>}
+      <em aria-hidden={!unit || undefined}>{unit || ""}</em>
     </span>
   );
 }
@@ -368,7 +368,7 @@ function Errors({ onCount }: { onCount: (n: number) => void }) {
   return (
     <Card title="Помилки сервера" sub="Що падало на бекенді за 30 днів. Однакові помилки зведені в одну з лічильником."
       aside={list && list.length > 0 ? <button type="button" className={`v3-uwb ${ask ? "is-red" : "is-softred"}`} disabled={busy !== null} onClick={() => resolve("all")}>{busy === "all" ? "Очищаємо…" : ask ? `Точно очистити всі ${list.length}?` : "Очистити все"}</button> : undefined}>
-      {list === null ? <div className="v3-adw-skel">{[0, 1, 2].map((i) => <i key={i} style={{ height: 56 }} />)}</div>
+      {list === null ? <div className="v3-adw-skel v3-sw-skel">{[0, 1, 2].map((i) => <i key={i} style={{ height: 56 }} />)}</div>
         : err ? <div className="v3-uw-empty is-err" role="alert"><span>!</span><strong>Не вдалося завантажити</strong><p>{err}</p><div><button type="button" className="v3-uwb is-green" onClick={load}>Спробувати ще раз</button></div></div>
         : !list.length ? <div className="v3-adw-empty v3-sw-ezero"><span aria-hidden="true"><Check size={20} /></span><strong>Помилок немає</strong><p>Бекенд працює чисто — за 30 днів нічого не падало.</p></div>
         : <>

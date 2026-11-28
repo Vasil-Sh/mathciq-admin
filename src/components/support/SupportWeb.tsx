@@ -394,20 +394,19 @@ export default function SupportWeb() {
           <button type="button" role="tab" aria-selected={tab === "groups"} className={tab === "groups" ? "is-on" : ""} onClick={() => setParams({ tab: "groups" })}>Telegram-групи<span className={`v3-pw-tn${gc?.pending ? " is-alert" : ""}`}>{gc ? gc.pending : "…"}</span></button>
         </div>
         {tab === "tickets" ? <>
-          <div className="v3-spw-fchips" role="group" aria-label="Стан звернень">
-            {FILTERS.map((f) => <button key={f.key} type="button" className={filter === f.key ? "is-on" : ""} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>{f.label}<b>{c ? c[f.key] ?? 0 : "…"}</b></button>)}
-          </div>
           <div className="v3-spw-kinds" role="group" aria-label="Тип звернення">
             <PillTrack active={kind} />
             {KINDS.map((k) => <button key={k.value} type="button" className={kind === k.value ? "is-on" : ""} aria-pressed={kind === k.value} onClick={() => setKind(k.value)}>{k.label}</button>)}
           </div>
           <label className="v3-uw-search v3-spw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук звернень" placeholder="Тема, логін або №" value={q} onChange={(e) => setQ(e.target.value)} />{q && <button type="button" aria-label="Очистити" onClick={() => setQ("")}><X size={13} /></button>}</label>
         </> : <>
-          <div className="v3-spw-fchips" role="group" aria-label="Фільтр груп">
-            {GFILTERS.map((f) => <button key={f.key} type="button" className={gf === f.key ? "is-on" : ""} aria-pressed={gf === f.key} onClick={() => setGf(f.key)}>{f.label}<b>{gc ? gc[f.key] ?? 0 : "…"}</b></button>)}
-          </div>
           <label className="v3-uw-search v3-spw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук груп" placeholder="Назва або посилання" value={gq} onChange={(e) => setGq(e.target.value)} />{gq && <button type="button" aria-label="Очистити" onClick={() => setGq("")}><X size={13} /></button>}</label>
         </>}
+      </div>
+      <div className="v3-uw-sortrow v3-pw-chiprow v3-spw-chiprow">
+        {tab === "tickets"
+          ? <div className="v3-uw-chips" role="group" aria-label="Стан звернень">{FILTERS.map((f) => <button key={f.key} type="button" className={filter === f.key ? "is-on" : ""} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>{f.label}{c && <b>{c[f.key] ?? 0}</b>}</button>)}</div>
+          : <div className="v3-uw-chips" role="group" aria-label="Фільтр груп">{GFILTERS.map((f) => <button key={f.key} type="button" className={gf === f.key ? "is-on" : ""} aria-pressed={gf === f.key} onClick={() => setGf(f.key)}>{f.label}{gc && <b>{gc[f.key] ?? 0}</b>}</button>)}</div>}
       </div>
       {tab === "tickets" ? (err && !list ? errorCard(err, loadTickets) : ticketsView) : (gErr && !groups ? errorCard(gErr, loadGroups) : groupsView)}
     </div>
