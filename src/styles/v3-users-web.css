@@ -38,12 +38,12 @@
   .v3-uw-search input::placeholder { color: #8a93a3; }
   .v3-uw-search button { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: #eef0f4; color: #6b7384; cursor: pointer; }
   /* filter chips — same as «Сьогодні · Завтра · Тиждень» in Матчі: count in a bubble on the corner */
-  .v3-uw-chips { display: inline-flex; flex-wrap: wrap; gap: 10px 6px; margin-top: 4px; padding: 9px 6px 6px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
-  .v3-uw-chips button { height: 32px !important; background: #eef0f4 !important; }
-  .v3-uw-chips button.is-on { background: #3a6df0 !important; color: #fff; box-shadow: none !important; }
-  .v3-uw-chips button b { border-color: #fff !important; }
-  .v3-uw-chips button.is-on b { background: #fff !important; color: #3a6df0; border-color: #3a6df0 !important; }
-  @media (hover: hover) { .v3-uw-chips button:not(.is-on):hover { background: #e4e7ec !important; } }
+  .v3-uw-chips { display: inline-flex; flex-wrap: wrap; gap: 10px 2px; margin-top: 4px; padding: 4px; border-radius: 14px; background: #dfe3ea; }
+  .v3-uw-chips button { height: 34px !important; padding: 0 16px !important; background: none !important; transition: background-color .15s, box-shadow .15s; }
+  .v3-uw-chips button.is-on { background: #fff !important; color: #11151c; font-weight: 600; box-shadow: 0 0 0 1px #e4e7ec, 0 1px 3px rgba(16, 24, 40, .1) !important; }
+  .v3-uw-chips button b { top: -7px !important; border-color: #dfe3ea !important; }
+  .v3-uw-chips button.is-on b { background: #3a6df0 !important; color: #fff; border-color: #dfe3ea !important; }
+  @media (hover: hover) { .v3-uw-chips button:not(.is-on):hover { background: rgba(255, 255, 255, .55) !important; } }
   .v3-uw-chips button { position: relative; display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #e3e6eb; color: #11151c; font: 500 13px Inter, sans-serif; white-space: nowrap; cursor: pointer; transition: background-color .2s, box-shadow .2s; }
   .v3-uw-chips button.is-on { background: #fff; font-weight: 600; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
   .v3-uw-chips button b { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid #e9ecf2; border-radius: 10px; background: #8a92a0; color: #fff; font-size: 10px; font-weight: 600; line-height: 14px; text-align: center; font-variant-numeric: tabular-nums; box-sizing: border-box; }
