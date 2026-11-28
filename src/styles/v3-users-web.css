@@ -1196,8 +1196,8 @@
   .v3-sw-plan-h h2 { flex: 1; margin: 0; font-size: 15px; font-weight: 600; }
   .v3-sw-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #eef0f4; color: #3c4350; font-size: 11px; font-weight: 600; }
   .v3-sw-price { display: flex; align-items: baseline; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid #f1f3f6; }
-  .v3-sw-price b, .v3-sw-price b * { font-size: 30px; font-weight: 400; letter-spacing: -.02em; line-height: 1.1; }
-  .v3-sw-price span { font-size: 13px; color: #6b7384; }
+  .v3-stw .v3-sw-price > b, .v3-stw .v3-sw-price > b .v3-roll, .v3-stw .v3-sw-price > b .v3-roll-row { font-size: 30px; font-weight: 400; letter-spacing: -.02em; line-height: 1.1; }
+  .v3-sw-price > span { font-size: 13px; color: #6b7384; }
   .v3-sw-price s { font-size: 12px; color: #9aa1ad; }
   .v3-sw-pedit { display: flex; flex-direction: column; gap: 6px; animation: v3-row-in .25s ease-out both; }
   .v3-sw-pedit small { font-size: 11px; color: #6b7384; }

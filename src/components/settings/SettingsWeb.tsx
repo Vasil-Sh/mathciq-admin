@@ -105,7 +105,7 @@ export default function SettingsWeb(p: Props) {
             <button type="button" className={`v3-uwb${ed ? " is-green" : ""}`} onClick={() => setEditPlan(ed ? null : k)}>{ed ? "Готово" : "Редагувати"}</button></div>
           <div className="v3-sw-price"><b><RollingNumber key={price} text={`${price.toLocaleString("uk-UA")} ₴`} /></b><span>/ {settings.subscriptionDays || 30} днів</span>{price !== was && <s>було {was} ₴</s>}</div>
           {ed && <div className="v3-sw-pedit"><Step label={`Ціна ${k === "basic" ? "Базової" : "Pro"}`} value={price} min={0} max={10000} step={50} unit="₴" onChange={(v) => set(key, v)} /><small>крок 50 ₴ · від 0 до 10 000 ₴</small></div>}
-          <ul>{FEATURES_ALL.map((f) => { const on = feats.some((x) => x.startsWith(f.split(" ")[0])); return <li key={f} className={on ? "" : "is-off"}><i aria-hidden="true">{on ? <Check size={11} strokeWidth={3} /> : <X size={11} strokeWidth={3} />}</i>{f}{on && f.startsWith("AI") ? ` · ${cur.aiDailyLimit} на день` : ""}</li>; })}</ul>
+          <ul>{FEATURES_ALL.map((f) => { const on = f.startsWith("AI") ? feats.some((x) => /ai|аі|аналіз/i.test(x)) : f.startsWith("Telegram") ? feats.some((x) => /telegram/i.test(x)) : true; return <li key={f} className={on ? "" : "is-off"}><i aria-hidden="true">{on ? <Check size={11} strokeWidth={3} /> : <X size={11} strokeWidth={3} />}</i>{f}{on && f.startsWith("AI") ? ` · ${cur.aiDailyLimit} на день` : ""}</li>; })}</ul>
         </section>
       );
     };
