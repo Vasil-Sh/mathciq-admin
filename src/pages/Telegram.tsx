@@ -258,6 +258,9 @@ export default function Telegram() {
   const online = useOnline();
   const phone = useMedia("(max-width: 767px)");
   const [wq, setWq] = useState("");
+  const [rOpen, setROpen] = useState(false);
+  const rPopRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (!rOpen) return; const f = (e: PointerEvent) => { const t = e.target as HTMLElement; if (rPopRef.current?.contains(t) || t.closest?.("[role=dialog].v3-sheet")) return; setROpen(false); }; const k = (e: KeyboardEvent) => { if (e.key === "Escape") setROpen(false); }; document.addEventListener("pointerdown", f); document.addEventListener("keydown", k); return () => { document.removeEventListener("pointerdown", f); document.removeEventListener("keydown", k); }; }, [rOpen]);
   const [data, setData] = useState<TgList | null>(null);
   const [err, setErr] = useState("");
   const [tab, setTab] = useState<"ch" | "un">("ch");
@@ -374,10 +377,10 @@ export default function Telegram() {
     catch (e) { toast.error("Не вдалося видалити", { description: (e as Error).message }); }
   };
 
-  const readerEl = data && data.reader ? (() => { const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
-              <div className={`v3-tg-reader${readerFold ? " is-fold" : ""}`}>
+  const readerView = (forceOpen = false) => data && data.reader ? (() => { const fold = forceOpen ? false : readerFold; const r = data.reader, err = r.ai ? r.aiError : r.ocrError; return (
+              <div className={`v3-tg-reader${fold ? " is-fold" : ""}`}>
                 <div className="v3-tg-rh"><span className={`v3-tg-rdot${err ? " is-warn" : ""}`} aria-hidden="true" /><strong>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</strong><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em><button type="button" className="v3-tg-rfold2" aria-expanded={!readerFold} aria-label={readerFold ? "Розгорнути блок читачів" : "Згорнути блок читачів"} onClick={toggleReaderFold}><ChevronDown size={18} aria-hidden="true" className={readerFold ? "" : "is-up"} /></button></div>
-                {!readerFold && <>
+                {!fold && <>
                 {data.accuracy && data.accuracy.posts > 0 && (() => { const a = data.accuracy; const t = (v: number | null) => v == null ? "" : v >= 90 ? "is-ok" : v < 70 ? "is-bad" : "is-warn"; return (
                   <div className="v3-tg-acc7">
                     <div className="v3-tg-acch"><span><small>Точність за 7 днів</small><b className={t(a.percent)}>{a.percent ?? "—"}%</b><em>{a.posts} {plural(a.posts, "пост", "пости", "постів")} · виправлено {a.wrong} · не розпізнано {a.missed}</em></span>
@@ -419,6 +422,7 @@ export default function Telegram() {
                 </>}
               </div>
   ); })() : null;
+  const readerEl = readerView();
   const chBody = (ch: TgChannel, web: boolean) => (<>
             {ch.status === "block" ? <p className="v3-tg-warn">Заблоковано в «Підтримці». Пости не збираємо, статистику не показуємо.</p>
               : ch.status === "err" ? <p className="v3-tg-warn is-bad">{ch.error}. Перевірте, чи канал публічний і чи не змінив нікнейм.</p> : null}
@@ -568,6 +572,14 @@ export default function Telegram() {
           <div className="v3-uw-tools v3-mxw-tools">
             <div className="v3-uw-tabs" role="tablist" aria-label="Розділи"><PillTrack active={tab} />{([["ch", "Канали", data?.channels.length], ["un", "Нерозпізнані", unk?.length]] as const).map(([k, l, n]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "is-on" : ""} onClick={() => { setTab(k); setWq(""); if (k === "un") markSeen(); }}>{l}<span className={`v3-pw-tn${k === "un" && n ? " is-alert" : ""}`}>{n ?? "…"}</span></button>)}</div>
             {tab === "ch" && chs.length > 1 && <div className="v3-spw-kinds" role="group" aria-label="Сортування"><PillTrack active={sort} />{([["new", "Нові"], ["roi", "ROI"], ["win", "Вінрейт"], ["honest", "Чесність"]] as const).map(([k, l]) => <button key={k} type="button" className={sort === k ? "is-on" : ""} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}</div>}
+            {tab === "ch" && data?.reader && (() => { const r = data.reader, rerr = r.ai ? r.aiError : r.ocrError; return (
+              <div className="v3-tgw-rwrap" ref={rPopRef}>
+                <button type="button" className={`v3-tgw-rbtn${rOpen ? " is-on" : ""}`} aria-expanded={rOpen} aria-haspopup="dialog" onClick={() => setROpen((o) => !o)}>
+                  <span className={`v3-tg-rdot${rerr ? " is-warn" : ""}`} aria-hidden="true" /><b>{r.ai ? "Пости й скріни читає ШІ" : "Скріни читає OCR"}</b><em>{r.ai ? (r.model || "Gemini") : "без ключа ШІ"}</em><ChevronDown size={16} aria-hidden="true" className={rOpen ? "is-up" : ""} />
+                </button>
+                {rOpen && <div className="v3-tgw-rpop" role="dialog" aria-label="Читачі постів">{readerView(true)}</div>}
+              </div>
+            ); })()}
             <label className="v3-uw-search v3-spw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder={tab === "ch" ? "Канал або @нік" : "Текст поста або канал"} value={wq} onChange={(e) => setWq(e.target.value)} />{wq && <button type="button" aria-label="Очистити" onClick={() => setWq("")}><X size={13} /></button>}</label>
           </div>
           <div key={tab}>
@@ -580,7 +592,6 @@ export default function Telegram() {
                   <Candidates onAdd={(h) => { setAddLink(`https://t.me/${h}`); setAddOpen(true); }} />
                   {table}
                   {postsCard}
-                  {readerEl}
                 </div>
                 {panel}
               </section>
