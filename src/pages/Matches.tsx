@@ -1261,7 +1261,7 @@ export default function Matches() {
   const wSt: Record<MStatus, string> = { plan: "is-blue", live: "is-red", done: "is-grey", moved: "is-amber", off: "is-red" };
   const wTag = (m: Match) => { const conf = wConf.some((x) => x.team1 === m.t1 && x.team2 === m.t2); return conf ? <span className="v3-uwt is-amber">Розбіжність</span> : <span className={`v3-uwt ${wSt[m.status]}`}>{STATUS_LABEL[m.status]}</span>; };
   const wTour = (m: Match) => <span className="v3-mxw-tour">{m.tourLogo ? <img src={m.tourLogo} alt="" /> : <i style={{ background: "#e5484d" }} aria-hidden="true">{initials(m.tournament || "?")}</i>}<b>{[m.tournament || "Турнір", m.bo].filter(Boolean).join(" · ")}</b></span>;
-  const wGame = (g: Game) => <span className="v3-mxw-g">{GAME_LABEL[g]}</span>;
+  const wGame = (g: Game) => <span className={`v3-mxw-g is-${g}`}>{GAME_LABEL[g]}</span>;
   const wRow = (m: Match, i: number) => {
     const bs = bets ? betsFor(m) : [], ov = ovOf(m), sc = hasScore(m);
     return (
@@ -1283,7 +1283,7 @@ export default function Matches() {
       <button key={m.id} type="button" className={`v3-mxw-card${wSel?.id === m.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} aria-pressed={wSel?.id === m.id} onClick={() => setSelId(m.id)}>
         <span className="v3-mxw-ch">{wTour(m)}{m.status === "plan" ? <b>{m.time}</b> : wTag(m)}</span>
         <span className="v3-mxw-vs"><span><Logo src={m.logo1} name={m.t1} size={36} /><small>{m.t1}</small></span><strong>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</strong><span><Logo src={m.logo2} name={m.t2} size={36} /><small>{m.t2}</small></span></span>
-        <span className="v3-mxw-cf">{wGame(m.game)}<small>{m.status === "live" ? (m.maps?.length ? `карта ${m.maps.length}` : "наживо") : m.status === "done" ? `завершено ${m.time}` : m.status === "plan" ? wIn(m) || dayShort(m.day) : dayShort(m.day)}</small><b>{bs.length ? `${bs.length} · ${wMoney(bs)}` : ""}</b></span>
+        <span className="v3-mxw-cf">{wGame(m.game)}<small>{m.status === "live" ? (m.maps?.length ? `карта ${m.maps.length}` : "") : m.status === "done" ? `завершено ${m.time}` : m.status === "plan" ? wIn(m) || dayShort(m.day) : dayShort(m.day)}</small><b>{bs.length ? `${bs.length} · ${wMoney(bs)}` : ""}</b></span>
       </button>
     );
   };
@@ -1315,9 +1315,8 @@ export default function Matches() {
   const wMatches = (
     <>
       <div className="v3-mxw-filt">
-        <div className="v3-spw-kinds" role="group" aria-label="День"><PillTrack active={day} />{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => setDay(d.key)}>{d.label}</button>)}</div>
-        <div className="v3-spw-fchips" role="group" aria-label="Гра">{([["all", "Усі"], ["cs2", "CS2"], ["dota2", "Dota 2"]] as const).map(([k, l]) => <button key={k} type="button" className={game === k ? "is-on" : ""} aria-pressed={game === k} onClick={() => setGame(k)}>{l}<b>{fCount(k, st)}</b></button>)}</div>
-        <div className="v3-spw-fchips" role="group" aria-label="Статус">{([["all", "Усі статуси"], ["live", "Наживо"], ["plan", "Заплановано"], ["done", "Завершені"]] as const).map(([k, l]) => <button key={k} type="button" className={st === k ? "is-on" : ""} aria-pressed={st === k} onClick={() => setSt(k)}>{l}<b>{fCount(game, k)}</b></button>)}</div>
+        <div className="v3-uw-chips" role="group" aria-label="Гра">{([["all", "Усі"], ["cs2", "CS2"], ["dota2", "Dota 2"]] as const).map(([k, l]) => <button key={k} type="button" className={game === k ? "is-on" : ""} aria-pressed={game === k} onClick={() => setGame(k)}>{l}<b>{fCount(k, st)}</b></button>)}</div>
+        <div className="v3-uw-chips" role="group" aria-label="Статус">{([["all", "Усі статуси"], ["live", "Наживо"], ["plan", "Заплановано"], ["done", "Завершені"]] as const).map(([k, l]) => <button key={k} type="button" className={st === k ? "is-on" : ""} aria-pressed={st === k} onClick={() => setSt(k)}>{l}<b>{fCount(game, k)}</b></button>)}</div>
         <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={mView === "list" ? "is-on" : ""} aria-pressed={mView === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} /></button><button type="button" className={mView === "grid" ? "is-on" : ""} aria-pressed={mView === "grid"} aria-label="Блоками" onClick={() => pickView("grid")}><LayoutGrid size={15} /></button></div>
       </div>
       {wPaused ? <div className="v3-mxw-alert is-red"><AlertTriangle size={15} aria-hidden="true" /><span>Парсери зупинені · у застосунку дані на {updatedAt || "останнє оновлення"}</span><button type="button" className="v3-uwb is-white" onClick={() => setTab("parsers")}>Запустити →</button></div>
@@ -1356,7 +1355,7 @@ export default function Matches() {
         <div className="v3-mxw-pf">
           {p.paused ? <button type="button" className="v3-uwb is-green" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
             : ps === "down" ? <button type="button" className="v3-uwb is-blue" disabled={!online || running[p.name] === "busy"} onClick={() => rerun(p.name)}>{running[p.name] === "busy" ? "Перезапускаємо…" : "Перезапустити"}</button>
-            : <button type="button" className="v3-uwb is-dark" disabled={!online || stopping === p.name} onClick={() => setStopAsk(p.name)}><i className="v3-mxw-stopic" aria-hidden="true" />Стоп</button>}
+            : <button type="button" className="v3-uwb is-dark" disabled={!online || stopping === p.name} onClick={() => setStopAsk(p.name)}><i className="v3-mxw-stopic" aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
           <button type="button" className="v3-adw-kebb" aria-label={`Лог · ${name}`} onClick={() => setLogFor(p.name)}><Info size={15} /></button>
         </div>
       </div>
@@ -1437,7 +1436,7 @@ export default function Matches() {
   const wTeams = (
     <>
       <div className="v3-mxw-filt">
-        <div className="v3-spw-fchips" role="group" aria-label="Фільтр команд">{wTeamsChips.map(([k, l, n, go, on]) => <button key={k} type="button" className={on ? "is-on" : ""} aria-pressed={on} onClick={go}>{l}<b>{n.toLocaleString("uk-UA")}</b></button>)}</div>
+        <div className="v3-uw-chips" role="group" aria-label="Фільтр команд">{wTeamsChips.map(([k, l, n, go, on]) => <button key={k} type="button" className={on ? "is-on" : ""} aria-pressed={on} onClick={go}>{l}<b>{n.toLocaleString("uk-UA")}</b></button>)}</div>
         <small className="v3-mxw-tcount">{teams.length.toLocaleString("uk-UA")} у довіднику</small>
         <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={tView === "list" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} /></button><button type="button" className={tView === "grid" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Картками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} /></button></div>
       </div>
@@ -1480,6 +1479,7 @@ export default function Matches() {
       <section className="v3-pw-kpis" aria-label="Підсумки">{wKpis.map((x, i) => <div key={x.k} className={`v3-pw-kpi${i === 0 ? " is-on" : ""}`} style={{ animationDelay: `${i * 40}ms` }}><span>{x.l}</span><strong className={`${"bad" in x && x.bad ? "is-bad" : ""}${"warn" in x && x.warn ? " is-warn" : ""}`}>{x.v === "…" ? "…" : <RollingNumber key={`${x.k}-${x.v}`} text={x.v} />}</strong><small>{x.n}</small></div>)}</section>
       <div className="v3-uw-tools v3-mxw-tools">
         <div className="v3-uw-tabs" role="tablist" aria-label="Розділи матчів"><PillTrack active={tab} />{wTabs.map((t) => <button key={t.k} type="button" role="tab" aria-selected={tab === t.k} className={tab === t.k ? "is-on" : ""} onClick={() => setTab(t.k)}>{t.l}<span className="v3-pw-tn">{t.n}</span></button>)}</div>
+        {tab === "matches" && <div className="v3-spw-kinds" role="group" aria-label="День"><PillTrack active={day} />{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => setDay(d.key)}>{d.label}</button>)}</div>}
         {(tab === "matches" || tab === "teams") && <label className="v3-uw-search v3-spw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder={tab === "teams" ? "Назва або псевдонім" : "Команда або турнір"} value={tab === "teams" ? tq : q} onChange={(e) => (tab === "teams" ? setTq(e.target.value) : setQ(e.target.value))} />{(tab === "teams" ? tq : q) && <button type="button" aria-label="Очистити" onClick={() => (tab === "teams" ? setTq("") : setQ(""))}><X size={13} /></button>}</label>}
       </div>
       <div key={tab}>{tab === "matches" ? wMatches : tab === "parsers" ? wParsers : tab === "manual" ? wManual : wTeams}</div>

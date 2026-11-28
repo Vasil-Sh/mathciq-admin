@@ -1303,8 +1303,10 @@
 @media (min-width: 768px) {
   .v3-mxw .v3-pw-kpi strong.is-bad { color: #e5484d; }
   .v3-mxw .v3-pw-kpi strong.is-warn { color: #e8590c; }
-  .v3-mxw-tools { justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
-  .v3-mxw-filt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .v3-mxw-tools { justify-content: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .v3-mxw-tools > .v3-uw-search { margin-left: auto; }
+  .v3-mxw-filt > .v3-uw-chips { margin-top: 0; }
+  .v3-mxw-filt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding-top: 6px; }
   .v3-mxw-view { display: inline-flex; gap: 2px; margin-left: auto; padding: 4px; border-radius: 12px; background: #fff; }
   .v3-mxw-view button { display: grid; place-items: center; width: 32px; height: 30px; border: 0; border-radius: 9px; background: none; color: #6b7384; cursor: pointer; transition: background-color .15s, color .15s; }
   .v3-mxw-view button.is-on { background: #3a6df0; color: #fff; }
@@ -1344,6 +1346,8 @@
   .v3-mxw-tour i { display: grid; place-items: center; color: #fff; font: 700 7px Inter, sans-serif; font-style: normal; }
   .v3-mxw-tour b { overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
   .v3-mxw-g { flex-shrink: 0; padding: 2px 7px; border-radius: 6px; background: #eef0f4; color: #3c4350; font-size: 10px; font-weight: 600; }
+  .v3-mxw-g.is-cs2, .v3-mxw-grph .v3-mxw-g.is-cs2 { background: #fff3dc; color: #b46a00; }
+  .v3-mxw-g.is-dota2, .v3-mxw-grph .v3-mxw-g.is-dota2 { background: #fde2df; color: #c2341f; }
   .v3-mxw-team { display: flex; align-items: center; gap: 8px; font-weight: 600; }
   .v3-mxw-team > .v3-mxw-tn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .v3-mxw-team > b { min-width: 18px; text-align: right; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: #6b7384; }
@@ -1426,7 +1430,8 @@
   .v3-mxw-pf > .v3-uwb { flex: 1; }
   .v3-uwb.is-dark { background: #11151c; color: #fff; }
   @media (hover: hover) { .v3-uwb.is-dark:not(:disabled):hover { background: #262c36; } }
-  .v3-mxw-stopic { width: 9px; height: 9px; border-radius: 2px; background: currentColor; }
+  .v3-mxw-stopic { position: relative; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #e5484d; color: #fff; }
+  .v3-mxw-stopic::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgba(229, 72, 77, .28); border-top-color: #ff6b6f; animation: v3-spin .9s linear infinite; }
   .v3-mxw-cbox { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: #fff4e5; }
   .v3-mxw-cbox > b { color: #8a4b08; font-size: 11px; font-weight: 600; }
   .v3-mxw-cbox > strong { font-size: 13px; font-weight: 700; }
@@ -1517,4 +1522,4 @@
   @media (max-width: 1100px) { .v3-mxw-split { grid-template-columns: minmax(0, 1fr); } .v3-mxw-det { position: static; } .v3-mxw-row { grid-template-columns: 90px minmax(0, 1fr); } .v3-mxw-side { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 4px 10px; } }
   @media (max-width: 900px) { .v3-mxw-pgrid { grid-template-columns: minmax(0, 1fr); } }
 }
-@media (min-width: 768px) and (prefers-reduced-motion: reduce) { .v3-mxw-row, .v3-mxw-card, .v3-mxw-det, .v3-mxw-pc, .v3-mxw-grp, .v3-mxw-tcard, .v3-mxw-alert, .v3-mxw-bets > div, .v3-mxw-logs > div, .v3-mxw-hrs i, .v3-mxw-pbar em, .v3-mxw-live i::after { animation: none !important; } }
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) { .v3-mxw-row, .v3-mxw-card, .v3-mxw-det, .v3-mxw-pc, .v3-mxw-grp, .v3-mxw-tcard, .v3-mxw-alert, .v3-mxw-bets > div, .v3-mxw-logs > div, .v3-mxw-hrs i, .v3-mxw-pbar em, .v3-mxw-live i::after, .v3-mxw-stopic::after { animation: none !important; } }
