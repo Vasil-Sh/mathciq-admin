@@ -183,7 +183,7 @@ function SlipList({ handle, title, wide }: { handle: string; title: string; wide
   const [list, setList] = useState<TgSlip[] | null>(null);
   useEffect(() => { fetchTgSlips(handle).then(setList).catch(() => setList([])); }, [handle]);
   return (<>
-    <button type="button" className="v3-tg-slipt" onClick={() => setOpen(true)}><Ticket size={16} aria-hidden="true" />Квитки зі ставками{list ? ` · ${list.length}` : ""}</button>
+    <button type="button" className="v3-tg-slipt" onClick={() => setOpen(true)}><Ticket size={16} aria-hidden="true" />{wide ? "Квитки" : "Квитки зі ставками"}{list ? ` · ${list.length}` : ""}</button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className={`v3-sheet v3-pay-sheet v3-tg-sheet${wide ? " v3-tg-slipsm" : ""}`}>
         <DialogTitle>Квитки зі ставками</DialogTitle>
@@ -537,6 +537,7 @@ export default function Telegram() {
     const panel = wCh && (
       <aside key={wCh.handle} className="v3-adw-card v3-tgw-panel">
         <div className="v3-tgw-pnh"><span className="v3-tg-av"><TgAvatar handle={wCh.handle} name={wCh.title || wCh.handle} color={colorOf(wCh.handle)} /></span><span><b>{wCh.title || `@${wCh.handle}`}</b><small>{at(wCh.handle)} · {GAME[wCh.game]}{wCh.subscribers ? ` · ${wCh.subscribers.toLocaleString("uk-UA")} підписників` : ""}{wCh.isTest ? " · тестовий" : ""}</small></span></div>
+        <p className="v3-tg-when v3-tgw-pwhen">{wCh.paused ? <>Зупинено · перевірено {when(wCh.checkedAt)}</> : <><i aria-hidden="true" />Перевірено {when(wCh.checkedAt)}{data?.nextAt && !wCh.progress ? ` · наступна перевірка о ${hhmm(data.nextAt)}` : ""}</>}</p>
         {wCh.status !== "block" && <div className="v3-tgw-pacts">
           {wCh.paused ? <button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => void setPaused(wCh, false)}><Play size={13} fill="currentColor" aria-hidden="true" />Запустити</button>
             : <button type="button" className="v3-uwb is-dark" disabled={!online} onClick={() => setStopAsk(wCh)}><i className="v3-mxw-stopic" aria-hidden="true"><Square size={7} fill="currentColor" /></i>Стоп</button>}
@@ -548,12 +549,11 @@ export default function Telegram() {
           <span><strong>Показувати користувачам</strong><small>{wCh.isTest ? "Тестовий: канал бачите лише ви" : "Канал видно в застосунку"}</small></span>
           <i className={`v3-st-sw${!wCh.isTest ? " is-on" : ""}`} aria-hidden="true"><span /></i>
         </button>
-        {wCh.status !== "block" && <div className="v3-tgw-more">
-          <button type="button" className="v3-uwb is-text" disabled={!online} onClick={() => void reread(wCh.handle)}><RefreshCw size={13} aria-hidden="true" />Перечитати пости</button>
-          <button type="button" className="v3-uwb is-text" disabled={!online} onClick={() => void archive(wCh.handle)}><History size={13} aria-hidden="true" />Підтягнути архів</button>
-          {wCh.isTest && <button type="button" className="v3-uwb is-text is-red" disabled={!online} onClick={() => setDelAsk(wCh)}><Trash2 size={13} aria-hidden="true" />Видалити</button>}
+        {wCh.status !== "block" && <div className={`v3-tgw-more${wCh.isTest ? " is-3" : ""}`}>
+          <button type="button" className="v3-uwb is-soft" disabled={!online} onClick={() => void reread(wCh.handle)}><RefreshCw size={13} aria-hidden="true" />Перечитати пости</button>
+          <button type="button" className="v3-uwb is-soft" disabled={!online} onClick={() => void archive(wCh.handle)}><History size={13} aria-hidden="true" />Архів</button>
+          {wCh.isTest && <button type="button" className="v3-uwb is-softred" disabled={!online} onClick={() => setDelAsk(wCh)}><Trash2 size={13} aria-hidden="true" />Видалити</button>}
         </div>}
-        <p className="v3-tg-when">{wCh.paused ? <>Зупинено · перевірено {when(wCh.checkedAt)}</> : <><i aria-hidden="true" />Перевірено {when(wCh.checkedAt)}{data?.nextAt && !wCh.progress ? ` · наступна перевірка о ${hhmm(data.nextAt)}` : ""}</>}</p>
       </aside>
     );
     const fixWeb = tab === "un" && !!fix && (unk || []).some((p) => p.handle === fix.handle && p.postId === fix.postId);
@@ -881,6 +881,16 @@ function ChannelStats({ handle }: { handle: string }) {
           </div>
         );
       })()}
+      <div className="v3-tg-side">
+      {(st.streaks.best > 0 || st.streaks.worst < 0) && <div className="v3-tg-streaks">
+        <div><small>Найдовша виграшна</small><b className="is-ok">{st.streaks.best}</b></div>
+        <div><small>Найдовша програшна</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
+      </div>}
+      {st.chase && (() => { const c = st.chase, cur = st.money?.currency || "", f = (v: number) => `${v.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ${CUR[cur] || cur}`; return (
+        <div className={`v3-tg-chase${c.chasing ? " is-bad" : ""}`}><span><small>Відіграш після програшу</small><b>{c.chasing ? `Так, ставка +${c.rise}%` : c.rise > 0 ? `Ні, +${c.rise}%` : `Ні, ${c.rise}%`}</b></span>
+          <em>Після програшу в середньому {f(c.afterLoss)} ({c.nLoss}), після виграшу {f(c.afterWin)} ({c.nWin})</em></div>
+      ); })()}
+      </div>
       {st.chart.length > 0 && <div className="v3-tg-chartbox">
         <div className="v3-tg-chh"><span><small>Окупність каналу</small>{(() => { const n = st.byGame.reduce((x, g) => x + g.won + g.lost, 0), roi = n ? Math.round(last.ours / n) : 0; return <><b className={roi >= 0 ? "is-ok" : "is-bad"}>{sgn(roi)}%</b><em>{roi >= 0 ? `Хто ставив за каналом, заробив ${roi} з кожних 100` : `Хто ставив за каналом, втратив ${-roi} з кожних 100`}</em></>; })()}</span>
           <span className="v3-tg-legend">{!same && <i className="claimed">За каналом {sgn(last.claimed)}</i>}<i className="ours">{same ? "Канал і наш рахунок збігаються" : "За нашим рахунком"}</i></span></div>
@@ -906,14 +916,6 @@ function ChannelStats({ handle }: { handle: string }) {
           </svg>
           <div className="v3-tg-chx"><span>{when(st.money.points[0].at)}</span><span>{when(st.money.points[st.money.points.length - 1].at)}</span></div>
         </div>; })()}
-      {(st.streaks.best > 0 || st.streaks.worst < 0) && <div className="v3-tg-streaks">
-        <div><small>Найдовша виграшна</small><b className="is-ok">{st.streaks.best}</b></div>
-        <div><small>Найдовша програшна</small><b className="is-bad">{Math.abs(st.streaks.worst)}</b></div>
-      </div>}
-      {st.chase && (() => { const c = st.chase, cur = st.money?.currency || "", f = (v: number) => `${v.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ${CUR[cur] || cur}`; return (
-        <div className={`v3-tg-chase${c.chasing ? " is-bad" : ""}`}><span><small>Відіграш після програшу</small><b>{c.chasing ? `Так, ставка +${c.rise}%` : c.rise > 0 ? `Ні, +${c.rise}%` : `Ні, ${c.rise}%`}</b></span>
-          <em>Після програшу в середньому {f(c.afterLoss)} ({c.nLoss}), після виграшу {f(c.afterWin)} ({c.nWin})</em></div>
-      ); })()}
       {rows("Вінрейт за грою", st.byGame)}
       {rows("Вінрейт за ставкою", st.byMarket)}
       {st.summaries.length > 0 && <div className="v3-tg-claims"><span className="v3-tg-sth">Підсумки каналу і наші дані</span>

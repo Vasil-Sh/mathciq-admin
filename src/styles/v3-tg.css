@@ -638,3 +638,4 @@ b > small.v3-tg-pend.v3-tg-pend svg { display: inline-block; flex-shrink: 0; mar
 .v3-tg-pub strong { font-size: 14px; font-weight: 600; color: #11151c; }
 .v3-tg-pub small { font-size: 12px; color: #6b7384; }
 .v3-tg-pub i.v3-st-sw { display: block; }
+.v3-tg-side { display: contents; }
