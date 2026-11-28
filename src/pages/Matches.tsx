@@ -1278,12 +1278,14 @@ export default function Matches() {
     );
   };
   const wCard = (m: Match, i: number) => {
-    const bs = bets ? betsFor(m) : [], sc = hasScore(m);
+    const bs = bets ? betsFor(m) : [], sc = hasScore(m), dim = m.status === "moved" || m.status === "off";
     return (
-      <button key={m.id} type="button" className={`v3-mxw-card${wSel?.id === m.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} aria-pressed={wSel?.id === m.id} onClick={() => setSelId(m.id)}>
-        <span className="v3-mxw-ch">{wTour(m)}{m.status === "plan" ? <b>{m.time}</b> : wTag(m)}</span>
-        <span className="v3-mxw-vs"><span><Logo src={m.logo1} name={m.t1} size={36} /><small>{m.t1}</small></span><strong>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</strong><span><Logo src={m.logo2} name={m.t2} size={36} /><small>{m.t2}</small></span></span>
-        <span className="v3-mxw-cf">{wGame(m.game)}<small>{m.status === "live" ? (m.maps?.length ? `карта ${m.maps.length}` : "") : m.status === "done" ? `завершено ${m.time}` : m.status === "plan" ? wIn(m) || dayShort(m.day) : dayShort(m.day)}</small><b>{bs.length ? `${bs.length} · ${wMoney(bs)}` : ""}</b></span>
+      <button key={m.id} type="button" className={`v3-mxw-card is-${m.status}${wSel?.id === m.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} aria-pressed={wSel?.id === m.id} onClick={() => setSelId(m.id)}>
+        <span className="v3-mxw-ch">{m.status === "live" ? <span className="v3-mxw-clive"><i aria-hidden="true" />НАЖИВО</span> : m.status === "plan" ? <b className="v3-mxw-ctime">{day === "today" && m.day === today ? m.time : `${dayShort(m.day)} · ${m.time}`}</b> : wTag(m)}{wGame(m.game)}</span>
+        <small className="v3-mxw-ctour"><TourIcon src={m.tourLogo} /><span>{[m.tournament || GAME_LABEL[m.game], m.bo].filter(Boolean).join(" · ")}</span></small>
+        <span className={`v3-mxw-cm${dim ? " is-dim" : ""}`}><Logo src={m.logo1} name={m.t1} size={36} /><b aria-label={sc ? `Рахунок ${m.s1}:${m.s2}` : "Рахунку ще немає"}>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</b><Logo src={m.logo2} name={m.t2} size={36} /></span>
+        <span className={`v3-mxw-cn${dim ? " is-dim" : ""}`}><strong>{m.t1}</strong><strong>{m.t2}</strong></span>
+        {(bs.length > 0 || ovOf(m)) && <span className="v3-mxw-cchips">{bs.length > 0 && <span className="v3-mxw-cbets"><CircleDollarSign size={13} aria-hidden="true" />{bs.length} · {wMoney(bs)}</span>}{ovOf(m) && <span className="v3-uwt is-violet">Змінено</span>}</span>}
       </button>
     );
   };
@@ -1326,7 +1328,7 @@ export default function Matches() {
           : !list.length ? wNoMatch
           : <div key={`${day}-${game}-${st}-${mView}`} className={`v3-adw-card v3-mxw-list${mView === "grid" ? " is-grid" : ""}`}>
             {needle && <p className="v3-mxw-found">Знайдено {list.length} · за командою або турніром</p>}
-            {groupsOf(list).filter(([, xs]) => xs.length).map(([label, xs]) => <section key={label}><h3 className={label === "Наживо" ? "is-live" : ""}>{label} <span>{xs.length}</span></h3><div className={mView === "grid" ? "v3-mxw-grid" : ""}>{xs.map(mView === "grid" ? wCard : wRow)}</div></section>)}
+            {groupsOf(list).filter(([, xs]) => xs.length).map(([label, xs]) => <section key={label}><h3>{label}<span>{xs.length}</span></h3><div className={mView === "grid" ? "v3-mxw-grid" : ""}>{xs.map(mView === "grid" ? wCard : wRow)}</div></section>)}
           </div>}
         {wSel ? wDetail(wSel) : <aside className="v3-adw-card v3-adw-empty"><span aria-hidden="true"><Trophy size={20} /></span><p>Виберіть матч ліворуч</p></aside>}
       </section>
