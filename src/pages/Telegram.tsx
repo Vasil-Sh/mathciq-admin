@@ -791,12 +791,14 @@ export default function Telegram() {
             {(() => { const shown = plist ? plist.items : posts; const canMore = plist ? plist.more : !!posts && posts.length >= 30;
               const card = (p: TgPost) => view === "grid" ? (
                 <li key={p.postId} className="v3-tg-pg" onClick={() => setFix({ ...p, title: ch.title })}>
+                  {pf === "all" && shown && shown.indexOf(p) < freshN ? <span className="v3-tgw-pno is-new">NEW</span> : <span className="v3-tgw-pno">{(shown?.indexOf(p) ?? 0) + 1}</span>}
                   {p.photos?.length ? <><Shots urls={p.photos.slice(0, 1)} />{p.text.trim() && <MoreText text={p.text} cap />}</> : <MoreText text={p.text} />}
                   <span className="v3-tg-ph"><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>{RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}</em>}<Marks p={p} /></span>
                   <small><b className="v3-tg-pno" title="Номер поста в каналі">№{postNo(p)}</b>{when(p.postedAt)}{p.kind === "bet" && p.odds ? ` · ${odds(p.odds)}` : ""}{READ[p.readBy || ""] ? <i className={`v3-tg-rb is-${p.readBy}`}>{READ[p.readBy!]}</i> : null}</small>
                 </li>
               ) : (
                 <li key={p.postId}>
+                  {pf === "all" && shown && shown.indexOf(p) < freshN ? <span className="v3-tgw-pno is-new">NEW</span> : <span className="v3-tgw-pno">{(shown?.indexOf(p) ?? 0) + 1}</span>}
                   <span className="v3-tg-ph"><small><b className="v3-tg-pno" title="Номер поста в каналі">№{postNo(p)}</b>{when(p.postedAt)}{READ[p.readBy || ""] ? <i className={`v3-tg-rb is-${p.readBy}`}>{READ[p.readBy!]}</i> : null}</small><em className={`v3-tg-st ${KIND(p)[1]}`}>{KIND(p)[0]}</em>
                     {RES(p) && <em className={`v3-tg-st ${RES(p)![1]}`}>{RES(p)![0]}{p.score && !p.slip ? ` · ${p.score}` : ""}</em>}<Marks p={p} /></span>
                   {(p.text || !p.photos?.length) && <span className="v3-tg-ptx">{p.text}</span>}
