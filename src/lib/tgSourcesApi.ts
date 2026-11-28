@@ -86,6 +86,7 @@ export const fetchTgUnrecognized = () => api.get<{ posts: TgPost[] }>("/admin/tg
 export const fetchTgMatches = (q: string) => api.get<{ matches: TgMatch[] }>(`/admin/tg-posts/matches?q=${encodeURIComponent(q)}`).then((r) => r.matches);
 export const previewTgChannel = (link: string) => api.post<TgPreview>("/admin/tg-sources/preview", { link });
 export const addTgChannel = (link: string, game: string, test: boolean) => api.post<{ ok: true; handle: string; added?: number; started?: boolean }>("/admin/tg-sources", { link, game, test });
+export const setTgPublic = (handle: string, shown: boolean) => api.post<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}/public`, { shown });
 export const pauseTgChannel = (handle: string, paused: boolean) => api.post<{ ok: true }>(`/admin/tg-sources/${encodeURIComponent(handle)}/pause`, { paused });
 export const refreshTgChannel = (handle: string) => api.post<{ ok: true; added?: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/refresh`);
 export const rereadTgChannel = (handle: string) => api.post<{ ok: true; posts: number }>(`/admin/tg-sources/${encodeURIComponent(handle)}/reread`);

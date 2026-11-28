@@ -630,3 +630,11 @@ b > small.v3-tg-pend.v3-tg-pend svg { display: inline-block; flex-shrink: 0; mar
 .v3-tg-mchips button.is-on { background: #2f7bff; color: #fff; }
 .v3-tg-mchips button:active { transform: scale(.96); }
 @keyframes v3-tg-mct-in { from { opacity: .4; } to { opacity: 1; } }
+/* «Показувати користувачам» in the channel's sheet: a row with a switch */
+.v3-tg-pub { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 10px; padding: 12px 14px; border: 0; border-radius: 14px; background: #f1f3f7; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: transform .12s ease; }
+.v3-tg-pub:active { transform: scale(.99); }
+.v3-tg-pub:disabled { opacity: .6; }
+.v3-tg-pub > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.v3-tg-pub strong { font-size: 14px; font-weight: 600; color: #11151c; }
+.v3-tg-pub small { font-size: 12px; color: #6b7384; }
+.v3-tg-pub i.v3-st-sw { display: block; }

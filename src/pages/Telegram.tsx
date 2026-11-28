@@ -7,7 +7,7 @@ import { ConfirmSheet } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TgAvatar } from "@/components/ads/AdsShared";
 import { useOnline } from "@/hooks/useMediaOnline";
-import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, rereadTgDoubtful, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fetchTgSample, checkTgPost, fixTgPost, pauseTgChannel, previewTgChannel, refreshTgChannel, runTgGolden,
+import { addTgChannel, archiveTgChannel, deleteTgChannel, fetchTgStats, resolveTgPost, rereadTgChannel, rereadTgPost, rereadTgDoubtful, bulkTgInfo, fetchTgPostsPage, fetchTgCandidates, dismissTgCandidate, type TgCandidateCh, fetchTgSlips, type TgSlip, type TgStats, fetchTgMatches, fetchTgPosts, fetchTgSources, fetchTgUnrecognized, fetchTgSample, checkTgPost, fixTgPost, pauseTgChannel, setTgPublic, previewTgChannel, refreshTgChannel, runTgGolden,
   type TgChannel, type TgList, type TgMatch, type TgPost, type TgPreview } from "@/lib/tgSourcesApi";
 
 /** «Telegram-джерела»: public t.me channels we read, what we made of their posts, the posts we did not understand (design «Telegram-джерела», phone first). */
@@ -305,6 +305,13 @@ export default function Telegram() {
   const pickPf = (f: typeof pf) => { setPf(f); if (f === "all") setPlist(null); else void loadPosts(f, false); };
   const pickView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem("v3-tg-posts-view", v); } catch { /* private mode */ } };
 
+  // «Показувати користувачам»: a test channel goes to the app, or back
+  const togglePublic = async (ch: TgChannel) => {
+    const shown = ch.isTest;
+    setData((d) => d && { ...d, channels: d.channels.map((x) => x.handle === ch.handle ? { ...x, isTest: !shown } : x) });
+    try { await setTgPublic(ch.handle, shown); toast.success(shown ? "Канал видно в застосунку" : "Канал знову тестовий", { description: ch.title || `@${ch.handle}` }); }
+    catch (e) { setData((d) => d && { ...d, channels: d.channels.map((x) => x.handle === ch.handle ? { ...x, isTest: shown } : x) }); toast.error("Не вдалося змінити", { description: (e as Error).message }); }
+  };
   const load = useCallback(async () => {
     try { setData(await fetchTgSources()); setErr(""); } catch (e) { setErr((e as Error).message); }
     fetchTgUnrecognized().then(setUnk).catch(() => setUnk([]));
@@ -606,6 +613,10 @@ export default function Telegram() {
             </div>
             <button type="button" className="v3-tg-reread is-blue" disabled={!online} onClick={() => void reread(ch.handle)}><RefreshCw size={15} aria-hidden="true" />Перечитати пости каналу</button>
             <button type="button" className="v3-tg-reread is-blue" disabled={!online} onClick={() => void archive(ch.handle)}><History size={15} aria-hidden="true" />Підтягнути архів · ще ≈100 постів</button>
+            <button type="button" role="switch" aria-checked={!ch.isTest} className="v3-tg-pub" disabled={!online} onClick={() => void togglePublic(ch)}>
+              <span><strong>Показувати користувачам</strong><small>{ch.isTest ? "Тестовий: канал бачите лише ви" : "Канал видно в застосунку"}</small></span>
+              <i className={`v3-st-sw${!ch.isTest ? " is-on" : ""}`} aria-hidden="true"><span /></i>
+            </button>
             {ch.isTest && <button type="button" className="v3-tg-del" disabled={!online} onClick={() => setDelAsk(ch)}>Видалити тестовий канал</button>}
           </>}
         </DialogContent>
