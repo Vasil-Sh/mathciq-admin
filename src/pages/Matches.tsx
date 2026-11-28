@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { publishMatchCounts } from "@/lib/navCounts";
 import { useSearchParams } from "react-router-dom";
-import { Activity, AlertTriangle, Trophy, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Send, Upload, LayoutGrid, Link2, List, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
+import { Activity, AlertTriangle, Trophy, CalendarX2, CalendarDays, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, ListFilter, Filter, History, Info, Send, Upload, LayoutGrid, Link2, List, Pencil, Play, Plus, RefreshCw, RotateCcw, Search, Shield, Square, Trash2, Users, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 import PillTrack from "@/components/PillTrack";
 import RollingNumber from "@/components/RollingNumber";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/matchesModel";
 import type { AdminUserBet } from "@/types";
 import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
+import { WModal, DeleteAsk } from "@/components/ads/web/AdsWebShared";
 
 type Tab = "matches" | "parsers" | "manual" | "teams";
 type Day = "today" | "tomorrow" | "week";
@@ -171,6 +172,10 @@ export default function Matches() {
   const logoInput = useRef<HTMLInputElement>(null);
   const [issues, setIssues] = useState<ScoreIssue[]>([]);
   const [issuesOpen, setIssuesOpen] = useState(false);
+  const [wEdit, setWEdit] = useState<string | null>(null);
+  const [wIssueKey, setWIssue] = useState<string | null>(null);
+  const [wPick, setWPick] = useState("ours");
+  const [wLogF, setWLogF] = useState<"all" | "fail" | "admin">("all");
   const [issueBusy, setIssueBusy] = useState<string | null>(null);
   const [pagesBusy, setPagesBusy] = useState(false);
   const changePagesMode = async (mode: PagesMode) => {
@@ -1231,6 +1236,314 @@ export default function Matches() {
     : tab === "teams" ? (teams.find((t) => t.key === selTeam) ? (phone ? phoneTeamDetail : teamDetail)(teams.find((t) => t.key === selTeam)!) : null)
     : (all.find((m) => m.id === selId) ? (phone ? (phoneEdit ? phoneEditBody(all.find((m) => m.id === selId)!) : phoneDetail(all.find((m) => m.id === selId)!)) : detail(all.find((m) => m.id === selId)!)) : null);
 
+  // ═════════════ WEB (≥768 px): light layout from the «Матчі · веб» designs ═════════════
+  const wMoney = (bs: UBet[]) => { const uah = Math.round(bs.filter((b) => b.currency !== "USD").reduce((a, b) => a + (Number(b.amount) || 0), 0)); const usd = Math.round(bs.filter((b) => b.currency === "USD").reduce((a, b) => a + (Number(b.originalAmount ?? b.amount) || 0), 0)); return [uah ? `${uah.toLocaleString("uk-UA")} ₴` : "", usd ? `${usd} $` : ""].filter(Boolean).join(" · "); };
+  const wTodayBets = bets ? todayM.flatMap((m) => betsFor(m)) : null;
+  const wUsers = wTodayBets ? new Set(wTodayBets.map((b) => b.username)).size : 0;
+  const wOk = (parsers || []).filter((p) => pState(p) === "ok").length;
+  const wConf = issues.filter((x) => x.kind === "conflict");
+  const wPaused = !!parsers?.length && parsers.every((p) => p.paused);
+  const wKpis = [
+    { k: "t", l: "Матчів сьогодні", v: matches ? String(todayM.length) : "…", n: matches ? (todayM.length ? `CS2 ${todayM.filter((m) => m.game === "cs2").length} · Dota 2 ${todayM.filter((m) => m.game === "dota2").length} · наживо ${liveN}` : "у стрічках порожньо") : "" },
+    { k: "b", l: "Ставки на матчі сьогодні", v: wTodayBets ? String(wTodayBets.length) : "…", n: wTodayBets ? (wTodayBets.length ? `${wMoney(wTodayBets)} · ${wUsers} ${plural(wUsers, "користувач", "користувачі", "користувачів")}` : "ставок ще немає") : "" },
+    { k: "p", l: "Парсери", v: parsers ? `${wOk} з ${parsers.length}` : "…", n: !parsers ? "" : wPaused ? `усі зупинені${updatedAt ? ` · дані на ${updatedAt}` : ""}` : down.length ? issueText(down[0]) : "усі працюють", bad: !!parsers && (down.length > 0 || wPaused) },
+    { k: "c", l: "Розбіжності рахунку", v: String(wConf.length), n: wConf.length ? `${wConf[0].team1} — ${wConf[0].team2}` : "усе збігається", warn: wConf.length > 0 },
+  ];
+  const wTabs: { k: Tab; l: string; n: string }[] = [
+    { k: "matches", l: "Матчі", n: matches ? String(todayM.length) : "…" },
+    { k: "parsers", l: "Парсери", n: parsers ? `${wOk}/${parsers.length}` : "…" },
+    { k: "manual", l: "Вручну", n: bets ? String(groups.length) : "…" },
+    { k: "teams", l: "Команди", n: matches ? teams.length.toLocaleString("uk-UA") : "…" },
+  ];
+  const wSel = list.find((m) => m.id === selId) || list[0] || null;
+  const wRank = (g: Game, name: string) => teamOf(g, name)?.rank ?? null;
+  const wIn = (m: Match) => { const min = Math.round((m.ts - Date.now()) / 60000); return min > 0 && min < 24 * 60 ? `за ${min >= 60 ? `${Math.floor(min / 60)} год ` : ""}${min % 60} хв` : ""; };
+  const wSt: Record<MStatus, string> = { plan: "is-blue", live: "is-red", done: "is-grey", moved: "is-amber", off: "is-red" };
+  const wTag = (m: Match) => { const conf = wConf.some((x) => x.team1 === m.t1 && x.team2 === m.t2); return conf ? <span className="v3-uwt is-amber">Розбіжність</span> : <span className={`v3-uwt ${wSt[m.status]}`}>{STATUS_LABEL[m.status]}</span>; };
+  const wTour = (m: Match) => <span className="v3-mxw-tour">{m.tourLogo ? <img src={m.tourLogo} alt="" /> : <i style={{ background: "#e5484d" }} aria-hidden="true">{initials(m.tournament || "?")}</i>}<b>{[m.tournament || "Турнір", m.bo].filter(Boolean).join(" · ")}</b></span>;
+  const wGame = (g: Game) => <span className="v3-mxw-g">{GAME_LABEL[g]}</span>;
+  const wRow = (m: Match, i: number) => {
+    const bs = bets ? betsFor(m) : [], ov = ovOf(m), sc = hasScore(m);
+    return (
+      <button key={m.id} type="button" className={`v3-mxw-row${wSel?.id === m.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} aria-pressed={wSel?.id === m.id} onClick={() => setSelId(m.id)}>
+        <span className="v3-mxw-when">{m.status === "live" ? <><span className="v3-uwt is-red v3-mxw-live"><i aria-hidden="true" />НАЖИВО</span><small>{m.maps?.length ? `карта ${m.maps.length} з ${m.bo.replace(/\D/g, "") || "?"}` : ""}</small></>
+          : m.status === "done" || m.status === "off" || m.status === "moved" ? <>{wTag(m)}<small>{m.time}</small></> : <><b>{m.time}</b><small>{wIn(m)}</small></>}</span>
+        <span className="v3-mxw-mid">
+          <span className="v3-mxw-th">{wTour(m)}{wGame(m.game)}</span>
+          <span className="v3-mxw-team"><Logo src={m.logo1} name={m.t1} size={20} /><span className="v3-mxw-tn">{m.t1}</span>{sc && <b className={m.status === "live" && (m.s1 ?? 0) > (m.s2 ?? 0) ? "is-lead" : ""}>{m.s1}</b>}</span>
+          <span className="v3-mxw-team"><Logo src={m.logo2} name={m.t2} size={20} /><span className="v3-mxw-tn">{m.t2}</span>{sc && <b className={m.status === "live" && (m.s2 ?? 0) > (m.s1 ?? 0) ? "is-lead" : ""}>{m.s2}</b>}</span>
+        </span>
+        <span className="v3-mxw-side">{bs.length ? <b>{bs.length} {plural(bs.length, "ставка", "ставки", "ставок")} · {wMoney(bs)}</b> : <small>без ставок</small>}{ov && <span className="v3-uwt is-violet">Змінено вручну</span>}<small>{m.source}{updatedAt ? ` · ${updatedAt}` : ""}</small></span>
+      </button>
+    );
+  };
+  const wCard = (m: Match, i: number) => {
+    const bs = bets ? betsFor(m) : [], sc = hasScore(m);
+    return (
+      <button key={m.id} type="button" className={`v3-mxw-card${wSel?.id === m.id ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} aria-pressed={wSel?.id === m.id} onClick={() => setSelId(m.id)}>
+        <span className="v3-mxw-ch">{wTour(m)}{m.status === "plan" ? <b>{m.time}</b> : wTag(m)}</span>
+        <span className="v3-mxw-vs"><span><Logo src={m.logo1} name={m.t1} size={36} /><small>{m.t1}</small></span><strong>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</strong><span><Logo src={m.logo2} name={m.t2} size={36} /><small>{m.t2}</small></span></span>
+        <span className="v3-mxw-cf">{wGame(m.game)}<small>{m.status === "live" ? (m.maps?.length ? `карта ${m.maps.length}` : "наживо") : m.status === "done" ? `завершено ${m.time}` : m.status === "plan" ? wIn(m) || dayShort(m.day) : dayShort(m.day)}</small><b>{bs.length ? `${bs.length} · ${wMoney(bs)}` : ""}</b></span>
+      </button>
+    );
+  };
+  const wDetail = (m: Match) => {
+    const bs = betsFor(m), ov = ovOf(m), sc = hasScore(m), r1 = wRank(m.game, m.t1), r2 = wRank(m.game, m.t2);
+    return (
+      <aside key={m.id} className="v3-adw-card v3-mxw-det">
+        <div className="v3-mxw-dh">{m.tourLogo ? <img src={m.tourLogo} alt="" /> : <i aria-hidden="true">{initials(m.tournament || "?")}</i>}<span className="v3-mxw-dt"><b>{m.tournament || "Турнір не вказано"}</b><small>{[GAME_LABEL[m.game], m.bo].filter(Boolean).join(" · ")}</small></span>{wTag(m)}</div>
+        <div className="v3-mxw-board">
+          <span><Logo src={m.logo1} name={m.t1} size={46} /><b>{m.t1}</b>{r1 && <small>#{r1} у рейтингу</small>}</span>
+          <span className="v3-mxw-bsc"><strong>{sc ? `${m.s1} : ${m.s2}` : "– : –"}</strong><small>{m.status === "live" ? (m.maps?.length ? `карта ${m.maps.length} з ${m.bo.replace(/\D/g, "") || "?"}` : "наживо") : m.status === "done" ? `завершено ${m.time}` : m.time}</small></span>
+          <span><Logo src={m.logo2} name={m.t2} size={46} /><b>{m.t2}</b>{r2 && <small>#{r2} у рейтингу</small>}</span>
+        </div>
+        {ov && <div className="v3-adw-warn"><AlertTriangle size={14} aria-hidden="true" />Змінено вручну · @{ov.decidedBy}. Дані парсера її не перезапишуть.</div>}
+        <dl className="v3-adw-dl">
+          <div><dt>Початок</dt><dd>{m.day === today ? "сьогодні" : dayShort(m.day)} {m.time} · Київ</dd></div>
+          <div><dt>Джерело</dt><dd>{m.link ? <a href={m.link} target="_blank" rel="noreferrer">{m.source}</a> : m.source}{updatedAt ? ` · оновлено ${updatedAt}` : ""}</dd></div>
+        </dl>
+        <div className="v3-mxw-bh"><b>Ставки користувачів · {bets ? bs.length : "…"}</b><small>{bs.length ? wMoney(bs) : ""}</small></div>
+        <div className="v3-mxw-bets">{bs.length ? bs.map((b) => <div key={b.id}><UserAvatar username={b.username} telegram={b.telegram} /><span><b>@{b.username}</b><small>{b.betType} · {Number(b.odds).toFixed(2)}</small></span><strong>{b.currency === "USD" ? `${b.originalAmount ?? b.amount} $` : `${Math.round(b.amount)} ₴`}</strong></div>) : <p className="v3-mxw-none">На цей матч ставок немає</p>}</div>
+        <div className="v3-mxw-df">
+          {!m.manual && <button type="button" className="v3-uwb" disabled={!online} onClick={() => { setEdit(formOf(m)); setWEdit(m.id); }}><Pencil size={14} aria-hidden="true" />Редагувати</button>}
+          <button type="button" className="v3-uwb is-softred" disabled={!online} onClick={() => (m.manual ? removeManual(m, true) : setDelAsk(m))}>Видалити матч</button>
+        </div>
+      </aside>
+    );
+  };
+  const wNoMatch = <div className="v3-adw-card v3-adw-empty"><span aria-hidden="true">{error && matches === null ? <AlertTriangle size={20} /> : <Trophy size={20} />}</span><strong>{error && matches === null ? "Не вдалося завантажити матчі" : needle ? "Нічого не знайдено" : "Матчів немає"}</strong><p>{error && matches === null ? "Джерела не відповіли. Спробуйте ще раз або перевірте вкладку «Парсери»." : noMatchesText}</p>{error && matches === null ? <button type="button" className="v3-uwb is-green" onClick={() => void load()}>Спробувати ще раз</button> : day !== "week" && !needle ? <button type="button" className="v3-uwb is-green" onClick={() => setDay("week")}>Показати тиждень</button> : null}</div>;
+  const wMatches = (
+    <>
+      <div className="v3-mxw-filt">
+        <div className="v3-spw-kinds" role="group" aria-label="День"><PillTrack active={day} />{dayOpts.map((d) => <button key={d.key} type="button" className={day === d.key ? "is-on" : ""} aria-pressed={day === d.key} onClick={() => setDay(d.key)}>{d.label}</button>)}</div>
+        <div className="v3-spw-fchips" role="group" aria-label="Гра">{([["all", "Усі"], ["cs2", "CS2"], ["dota2", "Dota 2"]] as const).map(([k, l]) => <button key={k} type="button" className={game === k ? "is-on" : ""} aria-pressed={game === k} onClick={() => setGame(k)}>{l}<b>{fCount(k, st)}</b></button>)}</div>
+        <div className="v3-spw-fchips" role="group" aria-label="Статус">{([["all", "Усі статуси"], ["live", "Наживо"], ["plan", "Заплановано"], ["done", "Завершені"]] as const).map(([k, l]) => <button key={k} type="button" className={st === k ? "is-on" : ""} aria-pressed={st === k} onClick={() => setSt(k)}>{l}<b>{fCount(game, k)}</b></button>)}</div>
+        <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={mView === "list" ? "is-on" : ""} aria-pressed={mView === "list"} aria-label="Списком" onClick={() => pickView("list")}><List size={15} /></button><button type="button" className={mView === "grid" ? "is-on" : ""} aria-pressed={mView === "grid"} aria-label="Блоками" onClick={() => pickView("grid")}><LayoutGrid size={15} /></button></div>
+      </div>
+      {wPaused ? <div className="v3-mxw-alert is-red"><AlertTriangle size={15} aria-hidden="true" /><span>Парсери зупинені · у застосунку дані на {updatedAt || "останнє оновлення"}</span><button type="button" className="v3-uwb is-white" onClick={() => setTab("parsers")}>Запустити →</button></div>
+        : down.length > 0 ? <div className="v3-mxw-alert"><AlertTriangle size={15} aria-hidden="true" /><span>{down.map(issueText).join(", ")}</span><button type="button" className="v3-uwb is-white" onClick={() => { setTab("parsers"); setLogFor(down[0].name); }}>Лог →</button></div> : null}
+      <section className="v3-mxw-split">
+        {matches === null && !error ? <div className="v3-adw-card v3-adw-skel v3-mxw-list">{[0, 1, 2, 3, 4].map((i) => <i key={i} style={{ height: 56 }} />)}</div>
+          : !list.length ? wNoMatch
+          : <div key={`${day}-${game}-${st}-${mView}`} className={`v3-adw-card v3-mxw-list${mView === "grid" ? " is-grid" : ""}`}>
+            {needle && <p className="v3-mxw-found">Знайдено {list.length} · за командою або турніром</p>}
+            {groupsOf(list).filter(([, xs]) => xs.length).map(([label, xs]) => <section key={label}><h3 className={label === "Наживо" ? "is-live" : ""}>{label} <span>{xs.length}</span></h3><div className={mView === "grid" ? "v3-mxw-grid" : ""}>{xs.map(mView === "grid" ? wCard : wRow)}</div></section>)}
+          </div>}
+        {wSel ? wDetail(wSel) : <aside className="v3-adw-card v3-adw-empty"><span aria-hidden="true"><Trophy size={20} /></span><p>Виберіть матч ліворуч</p></aside>}
+      </section>
+    </>
+  );
+  // ── parsers ──
+  const kyivH = Number(new Date().toLocaleString("en-US", { timeZone: "Europe/Kyiv", hour: "2-digit", hour12: false }));
+  const wPCard = (p: ParserState, i: number) => {
+    const meta = PARSER_META[p.name] || { ini: initials(p.name), color: "#5f6878", site: p.name, game: "", feed: "cs2" as const };
+    const ps = pState(p), hrs = hoursOf(p.name), name = PARSER_NAMES[p.name] || p.name;
+    const tag = ps === "ok" ? ["Працює", "is-green"] : ps === "paused" ? ["Зупинено", "is-grey"] : ps === "down" ? ["Помилка", "is-red"] : ps === "flaky" ? ["Збої", "is-amber"] : ps === "idle" ? ["Без даних", "is-amber"] : ["Без оновлень", "is-amber"];
+    const line = p.paused ? `Зупинено вручну${p.pausedBy ? ` · @${p.pausedBy}` : ""}${p.pausedAt ? `, ${new Date(p.pausedAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}${p.pausedUntil ? ` · до ${new Date(p.pausedUntil).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}` : ""}`
+      : ps === "down" ? `Не відповідає${p.lastFailure ? ` ${ago(p.lastFailure).replace(" тому", "")}` : ""}${p.lastSuccess ? ` · у застосунку дані від ${isoToKyiv(p.lastSuccess).slice(11, 16)}` : ""}`
+      : p.name === "liquipedia" ? "Тікер раз на 31 с · сторінки турнірів до 2 на гру за 20 хв" : p.pandascore ? "Списки раз на 10 хв · автопсевдоніми команд" : p.cito ? "Запити рівно розподілені на місяць" : isOddsP(p) ? "Коефіцієнти до матчів" : `Джерело · ${meta.site}`;
+    const bar = p.pandascore ? { l: "Запитів за годину · запобіжник на 900", v: p.pandascore.callsThisHour, max: 1000, c: "#3a6df0" } : p.cito ? { l: "Запити цього місяця", v: p.cito.used, max: p.cito.budget, c: "#7c3aed" } : p.odds ? { l: "Запити цього місяця", v: p.odds.used, max: p.odds.budget, c: "#e8590c" } : null;
+    const t3 = p.name === "liquipedia" && p.pages ? { l: "Збіг сторінок", v: p.pages.checked ? `${Math.round(((p.pages.agreed || 0) / p.pages.checked) * 100)}%` : "—" } : p.pandascore ? { l: "Псевдонімів", v: `+${p.pandascore.aliases ?? 0}` } : p.cito ? { l: "Закрив сам", v: String(p.cito.added) } : p.paused ? { l: "Зупинено", v: p.pausedAt ? ago(p.pausedAt).replace(" тому", "") : "—" } : { l: "Останній збій", v: p.lastFailure ? ago(p.lastFailure).replace(" тому", "") : "—" };
+    return (
+      <div key={p.name} className="v3-adw-card v3-mxw-pc" style={{ animationDelay: `${i * 40}ms` }}>
+        <div className="v3-mxw-pch"><span><b>{name}</b><small>{meta.game || meta.site}</small></span><span className={`v3-uwt ${tag[1]}`}>{tag[0]}</span></div>
+        <p className="v3-mxw-pline">{line}</p>
+        {p.name === "liquipedia" && p.pages && <div className="v3-mxw-pmode"><b>Сторінки турнірів</b><div className="v3-adw-seg is-sm" role="group" aria-label="Сторінки турнірів"><PillTrack active={p.pages.mode || "auto"} />{([["auto", "Авто"], ["on", "Увімк."], ["off", "Вимк."]] as const).map(([k, l]) => <button key={k} type="button" disabled={pagesBusy || !online} className={(p.pages!.mode || "auto") === k ? "is-on" : ""} aria-pressed={(p.pages!.mode || "auto") === k} onClick={() => changePagesMode(k)}>{l}</button>)}</div></div>}
+        {bar && <div className="v3-mxw-pbar"><span><small>{bar.l}</small><b>{bar.v} з {bar.max}</b></span><i><em style={{ width: `${Math.min(100, (bar.v / Math.max(1, bar.max)) * 100)}%`, background: bar.c }} /></i></div>}
+        <div className="v3-mxw-hrs" role="img" aria-label={`Останні 24 години: ${hrs.filter((h) => h.s === "bad").length} годин зі збоями`}>{hrs.map((h, k) => <i key={k} className={`is-${p.paused && k > 20 ? "none" : h.s}`} title={`${h.hh}:00 · ${hourText(h)}`} />)}</div>
+        <div className="v3-mxw-axis"><span>24 год тому</span><span>зараз</span></div>
+        <div className="v3-mxw-tiles"><div><span>Матчів</span><b>{matches ? (cntFor(p.name, all) || "—") : "…"}</b></div><div><span>Збоїв · 24 год</span><b className={p.failures24h ? "is-bad" : ""}>{p.failures24h}</b></div><div><span>{t3.l}</span><b>{t3.v}</b></div></div>
+        <div className="v3-mxw-pf">
+          {p.paused ? <button type="button" className="v3-uwb is-green" disabled={!online || stopping === p.name} onClick={() => stopOrStart(p.name, false)}><Play size={13} aria-hidden="true" />Запустити</button>
+            : ps === "down" ? <button type="button" className="v3-uwb is-blue" disabled={!online || running[p.name] === "busy"} onClick={() => rerun(p.name)}>{running[p.name] === "busy" ? "Перезапускаємо…" : "Перезапустити"}</button>
+            : <button type="button" className="v3-uwb is-dark" disabled={!online || stopping === p.name} onClick={() => setStopAsk(p.name)}><i className="v3-mxw-stopic" aria-hidden="true" />Стоп</button>}
+          <button type="button" className="v3-adw-kebb" aria-label={`Лог · ${name}`} onClick={() => setLogFor(p.name)}><Info size={15} /></button>
+        </div>
+      </div>
+    );
+  };
+  const wParsers = (
+    <>
+      <div className="v3-mxw-night"><span aria-hidden="true">☾</span><span>Нічний режим 02:00–06:00 за Києвом — джерела опитуємо рідше. Повне оновлення щодня, швидке — кожні 15 хв, коли є ставки без результату.</span><span className="v3-uwt is-blue">{kyivH >= 2 && kyivH < 6 ? "Зараз ніч" : "Зараз день"}</span></div>
+      {parsers === null ? <div className="v3-mxw-pgrid v3-adw-skel">{[0, 1, 2].map((i) => <div key={i} className="v3-adw-card"><i style={{ height: 160 }} /></div>)}</div>
+        : !parsers.length ? <div className="v3-adw-card v3-adw-empty"><span aria-hidden="true"><Activity size={20} /></span><strong>Парсерів немає</strong><p>Бекенд не повідомив про жодне джерело матчів.</p></div>
+        : <div className="v3-mxw-pgrid">
+          {parsers.map(wPCard)}
+          {issues.length > 0 && <div className={`v3-adw-card v3-mxw-pc v3-mxw-conf${wConf.length ? " is-warn" : ""}`}>
+            <div className="v3-mxw-pch"><span><b>Розбіжності рахунку</b></span><span className={`v3-uwt ${wConf.length ? "is-amber" : "is-green"}`}>{wConf.length ? `${wConf.length} чекає` : "усе гаразд"}</span></div>
+            <p className="v3-mxw-pline">Джерела дали різний результат — ставки не закриються, поки ви не оберете правильний.</p>
+            {wConf[0] && <div className="v3-mxw-cbox"><b>{wConf[0].tournament || GAME_LABEL[wConf[0].game]}</b><strong>{wConf[0].team1} — {wConf[0].team2}</strong><span><small>Liquipedia</small><b>{wConf[0].ours}</b></span>{wConf[0].theirs.map((t) => <span key={t.source}><small>{t.source === "pandascore" ? "PandaScore" : "Cito"}</small><b>{t.score}</b></span>)}</div>}
+            <div className="v3-mxw-pf"><button type="button" className="v3-uwb is-green" onClick={() => { setWIssue(wConf[0] ? `${wConf[0].kind}-${wConf[0].id}` : null); setIssuesOpen(true); }}>Обрати рахунок</button></div>
+          </div>}
+        </div>}
+    </>
+  );
+  // ── manual ──
+  const wManual = bets === null ? <div className="v3-adw-card v3-adw-skel">{[0, 1].map((i) => <i key={i} style={{ height: 90, marginBottom: 8 }} />)}</div> : !groups.length ? (
+    <div className="v3-adw-card v3-adw-empty"><span aria-hidden="true"><Check size={20} /></span><strong>Усі матчі на своїх місцях</strong><p>За останні 14 днів немає записів на матчі, яких не було б у стрічках. Коли користувач введе матч сам, він з’явиться тут разом зі схожим офіційним.</p></div>
+  ) : (
+    <section className="v3-sw-two">
+      <div className="v3-adw-card v3-mxw-man">
+        <h2>Матчі, яких немає в стрічках <small>за 14 днів</small></h2>
+        {groups.map((x, i) => (
+          <div key={x.key} className="v3-mxw-grp" style={{ animationDelay: `${i * 40}ms` }}>
+            <div className="v3-mxw-grph">{wGame(x.game)}<small>{x.day === today ? "сьогодні" : dayShort(x.day)} · {x.bets.length} {plural(x.bets.length, "запис", "записи", "записів")}</small><span className={`v3-uwt ${x.official ? "is-amber" : "is-grey"}`}>{x.official ? "Чекає" : "Без пари"}</span></div>
+            <div className="v3-mxw-cmp">
+              <div><small>Як ввів користувач · @{x.bets[0]?.username}</small><b>{x.t1} vs {x.t2}</b></div>
+              <span aria-hidden="true">→</span>
+              <div className={x.official ? "is-off" : "is-none"}>{x.official ? <><small>Схожий офіційний · {x.official.source}</small><b>{x.official.t1} — {x.official.t2}{x.official.tournament ? ` · ${x.official.tournament}` : ""} · {x.official.time}</b></> : <><small>Схожого матчу не знайшлося</small><b>Оберіть матч вручну</b></>}</div>
+            </div>
+            <div className="v3-mxw-grpf">
+              <button type="button" className="v3-uwb" disabled={!online} onClick={() => setPickFor(x)}>Інший матч</button>
+              {x.official && <button type="button" className="v3-uwb is-green" disabled={!online || saving === `merge:${x.key}`} onClick={() => setMergeAsk({ x, target: x.official! })}>Об’єднати</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <aside className="v3-adw-card v3-sw-card">
+        <div className="v3-sw-ch"><div><h2>Як це працює</h2></div></div>
+        <p className="v3-mxw-ptext">Коли користувач вводить матч сам, ми шукаємо схожий у стрічках. Після об’єднання його ставки рахуються за результатом офіційного матчу.</p>
+        <div className="v3-adw-tiles is-two"><div><span>Чекають</span><b>{groups.length}</b></div><div><span>Об’єднано · 14 дн.</span><b>{decided.size}</b></div></div>
+        <small className="v3-adw-note">Кожне об’єднання записується в журнал дій.</small>
+      </aside>
+    </section>
+  );
+  // ── teams ──
+  const wT = tList.find((t) => t.key === selTeam) || tList[0] || null;
+  const wTeamDet = (t: Team) => {
+    const own = aliases.filter((a) => a.game === t.game && baseNorm(a.canonical) === baseNorm(t.name)), last = teamLast(t);
+    return (
+      <aside key={t.key} className="v3-adw-card v3-mxw-det">
+        <div className="v3-mxw-dh is-team"><Logo src={t.logo} name={t.name} size={40} /><span className="v3-mxw-dt"><b>{t.name}</b><small>{GAME_LABEL[t.game]}{t.rank ? ` · #${t.rank} у рейтингу` : ""}{t.last ? ` · останній матч ${t.last === today ? "сьогодні" : dayShort(t.last)}` : ""}</small></span></div>
+        <b className="v3-mxw-lbl">Псевдоніми — так команду називають джерела</b>
+        <div className="v3-sw-words is-grey">
+          {[t.name, ...t.aliases].map((n) => { const a = own.find((x) => baseNorm(x.alias) === baseNorm(n)); return <span key={n}>{n}{a && <button type="button" aria-label={`Прибрати «${n}»`} disabled={!online} onClick={() => removeAlias(a)}><X size={11} /></button>}</span>; })}
+          <button type="button" className="is-add" disabled={!online} onClick={() => setMergeFor(t)}><Plus size={12} aria-hidden="true" />Додати</button>
+        </div>
+        {t.variants[0] && <div className="v3-mxw-newsp"><p>Нове написання з джерел — «{t.variants[0]}». Підтвердіть, якщо це та сама команда.</p><div><button type="button" className="v3-uwb is-white" disabled={!online || !!saving} onClick={() => notSame(t, t.variants[0])}>Різні команди</button><button type="button" className="v3-uwb is-green" disabled={!online || !!saving} onClick={() => addAliases(t, [t.variants[0]])}>Це одна команда</button></div></div>}
+        <div className="v3-mxw-last"><small>Останні матчі</small>{last.length ? last.slice(0, 4).map((x) => <div key={x.id}><span>{x.day === today ? "сьогодні" : dayShort(x.day)} · {x.opp}</span><b className={x.r === "W" ? "is-win" : x.r === "L" ? "is-loss" : ""}>{x.score}</b></div>) : <span className="v3-mxw-none">ще немає завершених матчів</span>}</div>
+        <div className="v3-mxw-df"><button type="button" className="v3-uwb" disabled={!online} onClick={() => { setLogoFor(t); logoInput.current?.click(); }}>Змінити логотип</button><button type="button" className="v3-uwb is-softred" disabled={!online} onClick={() => setDelTeam(t)}>Приховати команду</button></div>
+      </aside>
+    );
+  };
+  const wTeamsChips: [string, string, number, () => void, boolean][] = [
+    ["all", "Усі", teams.length, () => { setTg("all"); setTf("all"); }, tg === "all" && tf === "all"],
+    ["cs2", "CS2", teams.filter((t) => t.game === "cs2").length, () => { setTg("cs2"); setTf("all"); }, tg === "cs2" && tf === "all"],
+    ["dota2", "Dota 2", teams.filter((t) => t.game === "dota2").length, () => { setTg("dota2"); setTf("all"); }, tg === "dota2" && tf === "all"],
+    ["logo", "Без лого", teamsG.filter((t) => isFallbackLogo(t.logo)).length, () => setTf("logo"), tf === "logo"],
+    ["dup", "Дублікати", teamsG.filter((t) => t.variants.length).length, () => setTf("dup"), tf === "dup"],
+  ];
+  const wDups = tList.flatMap((t) => t.variants.map((v) => ({ t, v })));
+  const wTeams = (
+    <>
+      <div className="v3-mxw-filt">
+        <div className="v3-spw-fchips" role="group" aria-label="Фільтр команд">{wTeamsChips.map(([k, l, n, go, on]) => <button key={k} type="button" className={on ? "is-on" : ""} aria-pressed={on} onClick={go}>{l}<b>{n.toLocaleString("uk-UA")}</b></button>)}</div>
+        <small className="v3-mxw-tcount">{teams.length.toLocaleString("uk-UA")} у довіднику</small>
+        <div className="v3-mxw-view" role="group" aria-label="Вигляд"><button type="button" className={tView === "list" ? "is-on" : ""} aria-pressed={tView === "list"} aria-label="Списком" onClick={() => tView !== "list" && flipView()}><List size={15} /></button><button type="button" className={tView === "grid" ? "is-on" : ""} aria-pressed={tView === "grid"} aria-label="Картками" onClick={() => tView !== "grid" && flipView()}><LayoutGrid size={15} /></button></div>
+      </div>
+      {tf === "dup" ? (
+        <section className="v3-sw-two">
+          <div className="v3-adw-card v3-mxw-man">
+            <h2>Можливі дублікати <small>{wDups.length} {plural(wDups.length, "написання чекає", "написання чекають", "написань чекають")} рішення</small></h2>
+            {!wDups.length ? <p className="v3-mxw-none">Нових написань немає</p> : wDups.slice(0, 40).map(({ t, v }, i) => (
+              <div key={`${t.key}|${v}`} className="v3-mxw-grp" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                <div className="v3-mxw-grph">{wGame(t.game)}<small>{spellingFrom(t, v)}</small></div>
+                <div className="v3-mxw-cmp"><div><b>{t.name}</b><small>у довіднику</small></div><span aria-hidden="true">=</span><div className="is-new"><b>{v}</b><small>нове написання</small></div></div>
+                <div className="v3-mxw-grpf"><button type="button" className="v3-uwb" disabled={!online || !!saving} onClick={() => notSame(t, v)}>Різні команди</button><button type="button" className="v3-uwb is-green" disabled={!online || !!saving} onClick={() => addAliases(t, [v])}>Це одна команда</button></div>
+              </div>
+            ))}
+          </div>
+          <aside className="v3-adw-card v3-sw-card"><div className="v3-sw-ch"><div><h2>Чому це важливо</h2></div></div><p className="v3-mxw-ptext">Різні джерела пишуть назви по-різному. «Це одна команда» додає псевдонім — матчі з усіх джерел зіллються в один. «Різні команди» більше не питатиме про цю пару.</p><p className="v3-mxw-ptext">PandaScore додає псевдоніми сам, якщо назву вже бачили в інших джерелах — вони позначені «авто».</p></aside>
+        </section>
+      ) : (
+        <section className="v3-mxw-split">
+          {matches === null ? <div className="v3-adw-card v3-adw-skel v3-mxw-list">{[0, 1, 2, 3].map((i) => <i key={i} style={{ height: 40 }} />)}</div>
+            : !tList.length ? <div className="v3-adw-card v3-adw-empty"><span aria-hidden="true"><Search size={20} /></span><strong>Команд не знайдено</strong><p>{tq.trim() ? `За «${tq.trim()}» немає ні назви, ні псевдоніма.` : "У цьому фільтрі порожньо."}</p></div>
+            : tView === "grid" ? <div className="v3-adw-card v3-mxw-list"><div className="v3-mxw-tgrid">{tList.slice(0, tLimit).map((t, i) => <button key={t.key} type="button" className={`v3-mxw-tcard${wT?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} onClick={() => setSelTeam(t.key)}><Logo src={t.logo} name={t.name} size={40} /><b>{t.name}</b><small>{GAME_LABEL[t.game]}{t.rank ? ` · #${t.rank}` : ""} · {t.aliases.length + 1} {plural(t.aliases.length + 1, "псевдонім", "псевдоніми", "псевдонімів")}</small>{t.variants.length > 0 ? <span className="v3-uwt is-amber">{t.variants.length} {plural(t.variants.length, "написання", "написання", "написань")}</span> : isFallbackLogo(t.logo) ? <span className="v3-uwt is-grey">без лого</span> : null}</button>)}</div></div>
+            : <div className="v3-adw-card v3-mxw-list"><div className="v3-adw-tr v3-mxw-tcols is-th"><span>Команда</span><span>Гра · рейтинг</span><span>Псевдоніми</span><span /></div>
+              {tList.slice(0, tLimit).map((t, i) => <button key={t.key} type="button" className={`v3-adw-tr v3-mxw-tcols${wT?.key === t.key ? " is-sel" : ""}`} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }} onClick={() => setSelTeam(t.key)}><span className="v3-adw-who"><Logo src={t.logo} name={t.name} size={26} /><strong>{t.name}</strong></span><span>{GAME_LABEL[t.game]}{t.rank ? ` · #${t.rank}` : ""}</span><span>{t.aliases.length + 1} {plural(t.aliases.length + 1, "псевдонім", "псевдоніми", "псевдонімів")}</span><span className="is-r">{t.variants.length > 0 ? <span className="v3-uwt is-amber">{t.variants.length} {plural(t.variants.length, "написання", "написання", "написань")}</span> : isFallbackLogo(t.logo) ? <span className="v3-uwt is-grey">без лого</span> : null}</span></button>)}
+              {tList.length > tLimit && <button type="button" className="v3-uw-more" onClick={() => setTLimit((n) => n + 80)}>Показати ще {Math.min(80, tList.length - tLimit)}</button>}
+            </div>}
+          {wT ? wTeamDet(wT) : <aside className="v3-adw-card v3-adw-empty"><p>Виберіть команду</p></aside>}
+        </section>
+      )}
+    </>
+  );
+  const wIss = issues.find((x) => `${x.kind}-${x.id}` === wIssueKey) || wConf[0] || issues[0] || null;
+  const webPage = (
+    <div className="v3-page v3-uw v3-mxw">
+      <section className="v3-uw-hero">
+        <div><h1>Матчі</h1><p>{wPaused ? `парсери зупинені · дані на ${updatedAt || "—"}` : error && matches === null ? "дані не оновились" : `Сьогодні ${todayM.length} · наживо ${liveN}${updatedAt ? ` · оновлено ${updatedAt}` : ""}`}</p></div>
+        <div className="v3-uw-hacts"><button type="button" className="v3-uwb is-green" disabled={!online} onClick={() => setAddOpen(true)}><Plus size={15} aria-hidden="true" />Додати матч</button></div>
+      </section>
+      {!online && <div className="v3-uw-off" role="status"><WifiOff size={15} aria-hidden="true" /><span>Немає інтернету. Матчі станом на {updatedAt || "останнє оновлення"}.</span></div>}
+      <section className="v3-pw-kpis" aria-label="Підсумки">{wKpis.map((x, i) => <div key={x.k} className={`v3-pw-kpi${i === 0 ? " is-on" : ""}`} style={{ animationDelay: `${i * 40}ms` }}><span>{x.l}</span><strong className={`${"bad" in x && x.bad ? "is-bad" : ""}${"warn" in x && x.warn ? " is-warn" : ""}`}>{x.v === "…" ? "…" : <RollingNumber key={`${x.k}-${x.v}`} text={x.v} />}</strong><small>{x.n}</small></div>)}</section>
+      <div className="v3-uw-tools v3-mxw-tools">
+        <div className="v3-uw-tabs" role="tablist" aria-label="Розділи матчів"><PillTrack active={tab} />{wTabs.map((t) => <button key={t.k} type="button" role="tab" aria-selected={tab === t.k} className={tab === t.k ? "is-on" : ""} onClick={() => setTab(t.k)}>{t.l}<span className="v3-pw-tn">{t.n}</span></button>)}</div>
+        {(tab === "matches" || tab === "teams") && <label className="v3-uw-search v3-spw-search"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Пошук" placeholder={tab === "teams" ? "Назва або псевдонім" : "Команда або турнір"} value={tab === "teams" ? tq : q} onChange={(e) => (tab === "teams" ? setTq(e.target.value) : setQ(e.target.value))} />{(tab === "teams" ? tq : q) && <button type="button" aria-label="Очистити" onClick={() => (tab === "teams" ? setTq("") : setQ(""))}><X size={13} /></button>}</label>}
+      </div>
+      <div key={tab}>{tab === "matches" ? wMatches : tab === "parsers" ? wParsers : tab === "manual" ? wManual : wTeams}</div>
+
+      <AddMatchDialog open={addOpen} onOpenChange={setAddOpen} onDone={async (m) => { await load(); setTab("matches"); setDay(m.startDate && kyivDay(new Date(m.startDate)) === today ? "today" : "week"); setSelId(`${m.game}:${m.id}`); }} />
+      {(() => { const m = all.find((x) => x.id === wEdit); if (!m) return null; const f = formOf(m), ov = ovOf(m); return (
+        <WModal open onClose={() => { setWEdit(null); setEdit(null); }} width={560} title="Редагувати матч" sub={`${m.t1} — ${m.t2}${m.tournament ? ` · ${m.tournament}` : ""}${m.bo ? ` · ${m.bo}` : ""}`}>
+          <div className="v3-adw-warn"><AlertTriangle size={14} aria-hidden="true" />Правка діє, поки джерело не дасть свій рахунок.</div>
+          <span className="v3-adw-cap">Час і статус</span>
+          <div className="v3-adwm-row">
+            <div className="v3-uwm-f"><label id={`we-d-${m.id}`}>Дата</label><DateField id={`we-date-${m.id}`} labelledBy={`we-d-${m.id}`} value={f.date} onChange={(v) => setForm(m, { date: v })} /></div>
+            <div className="v3-uwm-f"><label htmlFor={`we-t-${m.id}`}>Час (Київ)</label><input id={`we-t-${m.id}`} inputMode="numeric" placeholder="19:00" maxLength={5} value={f.time} onChange={(e) => setForm(m, { time: hhmmInput(e.target.value) })} />{ov?.startDate && <small>Було {m.time} у {m.source}</small>}</div>
+          </div>
+          <div className="v3-uwm-f"><label>Статус</label><div className="v3-mxw-stbtns">{EDIT_ST.map((x) => <button key={x.key} type="button" className={f.st === x.key ? "is-on" : ""} aria-pressed={f.st === x.key} onClick={() => setForm(m, { st: x.key })}>{x.label}</button>)}</div></div>
+          <span className="v3-adw-cap">Рахунок</span>
+          <div className="v3-mxw-scrow"><div className="v3-uwm-f"><label htmlFor={`we-s1-${m.id}`}>{m.t1}</label><input id={`we-s1-${m.id}`} inputMode="numeric" placeholder="—" value={f.s1} onChange={(e) => setForm(m, { s1: e.target.value.replace(/\D/g, "").slice(0, 2) })} /></div><span>:</span><div className="v3-uwm-f"><label htmlFor={`we-s2-${m.id}`}>{m.t2}</label><input id={`we-s2-${m.id}`} inputMode="numeric" placeholder="—" value={f.s2} onChange={(e) => setForm(m, { s2: e.target.value.replace(/\D/g, "").slice(0, 2) })} /></div></div>
+          <div className="v3-uwm-foot"><span>Запишеться в журнал дій</span><div>{ov && <button type="button" className="v3-uwb" disabled={saving === m.id} onClick={async () => { await resetEdit(m); setWEdit(null); }}>Скинути правку</button>}<button type="button" className="v3-uwb is-green" disabled={!online || saving === m.id} onClick={async () => { await saveEdit(m); setWEdit(null); }}>{saving === m.id ? "Зберігаємо…" : "Зберегти"}</button></div></div>
+        </WModal>
+      ); })()}
+      {wIss && <WModal open={issuesOpen} onClose={() => setIssuesOpen(false)} width={520} title="Розбіжність рахунку" sub={`${wIss.team1} — ${wIss.team2}${wIss.tournament ? ` · ${wIss.tournament}` : ""}`}>
+        <div className="v3-mxw-ivs"><b>{wIss.team1}</b><small>{new Date(wIss.start).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</small><b>{wIss.team2}</b></div>
+        <div className="v3-mxw-iopts" role="radiogroup" aria-label="Правильний рахунок">
+          {[{ k: "ours", score: wIss.ours, src: "Liquipedia" }, ...wIss.theirs.map((t) => ({ k: t.source, score: t.score, src: t.source === "pandascore" ? "PandaScore" : "Cito" }))].map((o) => <button key={o.k} type="button" role="radio" aria-checked={wPick === o.k} className={wPick === o.k ? "is-on" : ""} onClick={() => setWPick(o.k)}><i aria-hidden="true" /><span><b>{o.score}</b><small>{o.src}</small></span></button>)}
+        </div>
+        <p className="v3-adw-note">Після вибору ставки закриються за цим рахунком.</p>
+        <div className="v3-uwm-foot"><span>Рішення потрапить у журнал дій</span><div><button type="button" className="v3-uwb" onClick={() => setIssuesOpen(false)}>Пізніше</button><button type="button" className="v3-uwb is-green" disabled={!online || issueBusy !== null} onClick={async () => { const t = wIss.theirs.find((x) => x.source === wPick); await settleIssue(wIss, wPick === "ours" ? null : t?.score ?? null); setIssuesOpen(false); }}>Підтвердити {wPick === "ours" ? wIss.ours : wIss.theirs.find((x) => x.source === wPick)?.score || ""}</button></div></div>
+      </WModal>}
+      <Dialog open={!!logFor} onOpenChange={(o) => !o && setLogFor(null)}>
+        <DialogContent className="v3-aupanel v3-mxw-log" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="v3-adwm-h"><div><DialogTitle className="v3-modal-title">Повний лог · {logFor ? PARSER_NAMES[logFor] || logFor : ""}</DialogTitle><DialogDescription className="v3-modal-sub">Останні {logFor ? (events[logFor] || []).length : 0} подій. Однакові події частіше ніж раз на хвилину зливаються в одну.</DialogDescription></div><button type="button" className="v3-adwm-x" aria-label="Закрити" onClick={() => setLogFor(null)}><X size={16} /></button></div>
+          {(() => { const ev = logFor ? events[logFor] || [] : []; return <div className="v3-spw-fchips" role="group" aria-label="Фільтр подій">{([["all", "Усі", ev.length], ["fail", "Помилки", ev.filter((e) => e.event === "failure").length], ["admin", "Дії адмінів", ev.filter((e) => e.event === "rerun").length]] as const).map(([k, l, n]) => <button key={k} type="button" className={wLogF === k ? "is-on" : ""} aria-pressed={wLogF === k} onClick={() => setWLogF(k)}>{l}<b>{n}</b></button>)}</div>; })()}
+          <div className="v3-mxw-logs">{logFor && (events[logFor] || []).filter((e) => wLogF === "all" || (wLogF === "fail" ? e.event === "failure" : e.event === "rerun")).map((e) => <div key={e.id}><small>{new Date(e.createdAt).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" })}</small><span><span className={`v3-uwt ${e.event === "failure" ? "is-red" : e.event === "success" ? "is-green" : "is-blue"}`}>{EV_LABEL[e.event]}</span><b>{e.message && e.message !== "OK" ? e.message : "—"}</b></span></div>)}{logFor && !(events[logFor] || []).length && <p className="v3-mxw-none">Подій ще немає</p>}</div>
+          <div className="v3-uwm-foot"><span>Час — київський</span><div><button type="button" className="v3-uwb" onClick={() => logFor && shareLog(logFor)}>Копіювати</button>{logFor && <button type="button" className="v3-uwb is-blue" disabled={!online || running[logFor] === "busy"} onClick={() => rerun(logFor)}>Перезапустити</button>}</div></div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!stopAsk} onOpenChange={(o) => { if (!o) { setStopAsk(null); setStopFor("1h"); } }}>
+        <DialogContent className="v3-modal v3-uwm v3-uwm-del v3-adw-del" style={{ maxWidth: 420 }} onOpenAutoFocus={(e) => e.preventDefault()}>
+          <span className="v3-uwm-ico is-red" aria-hidden="true"><Square size={14} /></span>
+          <DialogTitle className="v3-modal-title">Зупинити {stopAsk ? PARSER_NAMES[stopAsk] || stopAsk : ""}?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">{stopFor === "forever" ? "Запитів до джерела не буде, поки не запустите знову." : stopFor === "morning" ? "Запустимо самі о 08:00 за Києвом." : "Запустимо самі через годину."} У застосунку лишаться останні дані з позначкою часу.</DialogDescription>
+          <div className="v3-adw-seg v3-mxw-stopseg" role="radiogroup" aria-label="На скільки зупинити"><PillTrack active={stopFor} />{([["1h", "На 1 годину"], ["morning", "До 08:00"], ["forever", "Доки не запущу"]] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={stopFor === k} className={stopFor === k ? "is-on" : ""} onClick={() => setStopFor(k)}>{l}</button>)}</div>
+          {stopAsk === "liquipedia" && <div className="v3-adw-warn"><AlertTriangle size={14} aria-hidden="true" />Liquipedia — головне джерело. Матчі CS2 і Dota 2 оновлюватимуть лише PandaScore і Cito.</div>}
+          <button type="button" className="v3-uwb is-red" disabled={!!stopAsk && stopping === stopAsk} onClick={async () => { if (!stopAsk) return; await stopOrStart(stopAsk, true, stopFor === "1h" ? 60 : stopFor === "morning" ? toMorning() : undefined); setStopAsk(null); setStopFor("1h"); }}>{stopping === stopAsk ? "Зупиняємо…" : "Зупинити"}</button>
+          <button type="button" className="v3-uwb" onClick={() => { setStopAsk(null); setStopFor("1h"); }}>Скасувати</button>
+        </DialogContent>
+      </Dialog>
+      <DeleteAsk open={!!delAsk} title="Видалити матч?" busy={!!delAsk && saving === delAsk.id} onClose={() => setDelAsk(null)} onDelete={() => delAsk && removeMatch(delAsk)} text={delAsk ? `${delAsk.t1} — ${delAsk.t2} зникне з розкладу в застосунку.${betsFor(delAsk).length ? ` ${betsFor(delAsk).length} ${plural(betsFor(delAsk).length, "ставка лишиться", "ставки лишаться", "ставок лишиться")} у користувачів.` : ""}` : ""} />
+      <Dialog open={!!mergeAsk} onOpenChange={(o) => { if (!o) setMergeAsk(null); }}>
+        <DialogContent className="v3-modal v3-uwm v3-uwm-del v3-adw-del" style={{ maxWidth: 420 }} onOpenAutoFocus={(e) => e.preventDefault()}>
+          <span className="v3-uwm-ico is-blue" aria-hidden="true"><Link2 size={16} /></span>
+          <DialogTitle className="v3-modal-title">Об’єднати з офіційним?</DialogTitle>
+          <DialogDescription className="v3-modal-sub">{mergeAsk ? `${mergeAsk.x.bets.length} ${plural(mergeAsk.x.bets.length, "запис користувача перейде", "записи користувачів перейдуть", "записів користувачів перейдуть")} на матч зі стрічки. Ставки порахуються за його результатом.` : ""}</DialogDescription>
+          {mergeAsk && <div className="v3-mxw-mcmp"><div><small>Як ввів користувач · @{mergeAsk.x.bets[0]?.username}</small><b>{mergeAsk.x.t1} vs {mergeAsk.x.t2}</b></div><span aria-hidden="true">↓</span><div className="is-off"><small>Офіційний · {mergeAsk.target.source}</small><b>{mergeAsk.target.t1} — {mergeAsk.target.t2}{mergeAsk.target.tournament ? ` · ${mergeAsk.target.tournament}` : ""} · {mergeAsk.target.time}</b></div></div>}
+          <button type="button" className="v3-uwb is-green" disabled={!!mergeAsk && saving === `merge:${mergeAsk.x.key}`} onClick={async () => { if (mergeAsk) { await decide(mergeAsk.x, "merge", mergeAsk.target); setMergeAsk(null); } }}>{mergeAsk && saving === `merge:${mergeAsk.x.key}` ? "Об’єднуємо…" : "Об’єднати"}</button>
+          <button type="button" className="v3-uwb" onClick={() => setMergeAsk(null)}>Скасувати</button>
+        </DialogContent>
+      </Dialog>
+      <PickMatchSheet group={pickFor} known={known} today={today} busy={!!pickFor && saving === `merge:${pickFor.key}`} onClose={() => setPickFor(null)} onPick={(x, m) => decide(x, "merge", m)} />
+      <MergeTeamDialog team={mergeFor} teams={teams} busy={!!mergeFor && saving === `team:${mergeFor.key}`} onClose={() => setMergeFor(null)} onPick={(t, names) => addAliases(t, names)} />
+      <DeleteAsk open={!!delTeam} title={`Приховати ${delTeam?.name || "команду"}?`} busy={!!delTeam && saving === delTeam.key} onClose={() => setDelTeam(null)} onDelete={() => delTeam && removeTeam(delTeam)} text={<>Команда зникне з довідника «Команди»{delTeam ? ` (${GAME_LABEL[delTeam.game]})` : ""}. Логотип і матчі не зміняться.</>} />
+      <input ref={logoInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && logoFor) uploadLogo(logoFor, f); }} />
+    </div>
+  );
+  if (!phone) return webPage;
   return (
     <div className="v3-page v3-pay v3-mx">
       <section className="v3-hero v3-hero-row">
