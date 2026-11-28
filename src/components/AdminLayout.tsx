@@ -18,7 +18,7 @@ import { PageSearchProvider, usePageSearchHost, isPhoneWidth } from "@/lib/pageS
 import { fetchServerErrors } from "@/lib/serverErrorsApi";
 import AuditPanel from "@/components/AuditPanel";
 
-type NavKey = "support" | "matches";
+type NavKey = "support" | "matches" | "telegram";
 const navigation: { label: string; href: string; icon: typeof Users; badge?: NavKey }[] = [
   { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard },
   { label: "Користувачі", href: "/users", icon: Users },
@@ -26,7 +26,7 @@ const navigation: { label: string; href: string; icon: typeof Users; badge?: Nav
   { label: "Ставки", href: "/bets", icon: CircleDollarSign },
   { label: "Реклама", href: "/banners", icon: Megaphone },
   { label: "Матчі", href: "/matches", icon: Swords, badge: "matches" },
-  { label: "Telegram", href: "/telegram", icon: Send },
+  { label: "Telegram", href: "/telegram", icon: Send, badge: "telegram" },
   { label: "Підтримка", href: "/support", icon: MessageCircle, badge: "support" },
   { label: "Налаштування", href: "/settings", icon: Settings2 },
 ];
@@ -114,6 +114,7 @@ function AdminShell() {
   }, [accountOpen]);
 
   const badgeFor = (key?: NavKey) => {
+    if (key === "telegram" && badges.tgNew) return <span className="v3-count" aria-label={`${badges.tgNew} нових постів у каналах`}>{badges.tgNew > 99 ? "99+" : badges.tgNew}</span>;
     if (key === "support" && badges.supportOpen) return <span className="v3-count" aria-label={`${badges.supportOpen} відкритих звернень`}>{badges.supportOpen}</span>;
     if (key === "matches" && badges.matchesStopped && !badges.matchesError) return <span className="v3-count v3-noentry" role="img" aria-label="Усі парсери зупинені" title="Усі парсери зупинені вручну"><i aria-hidden="true" /></span>;
     if (key === "matches" && badges.matchesError) return <span className="v3-count" aria-label={badges.matchesErrorText || "Помилка парсера"} title={badges.matchesErrorText || "Помилка парсера"}>!</span>;

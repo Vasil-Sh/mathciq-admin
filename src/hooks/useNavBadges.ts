@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchSettings } from "@/lib/adminSettingsApi";
 import { setExpiringWindow, isExpiring } from "@/lib/usersModel";
 import { fetchUsersOverview } from "@/lib/adminBetsApi";
+import { fetchTgSources } from "@/lib/tgSourcesApi";
 import { api } from "@/lib/apiClient";
 import { fetchParsers, PARSER_NAMES, parserHealth, PARSER_ISSUE } from "@/lib/dashboardInsights";
 
@@ -27,7 +28,15 @@ export interface NavBadges {
   matchesStopped?: boolean;
   /** subscriptions ending within 7 days — shown on «Користувачі» in the mobile menu */
   usersExpiring?: number;
+  /** posts the Telegram channels got since the admin last opened each (the same count as on the channels' avatars) */
+  tgNew?: number;
 }
+
+/** New Telegram posts: a channel's posts now minus what it had when the admin last opened it (v3-tg-chseen). */
+const TG_SEEN = "v3-tg-chseen";
+let tgPosts: Record<string, number> = {};
+const tgNewCount = () => { let seen: Record<string, number> = {}; try { seen = JSON.parse(localStorage.getItem(TG_SEEN) || "{}"); } catch { /* private mode */ }
+  return Object.entries(tgPosts).reduce((n, [h, posts]) => n + (seen[h] != null ? Math.max(0, posts - seen[h]) : 0), 0); };
 
 const SEEN_KEY = "auditSeenAt";
 const POLL_MS = 60_000;
@@ -57,6 +66,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
       const [t, p] = await Promise.allSettled([api.get<{ tickets?: unknown[]; counts?: { open?: number } }>("/admin/support-tickets?filter=open").then((d) => d.counts?.open ?? d.tickets?.length ?? 0), fetchParsers()]);
       if (cancelled) return;
       if (t.status === "fulfilled") setBadges((b) => ({ ...b, supportOpen: t.value }));
+      fetchTgSources().then((l) => { if (cancelled) return; tgPosts = Object.fromEntries(l.channels.map((c) => [c.handle, c.all?.posts ?? 0])); setBadges((b) => ({ ...b, tgNew: tgNewCount() })); }).catch(() => {});
       if (p.status === "fulfilled") {
         const bad = p.value.map((x) => [x, parserHealth(x)] as const).filter(([, h]) => h !== "ok");
         const stopped = p.value.length > 0 && p.value.every((x) => x.paused);
@@ -107,5 +117,7 @@ export function useNavBadges(currentUser: string | undefined, onAuditPage: boole
     };
   }, [currentUser, onAuditPage]);
 
+  // the Telegram screen marks channels seen: the header follows at once (same tab — no storage event)
+  useEffect(() => { const f = () => setBadges((b) => ({ ...b, tgNew: tgNewCount() })); window.addEventListener("mq-tg-seen", f); window.addEventListener("storage", f); return () => { window.removeEventListener("mq-tg-seen", f); window.removeEventListener("storage", f); }; }, []);
   return badges;
 }

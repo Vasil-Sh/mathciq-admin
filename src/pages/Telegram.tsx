@@ -290,12 +290,12 @@ export default function Telegram() {
   const golden = async () => { try { await runTgGolden(); toast.success("Перевіряємо читачів", { description: "≈6 с на запит — результат тут же" }); setTimeout(() => void load(), 1_500); } catch (e) { toast.error("Не вдалося запустити", { description: (e as Error).message }); } };
   // posts of a channel the admin has seen (its total when the sheet was last opened): the card shows how many came since
   const [chSeen, setChSeen] = useState<Record<string, number>>(() => { try { return JSON.parse(localStorage.getItem("v3-tg-chseen") || "{}") as Record<string, number>; } catch { return {}; } });
-  const markChSeen = (h: string) => { const n = data?.channels.find((c) => c.handle === h)?.all?.posts; if (n == null) return; setChSeen((cur) => { const next = { ...cur, [h]: n }; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; }); };
+  const markChSeen = (h: string) => { const n = data?.channels.find((c) => c.handle === h)?.all?.posts; if (n == null) return; setChSeen((cur) => { const next = { ...cur, [h]: n }; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); window.dispatchEvent(new Event("mq-tg-seen")); } catch { /* private mode */ } return next; }); };
   // a channel seen for the first time: its posts now are the start (the badge counts only what comes after)
   useEffect(() => {
     const miss = data?.channels.filter((c) => chSeen[c.handle] == null && c.all?.posts != null);
     if (!miss?.length) return;
-    setChSeen((cur) => { const next = { ...cur }; for (const c of miss) next[c.handle] = c.all!.posts; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+    setChSeen((cur) => { const next = { ...cur }; for (const c of miss) next[c.handle] = c.all!.posts; try { localStorage.setItem("v3-tg-chseen", JSON.stringify(next)); window.dispatchEvent(new Event("mq-tg-seen")); } catch { /* private mode */ } return next; });
   }, [data, chSeen]);
   // the readers' block folded to its header — folded until the admin opens it (remembered)
   const [readerFold, setReaderFold] = useState(() => { try { return localStorage.getItem("v3-tg-rfold2") !== "0"; } catch { return true; } });
