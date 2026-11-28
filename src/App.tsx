@@ -17,6 +17,7 @@ const Telegram = lazy(() => import("@/pages/Telegram"));
 import AdminLayout from "@/components/AdminLayout";
 
 import NotFound from "@/pages/NotFound";
+import RouteFallback from "@/components/RouteFallback";
 
 /** Where to go after signing in: the page the session ended on, otherwise the dashboard. */
 function takeReturnTo() {
@@ -73,16 +74,16 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to={takeReturnTo()} replace /> : <LoginPage />} />
       <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-        <Route path="/dashboard" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження аналітики…</div>}><Dashboard /></Suspense>} />
-        <Route path="/users" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження користувачів…</div>}><Admin /></Suspense>} />
-        <Route path="/bets" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження ставок…</div>}><Bets /></Suspense>} />
-        <Route path="/banners" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження банерів…</div>}><Banners /></Suspense>} />
-        <Route path="/audit" element={<Suspense fallback={<div role="status">Завантаження журналу…</div>}><AuditLog /></Suspense>} />
-        <Route path="/settings" element={<Suspense fallback={<div role="status">Завантаження налаштувань…</div>}><Settings /></Suspense>} />
+        <Route path="/dashboard" element={<Suspense fallback={<RouteFallback label="Завантаження аналітики…" />}><Dashboard /></Suspense>} />
+        <Route path="/users" element={<Suspense fallback={<RouteFallback label="Завантаження користувачів…" />}><Admin /></Suspense>} />
+        <Route path="/bets" element={<Suspense fallback={<RouteFallback label="Завантаження ставок…" />}><Bets /></Suspense>} />
+        <Route path="/banners" element={<Suspense fallback={<RouteFallback label="Завантаження банерів…" />}><Banners /></Suspense>} />
+        <Route path="/audit" element={<Suspense fallback={<RouteFallback label="Завантаження журналу…" />}><AuditLog /></Suspense>} />
+        <Route path="/settings" element={<Suspense fallback={<RouteFallback label="Завантаження налаштувань…" />}><Settings /></Suspense>} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/matches" element={<Matches />} />
-        <Route path="/telegram" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження каналів…</div>}><Telegram /></Suspense>} />
-        <Route path="/support" element={<Suspense fallback={<div className="page-container text-sm text-muted" role="status">Завантаження підтримки…</div>}><Support /></Suspense>} />
+        <Route path="/telegram" element={<Suspense fallback={<RouteFallback label="Завантаження каналів…" />}><Telegram /></Suspense>} />
+        <Route path="/support" element={<Suspense fallback={<RouteFallback label="Завантаження підтримки…" />}><Support /></Suspense>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>
