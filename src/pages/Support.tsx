@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { plural } from "@/lib/dashboardInsights";
 import { usePageSearch, isPhoneWidth } from "@/lib/pageSearch";
 import { openTelegram } from "@/lib/telegram";
+import SupportWeb from "@/components/support/SupportWeb";
 import {
   DEFAULT_TEMPLATES, GVIEW, KIND, fetchGroup, gView, PLAN, REASONS, STATUS, ago, approveGroup, bubbleTime, fetchGroups, fetchTemplates, fetchTicket, fetchTickets,
   minutesText, patchTicket, rejectGroup, replyTicket,
@@ -228,7 +229,7 @@ function GroupPane({ g, online, onChange }: { g: TgGroup; online: boolean; onCha
 }
 
 // ───────────────────────── page ─────────────────────────
-export default function Support() {
+function SupportLegacy() {
   const wide = useMedia("(min-width: 1180px)");
   const phone = useMedia("(max-width: 767px)");
   const online = useOnline();
@@ -604,4 +605,10 @@ export default function Support() {
       {tab === "tickets" && !list && !err && <span className="sr-only" role="status">Завантаження звернень…</span>}
     </div>
   );
+}
+
+/** Phone keeps its own layout; from 768 px the light web page. */
+export default function Support() {
+  const phone = useMedia("(max-width: 767px)");
+  return phone ? <SupportLegacy /> : <SupportWeb />;
 }
